@@ -4,7 +4,7 @@ indicator("Atlas Observer v0.1", shorttitle="Atlas Observer", overlay=true)
 // =============================================================================
 // Project Atlas
 // Module: Atlas Observer
-// Version: 0.1.0
+// Version: 0.1.1
 // Mode: Observer Only
 //
 // Objective:
@@ -13,6 +13,8 @@ indicator("Atlas Observer v0.1", shorttitle="Atlas Observer", overlay=true)
 //
 // This script does not place trades.
 // This script does not issue executable buy or sell orders.
+//
+// v0.1.1 adds CSV export fields through numeric plots.
 // =============================================================================
 
 // -----------------------------------------------------------------------------
@@ -97,6 +99,36 @@ regime =
      "neutral"
 
 // -----------------------------------------------------------------------------
+// Numeric export codes
+//
+// These values are plotted to the Data Window so TradingView chart export can
+// include Atlas state data in CSV form.
+// -----------------------------------------------------------------------------
+
+biasCode =
+     bias == "bullish" ? 1 :
+     bias == "bearish" ? -1 :
+     0
+
+volatilityCode =
+     volatilityState == "high" ? 1 :
+     volatilityState == "low" ? -1 :
+     0
+
+riskModeCode =
+     riskMode == "risk_on" ? 1 :
+     riskMode == "caution" ? 0 :
+     -1
+
+regimeCode =
+     regime == "bullish_risk_on" ? 2 :
+     regime == "bearish_risk_on" ? -2 :
+     regime == "bullish_caution" ? 1 :
+     regime == "bearish_caution" ? -1 :
+     regime == "stand_down" ? -9 :
+     0
+
+// -----------------------------------------------------------------------------
 // Visual output
 // -----------------------------------------------------------------------------
 
@@ -110,6 +142,19 @@ bgcolor(riskMode == "risk_on" and bias == "bullish" ? color.new(color.green, 92)
 bgcolor(riskMode == "risk_on" and bias == "bearish" ? color.new(color.red, 92) : na)
 
 // -----------------------------------------------------------------------------
+// CSV export plots
+// -----------------------------------------------------------------------------
+
+plot(trendScore, "atlas_trend_score", display=display.data_window)
+plot(biasCode, "atlas_bias_code", display=display.data_window)
+plot(volatilityCode, "atlas_volatility_code", display=display.data_window)
+plot(riskModeCode, "atlas_risk_mode_code", display=display.data_window)
+plot(regimeCode, "atlas_regime_code", display=display.data_window)
+plot(atrValue, "atlas_atr", display=display.data_window)
+plot(atrBaseline, "atlas_atr_baseline", display=display.data_window)
+plot(rsiValue, "atlas_rsi", display=display.data_window)
+
+// -----------------------------------------------------------------------------
 // Assessment panel
 // -----------------------------------------------------------------------------
 
@@ -117,7 +162,7 @@ var table panel = table.new(position.top_right, 2, 6, border_width=1)
 
 if showPanel and barstate.islast
     table.cell(panel, 0, 0, "Atlas Observer", text_color=color.white, bgcolor=color.black)
-    table.cell(panel, 1, 0, "v0.1", text_color=color.white, bgcolor=color.black)
+    table.cell(panel, 1, 0, "v0.1.1", text_color=color.white, bgcolor=color.black)
 
     table.cell(panel, 0, 1, "Regime")
     table.cell(panel, 1, 1, regime)
@@ -144,4 +189,3 @@ newRegime = regime != regime[1]
 
 if barstate.isconfirmed and newRegime
     alert(payload, alert.freq_once_per_bar_close)
-    
