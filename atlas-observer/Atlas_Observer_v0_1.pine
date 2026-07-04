@@ -1,0 +1,147 @@
+//@version=6
+indicator("Atlas Observer v0.1", shorttitle="Atlas Observer", overlay=true)
+
+// =============================================================================
+// Project Atlas
+// Module: Atlas Observer
+// Version: 0.1.0
+// Mode: Observer Only
+//
+// Objective:
+// Assess MNQ market conditions to improve decision quality, reduce unnecessary
+// trades, and protect capital during prop firm evaluations.
+//
+// This script does not place trades.
+// This script does not issue executable buy or sell orders.
+// =============================================================================
+
+// -----------------------------------------------------------------------------
+// Inputs
+// -----------------------------------------------------------------------------
+
+groupTrend = "Trend Assessment"
+fastEmaLength = input.int(21, "Fast EMA Length", minval=1, group=groupTrend)
+slowEmaLength = input.int(50, "Slow EMA Length", minval=1, group=groupTrend)
+slopeLookback = input.int(10, "Slope Lookback", minval=1, group=groupTrend)
+
+groupMomentum = "Momentum Assessment"
+rsiLength = input.int(14, "RSI Length", minval=1, group=groupMomentum)
+bullRsiLevel = input.float(55.0, "Bullish RSI Level", step=0.25, group=groupMomentum)
+bearRsiLevel = input.float(45.0, "Bearish RSI Level", step=0.25, group=groupMomentum)
+
+groupVolatility = "Volatility Assessment"
+atrLength = input.int(14, "ATR Length", minval=1, group=groupVolatility)
+atrBaselineLength = input.int(50, "ATR Baseline Length", minval=1, group=groupVolatility)
+highVolMultiplier = input.float(1.25, "High Volatility Multiplier", step=0.05, group=groupVolatility)
+lowVolMultiplier = input.float(0.75, "Low Volatility Multiplier", step=0.05, group=groupVolatility)
+
+groupDisplay = "Display"
+showEma = input.bool(true, "Show EMAs", group=groupDisplay)
+showVwap = input.bool(true, "Show VWAP", group=groupDisplay)
+showPanel = input.bool(true, "Show Assessment Panel", group=groupDisplay)
+
+// -----------------------------------------------------------------------------
+// Core calculations
+// -----------------------------------------------------------------------------
+
+fastEma = ta.ema(close, fastEmaLength)
+slowEma = ta.ema(close, slowEmaLength)
+vwapValue = ta.vwap(hlc3)
+
+rsiValue = ta.rsi(close, rsiLength)
+atrValue = ta.atr(atrLength)
+atrBaseline = ta.sma(atrValue, atrBaselineLength)
+
+emaBullish = fastEma > slowEma
+emaBearish = fastEma < slowEma
+
+slopeBullish = fastEma > fastEma[slopeLookback]
+slopeBearish = fastEma < fastEma[slopeLookback]
+
+priceAboveVwap = close > vwapValue
+priceBelowVwap = close < vwapValue
+
+momentumBullish = rsiValue >= bullRsiLevel
+momentumBearish = rsiValue <= bearRsiLevel
+
+highVolatility = atrValue > atrBaseline * highVolMultiplier
+lowVolatility = atrValue < atrBaseline * lowVolMultiplier
+
+// -----------------------------------------------------------------------------
+// Market scoring
+// -----------------------------------------------------------------------------
+
+trendScore = 0
+
+trendScore += emaBullish ? 1 : emaBearish ? -1 : 0
+trendScore += slopeBullish ? 1 : slopeBearish ? -1 : 0
+trendScore += priceAboveVwap ? 1 : priceBelowVwap ? -1 : 0
+trendScore += momentumBullish ? 1 : momentumBearish ? -1 : 0
+
+bias = trendScore >= 3 ? "bullish" : trendScore <= -3 ? "bearish" : "neutral"
+
+volatilityState = highVolatility ? "high" : lowVolatility ? "low" : "normal"
+
+riskMode =
+     highVolatility and bias == "neutral" ? "stand_down" :
+     highVolatility ? "caution" :
+     lowVolatility ? "caution" :
+     "risk_on"
+
+regime =
+     riskMode == "stand_down" ? "stand_down" :
+     bias == "bullish" and riskMode == "risk_on" ? "bullish_risk_on" :
+     bias == "bearish" and riskMode == "risk_on" ? "bearish_risk_on" :
+     bias == "bullish" and riskMode == "caution" ? "bullish_caution" :
+     bias == "bearish" and riskMode == "caution" ? "bearish_caution" :
+     "neutral"
+
+// -----------------------------------------------------------------------------
+// Visual output
+// -----------------------------------------------------------------------------
+
+plot(showEma ? fastEma : na, "Fast EMA")
+plot(showEma ? slowEma : na, "Slow EMA")
+plot(showVwap ? vwapValue : na, "VWAP")
+
+bgcolor(riskMode == "stand_down" ? color.new(color.red, 88) : na)
+bgcolor(riskMode == "caution" ? color.new(color.orange, 90) : na)
+bgcolor(riskMode == "risk_on" and bias == "bullish" ? color.new(color.green, 92) : na)
+bgcolor(riskMode == "risk_on" and bias == "bearish" ? color.new(color.red, 92) : na)
+
+// -----------------------------------------------------------------------------
+// Assessment panel
+// -----------------------------------------------------------------------------
+
+var table panel = table.new(position.top_right, 2, 6, border_width=1)
+
+if showPanel and barstate.islast
+    table.cell(panel, 0, 0, "Atlas Observer", text_color=color.white, bgcolor=color.black)
+    table.cell(panel, 1, 0, "v0.1", text_color=color.white, bgcolor=color.black)
+
+    table.cell(panel, 0, 1, "Regime")
+    table.cell(panel, 1, 1, regime)
+
+    table.cell(panel, 0, 2, "Bias")
+    table.cell(panel, 1, 2, bias)
+
+    table.cell(panel, 0, 3, "Trend Score")
+    table.cell(panel, 1, 3, str.tostring(trendScore))
+
+    table.cell(panel, 0, 4, "Volatility")
+    table.cell(panel, 1, 4, volatilityState)
+
+    table.cell(panel, 0, 5, "Risk Mode")
+    table.cell(panel, 1, 5, riskMode)
+
+// -----------------------------------------------------------------------------
+// Observer-only alert payload
+// -----------------------------------------------------------------------------
+
+payload = '{"schema":"atlas-alert-v0.1","module":"atlas-observer","mode":"observer","ticker":"' + syminfo.ticker + '","timeframe":"' + timeframe.period + '","price":' + str.tostring(close) + ',"signal":{"type":"market_assessment","regime":"' + regime + '","bias":"' + bias + '","trend_score":' + str.tostring(trendScore) + ',"volatility_state":"' + volatilityState + '","risk_mode":"' + riskMode + '"},"execution":{"allowed":false,"action":"none","quantity":0}}'
+
+newRegime = regime != regime[1]
+
+if barstate.isconfirmed and newRegime
+    alert(payload, alert.freq_once_per_bar_close)
+    
