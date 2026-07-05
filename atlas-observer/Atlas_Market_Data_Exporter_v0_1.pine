@@ -4,7 +4,7 @@ indicator("Atlas Market Data Exporter v0.1", shorttitle="Atlas Exporter", overla
 // =============================================================================
 // Project Atlas
 // Module: Market Data Exporter
-// Version: 0.1.0
+// Version: 0.1.1
 // Mode: Data Export Only
 //
 // Purpose:
@@ -14,6 +14,10 @@ indicator("Atlas Market Data Exporter v0.1", shorttitle="Atlas Exporter", overla
 // This is not a strategy.
 // This script does not generate buy/sell signals.
 // This script does not place trades.
+//
+// v0.1.1 change:
+// Extension alone no longer forces caution. Extension now only contributes to
+// caution when combined with chop or weak trend alignment.
 // =============================================================================
 
 // -----------------------------------------------------------------------------
@@ -212,7 +216,6 @@ barsSinceFastEmaCross = ta.barssince(fastEmaCross)
 // Chop detection
 // -----------------------------------------------------------------------------
 
-candleRange = high - low
 bodyHigh = math.max(open, close)
 bodyLow = math.min(open, close)
 
@@ -263,12 +266,16 @@ biasCode =
      trendAlignmentScore <= -3 ? -1 :
      0
 
+// Extension alone no longer forces caution.
+// Extension only matters when the market is already showing chop or weak alignment.
+extensionRisk = extensionCode != 0 and (chopScore >= 2 or trendAlignmentScore >= -1 and trendAlignmentScore <= 1)
+
 riskModeCode =
      chopScore >= 4 ? -1 :
      highVolatility and trendAlignmentScore >= -1 and trendAlignmentScore <= 1 ? -1 :
      highVolatility ? 0 :
      lowVolatility ? 0 :
-     extensionCode != 0 ? 0 :
+     extensionRisk ? 0 :
      chopScore >= 2 ? 0 :
      (trendAlignmentScore >= 3 or trendAlignmentScore <= -3) and chopScore <= 1 and volatilityCode == 0 ? 1 :
      0
@@ -382,7 +389,7 @@ var table panel = table.new(position.top_right, 2, 8, border_width=1)
 
 if showPanel and barstate.islast
     table.cell(panel, 0, 0, "Atlas Exporter", text_color=color.white, bgcolor=color.black)
-    table.cell(panel, 1, 0, "v0.1", text_color=color.white, bgcolor=color.black)
+    table.cell(panel, 1, 0, "v0.1.1", text_color=color.white, bgcolor=color.black)
 
     table.cell(panel, 0, 1, "Bias")
     table.cell(panel, 1, 1, biasText)
