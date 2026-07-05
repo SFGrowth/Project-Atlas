@@ -1,0 +1,889 @@
+//@version=6
+indicator("Atlas Trade Research Exporter v0.1", shorttitle="AtlasRes", overlay=true, max_labels_count=500, max_lines_count=500, max_boxes_count=500)
+
+// =============================================================================
+// Project Atlas
+// Module: Trade Research Exporter
+// Version: 0.1.0
+// Mode: Research Export Only
+//
+// Purpose:
+// Export trade setup and trade outcome context so Atlas can determine why trades
+// win or fail before any optimisation is implemented.
+//
+// This is not an optimiser.
+// This is not live trading.
+// This does not send alerts.
+// This does not connect to TradersPost.
+//
+// Atlas principle:
+// Hypothesis -> Measurement -> Validation -> Decision
+// =============================================================================
+
+// -----------------------------------------------------------------------------
+// Inputs
+// -----------------------------------------------------------------------------
+
+groupTrend = "Trend / Moving Averages"
+fastEmaLength = input.int(15, "Fast EMA Length", minval=1, group=groupTrend)
+slowEmaLength = input.int(50, "Slow EMA Length", minval=1, group=groupTrend)
+slopeLookback = input.int(10, "EMA Slope Lookback", minval=1, group=groupTrend)
+riskOnTrendThreshold = input.int(3, "Trend Score Required For Risk-On", minval=1, maxval=4, group=groupTrend)
+weakTrendThreshold = input.int(1, "Weak Trend Threshold", minval=0, maxval=3, group=groupTrend)
+
+groupMomentum = "Momentum"
+rsiLength = input.int(14, "RSI Length", minval=1, group=groupMomentum)
+bullRsiLevel = input.float(55.0, "Bullish RSI Level", step=0.25, group=groupMomentum)
+bearRsiLevel = input.float(45.0, "Bearish RSI Level", step=0.25, group=groupMomentum)
+
+groupVolatility = "Volatility"
+atrLength = input.int(14, "ATR Length", minval=1, group=groupVolatility)
+atrBaselineLength = input.int(50, "ATR Baseline Length", minval=1, group=groupVolatility)
+highVolMultiplier = input.float(1.25, "High Volatility Multiplier", step=0.05, group=groupVolatility)
+lowVolMultiplier = input.float(0.75, "Low Volatility Multiplier", step=0.05, group=groupVolatility)
+allowRiskOnHighVolatility = input.bool(true, "Allow Risk-On During High Volatility", group=groupVolatility)
+allowRiskOnLowVolatility = input.bool(true, "Allow Risk-On During Low Volatility", group=groupVolatility)
+
+groupSessions = "Sessions"
+timezoneInput = input.string("America/New_York", "Session Timezone", group=groupSessions)
+premarketSession = input.session("0400-0929", "Premarket Session", group=groupSessions)
+openingRangeSession = input.session("0930-1000", "Opening Range Session", group=groupSessions)
+midMorningSession = input.session("1000-1130", "Mid-Morning Session", group=groupSessions)
+middaySession = input.session("1130-1400", "Midday Session", group=groupSessions)
+powerHourSession = input.session("1500-1600", "Power Hour Session", group=groupSessions)
+regularSession = input.session("0930-1600", "Regular Session", group=groupSessions)
+
+allowRiskOnPremarket = input.bool(false, "Allow Risk-On During Premarket", group=groupSessions)
+allowRiskOnOpeningRange = input.bool(true, "Allow Risk-On During Opening Range", group=groupSessions)
+allowRiskOnMidMorning = input.bool(true, "Allow Risk-On During Mid-Morning", group=groupSessions)
+allowRiskOnMidday = input.bool(true, "Allow Risk-On During Midday", group=groupSessions)
+allowRiskOnPowerHour = input.bool(true, "Allow Risk-On During Power Hour", group=groupSessions)
+allowRiskOnAfterHours = input.bool(false, "Allow Risk-On During After-Hours", group=groupSessions)
+allowRiskOnOtherRegular = input.bool(true, "Allow Risk-On During Other Regular Session", group=groupSessions)
+
+groupChop = "Chop / Guardian"
+crossLookback = input.int(20, "Cross Count Lookback", minval=1, group=groupChop)
+heavyCrossThreshold = input.int(3, "Heavy Cross Threshold", minval=1, group=groupChop)
+mildChopScoreThreshold = input.int(2, "Mild Chop Score Threshold", minval=1, maxval=5, group=groupChop)
+heavyChopScoreThreshold = input.int(4, "Heavy Chop Score Threshold", minval=1, maxval=5, group=groupChop)
+allowRiskOnMildChop = input.bool(false, "Allow Risk-On During Mild Chop", group=groupChop)
+
+groupExtension = "Extension / Stretch"
+extensionAtrThreshold = input.float(2.0, "Extension ATR Threshold", step=0.1, group=groupExtension)
+extensionAffectsCaution = input.bool(true, "Extension Can Force Caution", group=groupExtension)
+extensionRequiresWeakTrend = input.bool(true, "Extension Risk Requires Weak Trend", group=groupExtension)
+extensionRequiresChop = input.bool(true, "Extension Risk Requires Chop", group=groupExtension)
+
+groupLevels = "Location / Major Levels"
+majorLevelAffectsCaution = input.bool(false, "Major Level Proximity Can Force Caution", group=groupLevels)
+majorLevelAtrThreshold = input.float(0.50, "Major Level Proximity ATR Threshold", step=0.05, group=groupLevels)
+usePrevDayLevels = input.bool(true, "Use Previous Day High/Low", group=groupLevels)
+usePremarketLevels = input.bool(true, "Use Premarket High/Low", group=groupLevels)
+useOpeningRangeLevels = input.bool(true, "Use Opening Range High/Low", group=groupLevels)
+roundNumberInterval = input.float(100.0, "Round Number Interval", step=25.0, group=groupLevels)
+
+groupSetup = "Atlas Setup Engine"
+enableLongSetups = input.bool(true, "Enable Long Setups", group=groupSetup)
+enableShortSetups = input.bool(true, "Enable Short Setups", group=groupSetup)
+entryMode = input.string("Breakout", "Entry Class", options=["Pullback/Reclaim", "Breakout", "Either"], group=groupSetup)
+candidateCooldownBars = input.int(60, "Minimum Bars Between Setups", minval=1, group=groupSetup)
+oneActiveTradeAtATime = input.bool(true, "One Active Trade At A Time", group=groupSetup)
+tradeExpiryBars = input.int(40, "Trade Expiry Bars", minval=1, group=groupSetup)
+closeTradeOnRiskOff = input.bool(false, "Close Active Trade When Atlas Leaves Risk-On", group=groupSetup)
+
+groupRisk = "Risk / Stops / Targets"
+contracts = input.int(1, "Contracts", minval=1, group=groupRisk)
+mnqPointValue = input.float(2.0, "MNQ Dollar Value Per Point Per Contract", step=0.25, group=groupRisk)
+maxDollarRisk = input.float(850.0, "Maximum Allowed Dollar Risk", step=25.0, group=groupRisk)
+stopMode = input.string("Structure", "Stop Model", options=["ATR", "Structure", "Tighter", "Wider"], group=groupRisk)
+stopAtrMultiplier = input.float(1.25, "ATR Stop Multiplier", step=0.05, group=groupRisk)
+stopSwingLookback = input.int(8, "Structure Stop Lookback", minval=1, group=groupRisk)
+stopBufferPoints = input.float(2.0, "Structure Stop Buffer Points", step=0.25, group=groupRisk)
+targetOneR = input.float(1.0, "Target 1 R Multiple", step=0.25, group=groupRisk)
+targetTwoR = input.float(2.0, "Target 2 R Multiple", step=0.25, group=groupRisk)
+
+groupPressure = "Pressure Research"
+volumeBaselineLength = input.int(50, "Volume Baseline Length", minval=1, group=groupPressure)
+impulseAtrThreshold = input.float(1.20, "Impulse Candle ATR Threshold", step=0.05, group=groupPressure)
+strongBodyAtrThreshold = input.float(0.80, "Strong Body ATR Threshold", step=0.05, group=groupPressure)
+
+groupDisplay = "Display"
+showVisualLines = input.bool(true, "Show EMA / VWAP Lines", group=groupDisplay)
+showTradeLabels = input.bool(true, "Show Trade Event Labels", group=groupDisplay)
+showPanel = input.bool(true, "Show Research Panel", group=groupDisplay)
+
+// -----------------------------------------------------------------------------
+// Helpers
+// -----------------------------------------------------------------------------
+
+inSession(sessionString) =>
+    not na(time(timeframe.period, sessionString, timezoneInput))
+
+safeDiv(numerator, denominator) =>
+    denominator != 0 ? numerator / denominator : na
+
+// -----------------------------------------------------------------------------
+// Session model
+// -----------------------------------------------------------------------------
+
+inPremarket = inSession(premarketSession)
+inOpeningRange = inSession(openingRangeSession)
+inMidMorning = inSession(midMorningSession)
+inMidday = inSession(middaySession)
+inPowerHour = inSession(powerHourSession)
+inRegular = inSession(regularSession)
+
+sessionCode =
+     inPremarket ? 1 :
+     inOpeningRange ? 2 :
+     inMidMorning ? 3 :
+     inMidday ? 4 :
+     inPowerHour ? 5 :
+     not inRegular ? 6 :
+     0
+
+sessionAllowsRiskOn =
+     sessionCode == 1 ? allowRiskOnPremarket :
+     sessionCode == 2 ? allowRiskOnOpeningRange :
+     sessionCode == 3 ? allowRiskOnMidMorning :
+     sessionCode == 4 ? allowRiskOnMidday :
+     sessionCode == 5 ? allowRiskOnPowerHour :
+     sessionCode == 6 ? allowRiskOnAfterHours :
+     allowRiskOnOtherRegular
+
+// Session codes:
+// 0 other regular
+// 1 premarket
+// 2 opening range
+// 3 mid-morning
+// 4 midday
+// 5 power hour
+// 6 after-hours
+
+// -----------------------------------------------------------------------------
+// Core market calculations
+// -----------------------------------------------------------------------------
+
+fastEma = ta.ema(close, fastEmaLength)
+slowEma = ta.ema(close, slowEmaLength)
+vwapValue = ta.vwap(hlc3)
+
+fastEmaSlope = fastEma - fastEma[slopeLookback]
+slowEmaSlope = slowEma - slowEma[slopeLookback]
+
+atrValue = ta.atr(atrLength)
+atrBaseline = ta.sma(atrValue, atrBaselineLength)
+atrRatio = safeDiv(atrValue, atrBaseline)
+
+highVolatility = atrValue > atrBaseline * highVolMultiplier
+lowVolatility = atrValue < atrBaseline * lowVolMultiplier
+
+volatilityCode =
+     highVolatility ? 1 :
+     lowVolatility ? -1 :
+     0
+
+rsiValue = ta.rsi(close, rsiLength)
+
+// -----------------------------------------------------------------------------
+// Major level model
+// -----------------------------------------------------------------------------
+
+prevDayHigh = request.security(syminfo.tickerid, "D", high[1], lookahead=barmerge.lookahead_on)
+prevDayLow = request.security(syminfo.tickerid, "D", low[1], lookahead=barmerge.lookahead_on)
+
+newDay = ta.change(time("D")) != 0
+
+var float premarketHigh = na
+var float premarketLow = na
+
+if newDay
+    premarketHigh := na
+    premarketLow := na
+
+if inPremarket
+    premarketHigh := na(premarketHigh) ? high : math.max(premarketHigh, high)
+    premarketLow := na(premarketLow) ? low : math.min(premarketLow, low)
+
+var float openingRangeHigh = na
+var float openingRangeLow = na
+
+if newDay
+    openingRangeHigh := na
+    openingRangeLow := na
+
+if inOpeningRange
+    openingRangeHigh := na(openingRangeHigh) ? high : math.max(openingRangeHigh, high)
+    openingRangeLow := na(openingRangeLow) ? low : math.min(openingRangeLow, low)
+
+// -----------------------------------------------------------------------------
+// Trend model
+// -----------------------------------------------------------------------------
+
+emaBullish = fastEma > slowEma
+emaBearish = fastEma < slowEma
+slopeBullish = fastEmaSlope > 0
+slopeBearish = fastEmaSlope < 0
+priceAboveVwap = close > vwapValue
+priceBelowVwap = close < vwapValue
+momentumBullish = rsiValue >= bullRsiLevel
+momentumBearish = rsiValue <= bearRsiLevel
+
+trendAlignmentScore = 0
+trendAlignmentScore += emaBullish ? 1 : emaBearish ? -1 : 0
+trendAlignmentScore += slopeBullish ? 1 : slopeBearish ? -1 : 0
+trendAlignmentScore += priceAboveVwap ? 1 : priceBelowVwap ? -1 : 0
+trendAlignmentScore += momentumBullish ? 1 : momentumBearish ? -1 : 0
+
+fastEmaCross = ta.cross(close, fastEma)
+vwapCross = ta.cross(close, vwapValue)
+
+emaCrossCount20 = math.sum(fastEmaCross ? 1 : 0, crossLookback)
+vwapCrossCount20 = math.sum(vwapCross ? 1 : 0, crossLookback)
+
+weakTrend = trendAlignmentScore >= -weakTrendThreshold and trendAlignmentScore <= weakTrendThreshold
+
+strongBullTrend = trendAlignmentScore >= riskOnTrendThreshold
+strongBearTrend = trendAlignmentScore <= -riskOnTrendThreshold
+strongTrend = strongBullTrend or strongBearTrend
+
+biasCode =
+     strongBullTrend ? 1 :
+     strongBearTrend ? -1 :
+     0
+
+// -----------------------------------------------------------------------------
+// Chop model
+// -----------------------------------------------------------------------------
+
+bodyHigh = math.max(open, close)
+bodyLow = math.min(open, close)
+
+priorBodyHigh = math.max(open[1], close[1])
+priorBodyLow = math.min(open[1], close[1])
+
+overlapAmount = math.max(0.0, math.min(bodyHigh, priorBodyHigh) - math.max(bodyLow, priorBodyLow))
+bodyRange = bodyHigh - bodyLow
+priorBodyRange = priorBodyHigh - priorBodyLow
+averageBodyRange = (bodyRange + priorBodyRange) / 2.0
+overlapRatio = averageBodyRange != 0 ? overlapAmount / averageBodyRange : 0.0
+
+highOverlap = overlapRatio > 0.6
+
+chopScore = 0
+chopScore += emaCrossCount20 >= heavyCrossThreshold ? 1 : 0
+chopScore += vwapCrossCount20 >= heavyCrossThreshold ? 1 : 0
+chopScore += weakTrend ? 1 : 0
+chopScore += highOverlap ? 1 : 0
+chopScore += atrRatio < lowVolMultiplier ? 1 : 0
+
+// -----------------------------------------------------------------------------
+// Structure model
+// -----------------------------------------------------------------------------
+
+distanceFromFastEmaAtr = safeDiv(close - fastEma, atrValue)
+distanceFromSlowEmaAtr = safeDiv(close - slowEma, atrValue)
+distanceFromVwapAtr = safeDiv(close - vwapValue, atrValue)
+
+recentSwingHigh = ta.highest(high, stopSwingLookback)
+recentSwingLow = ta.lowest(low, stopSwingLookback)
+
+distanceFromSwingHighAtr = safeDiv(close - recentSwingHigh, atrValue)
+distanceFromSwingLowAtr = safeDiv(close - recentSwingLow, atrValue)
+
+bodySize = math.abs(close - open)
+candleRange = high - low
+bodyAtr = safeDiv(bodySize, atrValue)
+rangeAtr = safeDiv(candleRange, atrValue)
+
+impulseCandle = rangeAtr >= impulseAtrThreshold
+extendedFromFastEma = math.abs(distanceFromFastEmaAtr) >= extensionAtrThreshold
+extendedFromVwap = math.abs(distanceFromVwapAtr) >= extensionAtrThreshold
+
+structureScore = 0
+structureScore += math.abs(distanceFromFastEmaAtr) <= 1.0 ? 1 : 0
+structureScore += math.abs(distanceFromVwapAtr) <= 1.5 ? 1 : 0
+structureScore += not impulseCandle ? 1 : 0
+structureScore += not extendedFromFastEma ? 1 : 0
+
+// Structure classification codes:
+// 0 weak_structure
+// 1 extended_structure
+// 2 late_structure
+// 3 clean_structure
+structureCode =
+     structureScore >= 3 ? 3 :
+     extendedFromFastEma or extendedFromVwap ? 1 :
+     impulseCandle ? 2 :
+     0
+
+// -----------------------------------------------------------------------------
+// Pressure model
+// -----------------------------------------------------------------------------
+
+closePositionInRange = candleRange != 0 ? (close - low) / candleRange : na
+volumeBaseline = ta.sma(volume, volumeBaselineLength)
+volumeRatio = safeDiv(volume, volumeBaseline)
+
+bullPressureCandle = close > open and bodyAtr >= strongBodyAtrThreshold and closePositionInRange >= 0.65
+bearPressureCandle = close < open and bodyAtr >= strongBodyAtrThreshold and closePositionInRange <= 0.35
+
+var int consecutiveBullCandles = 0
+var int consecutiveBearCandles = 0
+
+if close > open
+    consecutiveBullCandles += 1
+    consecutiveBearCandles := 0
+else if close < open
+    consecutiveBearCandles += 1
+    consecutiveBullCandles := 0
+else
+    consecutiveBullCandles := 0
+    consecutiveBearCandles := 0
+
+signedConsecutivePressure =
+     consecutiveBullCandles > 0 ? consecutiveBullCandles :
+     consecutiveBearCandles > 0 ? -consecutiveBearCandles :
+     0
+
+breakoutLongPressure = close > high[1] and closePositionInRange >= 0.60
+breakoutShortPressure = close < low[1] and closePositionInRange <= 0.40
+
+pressureScore = 0
+pressureScore += bodyAtr >= strongBodyAtrThreshold ? 1 : 0
+pressureScore += volumeRatio >= 1.0 ? 1 : 0
+pressureScore += math.abs(signedConsecutivePressure) >= 2 ? 1 : 0
+pressureScore += breakoutLongPressure or breakoutShortPressure ? 1 : 0
+
+// Pressure classification codes:
+// 0 weak_pressure
+// 1 moderate_pressure
+// 2 strong_pressure
+// 3 exhaustion_pressure
+pressureCode =
+     impulseCandle and math.abs(distanceFromFastEmaAtr) >= extensionAtrThreshold ? 3 :
+     pressureScore >= 3 ? 2 :
+     pressureScore >= 2 ? 1 :
+     0
+
+// -----------------------------------------------------------------------------
+// Location model
+// -----------------------------------------------------------------------------
+
+distancePrevDayHighAtr = not na(prevDayHigh) ? safeDiv(close - prevDayHigh, atrValue) : na
+distancePrevDayLowAtr = not na(prevDayLow) ? safeDiv(close - prevDayLow, atrValue) : na
+distancePremarketHighAtr = not na(premarketHigh) ? safeDiv(close - premarketHigh, atrValue) : na
+distancePremarketLowAtr = not na(premarketLow) ? safeDiv(close - premarketLow, atrValue) : na
+distanceOpeningRangeHighAtr = not na(openingRangeHigh) ? safeDiv(close - openingRangeHigh, atrValue) : na
+distanceOpeningRangeLowAtr = not na(openingRangeLow) ? safeDiv(close - openingRangeLow, atrValue) : na
+
+nearestRoundNumber = roundNumberInterval != 0 ? math.round(close / roundNumberInterval) * roundNumberInterval : na
+distanceRoundNumberAtr = not na(nearestRoundNumber) ? safeDiv(close - nearestRoundNumber, atrValue) : na
+
+nearPrevDayHigh = usePrevDayLevels and not na(distancePrevDayHighAtr) and math.abs(distancePrevDayHighAtr) <= majorLevelAtrThreshold
+nearPrevDayLow = usePrevDayLevels and not na(distancePrevDayLowAtr) and math.abs(distancePrevDayLowAtr) <= majorLevelAtrThreshold
+
+nearPremarketHigh = usePremarketLevels and not na(distancePremarketHighAtr) and math.abs(distancePremarketHighAtr) <= majorLevelAtrThreshold
+nearPremarketLow = usePremarketLevels and not na(distancePremarketLowAtr) and math.abs(distancePremarketLowAtr) <= majorLevelAtrThreshold
+
+nearOpeningRangeHigh = useOpeningRangeLevels and not na(distanceOpeningRangeHighAtr) and math.abs(distanceOpeningRangeHighAtr) <= majorLevelAtrThreshold
+nearOpeningRangeLow = useOpeningRangeLevels and not na(distanceOpeningRangeLowAtr) and math.abs(distanceOpeningRangeLowAtr) <= majorLevelAtrThreshold
+
+nearRoundNumber = not na(distanceRoundNumberAtr) and math.abs(distanceRoundNumberAtr) <= majorLevelAtrThreshold
+
+nearMajorLevel = nearPrevDayHigh or nearPrevDayLow or nearPremarketHigh or nearPremarketLow or nearOpeningRangeHigh or nearOpeningRangeLow or nearRoundNumber
+
+nearResistance = nearPrevDayHigh or nearPremarketHigh or nearOpeningRangeHigh
+nearSupport = nearPrevDayLow or nearPremarketLow or nearOpeningRangeLow
+
+insideOpeningRange =
+     not na(openingRangeHigh) and
+     not na(openingRangeLow) and
+     close <= openingRangeHigh and
+     close >= openingRangeLow
+
+breakoutLocation =
+     not na(openingRangeHigh) and close > openingRangeHigh or
+     not na(openingRangeLow) and close < openingRangeLow
+
+// Location classification codes:
+// 0 clean_location
+// 1 near_resistance
+// 2 near_support
+// 3 inside_range
+// 4 breakout_location
+// 5 reaction_zone
+locationCode =
+     nearMajorLevel ? 5 :
+     nearResistance ? 1 :
+     nearSupport ? 2 :
+     insideOpeningRange ? 3 :
+     breakoutLocation ? 4 :
+     0
+
+// -----------------------------------------------------------------------------
+// Guardian model
+// -----------------------------------------------------------------------------
+
+heavyChop = chopScore >= heavyChopScoreThreshold
+mildChop = chopScore >= mildChopScoreThreshold and chopScore < heavyChopScoreThreshold
+
+volatilityBlocksRiskOn =
+     highVolatility and not allowRiskOnHighVolatility or
+     lowVolatility and not allowRiskOnLowVolatility
+
+chopBlocksRiskOn =
+     heavyChop or
+     mildChop and not allowRiskOnMildChop
+
+stretchedUp = distanceFromFastEmaAtr > extensionAtrThreshold or distanceFromVwapAtr > extensionAtrThreshold
+stretchedDown = distanceFromFastEmaAtr < -extensionAtrThreshold or distanceFromVwapAtr < -extensionAtrThreshold
+
+extensionCode =
+     stretchedUp ? 1 :
+     stretchedDown ? -1 :
+     0
+
+mildOrHeavyChop = chopScore >= mildChopScoreThreshold
+
+extensionTrigger =
+     not extensionRequiresWeakTrend and not extensionRequiresChop ? true :
+     (extensionRequiresWeakTrend and weakTrend) or
+     (extensionRequiresChop and mildOrHeavyChop)
+
+extensionRisk = extensionAffectsCaution and extensionCode != 0 and extensionTrigger
+majorLevelRisk = majorLevelAffectsCaution and nearMajorLevel
+
+standDownCondition =
+     heavyChop or
+     highVolatility and weakTrend
+
+riskOnCondition =
+     strongTrend and
+     sessionAllowsRiskOn and
+     not volatilityBlocksRiskOn and
+     not chopBlocksRiskOn and
+     not extensionRisk and
+     not majorLevelRisk
+
+riskModeCode =
+     standDownCondition ? -1 :
+     riskOnCondition ? 1 :
+     0
+
+regimeCode =
+     riskModeCode == -1 ? -9 :
+     biasCode == 1 and riskModeCode == 1 ? 2 :
+     biasCode == -1 and riskModeCode == 1 ? -2 :
+     biasCode == 1 and riskModeCode == 0 ? 1 :
+     biasCode == -1 and riskModeCode == 0 ? -1 :
+     0
+
+// Guardian classification codes:
+// 0 guardian_clear
+// 1 guardian_caution
+// 2 guardian_conflict
+// 3 guardian_stand_down
+guardianCode =
+     riskModeCode == -1 ? 3 :
+     extensionRisk or majorLevelRisk or volatilityBlocksRiskOn or chopBlocksRiskOn ? 2 :
+     riskModeCode == 0 ? 1 :
+     0
+
+// -----------------------------------------------------------------------------
+// Setup engine
+// -----------------------------------------------------------------------------
+
+pullbackLong = low <= fastEma and close > fastEma and close > open
+pullbackShort = high >= fastEma and close < fastEma and close < open
+
+breakoutLong = close > high[1] and close > fastEma and close > vwapValue
+breakoutShort = close < low[1] and close < fastEma and close < vwapValue
+
+longTrigger =
+     entryMode == "Pullback/Reclaim" ? pullbackLong :
+     entryMode == "Breakout" ? breakoutLong :
+     pullbackLong or breakoutLong
+
+shortTrigger =
+     entryMode == "Pullback/Reclaim" ? pullbackShort :
+     entryMode == "Breakout" ? breakoutShort :
+     pullbackShort or breakoutShort
+
+entryPrice = close
+
+longAtrStop = entryPrice - atrValue * stopAtrMultiplier
+longStructureStop = ta.lowest(low, stopSwingLookback) - stopBufferPoints
+
+shortAtrStop = entryPrice + atrValue * stopAtrMultiplier
+shortStructureStop = ta.highest(high, stopSwingLookback) + stopBufferPoints
+
+longStop =
+     stopMode == "ATR" ? longAtrStop :
+     stopMode == "Structure" ? longStructureStop :
+     stopMode == "Tighter" ? math.max(longAtrStop, longStructureStop) :
+     math.min(longAtrStop, longStructureStop)
+
+shortStop =
+     stopMode == "ATR" ? shortAtrStop :
+     stopMode == "Structure" ? shortStructureStop :
+     stopMode == "Tighter" ? math.min(shortAtrStop, shortStructureStop) :
+     math.max(shortAtrStop, shortStructureStop)
+
+longRiskPoints = entryPrice - longStop
+shortRiskPoints = shortStop - entryPrice
+
+longDollarRisk = longRiskPoints * mnqPointValue * contracts
+shortDollarRisk = shortRiskPoints * mnqPointValue * contracts
+
+longRiskAllowed = longRiskPoints > 0 and longDollarRisk <= maxDollarRisk
+shortRiskAllowed = shortRiskPoints > 0 and shortDollarRisk <= maxDollarRisk
+
+longTarget1 = entryPrice + longRiskPoints * targetOneR
+longTarget2 = entryPrice + longRiskPoints * targetTwoR
+
+shortTarget1 = entryPrice - shortRiskPoints * targetOneR
+shortTarget2 = entryPrice - shortRiskPoints * targetTwoR
+
+// -----------------------------------------------------------------------------
+// Trade state machine
+// -----------------------------------------------------------------------------
+
+var bool activeTrade = false
+var int activeTradeId = 0
+var int activeDirection = 0
+var float activeEntry = na
+var float activeStop = na
+var float activeTarget1 = na
+var float activeTarget2 = na
+var float activeRiskPoints = na
+var float activeRiskDollars = na
+var int activeStartBar = na
+var bool activeTp1Hit = false
+var bool activeTp2Hit = false
+
+var int lastSetupBar = na
+
+canPrintSetup = na(lastSetupBar) or bar_index - lastSetupBar >= candidateCooldownBars
+canOpenNewTrade = oneActiveTradeAtATime ? not activeTrade : true
+
+longSetup =
+     enableLongSetups and
+     canOpenNewTrade and
+     canPrintSetup and
+     riskModeCode == 1 and
+     biasCode == 1 and
+     longTrigger and
+     longRiskAllowed
+
+shortSetup =
+     enableShortSetups and
+     canOpenNewTrade and
+     canPrintSetup and
+     riskModeCode == 1 and
+     biasCode == -1 and
+     shortTrigger and
+     shortRiskAllowed
+
+// Export event defaults reset every bar
+int entryEvent = 0
+int exitEvent = 0
+int entryTradeId = na
+int exitTradeId = na
+int entryDirection = na
+int exitDirection = na
+float entryRiskDollars = na
+float entryRiskPoints = na
+float entryStopPrice = na
+float entryTarget1Price = na
+float entryTarget2Price = na
+int exitOutcomeCode = na
+int exitBestProgressCode = na
+float exitRMultiple = na
+float exitDollars = na
+int exitBarsInTrade = na
+
+// Outcome codes:
+// 1 STOP LOSS
+// 2 TP1 HIT only
+// 3 TP2 HIT
+// 4 RISK OFF EXIT
+// 5 EXPIRED
+
+// Best progress codes:
+// 0 OPEN / no target touched
+// 1 TP1 touched
+// 2 TP2 touched
+
+tradeCanBeChecked = activeTrade and bar_index > activeStartBar
+
+longStopTouched = tradeCanBeChecked and activeDirection == 1 and low <= activeStop
+longTp1Touched = tradeCanBeChecked and activeDirection == 1 and high >= activeTarget1
+longTp2Touched = tradeCanBeChecked and activeDirection == 1 and high >= activeTarget2
+
+shortStopTouched = tradeCanBeChecked and activeDirection == -1 and high >= activeStop
+shortTp1Touched = tradeCanBeChecked and activeDirection == -1 and low <= activeTarget1
+shortTp2Touched = tradeCanBeChecked and activeDirection == -1 and low <= activeTarget2
+
+stopLossHit = longStopTouched or shortStopTouched
+
+// Conservative same-bar rule:
+// If stop and target are both touched on the same candle, stop wins.
+tp1TouchedClean = not stopLossHit and (longTp1Touched or shortTp1Touched)
+tp2TouchedClean = not stopLossHit and (longTp2Touched or shortTp2Touched)
+
+if barstate.isconfirmed and activeTrade and tp1TouchedClean
+    activeTp1Hit := true
+
+if barstate.isconfirmed and activeTrade and tp2TouchedClean
+    activeTp1Hit := true
+    activeTp2Hit := true
+
+tradeExpired = activeTrade and not na(activeStartBar) and bar_index - activeStartBar >= tradeExpiryBars
+riskOffExit = activeTrade and closeTradeOnRiskOff and riskModeCode != 1
+
+tp2Hit = tp2TouchedClean
+
+tradeFinished = stopLossHit or tp2Hit or riskOffExit or tradeExpired
+
+bestProgressCode =
+     activeTp2Hit ? 2 :
+     activeTp1Hit ? 1 :
+     0
+
+outcomeCode =
+     stopLossHit ? 1 :
+     tp2Hit ? 3 :
+     riskOffExit ? 4 :
+     tradeExpired ? 5 :
+     na
+
+exitPrice =
+     stopLossHit ? activeStop :
+     tp2Hit ? activeTarget2 :
+     riskOffExit or tradeExpired ? close :
+     na
+
+exitR =
+     not na(exitPrice) and activeRiskPoints != 0 ?
+     activeDirection == 1 ? (exitPrice - activeEntry) / activeRiskPoints :
+     activeDirection == -1 ? (activeEntry - exitPrice) / activeRiskPoints :
+     na :
+     na
+
+exitProfitDollars =
+     not na(exitR) ? exitR * activeRiskDollars : na
+
+if barstate.isconfirmed and tradeFinished
+    exitEvent := 1
+    exitTradeId := activeTradeId
+    exitDirection := activeDirection
+    exitOutcomeCode := outcomeCode
+    exitBestProgressCode := bestProgressCode
+    exitRMultiple := exitR
+    exitDollars := exitProfitDollars
+    exitBarsInTrade := bar_index - activeStartBar
+
+    if showTradeLabels
+        label.new(bar_index, close, "TRADE EXIT\nID: " + str.tostring(activeTradeId) + "\nOutcome: " + str.tostring(outcomeCode) + "\nR: " + str.tostring(exitR, "#.##") + "\n$: " + str.tostring(exitProfitDollars, "#.##"), style=label.style_label_left, textcolor=color.white, color=color.new(color.gray, 0))
+
+    activeTrade := false
+    activeDirection := 0
+    activeEntry := na
+    activeStop := na
+    activeTarget1 := na
+    activeTarget2 := na
+    activeRiskPoints := na
+    activeRiskDollars := na
+    activeStartBar := na
+    activeTp1Hit := false
+    activeTp2Hit := false
+
+if barstate.isconfirmed and longSetup
+    activeTradeId += 1
+    lastSetupBar := bar_index
+
+    activeTrade := true
+    activeDirection := 1
+    activeEntry := entryPrice
+    activeStop := longStop
+    activeTarget1 := longTarget1
+    activeTarget2 := longTarget2
+    activeRiskPoints := longRiskPoints
+    activeRiskDollars := longDollarRisk
+    activeStartBar := bar_index
+    activeTp1Hit := false
+    activeTp2Hit := false
+
+    entryEvent := 1
+    entryTradeId := activeTradeId
+    entryDirection := 1
+    entryRiskDollars := longDollarRisk
+    entryRiskPoints := longRiskPoints
+    entryStopPrice := longStop
+    entryTarget1Price := longTarget1
+    entryTarget2Price := longTarget2
+
+    if showTradeLabels
+        label.new(bar_index, low, "TRADE ENTRY\nID: " + str.tostring(activeTradeId) + "\nLONG\nRisk: $" + str.tostring(longDollarRisk, "#.##"), style=label.style_label_up, textcolor=color.white, color=color.new(color.green, 0))
+
+if barstate.isconfirmed and shortSetup
+    activeTradeId += 1
+    lastSetupBar := bar_index
+
+    activeTrade := true
+    activeDirection := -1
+    activeEntry := entryPrice
+    activeStop := shortStop
+    activeTarget1 := shortTarget1
+    activeTarget2 := shortTarget2
+    activeRiskPoints := shortRiskPoints
+    activeRiskDollars := shortDollarRisk
+    activeStartBar := bar_index
+    activeTp1Hit := false
+    activeTp2Hit := false
+
+    entryEvent := 1
+    entryTradeId := activeTradeId
+    entryDirection := -1
+    entryRiskDollars := shortDollarRisk
+    entryRiskPoints := shortRiskPoints
+    entryStopPrice := shortStop
+    entryTarget1Price := shortTarget1
+    entryTarget2Price := shortTarget2
+
+    if showTradeLabels
+        label.new(bar_index, high, "TRADE ENTRY\nID: " + str.tostring(activeTradeId) + "\nSHORT\nRisk: $" + str.tostring(shortDollarRisk, "#.##"), style=label.style_label_down, textcolor=color.white, color=color.new(color.red, 0))
+
+// -----------------------------------------------------------------------------
+// Visual output
+// -----------------------------------------------------------------------------
+
+plot(showVisualLines ? fastEma : na, "Fast EMA")
+plot(showVisualLines ? slowEma : na, "Slow EMA")
+plot(showVisualLines ? vwapValue : na, "VWAP")
+
+// -----------------------------------------------------------------------------
+// Research export plots
+// These values appear in TradingView chart export CSV.
+// -----------------------------------------------------------------------------
+
+plot(entryEvent, "atlas_entry_event", display=display.data_window)
+plot(exitEvent, "atlas_exit_event", display=display.data_window)
+plot(entryTradeId, "atlas_entry_trade_id", display=display.data_window)
+plot(exitTradeId, "atlas_exit_trade_id", display=display.data_window)
+plot(entryDirection, "atlas_entry_direction", display=display.data_window)
+plot(exitDirection, "atlas_exit_direction", display=display.data_window)
+
+plot(entryRiskDollars, "atlas_entry_risk_dollars", display=display.data_window)
+plot(entryRiskPoints, "atlas_entry_risk_points", display=display.data_window)
+plot(entryStopPrice, "atlas_entry_stop_price", display=display.data_window)
+plot(entryTarget1Price, "atlas_entry_target1_price", display=display.data_window)
+plot(entryTarget2Price, "atlas_entry_target2_price", display=display.data_window)
+
+plot(exitOutcomeCode, "atlas_exit_outcome_code", display=display.data_window)
+plot(exitBestProgressCode, "atlas_exit_best_progress_code", display=display.data_window)
+plot(exitRMultiple, "atlas_exit_r_multiple", display=display.data_window)
+plot(exitDollars, "atlas_exit_dollars", display=display.data_window)
+plot(exitBarsInTrade, "atlas_exit_bars_in_trade", display=display.data_window)
+
+plot(structureCode, "atlas_structure_code", display=display.data_window)
+plot(structureScore, "atlas_structure_score", display=display.data_window)
+plot(distanceFromFastEmaAtr, "atlas_distance_fast_ema_atr", display=display.data_window)
+plot(distanceFromSlowEmaAtr, "atlas_distance_slow_ema_atr", display=display.data_window)
+plot(distanceFromVwapAtr, "atlas_distance_vwap_atr", display=display.data_window)
+plot(distanceFromSwingHighAtr, "atlas_distance_swing_high_atr", display=display.data_window)
+plot(distanceFromSwingLowAtr, "atlas_distance_swing_low_atr", display=display.data_window)
+plot(impulseCandle ? 1 : 0, "atlas_impulse_candle", display=display.data_window)
+
+plot(pressureCode, "atlas_pressure_code", display=display.data_window)
+plot(pressureScore, "atlas_pressure_score", display=display.data_window)
+plot(bodyAtr, "atlas_body_atr", display=display.data_window)
+plot(rangeAtr, "atlas_range_atr", display=display.data_window)
+plot(closePositionInRange, "atlas_close_position_range", display=display.data_window)
+plot(volumeRatio, "atlas_volume_ratio", display=display.data_window)
+plot(signedConsecutivePressure, "atlas_signed_consecutive_pressure", display=display.data_window)
+
+plot(locationCode, "atlas_location_code", display=display.data_window)
+plot(nearMajorLevel ? 1 : 0, "atlas_near_major_level", display=display.data_window)
+plot(distancePrevDayHighAtr, "atlas_distance_prev_day_high_atr", display=display.data_window)
+plot(distancePrevDayLowAtr, "atlas_distance_prev_day_low_atr", display=display.data_window)
+plot(distancePremarketHighAtr, "atlas_distance_premarket_high_atr", display=display.data_window)
+plot(distancePremarketLowAtr, "atlas_distance_premarket_low_atr", display=display.data_window)
+plot(distanceOpeningRangeHighAtr, "atlas_distance_or_high_atr", display=display.data_window)
+plot(distanceOpeningRangeLowAtr, "atlas_distance_or_low_atr", display=display.data_window)
+plot(distanceRoundNumberAtr, "atlas_distance_round_number_atr", display=display.data_window)
+
+plot(trendAlignmentScore, "atlas_trend_score", display=display.data_window)
+plot(biasCode, "atlas_bias_code", display=display.data_window)
+plot(fastEmaSlope, "atlas_fast_ema_slope", display=display.data_window)
+plot(slowEmaSlope, "atlas_slow_ema_slope", display=display.data_window)
+plot(emaCrossCount20, "atlas_ema_cross_count_20", display=display.data_window)
+plot(vwapCrossCount20, "atlas_vwap_cross_count_20", display=display.data_window)
+
+plot(sessionCode, "atlas_session_code", display=display.data_window)
+plot(sessionAllowsRiskOn ? 1 : 0, "atlas_session_allows_risk_on", display=display.data_window)
+plot(volatilityCode, "atlas_volatility_code", display=display.data_window)
+plot(atrValue, "atlas_atr", display=display.data_window)
+plot(atrRatio, "atlas_atr_ratio", display=display.data_window)
+
+plot(guardianCode, "atlas_guardian_code", display=display.data_window)
+plot(riskModeCode, "atlas_risk_mode_code", display=display.data_window)
+plot(regimeCode, "atlas_regime_code", display=display.data_window)
+plot(chopScore, "atlas_chop_score", display=display.data_window)
+plot(extensionRisk ? 1 : 0, "atlas_extension_risk", display=display.data_window)
+plot(majorLevelRisk ? 1 : 0, "atlas_major_level_risk", display=display.data_window)
+plot(volatilityBlocksRiskOn ? 1 : 0, "atlas_volatility_blocks_risk_on", display=display.data_window)
+plot(chopBlocksRiskOn ? 1 : 0, "atlas_chop_blocks_risk_on", display=display.data_window)
+
+// -----------------------------------------------------------------------------
+// Panel
+// -----------------------------------------------------------------------------
+
+var table panel = table.new(position.top_right, 2, 10, border_width=1)
+
+riskModeText =
+     riskModeCode == 1 ? "risk_on" :
+     riskModeCode == -1 ? "stand_down" :
+     "caution"
+
+biasText =
+     biasCode == 1 ? "bullish" :
+     biasCode == -1 ? "bearish" :
+     "neutral"
+
+activeText =
+     activeTrade and activeDirection == 1 ? "long" :
+     activeTrade and activeDirection == -1 ? "short" :
+     "none"
+
+if showPanel and barstate.islast
+    table.cell(panel, 0, 0, "Atlas Research", text_color=color.white, bgcolor=color.black)
+    table.cell(panel, 1, 0, "v0.1", text_color=color.white, bgcolor=color.black)
+
+    table.cell(panel, 0, 1, "Bias")
+    table.cell(panel, 1, 1, biasText)
+
+    table.cell(panel, 0, 2, "Risk Mode")
+    table.cell(panel, 1, 2, riskModeText)
+
+    table.cell(panel, 0, 3, "Active Trade")
+    table.cell(panel, 1, 3, activeText)
+
+    table.cell(panel, 0, 4, "Trade ID")
+    table.cell(panel, 1, 4, str.tostring(activeTradeId))
+
+    table.cell(panel, 0, 5, "Structure")
+    table.cell(panel, 1, 5, str.tostring(structureCode))
+
+    table.cell(panel, 0, 6, "Pressure")
+    table.cell(panel, 1, 6, str.tostring(pressureCode))
+
+    table.cell(panel, 0, 7, "Location")
+    table.cell(panel, 1, 7, str.tostring(locationCode))
+
+    table.cell(panel, 0, 8, "Guardian")
+    table.cell(panel, 1, 8, str.tostring(guardianCode))
+
+    table.cell(panel, 0, 9, "Chop Score")
+    table.cell(panel, 1, 9, str.tostring(chopScore))
