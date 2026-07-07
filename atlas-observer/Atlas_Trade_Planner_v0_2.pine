@@ -1,0 +1,725 @@
+//@version=6
+indicator("Atlas Trade Planner v0.2", shorttitle="AtlasPlan", overlay=true, max_labels_count=500, max_lines_count=500, max_boxes_count=500)
+
+// =============================================================================
+// Project Atlas
+// Module: Trade Planner
+// Version: 0.2.0
+// Mode: Visual Planning Only
+//
+// v0.2.0:
+// - Keeps one active trade at a time
+// - Keeps Risk-Off Exit as a safety exit
+// - Keeps grey finish label where the trade ends
+// - Adds result label above the original trade setup
+// - Tracks best progress: OPEN / TP1 HIT / TP2 HIT
+// - Tracks exit reason: STOP LOSS / TP2 HIT / RISK OFF EXIT / EXPIRED
+//
+// Conservative same-bar rule:
+// If stop and target are both touched on the same candle, STOP LOSS wins.
+// =============================================================================
+
+// -----------------------------------------------------------------------------
+// Inputs
+// -----------------------------------------------------------------------------
+
+groupTrend = "Trend / Moving Averages"
+fastEmaLength = input.int(15, "Fast EMA Length", minval=1, group=groupTrend)
+slowEmaLength = input.int(50, "Slow EMA Length", minval=1, group=groupTrend)
+slopeLookback = input.int(10, "EMA Slope Lookback", minval=1, group=groupTrend)
+riskOnTrendThreshold = input.int(3, "Trend Score Required For Risk-On", minval=1, maxval=4, group=groupTrend)
+weakTrendThreshold = input.int(1, "Weak Trend Threshold", minval=0, maxval=3, group=groupTrend)
+
+groupMomentum = "Momentum"
+rsiLength = input.int(14, "RSI Length", minval=1, group=groupMomentum)
+bullRsiLevel = input.float(55.0, "Bullish RSI Level", step=0.25, group=groupMomentum)
+bearRsiLevel = input.float(45.0, "Bearish RSI Level", step=0.25, group=groupMomentum)
+
+groupVolatility = "Volatility"
+atrLength = input.int(14, "ATR Length", minval=1, group=groupVolatility)
+atrBaselineLength = input.int(50, "ATR Baseline Length", minval=1, group=groupVolatility)
+highVolMultiplier = input.float(1.25, "High Volatility Multiplier", step=0.05, group=groupVolatility)
+lowVolMultiplier = input.float(0.75, "Low Volatility Multiplier", step=0.05, group=groupVolatility)
+allowRiskOnHighVolatility = input.bool(true, "Allow Risk-On During High Volatility", group=groupVolatility)
+allowRiskOnLowVolatility = input.bool(true, "Allow Risk-On During Low Volatility", group=groupVolatility)
+
+groupSessions = "Sessions"
+timezoneInput = input.string("America/New_York", "Session Timezone", group=groupSessions)
+premarketSession = input.session("0400-0929", "Premarket Session", group=groupSessions)
+openingRangeSession = input.session("0930-1000", "Opening Range Session", group=groupSessions)
+midMorningSession = input.session("1000-1130", "Mid-Morning Session", group=groupSessions)
+middaySession = input.session("1130-1400", "Midday Session", group=groupSessions)
+powerHourSession = input.session("1500-1600", "Power Hour Session", group=groupSessions)
+regularSession = input.session("0930-1600", "Regular Session", group=groupSessions)
+
+allowRiskOnPremarket = input.bool(false, "Allow Risk-On During Premarket", group=groupSessions)
+allowRiskOnOpeningRange = input.bool(true, "Allow Risk-On During Opening Range", group=groupSessions)
+allowRiskOnMidMorning = input.bool(true, "Allow Risk-On During Mid-Morning", group=groupSessions)
+allowRiskOnMidday = input.bool(true, "Allow Risk-On During Midday", group=groupSessions)
+allowRiskOnPowerHour = input.bool(true, "Allow Risk-On During Power Hour", group=groupSessions)
+allowRiskOnAfterHours = input.bool(false, "Allow Risk-On During After-Hours", group=groupSessions)
+allowRiskOnOtherRegular = input.bool(true, "Allow Risk-On During Other Regular Session", group=groupSessions)
+
+groupChop = "Chop"
+crossLookback = input.int(20, "Cross Count Lookback", minval=1, group=groupChop)
+heavyCrossThreshold = input.int(3, "Heavy Cross Threshold", minval=1, group=groupChop)
+mildChopScoreThreshold = input.int(2, "Mild Chop Score Threshold", minval=1, maxval=5, group=groupChop)
+heavyChopScoreThreshold = input.int(4, "Heavy Chop Score Threshold", minval=1, maxval=5, group=groupChop)
+allowRiskOnMildChop = input.bool(false, "Allow Risk-On During Mild Chop", group=groupChop)
+
+groupExtension = "Extension / Stretch"
+extensionAtrThreshold = input.float(2.0, "Extension ATR Threshold", step=0.1, group=groupExtension)
+extensionAffectsCaution = input.bool(true, "Extension Can Force Caution", group=groupExtension)
+extensionRequiresWeakTrend = input.bool(true, "Extension Risk Requires Weak Trend", group=groupExtension)
+extensionRequiresChop = input.bool(true, "Extension Risk Requires Chop", group=groupExtension)
+
+groupLevels = "Major Level Proximity"
+majorLevelAffectsCaution = input.bool(false, "Major Level Proximity Can Force Caution", group=groupLevels)
+majorLevelAtrThreshold = input.float(0.50, "Major Level Proximity ATR Threshold", step=0.05, group=groupLevels)
+usePrevDayLevels = input.bool(true, "Use Previous Day High/Low", group=groupLevels)
+usePremarketLevels = input.bool(true, "Use Premarket High/Low", group=groupLevels)
+useOpeningRangeLevels = input.bool(true, "Use Opening Range High/Low", group=groupLevels)
+
+groupPlanner = "Trade Planner"
+enableLongPlans = input.bool(true, "Show Long Plans", group=groupPlanner)
+enableShortPlans = input.bool(true, "Show Short Plans", group=groupPlanner)
+candidateCooldownBars = input.int(60, "Minimum Bars Between Plans", minval=1, group=groupPlanner)
+entryMode = input.string("Breakout", "Entry Candidate Mode", options=["Pullback/Reclaim", "Breakout", "Either"], group=groupPlanner)
+
+oneActiveTradeAtATime = input.bool(true, "One Active Trade At A Time", group=groupPlanner)
+tradeExpiryBars = input.int(40, "Trade Expiry Bars", minval=1, group=groupPlanner)
+closeTradeOnRiskOff = input.bool(true, "Finish Trade When Atlas Leaves Risk-On", group=groupPlanner)
+showTradeFinishLabels = input.bool(true, "Show Grey Trade Finished Labels", group=groupPlanner)
+showOriginalResultLabels = input.bool(true, "Show Result Label Above Original Trade", group=groupPlanner)
+
+groupRisk = "Risk / Stops"
+contracts = input.int(1, "Contracts", minval=1, group=groupRisk)
+mnqPointValue = input.float(2.0, "MNQ Dollar Value Per Point Per Contract", step=0.25, group=groupRisk)
+maxDollarRisk = input.float(850.0, "Maximum Allowed Dollar Risk", step=25.0, group=groupRisk)
+stopMode = input.string("Structure", "Stop Mode", options=["ATR", "Structure", "Tighter", "Wider"], group=groupRisk)
+stopAtrMultiplier = input.float(1.25, "ATR Stop Multiplier", step=0.05, group=groupRisk)
+stopSwingLookback = input.int(8, "Structure Stop Lookback", minval=1, group=groupRisk)
+stopBufferPoints = input.float(2.0, "Structure Stop Buffer Points", step=0.25, group=groupRisk)
+targetOneR = input.float(1.0, "Target 1 R Multiple", step=0.25, group=groupRisk)
+targetTwoR = input.float(2.0, "Target 2 R Multiple", step=0.25, group=groupRisk)
+
+
+groupPressure = "Pressure Research / H001"
+volumeBaselineLength = input.int(50, "Volume Baseline Length", minval=1, group=groupPressure)
+impulseAtrThreshold = input.float(1.20, "Impulse Candle ATR Threshold", step=0.05, group=groupPressure)
+strongBodyAtrThreshold = input.float(0.80, "Strong Body ATR Threshold", step=0.05, group=groupPressure)
+
+groupH001 = "Guardian Candidate H001"
+h001Mode = input.string("Downgrade to Caution", "Strong Pressure + Reaction Zone Handling", options=["Off", "Block Trade", "Downgrade to Caution"], group=groupH001)
+showH001Labels = input.bool(true, "Show H001 Caution Labels", group=groupH001)
+
+groupDisplay = "Display"
+showPanel = input.bool(true, "Show Planner Panel", group=groupDisplay)
+showVisualLines = input.bool(true, "Show EMA / VWAP Lines", group=groupDisplay)
+showPlanLines = input.bool(true, "Show Entry / Stop / Target Lines", group=groupDisplay)
+showPlanBoxes = input.bool(true, "Show Risk / Reward Boxes", group=groupDisplay)
+tradeBoxProjectionBars = input.int(15, "Trade Box Projection Bars", minval=1, group=groupDisplay)
+showBlockedRiskLabels = input.bool(false, "Show Risk-Blocked Labels", group=groupDisplay)
+
+// -----------------------------------------------------------------------------
+// Session helpers
+// -----------------------------------------------------------------------------
+
+inSession(sessionString) =>
+    not na(time(timeframe.period, sessionString, timezoneInput))
+
+inPremarket = inSession(premarketSession)
+inOpeningRange = inSession(openingRangeSession)
+inMidMorning = inSession(midMorningSession)
+inMidday = inSession(middaySession)
+inPowerHour = inSession(powerHourSession)
+inRegular = inSession(regularSession)
+
+sessionCode =
+     inPremarket ? 1 :
+     inOpeningRange ? 2 :
+     inMidMorning ? 3 :
+     inMidday ? 4 :
+     inPowerHour ? 5 :
+     not inRegular ? 6 :
+     0
+
+sessionAllowsRiskOn =
+     sessionCode == 1 ? allowRiskOnPremarket :
+     sessionCode == 2 ? allowRiskOnOpeningRange :
+     sessionCode == 3 ? allowRiskOnMidMorning :
+     sessionCode == 4 ? allowRiskOnMidday :
+     sessionCode == 5 ? allowRiskOnPowerHour :
+     sessionCode == 6 ? allowRiskOnAfterHours :
+     allowRiskOnOtherRegular
+
+// -----------------------------------------------------------------------------
+// Core market calculations
+// -----------------------------------------------------------------------------
+
+fastEma = ta.ema(close, fastEmaLength)
+slowEma = ta.ema(close, slowEmaLength)
+vwapValue = ta.vwap(hlc3)
+
+fastEmaSlope = fastEma - fastEma[slopeLookback]
+
+atrValue = ta.atr(atrLength)
+atrBaseline = ta.sma(atrValue, atrBaselineLength)
+atrRatio = atrBaseline != 0 ? atrValue / atrBaseline : na
+
+highVolatility = atrValue > atrBaseline * highVolMultiplier
+lowVolatility = atrValue < atrBaseline * lowVolMultiplier
+
+rsiValue = ta.rsi(close, rsiLength)
+
+// -----------------------------------------------------------------------------
+// Previous day levels
+// -----------------------------------------------------------------------------
+
+prevDayHigh = request.security(syminfo.tickerid, "D", high[1], lookahead=barmerge.lookahead_on)
+prevDayLow = request.security(syminfo.tickerid, "D", low[1], lookahead=barmerge.lookahead_on)
+
+// -----------------------------------------------------------------------------
+// Premarket and opening range levels
+// -----------------------------------------------------------------------------
+
+newDay = ta.change(time("D")) != 0
+
+var float premarketHigh = na
+var float premarketLow = na
+
+if newDay
+    premarketHigh := na
+    premarketLow := na
+
+if inPremarket
+    premarketHigh := na(premarketHigh) ? high : math.max(premarketHigh, high)
+    premarketLow := na(premarketLow) ? low : math.min(premarketLow, low)
+
+var float openingRangeHigh = na
+var float openingRangeLow = na
+
+if newDay
+    openingRangeHigh := na
+    openingRangeLow := na
+
+if inOpeningRange
+    openingRangeHigh := na(openingRangeHigh) ? high : math.max(openingRangeHigh, high)
+    openingRangeLow := na(openingRangeLow) ? low : math.min(openingRangeLow, low)
+
+// -----------------------------------------------------------------------------
+// Trend quality
+// -----------------------------------------------------------------------------
+
+emaBullish = fastEma > slowEma
+emaBearish = fastEma < slowEma
+slopeBullish = fastEmaSlope > 0
+slopeBearish = fastEmaSlope < 0
+priceAboveVwap = close > vwapValue
+priceBelowVwap = close < vwapValue
+momentumBullish = rsiValue >= bullRsiLevel
+momentumBearish = rsiValue <= bearRsiLevel
+
+trendAlignmentScore = 0
+trendAlignmentScore += emaBullish ? 1 : emaBearish ? -1 : 0
+trendAlignmentScore += slopeBullish ? 1 : slopeBearish ? -1 : 0
+trendAlignmentScore += priceAboveVwap ? 1 : priceBelowVwap ? -1 : 0
+trendAlignmentScore += momentumBullish ? 1 : momentumBearish ? -1 : 0
+
+fastEmaCross = ta.cross(close, fastEma)
+vwapCross = ta.cross(close, vwapValue)
+
+emaCrossCount20 = math.sum(fastEmaCross ? 1 : 0, crossLookback)
+vwapCrossCount20 = math.sum(vwapCross ? 1 : 0, crossLookback)
+
+weakTrend = trendAlignmentScore >= -weakTrendThreshold and trendAlignmentScore <= weakTrendThreshold
+
+// -----------------------------------------------------------------------------
+// Chop detection
+// -----------------------------------------------------------------------------
+
+bodyHigh = math.max(open, close)
+bodyLow = math.min(open, close)
+
+priorBodyHigh = math.max(open[1], close[1])
+priorBodyLow = math.min(open[1], close[1])
+
+overlapAmount = math.max(0.0, math.min(bodyHigh, priorBodyHigh) - math.max(bodyLow, priorBodyLow))
+bodyRange = bodyHigh - bodyLow
+priorBodyRange = priorBodyHigh - priorBodyLow
+averageBodyRange = (bodyRange + priorBodyRange) / 2.0
+overlapRatio = averageBodyRange != 0 ? overlapAmount / averageBodyRange : 0.0
+
+highOverlap = overlapRatio > 0.6
+
+chopScore = 0
+chopScore += emaCrossCount20 >= heavyCrossThreshold ? 1 : 0
+chopScore += vwapCrossCount20 >= heavyCrossThreshold ? 1 : 0
+chopScore += weakTrend ? 1 : 0
+chopScore += highOverlap ? 1 : 0
+chopScore += atrRatio < lowVolMultiplier ? 1 : 0
+
+// -----------------------------------------------------------------------------
+// Pressure model for H001 Guardian Candidate
+// -----------------------------------------------------------------------------
+
+candleRangeH001 = high - low
+bodySizeH001 = math.abs(close - open)
+bodyAtrH001 = atrValue != 0 ? bodySizeH001 / atrValue : na
+rangeAtrH001 = atrValue != 0 ? candleRangeH001 / atrValue : na
+closePositionInRangeH001 = candleRangeH001 != 0 ? (close - low) / candleRangeH001 : na
+
+volumeBaselineH001 = ta.sma(volume, volumeBaselineLength)
+volumeRatioH001 = volumeBaselineH001 != 0 ? volume / volumeBaselineH001 : na
+
+var int consecutiveBullCandlesH001 = 0
+var int consecutiveBearCandlesH001 = 0
+
+if close > open
+    consecutiveBullCandlesH001 += 1
+    consecutiveBearCandlesH001 := 0
+else if close < open
+    consecutiveBearCandlesH001 += 1
+    consecutiveBullCandlesH001 := 0
+else
+    consecutiveBullCandlesH001 := 0
+    consecutiveBearCandlesH001 := 0
+
+signedConsecutivePressureH001 =
+     consecutiveBullCandlesH001 > 0 ? consecutiveBullCandlesH001 :
+     consecutiveBearCandlesH001 > 0 ? -consecutiveBearCandlesH001 :
+     0
+
+breakoutLongPressureH001 = close > high[1] and closePositionInRangeH001 >= 0.60
+breakoutShortPressureH001 = close < low[1] and closePositionInRangeH001 <= 0.40
+
+pressureScoreH001 = 0
+pressureScoreH001 += bodyAtrH001 >= strongBodyAtrThreshold ? 1 : 0
+pressureScoreH001 += volumeRatioH001 >= 1.0 ? 1 : 0
+pressureScoreH001 += math.abs(signedConsecutivePressureH001) >= 2 ? 1 : 0
+pressureScoreH001 += breakoutLongPressureH001 or breakoutShortPressureH001 ? 1 : 0
+
+pressureCodeH001 =
+     rangeAtrH001 >= impulseAtrThreshold and math.abs(distanceFromFastEmaAtr) >= extensionAtrThreshold ? 3 :
+     pressureScoreH001 >= 3 ? 2 :
+     pressureScoreH001 >= 2 ? 1 :
+     0
+
+// -----------------------------------------------------------------------------
+// Extension / stretch
+// -----------------------------------------------------------------------------
+
+distanceFromFastEmaAtr = atrValue != 0 ? (close - fastEma) / atrValue : na
+distanceFromVwapAtr = atrValue != 0 ? (close - vwapValue) / atrValue : na
+
+stretchedUp = distanceFromFastEmaAtr > extensionAtrThreshold or distanceFromVwapAtr > extensionAtrThreshold
+stretchedDown = distanceFromFastEmaAtr < -extensionAtrThreshold or distanceFromVwapAtr < -extensionAtrThreshold
+
+extensionCode =
+     stretchedUp ? 1 :
+     stretchedDown ? -1 :
+     0
+
+mildOrHeavyChop = chopScore >= mildChopScoreThreshold
+
+extensionTrigger =
+     not extensionRequiresWeakTrend and not extensionRequiresChop ? true :
+     (extensionRequiresWeakTrend and weakTrend) or
+     (extensionRequiresChop and mildOrHeavyChop)
+
+extensionRisk = extensionAffectsCaution and extensionCode != 0 and extensionTrigger
+
+// -----------------------------------------------------------------------------
+// Major level proximity
+// -----------------------------------------------------------------------------
+
+nearPrevDayHigh = usePrevDayLevels and not na(prevDayHigh) and atrValue != 0 and math.abs(close - prevDayHigh) / atrValue <= majorLevelAtrThreshold
+nearPrevDayLow = usePrevDayLevels and not na(prevDayLow) and atrValue != 0 and math.abs(close - prevDayLow) / atrValue <= majorLevelAtrThreshold
+
+nearPremarketHigh = usePremarketLevels and not na(premarketHigh) and atrValue != 0 and math.abs(close - premarketHigh) / atrValue <= majorLevelAtrThreshold
+nearPremarketLow = usePremarketLevels and not na(premarketLow) and atrValue != 0 and math.abs(close - premarketLow) / atrValue <= majorLevelAtrThreshold
+
+nearOpeningRangeHigh = useOpeningRangeLevels and not na(openingRangeHigh) and atrValue != 0 and math.abs(close - openingRangeHigh) / atrValue <= majorLevelAtrThreshold
+nearOpeningRangeLow = useOpeningRangeLevels and not na(openingRangeLow) and atrValue != 0 and math.abs(close - openingRangeLow) / atrValue <= majorLevelAtrThreshold
+
+nearMajorLevel = nearPrevDayHigh or nearPrevDayLow or nearPremarketHigh or nearPremarketLow or nearOpeningRangeHigh or nearOpeningRangeLow
+majorLevelRisk = majorLevelAffectsCaution and nearMajorLevel
+
+// -----------------------------------------------------------------------------
+// H001 Guardian Candidate Rule
+// -----------------------------------------------------------------------------
+// Research finding:
+// strong_pressure + reaction_zone underperformed in both:
+// - TradingView 1-year test
+// - External 2-year MNQ research-engine test
+//
+// Atlas interpretation:
+// strong pressure into a reaction zone is likely a late-entry risk condition.
+
+locationCodeH001 =
+     nearMajorLevel ? 5 :
+     nearPrevDayHigh or nearPremarketHigh or nearOpeningRangeHigh ? 1 :
+     nearPrevDayLow or nearPremarketLow or nearOpeningRangeLow ? 2 :
+     0
+
+h001StrongPressureReactionZone = pressureCodeH001 == 2 and locationCodeH001 == 5
+h001BlockTrade = h001Mode == "Block Trade" and h001StrongPressureReactionZone
+h001DowngradeToCaution = h001Mode == "Downgrade to Caution" and h001StrongPressureReactionZone
+h001GuardianCaution = h001BlockTrade or h001DowngradeToCaution
+
+
+// -----------------------------------------------------------------------------
+// Risk model
+// -----------------------------------------------------------------------------
+
+strongBullTrend = trendAlignmentScore >= riskOnTrendThreshold
+strongBearTrend = trendAlignmentScore <= -riskOnTrendThreshold
+strongTrend = strongBullTrend or strongBearTrend
+
+heavyChop = chopScore >= heavyChopScoreThreshold
+mildChop = chopScore >= mildChopScoreThreshold and chopScore < heavyChopScoreThreshold
+
+volatilityBlocksRiskOn =
+     highVolatility and not allowRiskOnHighVolatility or
+     lowVolatility and not allowRiskOnLowVolatility
+
+chopBlocksRiskOn =
+     heavyChop or
+     mildChop and not allowRiskOnMildChop
+
+standDownCondition =
+     heavyChop or
+     highVolatility and weakTrend
+
+riskOnCondition =
+     strongTrend and
+     sessionAllowsRiskOn and
+     not volatilityBlocksRiskOn and
+     not chopBlocksRiskOn and
+     not extensionRisk and
+     not majorLevelRisk and
+     not h001DowngradeToCaution
+
+biasCode =
+     strongBullTrend ? 1 :
+     strongBearTrend ? -1 :
+     0
+
+riskModeCode =
+     standDownCondition ? -1 :
+     riskOnCondition ? 1 :
+     0
+
+biasText =
+     biasCode == 1 ? "bullish" :
+     biasCode == -1 ? "bearish" :
+     "neutral"
+
+riskModeText =
+     riskModeCode == 1 ? "risk_on" :
+     riskModeCode == -1 ? "stand_down" :
+     "caution"
+
+regimeText =
+     riskModeCode == -1 ? "stand_down" :
+     biasCode == 1 and riskModeCode == 1 ? "bullish_risk_on" :
+     biasCode == -1 and riskModeCode == 1 ? "bearish_risk_on" :
+     biasCode == 1 ? "bullish_caution" :
+     biasCode == -1 ? "bearish_caution" :
+     "neutral"
+
+// -----------------------------------------------------------------------------
+// Active trade tracking
+// -----------------------------------------------------------------------------
+
+var bool activeTrade = false
+var int activeDirection = 0
+var float activeEntry = na
+var float activeStop = na
+var float activeTarget1 = na
+var float activeTarget2 = na
+var float activeRiskDollars = na
+var int activeStartBar = na
+var bool activeTp1Hit = false
+var bool activeTp2Hit = false
+var label activeResultLabel = na
+
+activeTradeSideText =
+     activeDirection == 1 ? "BUY" :
+     activeDirection == -1 ? "SELL" :
+     "NONE"
+
+activeBestText =
+     activeTp2Hit ? "TP2 HIT" :
+     activeTp1Hit ? "TP1 HIT" :
+     "OPEN"
+
+resultLabelText(statusText) =>
+    "TRADE RESULT\n" + activeTradeSideText + "\nExit: " + statusText + "\nBest: " + activeBestText + "\nRisk: $" + str.tostring(activeRiskDollars, "#.##")
+
+longStopTouched = activeTrade and activeDirection == 1 and low <= activeStop
+longTp1Touched = activeTrade and activeDirection == 1 and high >= activeTarget1
+longTp2Touched = activeTrade and activeDirection == 1 and high >= activeTarget2
+
+shortStopTouched = activeTrade and activeDirection == -1 and high >= activeStop
+shortTp1Touched = activeTrade and activeDirection == -1 and low <= activeTarget1
+shortTp2Touched = activeTrade and activeDirection == -1 and low <= activeTarget2
+
+stopLossHit = longStopTouched or shortStopTouched
+
+// Conservative rule: if stop and target happen on same bar, do not count the target.
+tp1TouchedClean = not stopLossHit and (longTp1Touched or shortTp1Touched)
+tp2TouchedClean = not stopLossHit and (longTp2Touched or shortTp2Touched)
+
+if barstate.isconfirmed and activeTrade and tp1TouchedClean
+    activeTp1Hit := true
+
+if barstate.isconfirmed and activeTrade and tp2TouchedClean
+    activeTp1Hit := true
+    activeTp2Hit := true
+
+tradeExpired = activeTrade and not na(activeStartBar) and bar_index - activeStartBar >= tradeExpiryBars
+riskOffExit = activeTrade and closeTradeOnRiskOff and riskModeCode != 1
+
+tp2Hit = tp2TouchedClean
+
+tradeFinished = stopLossHit or tp2Hit or riskOffExit or tradeExpired
+
+exitReason =
+     stopLossHit ? "STOP LOSS" :
+     tp2Hit ? "TP2 HIT" :
+     riskOffExit ? "RISK OFF EXIT" :
+     tradeExpired ? "EXPIRED" :
+     "OPEN"
+
+finishLabelText =
+     "TRADE FINISHED\n" + exitReason + "\nBest: " + activeBestText
+
+if barstate.isconfirmed and tradeFinished
+    if showTradeFinishLabels
+        label.new(bar_index, close, finishLabelText, style=label.style_label_left, textcolor=color.white, color=color.new(color.gray, 0))
+
+    if showOriginalResultLabels and not na(activeResultLabel)
+        label.set_text(activeResultLabel, resultLabelText(exitReason))
+        label.set_color(activeResultLabel, exitReason == "STOP LOSS" ? color.new(color.red, 0) : exitReason == "TP2 HIT" ? color.new(color.green, 0) : exitReason == "RISK OFF EXIT" ? color.new(color.orange, 0) : color.new(color.gray, 0))
+
+    activeTrade := false
+    activeDirection := 0
+    activeEntry := na
+    activeStop := na
+    activeTarget1 := na
+    activeTarget2 := na
+    activeRiskDollars := na
+    activeStartBar := na
+    activeTp1Hit := false
+    activeTp2Hit := false
+    activeResultLabel := na
+
+canOpenNewTrade = oneActiveTradeAtATime ? not activeTrade : true
+
+// -----------------------------------------------------------------------------
+// Trade candidate logic
+// -----------------------------------------------------------------------------
+
+pullbackLong = low <= fastEma and close > fastEma and close > open
+pullbackShort = high >= fastEma and close < fastEma and close < open
+
+breakoutLong = close > high[1] and close > fastEma and close > vwapValue
+breakoutShort = close < low[1] and close < fastEma and close < vwapValue
+
+longTrigger =
+     entryMode == "Pullback/Reclaim" ? pullbackLong :
+     entryMode == "Breakout" ? breakoutLong :
+     pullbackLong or breakoutLong
+
+shortTrigger =
+     entryMode == "Pullback/Reclaim" ? pullbackShort :
+     entryMode == "Breakout" ? breakoutShort :
+     pullbackShort or breakoutShort
+
+var int lastPlanBar = na
+canPrintPlan = na(lastPlanBar) or bar_index - lastPlanBar >= candidateCooldownBars
+
+rawLongCandidate = enableLongPlans and canOpenNewTrade and riskModeCode == 1 and biasCode == 1 and longTrigger and canPrintPlan and not h001BlockTrade
+rawShortCandidate = enableShortPlans and canOpenNewTrade and riskModeCode == 1 and biasCode == -1 and shortTrigger and canPrintPlan and not h001BlockTrade
+
+// -----------------------------------------------------------------------------
+// Stop and target planning
+// -----------------------------------------------------------------------------
+
+entryPrice = close
+
+longAtrStop = entryPrice - atrValue * stopAtrMultiplier
+longStructureStop = ta.lowest(low, stopSwingLookback) - stopBufferPoints
+
+shortAtrStop = entryPrice + atrValue * stopAtrMultiplier
+shortStructureStop = ta.highest(high, stopSwingLookback) + stopBufferPoints
+
+longStop =
+     stopMode == "ATR" ? longAtrStop :
+     stopMode == "Structure" ? longStructureStop :
+     stopMode == "Tighter" ? math.max(longAtrStop, longStructureStop) :
+     math.min(longAtrStop, longStructureStop)
+
+shortStop =
+     stopMode == "ATR" ? shortAtrStop :
+     stopMode == "Structure" ? shortStructureStop :
+     stopMode == "Tighter" ? math.min(shortAtrStop, shortStructureStop) :
+     math.max(shortAtrStop, shortStructureStop)
+
+longRiskPoints = entryPrice - longStop
+shortRiskPoints = shortStop - entryPrice
+
+longDollarRisk = longRiskPoints * mnqPointValue * contracts
+shortDollarRisk = shortRiskPoints * mnqPointValue * contracts
+
+longRiskAllowed = longRiskPoints > 0 and longDollarRisk <= maxDollarRisk
+shortRiskAllowed = shortRiskPoints > 0 and shortDollarRisk <= maxDollarRisk
+
+longCandidate = rawLongCandidate and longRiskAllowed
+shortCandidate = rawShortCandidate and shortRiskAllowed
+
+longBlockedRisk = rawLongCandidate and not longRiskAllowed
+shortBlockedRisk = rawShortCandidate and not shortRiskAllowed
+
+longTarget1 = entryPrice + longRiskPoints * targetOneR
+longTarget2 = entryPrice + longRiskPoints * targetTwoR
+
+shortTarget1 = entryPrice - shortRiskPoints * targetOneR
+shortTarget2 = entryPrice - shortRiskPoints * targetTwoR
+
+// -----------------------------------------------------------------------------
+// Visual output
+// -----------------------------------------------------------------------------
+
+plot(showVisualLines ? fastEma : na, "Fast EMA")
+plot(showVisualLines ? slowEma : na, "Slow EMA")
+plot(showVisualLines ? vwapValue : na, "VWAP")
+
+plotshape(longCandidate, title="Atlas BUY Plan", style=shape.triangleup, location=location.belowbar, text="BUY\nPLAN", size=size.small)
+plotshape(shortCandidate, title="Atlas SELL Plan", style=shape.triangledown, location=location.abovebar, text="SELL\nPLAN", size=size.small)
+
+if barstate.isconfirmed and longCandidate
+    lastPlanBar := bar_index
+    activeTrade := true
+    activeDirection := 1
+    activeEntry := entryPrice
+    activeStop := longStop
+    activeTarget1 := longTarget1
+    activeTarget2 := longTarget2
+    activeRiskDollars := longDollarRisk
+    activeStartBar := bar_index
+    activeTp1Hit := false
+    activeTp2Hit := false
+
+    label.new(bar_index, low, "BUY PLAN\nEntry: " + str.tostring(entryPrice, format.mintick) + "\nStop: " + str.tostring(longStop, format.mintick) + "\nRisk pts: " + str.tostring(longRiskPoints, "#.##") + "\nRisk $: " + str.tostring(longDollarRisk, "#.##") + "\nT1: " + str.tostring(longTarget1, format.mintick) + "\nT2: " + str.tostring(longTarget2, format.mintick), style=label.style_label_up, textcolor=color.white, color=color.new(color.green, 0))
+
+    if showOriginalResultLabels
+        activeResultLabel := label.new(bar_index, high + atrValue * 2.0, resultLabelText("OPEN"), style=label.style_label_down, textcolor=color.white, color=color.new(color.blue, 0))
+
+    if showPlanBoxes
+        box.new(left=bar_index, top=entryPrice, right=bar_index + tradeBoxProjectionBars, bottom=longStop, border_color=color.new(color.red, 0), bgcolor=color.new(color.red, 82))
+        box.new(left=bar_index, top=longTarget2, right=bar_index + tradeBoxProjectionBars, bottom=entryPrice, border_color=color.new(color.green, 0), bgcolor=color.new(color.green, 84))
+
+    if showPlanLines
+        line.new(bar_index, entryPrice, bar_index + tradeBoxProjectionBars, entryPrice, extend=extend.none, style=line.style_solid)
+        line.new(bar_index, longStop, bar_index + tradeBoxProjectionBars, longStop, extend=extend.none, style=line.style_dashed)
+        line.new(bar_index, longTarget1, bar_index + tradeBoxProjectionBars, longTarget1, extend=extend.none, style=line.style_dotted)
+        line.new(bar_index, longTarget2, bar_index + tradeBoxProjectionBars, longTarget2, extend=extend.none, style=line.style_dotted)
+
+if barstate.isconfirmed and shortCandidate
+    lastPlanBar := bar_index
+    activeTrade := true
+    activeDirection := -1
+    activeEntry := entryPrice
+    activeStop := shortStop
+    activeTarget1 := shortTarget1
+    activeTarget2 := shortTarget2
+    activeRiskDollars := shortDollarRisk
+    activeStartBar := bar_index
+    activeTp1Hit := false
+    activeTp2Hit := false
+
+    label.new(bar_index, high, "SELL PLAN\nEntry: " + str.tostring(entryPrice, format.mintick) + "\nStop: " + str.tostring(shortStop, format.mintick) + "\nRisk pts: " + str.tostring(shortRiskPoints, "#.##") + "\nRisk $: " + str.tostring(shortDollarRisk, "#.##") + "\nT1: " + str.tostring(shortTarget1, format.mintick) + "\nT2: " + str.tostring(shortTarget2, format.mintick), style=label.style_label_down, textcolor=color.white, color=color.new(color.red, 0))
+
+    if showOriginalResultLabels
+        activeResultLabel := label.new(bar_index, high + atrValue * 2.0, resultLabelText("OPEN"), style=label.style_label_down, textcolor=color.white, color=color.new(color.blue, 0))
+
+    if showPlanBoxes
+        box.new(left=bar_index, top=shortStop, right=bar_index + tradeBoxProjectionBars, bottom=entryPrice, border_color=color.new(color.red, 0), bgcolor=color.new(color.red, 82))
+        box.new(left=bar_index, top=entryPrice, right=bar_index + tradeBoxProjectionBars, bottom=shortTarget2, border_color=color.new(color.green, 0), bgcolor=color.new(color.green, 84))
+
+    if showPlanLines
+        line.new(bar_index, entryPrice, bar_index + tradeBoxProjectionBars, entryPrice, extend=extend.none, style=line.style_solid)
+        line.new(bar_index, shortStop, bar_index + tradeBoxProjectionBars, shortStop, extend=extend.none, style=line.style_dashed)
+        line.new(bar_index, shortTarget1, bar_index + tradeBoxProjectionBars, shortTarget1, extend=extend.none, style=line.style_dotted)
+        line.new(bar_index, shortTarget2, bar_index + tradeBoxProjectionBars, shortTarget2, extend=extend.none, style=line.style_dotted)
+
+if barstate.isconfirmed and showBlockedRiskLabels and longBlockedRisk
+    label.new(bar_index, low, "LONG BLOCKED\nRisk $: " + str.tostring(longDollarRisk, "#.##") + "\nMax $: " + str.tostring(maxDollarRisk, "#.##"), style=label.style_label_up, textcolor=color.white, color=color.new(color.orange, 0))
+
+if barstate.isconfirmed and showBlockedRiskLabels and shortBlockedRisk
+    label.new(bar_index, high, "SHORT BLOCKED\nRisk $: " + str.tostring(shortDollarRisk, "#.##") + "\nMax $: " + str.tostring(maxDollarRisk, "#.##"), style=label.style_label_down, textcolor=color.white, color=color.new(color.orange, 0))
+
+
+if barstate.isconfirmed and showH001Labels and h001GuardianCaution
+    label.new(bar_index, close, "H001 GUARDIAN CAUTION\nStrong pressure into reaction zone", style=label.style_label_left, textcolor=color.white, color=color.new(color.orange, 0))
+
+plot(pressureCodeH001, "H001 Pressure Code", display=display.data_window)
+plot(locationCodeH001, "H001 Location Code", display=display.data_window)
+plot(h001StrongPressureReactionZone ? 1 : 0, "H001 Strong Pressure Reaction Zone", display=display.data_window)
+plot(h001GuardianCaution ? 1 : 0, "H001 Guardian Caution", display=display.data_window)
+
+// -----------------------------------------------------------------------------
+// Planner panel
+// -----------------------------------------------------------------------------
+
+var table panel = table.new(position.top_right, 2, 14, border_width=1)
+
+activeTradeText =
+     activeTrade and activeDirection == 1 ? "long" :
+     activeTrade and activeDirection == -1 ? "short" :
+     "none"
+
+if showPanel and barstate.islast
+    table.cell(panel, 0, 0, "Atlas Planner", text_color=color.white, bgcolor=color.black)
+    table.cell(panel, 1, 0, "v0.2", text_color=color.white, bgcolor=color.black)
+
+    table.cell(panel, 0, 1, "Bias")
+    table.cell(panel, 1, 1, biasText)
+
+    table.cell(panel, 0, 2, "Risk Mode")
+    table.cell(panel, 1, 2, riskModeText)
+
+    table.cell(panel, 0, 3, "Regime")
+    table.cell(panel, 1, 3, regimeText)
+
+    table.cell(panel, 0, 4, "Trend Score")
+    table.cell(panel, 1, 4, str.tostring(trendAlignmentScore))
+
+    table.cell(panel, 0, 5, "Chop Score")
+    table.cell(panel, 1, 5, str.tostring(chopScore))
+
+    table.cell(panel, 0, 6, "Extension Risk")
+    table.cell(panel, 1, 6, extensionRisk ? "true" : "false")
+
+    table.cell(panel, 0, 7, "Major Level Risk")
+    table.cell(panel, 1, 7, majorLevelRisk ? "true" : "false")
+
+    table.cell(panel, 0, 8, "Session OK")
+    table.cell(panel, 1, 8, sessionAllowsRiskOn ? "true" : "false")
+
+    table.cell(panel, 0, 9, "Active Trade")
+    table.cell(panel, 1, 9, activeTradeText)
+
+    table.cell(panel, 0, 10, "Expiry Bars")
+    table.cell(panel, 1, 10, str.tostring(tradeExpiryBars))
+
+    table.cell(panel, 0, 11, "Max Risk")
+    table.cell(panel, 1, 11, "$" + str.tostring(maxDollarRisk, "#.##"))
+
+    table.cell(panel, 0, 12, "H001")
+    table.cell(panel, 1, 12, h001GuardianCaution ? "caution" : "clear")
+
+    table.cell(panel, 0, 13, "H001 Mode")
+    table.cell(panel, 1, 13, h001Mode)
