@@ -48,9 +48,21 @@ Atlas will test the following objective implementations of these principles. Non
 2. **Signal Quality Score:** The signal bar is scored mathematically: `(Close - Low) / (High - Low)`. A score > 0.75 is bullish; < 0.25 is bearish.
 3. **Exhaustion Filter:** The signal bar range must not exceed a multiple of the current ATR, preventing entries on exhaustion candles.
 
-## 4. Validation Methodology
+## 4. Research Philosophy
 
-No production code will be written until these components are validated.
+Atlas does not seek confirmation.
+
+Atlas seeks evidence.
+
+Every hypothesis is assumed false until statistically supported. Every rule must earn its place through objective validation. If evidence contradicts an existing rule, Atlas changes the rule — not the evidence.
+
+This principle applies to every component of the Atlas Strategy without exception. No rule is protected by popularity, convention, or the reputation of the methodology that inspired it.
+
+---
+
+## 5. Validation Methodology
+
+No production execution code will be written until these components are validated. Observer and research tools may still be developed to collect the evidence required for validation.
 
 1. **Phase 1: Component Isolation Testing**
    - Build a Pine Script test harness to isolate and measure individual components (e.g., test the predictive power of the Signal Quality Score independently of the trend).
@@ -66,13 +78,13 @@ No production code will be written until these components are validated.
    - Test the strategy in conjunction with existing Atlas Guardian rules (e.g., the H001 rule blocking strong pressure into reaction zones).
    - *Goal:* Verify that Guardian effectively filters low-quality setups and improves the strategy's baseline performance.
 
-## 5. Assumptions and Limitations
+## 6. Assumptions and Limitations
 
 - **Assumption:** Discretionary concepts like "pullback legs" can be accurately codified into objective, bar-by-bar logic without losing their underlying market meaning.
 - **Assumption:** The combination of structure (BOS), location (proximity), and momentum (signal quality) is sufficient to define a high-probability setup.
 - **Limitation:** The initial testing will focus on a single timeframe (e.g., 5-minute MNQ). Multi-timeframe confluence will be researched in a later sprint.
 
-## 6. Acceptance Criteria
+## 7. Acceptance Criteria
 
 The Atlas Strategy will only be adopted if the research proves:
 
