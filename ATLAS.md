@@ -20,6 +20,12 @@ Maximise the probability of passing and scaling prop firm evaluations while pres
 
 Every module, rule, signal, alert, dashboard element, workflow, and automation feature must support that mission.
 
+## The Final Principle
+
+**Atlas must never optimise for a strategy. Atlas must optimise for understanding.**
+
+Every engine should improve Atlas' ability to understand the market. Every validated improvement should make every future strategy better. If we remain disciplined and continue building Atlas one validated hypothesis at a time, we are creating a quantitative research platform that can continue evolving for many years, rather than a single strategy that eventually stops working.
+
 ## The Atlas Test
 
 Before any feature is accepted into Atlas, it must answer these questions:
@@ -87,13 +93,31 @@ Any important project decision should eventually be captured in the repository a
 | Initial module | Atlas Observer |
 | Primary language | Pine Script |
 
-## System Boundary
+## System Boundary & Architecture
 
-Atlas begins as an assessment system, not an execution system.
+Atlas is not a trading bot with a research component. Atlas is a **quantitative research platform** with an execution module.
 
-The first production-grade capability is to classify market conditions and identify when risk should be reduced or avoided.
+Every engine developed must be strategy-agnostic. Engines are reusable infrastructure that every current and future strategy will inherit.
 
-Execution must only be introduced after documentation, validation, alert testing, paper execution, and risk review.
+### The Three-Question Ordering
+
+Atlas must answer three questions, strictly in this order, before any execution is permitted:
+
+1. **What kind of market is this?** *(Market Regime Engine)*
+2. **Is this market worth risking capital in?** *(Guardian + Confidence Engine)*
+3. **If yes, which strategy has the highest statistical edge in this environment?** *(Strategy Selection Layer)*
+
+This ordering is fundamental and must not be reversed.
+
+### Strategy Selection Layer
+
+The long-term vision is not to have one strategy. The vision is for Atlas to evaluate multiple validated strategies and dynamically determine which, if any, best suits the current market regime. 
+
+For example, Atlas should eventually be capable of determining that:
+- Strategy A performs best in strong trends.
+- Strategy B performs best during opening auctions.
+- Strategy C performs best during low-volatility mean reversion.
+- Some regimes are not worth trading at all.
 
 ## Initial Modules
 
@@ -124,6 +148,24 @@ Future user interface layer for concise decision quality, not visual clutter.
 ### Journal and Validation
 
 Future module for replay notes, signal review, expectancy analysis, drawdown analysis, and feature validation.
+
+### Research Standards
+
+Every hypothesis must be tested independently before being combined. No hypothesis should be accepted because it improves one metric at the expense of overall robustness.
+
+Every experiment must report:
+- Net Profit
+- Profit Factor
+- Expectancy
+- Win Rate
+- Maximum Drawdown
+- Trade Count
+- Average Winner
+- Average Loser
+- Largest Losing Streak
+- Long vs Short Performance
+- Session Performance
+- Regime Performance
 
 ## Definition of Success
 
