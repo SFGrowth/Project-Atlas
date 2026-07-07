@@ -43,7 +43,7 @@ Create the permanent project memory and engineering standards.
 
 In progress.
 
-## Phase 1: Market Regime Engine
+## Phase 1: Market Regime Engine (Research Stream A)
 
 ### Objective
 
@@ -190,7 +190,7 @@ Assess whether price location is favourable or dangerous.
 
 Location Engine must help avoid chasing poor trades.
 
-## Phase 6: Guardian Risk Engine
+## Phase 6: Guardian Risk Engine (Research Stream C)
 
 ### Objective
 
@@ -323,7 +323,7 @@ Define how Atlas is used during prop firm evaluations.
 
 Playbook must reduce the probability of emotional or rule-breaking decisions.
 
-## Phase 11: Strategy Selection Layer
+## Phase 11: Execution Research (Research Stream B) & Strategy Selection Layer
 
 ### Objective
 

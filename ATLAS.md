@@ -99,13 +99,31 @@ Atlas is not a trading bot with a research component. Atlas is a **quantitative 
 
 Every engine developed must be strategy-agnostic. Engines are reusable infrastructure that every current and future strategy will inherit.
 
+### The Three Independent Research Streams
+
+Following Sprint 020b, Atlas has identified that market understanding, risk management, and execution are distinct problems. They must be solved independently before being combined into a single decision engine.
+
+1. **Research Stream A — Market Understanding**
+   - Continue improving the Market Regime Engine.
+   - Purpose: Answer *"What kind of market is this?"*
+
+2. **Research Stream B — Execution Research**
+   - Pause assumptions about inherited methodologies (e.g., Thomas Wade).
+   - Begin researching execution from first principles.
+   - Treat entries as hypotheses (pullbacks, sweeps, breakouts, mean reversion) and let them compete on evidence alone.
+
+3. **Research Stream C — Capital Preservation**
+   - Redesign Guardian into a true Risk Intelligence Engine.
+   - Guardian must consume information unavailable to the Regime Engine: consecutive losses, daily/weekly drawdown, prop firm trailing drawdown limits, live vs evaluation mode, and position sizing.
+   - Guardian's responsibility is capital allocation, not market classification.
+
 ### The Three-Question Ordering
 
-Atlas must answer three questions, strictly in this order, before any execution is permitted:
+Once the research streams mature, Atlas must answer three questions, strictly in this order, before any execution is permitted:
 
 1. **What kind of market is this?** *(Market Regime Engine)*
-2. **Is this market worth risking capital in?** *(Guardian + Confidence Engine)*
-3. **If yes, which strategy has the highest statistical edge in this environment?** *(Strategy Selection Layer)*
+2. **Given everything Atlas knows, how much capital deserves to be risked on this opportunity?** *(Guardian Risk Intelligence Engine)*
+3. **Which strategy has the highest statistical edge in this environment?** *(Strategy Selection Layer)*
 
 This ordering is fundamental and must not be reversed.
 

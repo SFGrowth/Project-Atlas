@@ -1,0 +1,122 @@
+//@version=6
+indicator("Atlas Guardian Risk Intelligence Engine v0.2", shorttitle="Atlas Guardian v0.2", overlay=true, max_labels_count=50)
+
+// =====================================================================
+// PROJECT ATLAS — GUARDIAN RISK INTELLIGENCE ENGINE v0.2
+// Research Stream C: Capital Preservation
+//
+// Guardian's responsibility is capital allocation, not market classification.
+// It computes 6 independent component scores and aggregates them into an 
+// Overall Risk Score to determine if capital should be risked.
+// =====================================================================
+
+// --- Inputs ---
+grp_guardian = "Guardian Risk Thresholds"
+pass_threshold        = input.int(75, "PASS Threshold", group=grp_guardian)
+reduce_risk_threshold = input.int(50, "REDUCE RISK Threshold", group=grp_guardian)
+paper_threshold       = input.int(30, "PAPER ONLY Threshold", group=grp_guardian)
+
+grp_params = "Component Parameters"
+fast_atr_len = input.int(5,  "Fast ATR Length", group=grp_params)
+slow_atr_len = input.int(20, "Slow ATR Length", group=grp_params)
+
+// --- 1. Market Regime Score (0-100) ---
+tr = ta.tr
+fast_atr = ta.sma(tr, fast_atr_len)
+slow_atr = ta.sma(tr, slow_atr_len)
+atr_ratio = slow_atr > 0 ? fast_atr / slow_atr : 1.0
+
+regime_score = atr_ratio <= 0.7 ? 100 : (atr_ratio >= 1.1 ? 60 : 30)
+
+// --- 2. Confidence Score (0-100) ---
+atr_14 = ta.sma(tr, 14)
+vwap = ta.vwap
+vwap_dev = atr_14 > 0 ? math.abs(close - vwap) / atr_14 : 0
+confidence_score = math.max(0, math.min(100, 100 - (vwap_dev / 3.0) * 100))
+
+// --- 3. Volatility Score (0-100) ---
+volatility_score = math.max(0, math.min(100, 100 - math.abs(atr_ratio - 0.9) * 80))
+
+// --- 4. Session Score (0-100) ---
+// Using simple time-based approximations for RTH
+hour_ny = hour(time, "America/New_York")
+min_ny  = minute(time, "America/New_York")
+time_dec = hour_ny + min_ny / 60.0
+
+is_rth      = time_dec >= 9.5 and time_dec < 16.0
+is_opening  = time_dec >= 9.5 and time_dec < 10.0
+is_lunch    = time_dec >= 12.0 and time_dec < 13.5
+is_power_hr = time_dec >= 14.0 and time_dec < 16.0
+
+session_score = not is_rth ? 0 : (is_opening ? 40 : (is_lunch ? 50 : (is_power_hr ? 90 : 80)))
+
+// --- 5. Drawdown Health (0-100) ---
+recent_return = close - close[5]
+drawdown_health = math.max(0, math.min(100, 100 + (recent_return / (slow_atr * 3)) * 50))
+
+// --- 6. Daily Risk Score (0-100) ---
+var float daily_open = na
+if ta.change(time("D"))
+    daily_open := open
+daily_return = close - daily_open
+daily_risk_score = math.max(0, math.min(100, 100 + (daily_return / (slow_atr * 5)) * 50))
+
+// --- Overall Risk Score ---
+overall_risk_score = (regime_score * 0.25) + (confidence_score * 0.15) + (volatility_score * 0.15) + (session_score * 0.20) + (drawdown_health * 0.15) + (daily_risk_score * 0.10)
+
+// --- Decision Logic ---
+string decision = "BLOCK"
+color decision_color = color.red
+string reason = "Outside RTH or extreme risk."
+
+if is_rth
+    if overall_risk_score >= pass_threshold
+        decision := "PASS"
+        decision_color := color.green
+        reason := "Strong regime, healthy volatility, no capital restrictions."
+    else if overall_risk_score >= reduce_risk_threshold
+        decision := "REDUCE RISK"
+        decision_color := color.yellow
+        reason := "Elevated session noise or sub-optimal tradeability."
+    else if overall_risk_score >= paper_threshold
+        decision := "PAPER ONLY"
+        decision_color := color.orange
+        reason := "High risk state. Live capital execution prohibited."
+    else
+        decision := "BLOCK"
+        decision_color := color.red
+        reason := "Zero tradeability or critical drawdown health."
+
+// --- Dashboard ---
+var table panel = table.new(position.top_right, 2, 10, bgcolor=color.new(color.black, 10), border_width=1, border_color=color.gray)
+
+if barstate.islast
+    table.cell(panel, 0, 0, "GUARDIAN REPORT", text_color=color.white, text_halign=text.align_left, bgcolor=color.new(color.blue, 30))
+    table.cell(panel, 1, 0, "v0.2", text_color=color.white, text_halign=text.align_right, bgcolor=color.new(color.blue, 30))
+    
+    table.cell(panel, 0, 1, "Market Regime", text_color=color.gray, text_halign=text.align_left)
+    table.cell(panel, 1, 1, str.tostring(math.round(regime_score)), text_color=color.white, text_halign=text.align_right)
+    
+    table.cell(panel, 0, 2, "Confidence", text_color=color.gray, text_halign=text.align_left)
+    table.cell(panel, 1, 2, str.tostring(math.round(confidence_score)), text_color=color.white, text_halign=text.align_right)
+    
+    table.cell(panel, 0, 3, "Volatility", text_color=color.gray, text_halign=text.align_left)
+    table.cell(panel, 1, 3, str.tostring(math.round(volatility_score)), text_color=color.white, text_halign=text.align_right)
+    
+    table.cell(panel, 0, 4, "Session", text_color=color.gray, text_halign=text.align_left)
+    table.cell(panel, 1, 4, str.tostring(math.round(session_score)), text_color=color.white, text_halign=text.align_right)
+    
+    table.cell(panel, 0, 5, "Drawdown Health", text_color=color.gray, text_halign=text.align_left)
+    table.cell(panel, 1, 5, str.tostring(math.round(drawdown_health)), text_color=color.white, text_halign=text.align_right)
+    
+    table.cell(panel, 0, 6, "Daily Risk", text_color=color.gray, text_halign=text.align_left)
+    table.cell(panel, 1, 6, str.tostring(math.round(daily_risk_score)), text_color=color.white, text_halign=text.align_right)
+    
+    table.cell(panel, 0, 7, "OVERALL SCORE", text_color=color.white, text_halign=text.align_left, bgcolor=color.new(color.gray, 80))
+    table.cell(panel, 1, 7, str.tostring(math.round(overall_risk_score)), text_color=color.white, text_halign=text.align_right, bgcolor=color.new(color.gray, 80))
+    
+    table.cell(panel, 0, 8, "DECISION", text_color=color.white, text_halign=text.align_left)
+    table.cell(panel, 1, 8, decision, text_color=decision_color, text_halign=text.align_right)
+    
+    table.merge_cells(panel, 0, 9, 1, 9)
+    table.cell(panel, 0, 9, "Reason: " + reason, text_color=color.silver, text_halign=text.align_left, text_size=size.small)
