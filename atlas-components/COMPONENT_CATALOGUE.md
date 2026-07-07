@@ -75,4 +75,12 @@ The following components are currently undergoing Stream D validation and are **
 
 ---
 
+## Rejected Components (Do Not Use)
+
+The following components have been rigorously tested and definitively proven to lack statistical edge. They must not be used in Strategy Assembly.
+
+- **Daily 200 EMA Location (H-B005):** Fading extensions and trading bounces at the Daily 200 EMA both failed completely (Sprint 022). The market treats the level as liquidity, not structure.
+
+---
+
 *Note: A component only enters this catalogue after completing the 12-step Research Workflow and demonstrating a statistically robust edge across the 12 Atlas robustness metrics.*
