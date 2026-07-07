@@ -118,6 +118,8 @@ Following Sprint 020b, Atlas has permanently transitioned from a sprint-driven d
    - Treat entries as hypotheses (pullbacks, sweeps, breakouts, mean reversion) and let them compete on evidence alone.
    - Purpose: Answer *"What is the highest expectancy entry in this environment?"*
 
+   - **Execution Component Library:** Atlas does not research complete strategies. Atlas researches execution components (e.g., Pullback Component, Liquidity Sweep Component, Momentum Confirmation Component). Validated components become reusable building blocks that every future execution model can inherit.
+
 3. **Stream C — Capital Intelligence**
    - Optimising capital preservation, position sizing, and risk allocation.
    - Guardian must consume information unavailable to the Regime Engine: consecutive losses, daily/weekly drawdown, prop firm trailing drawdown limits, live vs evaluation mode, and position sizing.

@@ -101,7 +101,17 @@ Atlas operates on a research-driven development model. Code is simply the implem
 6. **Evidence Review**: Evaluating the 12 robustness metrics.
 7. **Accept / Reject**: Decision based purely on evidence, not intuition.
 8. **Update Atlas Knowledge Base**: Record the findings in `KNOWLEDGE_BASE.md`.
-9. **Commit to Repository**: Only if accepted, merge the implementation to `main`.
+9. **Commit to Repository**: Only if accepted, merge the implementation to `main` (or add to Execution Component Library).
+
+## Execution Component Library
+
+Atlas does not build complete strategies. Atlas builds an Execution Component Library.
+
+Market events (e.g., Pullback, Liquidity Sweep, Momentum Confirmation) are researched as independent components. Once validated, they are catalogued in the Execution Component Library. 
+
+Execution models (strategies) are then constructed by combining validated components (e.g., Pullback + Momentum Confirmation + Guardian PASS). This allows Atlas to evolve continuously without becoming dependent on any single strategy.
+
+All validated components must be documented in `atlas-components/COMPONENT_CATALOGUE.md`.
 
 ## Module Admission Criteria
 
