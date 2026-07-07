@@ -76,6 +76,27 @@ This document is the institutional memory of Project Atlas. Every completed expe
 2. (Stream C) Redesign Guardian to consume account-state information (consecutive losses, daily drawdown, prop firm limits) so it allocates capital rather than classifying markets.
 ---
 
+## 2026-07-08 | Sprint 023: Interaction Effects (H-B006 to H-B009)
+
+**Research Stream:** B — Execution Intelligence  
+**Research Question:** Does combining a specific Trigger Component with a specific Structural Component create a statistically robust execution model that neither component could achieve alone?  
+**Hypotheses:** 
+- H-B006: Liquidity Sweep + High Tradeability Regime
+- H-B007: Pullback Continuation + Volatility Expansion
+- H-B008: Mean Reversion + Low Trend Strength
+- H-B009: Breakout Continuation + Volatility Compression  
+**Experimental Design:** A/B tests across 140,933 bars (2 years). Exp A: Trigger unconditional. Exp B: Trigger + Structural Condition.  
+**Results:** 
+- **H-B006:** PF improved slightly (0.957 to 0.967) but remained negative.
+- **H-B007:** Best performer, but insufficient edge. PF improved from 1.017 to 1.023. Stable across both years, but PF too low for live execution.
+- **H-B008:** Starved of trades (87 trades over 2 years). Statistically invalid.
+- **H-B009:** PF degraded from 0.986 to 0.942. Compression breakouts on 5-min chart frequently fail.
+**Decision:** **ALL HYPOTHESES REJECTED**.  
+**Lessons Learned:** While structural filters generally improve Profit Factor and reduce drawdown by restricting trade frequency, these specific definitions of environment and event do not combine to form a tradable edge.  
+**Future Research:** The definitions of the components themselves may be flawed. Return to Stream D to refine the mathematical definitions of Market Structure and Momentum before attempting further interaction tests.
+
+---
+
 ## 2026-07-08 | Sprint 022: Daily 200 EMA Mean Reversion (H-B005)
 
 **Research Stream:** D — Component Intelligence  
