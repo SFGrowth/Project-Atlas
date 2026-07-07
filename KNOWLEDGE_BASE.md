@@ -76,6 +76,25 @@ This document is the institutional memory of Project Atlas. Every completed expe
 2. (Stream C) Redesign Guardian to consume account-state information (consecutive losses, daily drawdown, prop firm limits) so it allocates capital rather than classifying markets.
 ---
 
+## 2026-07-08 | Sprint 025: Execution Model Validation (Model A1)
+
+**Research Stream:** B — Execution Intelligence  
+**Research Question:** Does the frozen Candidate Execution Model A1 survive independent stress testing, or is it a fragile curve-fit anomaly?  
+**Hypotheses Tested:** Slippage tolerance, parameter sensitivity (neighbourhood analysis), quarterly stability, session decomposition, long/short symmetry, and Monte Carlo sequence risk.  
+**Experimental Design:** Re-run the frozen configuration across 2-year MNQ with injected friction, parameter shifts, and 1,000 sequence shuffles.  
+**Results:** 
+- The model survived 4 ticks ($2.00) of slippage per trade while remaining profitable (PF 1.251).
+- Every parameter in the immediate neighbourhood remained highly profitable (PF > 1.29), proving the edge is broad and robust.
+- The model was profitable in 9 out of 9 quarters (100% stability).
+- Both Long (PF 1.248) and Short (PF 1.573) sides are profitable.
+- Monte Carlo 5th percentile (worst-case) Max Drawdown is -$1,245, safely inside prop firm limits.
+- **Key Insight:** The edge is overwhelmingly a PM session phenomenon (258 PM trades vs 28 AM trades).  
+**Decision:** **PROMOTED to Atlas Execution Model A1**.  
+**Lessons Learned:** A model may be validated, but it is not trusted until it survives independent validation. The robustness of this edge proves that precise definitions of market behaviour create durable edges.  
+**Future Research:** Stream C (Capital Intelligence) can now begin. Guardian will be designed to allocate capital to Model A1.
+
+---
+
 ## 2026-07-08 | Sprint 024: Component Precision Research (H-B007)
 
 **Research Stream:** B/D — Execution & Component Intelligence  

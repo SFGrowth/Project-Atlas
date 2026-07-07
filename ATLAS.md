@@ -44,6 +44,12 @@ Every engine should improve Atlas' ability to understand the market. Every valid
 
 Every future hypothesis, regardless of who proposed it, must be subjected to the same rigorous research process. There are no exceptions.
 
+## The Validation Principle
+
+**A model may be validated. A model is not trusted until it survives independent validation.**
+
+Discovering a statistical edge in a backtest is only the first milestone (Validation). The model must then survive rigorous attempts to break it—through out-of-sample testing, walk-forward analysis, parameter sensitivity checks, and stress testing—before it earns the right to be promoted to a trusted Execution Model. Atlas must never confuse a validated hypothesis with a trusted model.
+
 ## The Atlas Test
 
 Before any feature is accepted into Atlas, it must answer these questions:
