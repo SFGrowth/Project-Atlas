@@ -8,92 +8,82 @@
 
 This document outlines the research and specification for the first execution module in the Atlas Operating System: the **Atlas Strategy**. 
 
-As mandated by the Atlas Constitution, the Atlas Strategy is inspired by Thomas Wade's price action methodology but is not intended to replicate it blindly. The objective is to deconstruct Wade's discretionary approach into objective, testable components, validate them statistically, and engineer a superior systematic strategy integrated with the Atlas decision engine.
+The goal is not to recreate Thomas Wade's methodology. The goal is to build a statistically superior systematic strategy inspired by the underlying market principles that Thomas Wade teaches. 
+
+Thomas Wade's concepts serve as research inputs only. Atlas will engineer its own rules from first principles, validate them statistically, and adopt only what the evidence proves. If Atlas discovers a better rule than Wade's original discretionary approach, Atlas adopts the better rule.
 
 This strategy will only request permission to trade; the Atlas Guardian will decide if the market conditions justify risking capital.
 
-## 2. Research: Thomas Wade Methodology Deconstruction
+## 2. Research Input: Deconstructing the Principles
 
-Thomas Wade's approach is a price action-based scalping methodology primarily used on ES/MES/MNQ futures. It is heavily derived from Al Brooks' price action concepts but simplified [1] [2].
+Thomas Wade's discretionary approach relies on several core price action principles. Rather than copying his specific rules (e.g., "0-1-2 entry logic" or "21 EMA"), Atlas extracts the underlying market dynamics for independent testing [1].
 
-### 2.1 The Core Setup: 0-1-2 Entry Logic (Two-Legged Pullback)
-The foundational setup is the two-legged pullback to the moving average (M2B/M2S) [3] [4].
-- **0**: Start of an impulse leg.
-- **1**: First entry attempt (first pullback).
-- **2L / 2S**: Second entry long/short (the primary setup).
+### 2.1 The Underlying Principles
 
-The logic dictates that counter-trend traders enter on the first pullback. When that fails and price pulls back a second time, the second entry traps those traders, providing momentum for trend continuation [4].
-
-### 2.2 Discretionary vs. Objective Components
-
-| Component | Thomas Wade Discretionary Approach | Proposed Atlas Systematic Implementation |
+| Principle | The Discretionary Concept | The Atlas Research Question |
 | :--- | :--- | :--- |
-| **Trend** | Visual assessment of EMA slope and price action | **Trend Alignment Score:** Fast EMA > Slow EMA; Price > VWAP; Slope > 0. |
-| **Structure** | Visual Break of Structure (BOS) / Change of Character (CHOCH) | **Objective Structure:** Close above previous N-bar swing high (BOS Bullish); Close below previous N-bar swing low (BOS Bearish) [5]. |
-| **Leg Counting** | Visual counting of pullbacks, often inconsistent [6] | **Mechanical Leg Count:** High 1 (H1) = first bar high > previous bar high during pullback. High 2 (H2) = second instance. |
-| **Signal Bar** | "Looks strong," rejects levels | **Bar Quality Metric:** Close must be in the top 25% of the bar's range (for longs) or bottom 25% (for shorts). Body size must exceed a minimum ATR threshold. |
-| **Location** | "Key entry points" (EMA, prior swings) | **Proximity Metric:** Signal bar must close within 0.5 ATR of the 21 EMA or identified support/resistance zones. |
-| **Filters** | Avoid dojis, shooting stars, "bad feel" | **Candle Math:** Body-to-wick ratio limits; maximum bar size limit (e.g., < 2 ATR) to prevent late entries [1]. |
+| **Trend Qualification** | Trade only in the direction of the dominant trend, visually assessed. | What objective metric (EMA slope, VWAP relation, structure breaks) provides the highest-expectancy trend filter? |
+| **Failed Counter-Trend Attempts** | Trends often resume after counter-trend traders fail twice (the "second entry" trap). | Does a two-legged pullback statistically outperform a single-legged pullback or a simple momentum breakout? |
+| **Dynamic Support/Resistance** | Price frequently reacts at moving averages during trends. | Which moving average (length and type) provides the most reliable reaction zone for MNQ futures? |
+| **Signal Commitment** | The entry candle must show strong commitment (closing near its extreme). | What is the optimal close-position ratio (e.g., top 25% of range) and minimum body size to confirm momentum without entering late? |
+| **Location Quality** | Entries must occur at "key entry points," not in the middle of nowhere. | How does proximity to recent structure (BOS), VWAP, or opening range extremes impact trade expectancy? |
 
-## 3. Proposed Measurable Implementations
+## 3. Proposed Measurable Implementations (For Testing)
 
-To integrate with the Atlas OS, the strategy will generate a **Setup Confidence Score** based on the following measurable rules:
+Atlas will test the following objective implementations of these principles. None of these are assumed to be correct until validated.
 
-### 3.1 Structure & Trend Rules
-1. **Trend Baseline:** Price must be on the correct side of the 21-period EMA (Longs > EMA, Shorts < EMA).
-2. **Structure Confirmation:** A valid BOS in the direction of the trend must have occurred within the last 20 bars [5]. A CHOCH against the trend invalidates the setup until a new BOS occurs.
+### 3.1 Structure & Trend Implementation
+1. **Objective Trend:** A trend is defined by a combination of EMA alignment (Fast > Slow) and recent Break of Structure (BOS).
+2. **Objective BOS:** A valid BOS requires a body close beyond a confirmed N-bar swing high/low [2].
+3. **Objective CHOCH:** A body close beyond the swing point that initiated the most recent BOS signals a Change of Character, suspending trend-continuation setups until a new BOS occurs [2].
 
-### 3.2 Setup Rules (The 2nd Entry)
-1. **Pullback Initiation:** Price must pull back toward the 21 EMA.
-2. **Leg 1 (H1/L1):** The first bar to break the extreme of the previous bar in the trend direction.
-3. **Leg 2 (H2/L2):** The second bar to break the extreme of the previous bar in the trend direction, occurring after a lower low (for longs) or higher high (for shorts) following Leg 1 [4].
+### 3.2 The Pullback Implementation
+1. **Leg Counting:** Atlas will test a mechanical leg-counting algorithm:
+   - *Leg 1:* The first bar to break the extreme of the previous bar in the trend direction.
+   - *Leg 2:* The second bar to break the extreme of the previous bar in the trend direction, occurring after a counter-trend swing.
+2. **Hypothesis Test:** Atlas will test whether the "Leg 2" setup actually outperforms "Leg 1" setups under specific market conditions.
 
-### 3.3 Quality & Location Rules
-1. **EMA Proximity:** The H2/L2 signal bar must touch or close within 0.5 ATR of the 21 EMA.
-2. **Signal Bar Quality:** For a Long (H2), the close must be >= 75% of the high-low range. For a Short (L2), the close must be <= 25% of the high-low range.
-3. **Bar Size Limit:** The signal bar range must not exceed 1.5x the current ATR (prevents entering on exhaustion).
+### 3.3 Quality & Location Implementation
+1. **Reaction Zone Proximity:** The signal bar must close within a defined ATR distance of a dynamic support level (e.g., EMA or VWAP).
+2. **Signal Quality Score:** The signal bar is scored mathematically: `(Close - Low) / (High - Low)`. A score > 0.75 is bullish; < 0.25 is bearish.
+3. **Exhaustion Filter:** The signal bar range must not exceed a multiple of the current ATR, preventing entries on exhaustion candles.
 
 ## 4. Validation Methodology
 
-Before any production code is deployed, the proposed rules must pass the Atlas validation framework:
+No production code will be written until these components are validated.
 
-1. **Phase 1: Visual Replay Validation**
-   - Implement the logic as a visual indicator in Pine Script (Atlas Planner mode).
-   - Manually review 100 setups in TradingView replay mode across different market regimes (trending, choppy, high volatility).
-   - *Goal:* Ensure the mechanical rules accurately capture the spirit of the two-legged pullback without excessive false positives.
+1. **Phase 1: Component Isolation Testing**
+   - Build a Pine Script test harness to isolate and measure individual components (e.g., test the predictive power of the Signal Quality Score independently of the trend).
+   - *Goal:* Determine which individual metrics possess an edge.
 
 2. **Phase 2: Statistical Backtesting**
+   - Combine the high-expectancy components into a unified strategy.
    - Export setup data using the Atlas Research Exporter.
-   - Run the data through the Python `atlas_research_engine.py`.
-   - Measure Net PnL, Profit Factor, Win Rate, and Drawdown.
-   - *Goal:* Prove that the setup possesses a positive statistical expectancy over a minimum of 1,000 trades.
+   - Run the data through the Python `atlas_research_engine.py` over a minimum 2-year MNQ dataset.
+   - *Goal:* Prove positive statistical expectancy (Profit Factor, Win Rate, Drawdown).
 
-3. **Phase 3: Guardian Integration Testing**
-   - Test the setup in conjunction with the H001 Guardian rule (blocking strong pressure into reaction zones).
-   - *Goal:* Verify that Guardian effectively filters low-quality setups and improves overall decision quality.
+3. **Phase 3: Guardian Integration**
+   - Test the strategy in conjunction with existing Atlas Guardian rules (e.g., the H001 rule blocking strong pressure into reaction zones).
+   - *Goal:* Verify that Guardian effectively filters low-quality setups and improves the strategy's baseline performance.
 
 ## 5. Assumptions and Limitations
 
-- **Assumption:** A 21-period EMA on a 2-minute or 5-minute chart provides a robust dynamic support/resistance level for MNQ futures.
-- **Assumption:** Mechanical leg counting (bar-by-bar high/low breaks) will filter out some valid discretionary setups but will provide the consistency required for algorithmic validation.
-- **Limitation:** The strategy does not currently account for higher-timeframe context (e.g., 15-minute trend) beyond what the 50 EMA provides. This will be a focus for future research.
+- **Assumption:** Discretionary concepts like "pullback legs" can be accurately codified into objective, bar-by-bar logic without losing their underlying market meaning.
+- **Assumption:** The combination of structure (BOS), location (proximity), and momentum (signal quality) is sufficient to define a high-probability setup.
+- **Limitation:** The initial testing will focus on a single timeframe (e.g., 5-minute MNQ). Multi-timeframe confluence will be researched in a later sprint.
 
 ## 6. Acceptance Criteria
 
-The Atlas Strategy module will only be promoted to production if it meets the following criteria:
+The Atlas Strategy will only be adopted if the research proves:
 
-1. **Expectancy:** The backtested Profit Factor must exceed 1.20 over a 2-year sample.
-2. **Decision Quality:** The strategy must demonstrate a clear reduction in trades taken during choppy or low-probability regimes when paired with Atlas Observer.
-3. **Drawdown:** The maximum historical drawdown must remain within the acceptable limits for a $50k prop firm evaluation (e.g., < $2,000 trailing drawdown).
-4. **Code Quality:** The Pine Script must compile without errors, follow Atlas coding standards, and include no repainting logic.
+1. **Evidence over Assumption:** The final ruleset must be backed by statistical evidence from the backtester, not just adopted because it is popular in price action theory.
+2. **Expectancy:** The backtested Profit Factor must exceed 1.20 over the 2-year sample.
+3. **Decision Quality:** The strategy must integrate seamlessly with Atlas Observer, taking fewer, higher-quality trades.
+4. **Risk Profile:** The maximum historical drawdown must remain within the acceptable limits for a $50k prop firm evaluation (e.g., < $2,000 trailing drawdown).
 
 ---
 
 ## References
 
 [1] User Guide: "Thomas Wade Price Action" Strategy. Thomas Wade Price Action Indicators. https://thomaswadepriceactionindicators.com/blogs/noticias/user-guide-thomas-wade-price-action-strategy
-[2] Thomas Wade. Wade Trading Academy. https://wadetradingacademy.com/
-[3] The Real Al Brooks 2nd Entry Setup Explained. Trasignal. https://trasignal.com/blog/learn/al-brooks-2nd-entry-setup/
-[4] Two-legged Pullback to Moving Average (M2B, M2S). Trading Setups Review. https://www.tradingsetupsreview.com/two-legged-pullback-to-moving-average-m2b-m2s/
-[5] Market Structure: BoS And CHoCH Made Simple. Daily Price Action. https://dailypriceaction.com/blog/smc-market-structure/
-[6] Reddit Discussion: Thomas Wade (PATS) - 2 legged pullback question. r/Daytrading. https://www.reddit.com/r/Daytrading/comments/1n5z4wf/thomas_wade_pats_2_leg_ged_pullback_question/
+[2] Market Structure: BoS And CHoCH Made Simple. Daily Price Action. https://dailypriceaction.com/blog/smc-market-structure/
