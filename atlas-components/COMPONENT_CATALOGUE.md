@@ -33,6 +33,12 @@ The following components have successfully passed Stream D validation and are av
 
 ### Structural Components
 
+#### C-STR-001: Volatility Expansion
+- **Description:** Identifies periods of sudden, significant volatility expansion relative to a longer baseline, indicating genuine directional participation.
+- **Validated Definition:** `ATR(5) / ATR(5)[20 bars ago] > 1.8`
+- **Evidence:** When combined with a depth-constrained pullback, improved PF from 1.020 to 1.387 on 2-year MNQ 5-min (Sprint 024).
+- **Status:** Validated
+
 #### C-REG-001: Volatility Compression
 - **Description:** Identifies periods of volatility contraction relative to recent history.
 - **Validated Definition:** `ATR(14) / ATR(100) <= 0.7`
@@ -48,7 +54,11 @@ The following components have successfully passed Stream D validation and are av
 
 ### Trigger Components
 
-*(No trigger components currently validated. Sprint 021 rejected Pullback, Liquidity Sweep, Breakout, and Mean Reversion as standalone unconditional edges. They must now be tested for interaction effects with Structural Components.)*
+#### C-TRG-001: Depth-Constrained Pullback
+- **Description:** A pullback to the EMA21 in a trending environment, constrained by depth to ensure sufficient discount without structural invalidation.
+- **Validated Definition:** EMA9/21/50 trend stack alignment. Price touches/crosses EMA21. Distance from the recent 10-bar swing extreme to current close is between `0.5 and 1.2 * ATR(14)`.
+- **Evidence:** When interacting with Volatility Expansion (C-STR-001), produced PF 1.387 and Max DD -$516 on 2-year MNQ 5-min (Sprint 024).
+- **Status:** Validated
 
 ---
 
@@ -57,7 +67,6 @@ The following components have successfully passed Stream D validation and are av
 The following components are currently undergoing Stream D validation and are **not yet approved** for use in Stream B Strategy Assembly.
 
 ### Trigger Candidates
-- **C-TRG-001: Pullback Continuation** (Failed interaction testing in Sprint 023, requires redefinition)
 - **C-TRG-002: Liquidity Sweep Entry** (Failed interaction testing in Sprint 023, requires redefinition)
 - **C-TRG-003: Breakout Continuation** (Failed interaction testing in Sprint 023, requires redefinition)
 - **C-TRG-004: Mean Reversion** (Failed interaction testing in Sprint 023, requires redefinition)
