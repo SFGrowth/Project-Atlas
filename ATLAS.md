@@ -26,6 +26,12 @@ Every module, rule, signal, alert, dashboard element, workflow, and automation f
 
 Every engine should improve Atlas' ability to understand the market. Every validated improvement should make every future strategy better. If we remain disciplined and continue building Atlas one validated hypothesis at a time, we are creating a quantitative research platform that can continue evolving for many years, rather than a single strategy that eventually stops working.
 
+## The Knowledge Principle
+
+**Atlas does not build features. Atlas discovers knowledge. Features are simply the implementation of validated knowledge.**
+
+The primary output of Atlas is no longer code. The primary output of Atlas is knowledge. Code simply implements validated knowledge.
+
 ## The Atlas Test
 
 Before any feature is accepted into Atlas, it must answer these questions:
@@ -99,23 +105,23 @@ Atlas is not a trading bot with a research component. Atlas is a **quantitative 
 
 Every engine developed must be strategy-agnostic. Engines are reusable infrastructure that every current and future strategy will inherit.
 
-### The Three Independent Research Streams
+### The Three Permanent Research Streams
 
-Following Sprint 020b, Atlas has identified that market understanding, risk management, and execution are distinct problems. They must be solved independently before being combined into a single decision engine.
+Following Sprint 020b, Atlas has permanently transitioned from a sprint-driven development model to a research-driven development model. Research is separated into three independent streams. They must be solved independently before being combined into a single decision engine.
 
-1. **Research Stream A — Market Understanding**
-   - Continue improving the Market Regime Engine.
+1. **Stream A — Market Intelligence**
+   - Understanding market regimes.
    - Purpose: Answer *"What kind of market is this?"*
 
-2. **Research Stream B — Execution Research**
-   - Pause assumptions about inherited methodologies (e.g., Thomas Wade).
-   - Begin researching execution from first principles.
+2. **Stream B — Execution Intelligence**
+   - Discovering statistically robust execution models from first principles.
    - Treat entries as hypotheses (pullbacks, sweeps, breakouts, mean reversion) and let them compete on evidence alone.
+   - Purpose: Answer *"What is the highest expectancy entry in this environment?"*
 
-3. **Research Stream C — Capital Preservation**
-   - Redesign Guardian into a true Risk Intelligence Engine.
+3. **Stream C — Capital Intelligence**
+   - Optimising capital preservation, position sizing, and risk allocation.
    - Guardian must consume information unavailable to the Regime Engine: consecutive losses, daily/weekly drawdown, prop firm trailing drawdown limits, live vs evaluation mode, and position sizing.
-   - Guardian's responsibility is capital allocation, not market classification.
+   - Purpose: Answer *"Given everything Atlas knows, how much capital deserves to be risked?"*
 
 ### The Three-Question Ordering
 
@@ -166,6 +172,20 @@ Future user interface layer for concise decision quality, not visual clutter.
 ### Journal and Validation
 
 Future module for replay notes, signal review, expectancy analysis, drawdown analysis, and feature validation.
+
+### The Research Cycle
+
+Every future engine or feature must be developed through the formal 9-step Research Cycle:
+
+1. **Research Question**
+2. **Hypothesis**
+3. **Experimental Design**
+4. **Test Harness**
+5. **Statistical Validation**
+6. **Evidence Review**
+7. **Accept / Reject**
+8. **Update Atlas Knowledge Base**
+9. **Commit to Repository**
 
 ### Research Standards
 
