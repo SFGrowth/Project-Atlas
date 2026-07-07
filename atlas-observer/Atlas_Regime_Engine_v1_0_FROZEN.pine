@@ -1,0 +1,123 @@
+// This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © Atlas OS
+//
+// ═══════════════════════════════════════════════════════════════════════
+// FROZEN — Atlas Market Regime Engine v1.0
+// Sprint 019 — Validated 2026-07-07
+//
+// DO NOT MODIFY. This file is the frozen reference implementation used
+// for out-of-sample validation in Sprint 021. No parameter tuning, no
+// threshold adjustments, no logic changes.
+//
+// Validated components:
+//   H2: ATR Expansion (atr_ratio >= 1.1)
+//   H6: Volatility Compression (atr_ratio <= 0.7)  ← primary signal
+//   H7: VWAP Deviation (<= 1.5 ATR)
+//
+// In-sample result (2yr MNQ, 140,933 bars):
+//   Profit Factor: 1.292 | Win Rate: 31.76% | Trades: 507
+//   Max Drawdown: -$1,290 | Expectancy: 0.199R
+//
+// Any improvements must be made in Atlas_Regime_Engine_v1_1.pine or later.
+// ═══════════════════════════════════════════════════════════════════════
+
+//@version=6
+indicator("Atlas Market Regime Engine v1.0 [FROZEN]", overlay=true, group="Atlas OS")
+
+// ─────────────────────────────────────────────────────────────────────────────
+// FROZEN PARAMETERS — DO NOT CHANGE
+// ─────────────────────────────────────────────────────────────────────────────
+fastAtrLen      = 5
+slowAtrLen      = 20
+compressThresh  = 0.7
+expandThresh    = 1.1
+vwapThresh      = 1.5
+
+// ─────────────────────────────────────────────────────────────────────────────
+// COMPUTATIONS
+// ─────────────────────────────────────────────────────────────────────────────
+fastAtr  = ta.atr(fastAtrLen)
+slowAtr  = ta.atr(slowAtrLen)
+atrRatio = slowAtr > 0 ? fastAtr / slowAtr : 1.0
+
+// VWAP Deviation (session-reset)
+var float cumVolPrice = 0.0
+var float cumVol      = 0.0
+if session.is_first_bar
+    cumVolPrice := 0.0
+    cumVol      := 0.0
+cumVolPrice += hlc3 * volume
+cumVol      += volume
+vwapValue = cumVol > 0 ? cumVolPrice / cumVol : close
+vwapDev   = ta.atr(14) > 0 ? math.abs(close - vwapValue) / ta.atr(14) : 0.0
+
+// ─────────────────────────────────────────────────────────────────────────────
+// REGIME CLASSIFICATIONS
+// ─────────────────────────────────────────────────────────────────────────────
+isCompressed   = atrRatio <= compressThresh
+isExpanded     = atrRatio >= expandThresh
+isGoodLocation = vwapDev  <= vwapThresh
+
+// Tradeability Score (0–100)
+//   +50 for Compression (primary validated signal)
+//   +25 for Expansion
+//   +25 for Good Location (VWAP proximity)
+tradeabilityScore = 0
+if isCompressed
+    tradeabilityScore += 50
+else if isExpanded
+    tradeabilityScore += 25
+if isGoodLocation
+    tradeabilityScore += 25
+
+// Regime Label
+string regimeName  = "Neutral"
+color  regimeColor = color.gray
+if isCompressed
+    regimeName  := "Compression"
+    regimeColor := color.new(color.blue, 0)
+else if isExpanded
+    regimeName  := "Expansion"
+    regimeColor := color.new(color.orange, 0)
+
+// ─────────────────────────────────────────────────────────────────────────────
+// VISUALISATION
+// ─────────────────────────────────────────────────────────────────────────────
+bgcolor(tradeabilityScore >= 75 ? color.new(color.green, 90) :
+        tradeabilityScore <= 25 ? color.new(color.red, 90)   : na,
+        title = "Tradeability Background")
+
+var table dashboard = table.new(position.top_right, 2, 5,
+     bgcolor      = color.new(color.black, 80),
+     border_width = 1,
+     border_color = color.gray)
+
+if barstate.islast
+    table.cell(dashboard, 0, 0, "Atlas Regime Engine",
+         text_color = color.white, text_size = size.small,
+         bgcolor    = color.new(color.black, 0))
+    table.cell(dashboard, 1, 0, "v1.0 [FROZEN]",
+         text_color = color.new(color.yellow, 0), text_size = size.tiny,
+         bgcolor    = color.new(color.black, 0))
+
+    table.cell(dashboard, 0, 1, "Regime",
+         text_color = color.white, text_size = size.small)
+    table.cell(dashboard, 1, 1, regimeName,
+         text_color = regimeColor, text_size = size.small)
+
+    table.cell(dashboard, 0, 2, "ATR Ratio",
+         text_color = color.white, text_size = size.small)
+    table.cell(dashboard, 1, 2, str.tostring(atrRatio, "#.##"),
+         text_color = color.white, text_size = size.small)
+
+    table.cell(dashboard, 0, 3, "VWAP Dev",
+         text_color = color.white, text_size = size.small)
+    table.cell(dashboard, 1, 3, str.tostring(vwapDev, "#.##"),
+         text_color = isGoodLocation ? color.green : color.red, text_size = size.small)
+
+    table.cell(dashboard, 0, 4, "Tradeability",
+         text_color = color.white, text_size = size.small)
+    table.cell(dashboard, 1, 4, str.tostring(tradeabilityScore) + " / 75",
+         text_color = tradeabilityScore >= 75 ? color.green :
+                      tradeabilityScore >= 50 ? color.yellow : color.red,
+         text_size  = size.small)
