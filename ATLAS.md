@@ -38,6 +38,12 @@ The primary output of Atlas is no longer code. The primary output of Atlas is kn
 
 Every engine should improve Atlas' ability to understand the market. Every validated improvement should make every future strategy better.
 
+## The Evidence Principle
+
+**Popularity is not evidence. Authority is not evidence. Reputation is not evidence. Only repeatable statistical validation earns a permanent place in Atlas.**
+
+Every future hypothesis, regardless of who proposed it, must be subjected to the same rigorous research process. There are no exceptions.
+
 ## The Atlas Test
 
 Before any feature is accepted into Atlas, it must answer these questions:
@@ -121,7 +127,7 @@ Following Sprint 021, Atlas has permanently transitioned from a sprint-driven de
 
 2. **Stream B — Execution Intelligence**
    - Assembling complete execution models (strategies) from validated components.
-   - Every execution model becomes a hypothesis built from previously validated building blocks (e.g., Liquidity Sweep + Trend Alignment + High Tradeability Regime).
+   - Every execution model becomes a hypothesis built from previously validated building blocks. Atlas investigates **interaction effects** (e.g., Does a Liquidity Sweep become profitable only during High Tradeability regimes?).
    - Purpose: Answer *"Which combination of validated components produces the highest statistical edge in this environment?"*
 
 3. **Stream C — Capital Intelligence**
@@ -131,7 +137,9 @@ Following Sprint 021, Atlas has permanently transitioned from a sprint-driven de
 
 4. **Stream D — Component Intelligence**
    - Discovering which individual market behaviours consistently add statistical value.
-   - Atlas does not treat Pullbacks, Liquidity Sweeps, or Breakouts as complete strategies. They are individual market behaviours researched as independent components.
+   - Atlas categorises components into two fundamental types:
+     - **Structural Components:** Describe the environment (e.g., Market Structure, Trend Alignment, Volatility Compression).
+     - **Trigger Components:** Describe the event (e.g., Pullback, Liquidity Sweep, Breakout, Mean Reversion). A trigger should never be expected to produce an edge by itself.
    - Purpose: Answer *"Does this specific market behaviour possess intrinsic statistical edge?"*
    - Validated components are stored in the **Execution Component Library** and become reusable building blocks for Stream B.
 

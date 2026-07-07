@@ -3,64 +3,52 @@
 ## Purpose
 This catalogue is the central repository for all independently validated components in Project Atlas. 
 
-Atlas does not build complete strategies as monolithic blocks. Instead, Atlas discovers, validates, and catalogues **components** (e.g., Regime Filters, Entry Triggers, Momentum Confirmations). 
-
-Execution models (strategies) are then constructed by combining these validated components.
+Atlas does not build complete strategies as monolithic blocks. Instead, Atlas discovers, validates, and catalogues **components**. Execution models (strategies) are then constructed by combining these validated components to investigate interaction effects.
 
 ---
 
 ## Component Taxonomy
 
-Components are classified into the following categories:
+Atlas categorises components into two fundamental types. A strategy is built by combining multiple Structural Components with one or more Trigger Components.
 
-### 1. Market Regime Components (C-REG)
-Components that classify the current market environment (e.g., Trend, Range, Compression, Expansion).
+### 1. Structural Components
+These describe the **environment**. They classify market conditions, define context, and filter out low-expectancy noise.
 
-### 2. Structural Components (C-STR)
-Components that identify market structure (e.g., Break of Structure, Change of Character, Swing Highs/Lows).
+- **Market Regime (C-REG):** Classifies the current environment (e.g., Trend, Range, Compression, Expansion).
+- **Market Structure (C-STR):** Identifies structural states (e.g., Break of Structure, Change of Character, Swing Highs/Lows).
+- **Momentum & Pressure (C-MOM):** Measures directional commitment and strength (e.g., Strong Close, Volume Expansion).
+- **Location & Value (C-LOC):** Defines value areas and key levels (e.g., VWAP Deviation, Premium/Discount, Support/Resistance).
+- **Liquidity Context (C-LIQ):** Identifies liquidity pools and stop runs (e.g., Liquidity Sweeps, Equal Highs/Lows).
 
-### 3. Momentum & Pressure Components (C-MOM)
-Components that measure directional commitment and strength (e.g., Strong Close, Volume Expansion).
+### 2. Trigger Components
+These describe the **event**. They define the specific mechanical entry signal. A trigger should never be expected to produce an edge by itself.
 
-### 4. Location Components (C-LOC)
-Components that define value areas and key levels (e.g., VWAP Deviation, Premium/Discount, Support/Resistance).
-
-### 5. Liquidity Components (C-LIQ)
-Components that identify liquidity pools and stop runs (e.g., Liquidity Sweeps, Equal Highs/Lows).
-
-### 6. Entry Trigger Components (C-TRG)
-Components that define the specific entry mechanic (e.g., Pullback Continuation, Breakout, Mean Reversion).
+- **Entry Triggers (C-TRG):** The specific mechanical entry signal (e.g., Pullback, Breakout, Mean Reversion, Opening Range Break).
 
 ---
 
-## 1. Regime Components (Stream A)
+## Validated Components
 
-These components classify the market environment and filter out low-expectancy noise.
+The following components have successfully passed Stream D validation and are available for use in Stream B Strategy Assembly.
 
-### C-REG-001: Volatility Compression
+### Structural Components
+
+#### C-REG-001: Volatility Compression
 - **Description:** Identifies periods of volatility contraction relative to recent history.
 - **Validated Definition:** `ATR(14) / ATR(100) <= 0.7`
 - **Evidence:** Reduced drawdown by $14,071 and improved PF from 0.95 to 1.222 on 2-year MNQ (Sprint 019).
 - **Status:** Validated (Part of Regime Engine v1.0)
 - **Known Limitations:** The 0.7 threshold is highly restrictive, passing only 0.7% of all bars (Sprint 021).
 
-### C-REG-002: VWAP Deviation
+#### C-LOC-001: VWAP Deviation (formerly C-REG-002)
 - **Description:** Ensures price is within a reasonable distance from VWAP, avoiding over-extended entries.
 - **Validated Definition:** `Distance from VWAP <= 1.5 * ATR(14)`
 - **Evidence:** Reduced drawdown by $9,952 on 2-year MNQ (Sprint 019).
 - **Status:** Validated (Part of Regime Engine v1.0)
 
-## 2. Execution Components (Stream B)
+### Trigger Components
 
-These components define specific market events that can trigger an entry when combined with appropriate Regime and Guardian conditions.
-
-*(No components currently validated. Sprint 021 rejected Pullback, Liquidity Sweep, Breakout, and Mean Reversion as standalone unconditional edges.)*
-
-## 3. Capital Components (Stream C)
-
-These components manage risk, position sizing, and account health.
-
-*(No components currently validated. Guardian v0.2 requires redesign to incorporate account-state inputs.)*
+*(No trigger components currently validated. Sprint 021 rejected Pullback, Liquidity Sweep, Breakout, and Mean Reversion as standalone unconditional edges. They must now be tested for interaction effects with Structural Components.)*
 
 ---
 
@@ -68,10 +56,11 @@ These components manage risk, position sizing, and account health.
 
 The following components are currently undergoing Stream D validation and are **not yet approved** for use in Stream B Strategy Assembly.
 
-- **C-TRG-001: Pullback Continuation** (Failed baseline in Sprint 021, pending refinement)
-- **C-LIQ-001: Liquidity Sweep** (Failed baseline in Sprint 021, pending refinement)
-- **C-TRG-002: Breakout Continuation** (Failed baseline in Sprint 021, pending refinement)
-- **C-TRG-003: Mean Reversion** (Failed baseline in Sprint 021, pending refinement)
+### Trigger Candidates
+- **C-TRG-001: Pullback Continuation** (Failed baseline in Sprint 021, pending interaction testing)
+- **C-TRG-002: Liquidity Sweep Entry** (Failed baseline in Sprint 021, pending interaction testing)
+- **C-TRG-003: Breakout Continuation** (Failed baseline in Sprint 021, pending interaction testing)
+- **C-TRG-004: Mean Reversion** (Failed baseline in Sprint 021, pending interaction testing)
 
 ---
 
