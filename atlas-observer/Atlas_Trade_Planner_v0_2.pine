@@ -260,6 +260,13 @@ chopScore += highOverlap ? 1 : 0
 chopScore += atrRatio < lowVolMultiplier ? 1 : 0
 
 // -----------------------------------------------------------------------------
+// Extension / stretch
+// -----------------------------------------------------------------------------
+
+distanceFromFastEmaAtr = atrValue != 0 ? (close - fastEma) / atrValue : na
+distanceFromVwapAtr = atrValue != 0 ? (close - vwapValue) / atrValue : na
+
+// -----------------------------------------------------------------------------
 // Pressure model for H001 Guardian Candidate
 // -----------------------------------------------------------------------------
 
@@ -304,13 +311,6 @@ pressureCodeH001 =
      pressureScoreH001 >= 3 ? 2 :
      pressureScoreH001 >= 2 ? 1 :
      0
-
-// -----------------------------------------------------------------------------
-// Extension / stretch
-// -----------------------------------------------------------------------------
-
-distanceFromFastEmaAtr = atrValue != 0 ? (close - fastEma) / atrValue : na
-distanceFromVwapAtr = atrValue != 0 ? (close - vwapValue) / atrValue : na
 
 stretchedUp = distanceFromFastEmaAtr > extensionAtrThreshold or distanceFromVwapAtr > extensionAtrThreshold
 stretchedDown = distanceFromFastEmaAtr < -extensionAtrThreshold or distanceFromVwapAtr < -extensionAtrThreshold
