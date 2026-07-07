@@ -50,6 +50,12 @@ Every future hypothesis, regardless of who proposed it, must be subjected to the
 
 Discovering a statistical edge in a backtest is only the first milestone (Validation). The model must then survive rigorous attempts to break it—through out-of-sample testing, walk-forward analysis, parameter sensitivity checks, and stress testing—before it earns the right to be promoted to a trusted Execution Model. Atlas must never confuse a validated hypothesis with a trusted model.
 
+## The Characterisation Principle
+
+**A validated execution model is not simply a set of entry rules. It is a statistically characterised market behaviour with clearly defined operating conditions.**
+
+Before any trusted model is allocated capital, it must be fully characterised. Atlas must understand exactly when the model performs best and when it should stand aside—decomposed by session, day of week, volatility quartile, and trend strength. Every future execution model must undergo this characterisation process before being trusted with capital.
+
 ## The Atlas Test
 
 Before any feature is accepted into Atlas, it must answer these questions:

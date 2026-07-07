@@ -38,7 +38,8 @@ The following execution models have passed both Stream D validation and Stream B
 - **Risk/Reward:** 1:2 (Stop = 1.0 ATR, Target = 2.0 ATR)
 - **Performance:** PF 1.387, Net +$3,231, Max DD -$516, 286 trades (2-year MNQ)
 - **Validation:** Survived 4-tick slippage, parameter neighbourhood shifts, 100% quarterly stability, and Monte Carlo sequence risk (Sprint 025).
-- **Status:** Trusted
+- **Characterisation:** Full operational parameters mapped in `research/atlas-model-a1-specification.md` (Sprint 026). Edge concentrated in Tue-Thu, 13:00-16:00 ET.
+- **Status:** Trusted & Characterised
 
 ---
 
