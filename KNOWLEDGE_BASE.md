@@ -76,6 +76,21 @@ This document is the institutional memory of Project Atlas. Every completed expe
 2. (Stream C) Redesign Guardian to consume account-state information (consecutive losses, daily drawdown, prop firm limits) so it allocates capital rather than classifying markets.
 ---
 
+## 2026-07-08 | Sprint 022: Daily 200 EMA Mean Reversion (H-B005)
+
+**Research Stream:** D — Component Intelligence  
+**Research Question:** Does the distance from the Daily 200 EMA possess predictive power for mean reversion or bounce entries in intraday MNQ trading?  
+**Hypothesis:** Fading extreme extensions (> 2.0 Daily ATR) or trading bounces near the Daily 200 EMA (< 0.5 Daily ATR) will yield a Profit Factor > 1.20 over a 2-year dataset.  
+**Experimental Design:** Tested 16 parameter configurations across 140,933 bars of 5-min MNQ data. Unconditional entries to isolate the location edge.  
+**Results:** 
+- **Mean Reversion (Fading Extensions):** Failed completely. PF ranged from 0.915 to 0.956. Massive drawdowns (up to -$25,411) because trends frequently extend much further than 3.0 Daily ATR without reverting.
+- **Bounce (Trend Continuation):** Failed completely. PF ranged from 0.805 to 1.005. The market treats the D200 EMA as liquidity, slicing through it repeatedly.
+**Decision:** **REJECTED** (The Daily 200 EMA provides zero predictive edge for intraday MNQ trading).  
+**Lessons Learned:** The retail trading consensus that the Daily 200 EMA is a magic level is statistically false in the MNQ intraday environment.  
+**Future Research:** Focus on structural components (BOS/CHOCH) and momentum (strong close ratio) rather than static higher-timeframe moving averages.
+
+---
+
 ## 2026-07-07 | Sprint 021: Execution Baseline & Regime Engine Contribution
 
 **Research Stream:** B — Execution Intelligence  
