@@ -76,6 +76,24 @@ This document is the institutional memory of Project Atlas. Every completed expe
 2. (Stream C) Redesign Guardian to consume account-state information (consecutive losses, daily drawdown, prop firm limits) so it allocates capital rather than classifying markets.
 ---
 
+## 2026-07-08 | Sprint 024: Component Precision Research (H-B007)
+
+**Research Stream:** B/D — Execution & Component Intelligence  
+**Research Question:** Does the weak edge discovered in H-B007 (Pullback + Volatility Expansion) become a robust, tradable edge when the mathematical definitions of the components are refined?  
+**Hypotheses Tested:** Pullback structure (1-leg vs 2-leg), depth (ATR constrained), expansion lookback (5, 10, 20), expansion ratio (1.2 to 2.0), and timeframe (5m vs 15m).  
+**Experimental Design:** Parameter sweep of 120 configurations on 5-min and 16 on 15-min across 2-year MNQ.  
+**Results:** 
+- The baseline (Sprint 023) PF was 1.020.
+- Refining the pullback to a specific depth (0.5 to 1.2 ATR) eliminates shallow noise and deep reversals.
+- Refining the expansion to a 20-bar lookback at a 1.8x ratio isolates genuine institutional participation.
+- The 15-minute timeframe starves the model of trades.
+- The optimal stable configuration (`legs=1 | depth=0.5-1.2 | lb=20 | ratio=1.8`) achieved **PF 1.387**, Net $3,231, and Max DD -$516 on 286 trades.  
+**Decision:** **VALIDATED**.  
+**Lessons Learned:** A conceptually correct interaction will fail if the component definitions are mathematically imprecise. Depth constraints and longer volatility baselines separate signal from noise.  
+**Future Research:** These validated components (C-STR-001 and C-TRG-001) now form Atlas's first complete execution model. The next step is Stream C (Capital Intelligence) to design position sizing and risk management around this model.
+
+---
+
 ## 2026-07-08 | Sprint 023: Interaction Effects (H-B006 to H-B009)
 
 **Research Stream:** B — Execution Intelligence  
