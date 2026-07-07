@@ -43,7 +43,30 @@ Create the permanent project memory and engineering standards.
 
 In progress.
 
-## Phase 1: Atlas Observer Dashboard
+## Phase 1: Market Regime Engine
+
+### Objective
+
+Classify the current market before any strategy is allowed to generate signals. Answer the question: "What kind of market is this?"
+
+### Deliverables
+
+- Atlas Regime Engine Python research module
+- Validated regime components (e.g., Volatility Compression, VWAP Deviation)
+- Regime Score and Tradeability Score outputs
+- Pine Script implementation for TradingView
+
+### Validation
+
+- Tested against 2-year MNQ dataset
+- Each component tested independently
+- Reports across all 12 robustness metrics
+
+### Promotion Gate
+
+Regime Engine must demonstrate a measurable improvement in overall robustness by identifying high-expectancy environments and filtering chop.
+
+## Phase 1.5: Atlas Observer Dashboard
 
 ### Objective
 
@@ -300,7 +323,23 @@ Define how Atlas is used during prop firm evaluations.
 
 Playbook must reduce the probability of emotional or rule-breaking decisions.
 
-## Phase 11: Restricted Live Candidate
+## Phase 11: Strategy Selection Layer
+
+### Objective
+
+Evaluate multiple validated strategies and dynamically determine which, if any, best suits the current market regime.
+
+### Deliverables
+
+- Strategy classification matrix
+- Dynamic execution routing based on Regime Score
+- Multi-strategy backtest validation
+
+### Promotion Gate
+
+Selection Layer must prove that dynamically routing strategies based on regime outperforms a static single-strategy approach.
+
+## Phase 12: Restricted Live Candidate
 
 ### Objective
 
