@@ -1,0 +1,190 @@
+//@version=6
+indicator("Atlas Structure Engine v0.1", shorttitle="Atlas Structure", overlay=true, max_labels_count=500, max_lines_count=500)
+
+// =============================================================================
+// Project Atlas
+// Module: Structure Engine
+// Version: 0.1.0
+// Mode: Observer Only
+//
+// Objective:
+// Objectively detect, classify, and display market structure (HH, HL, LH, LL),
+// Break of Structure (BOS), and Change of Character (CHOCH) for the Atlas
+// research pipeline.
+//
+// This script does not place trades.
+// This script does not issue executable buy or sell orders.
+// =============================================================================
+
+// -----------------------------------------------------------------------------
+// Inputs
+// -----------------------------------------------------------------------------
+groupStructure = "Structure Detection"
+pivotLength = input.int(5, "Pivot Lookback/Forward", minval=2, maxval=50, group=groupStructure, tooltip="Number of bars required on each side to confirm a swing pivot.")
+useBodyClose = input.bool(true, "Require Body Close for BOS/CHOCH", group=groupStructure, tooltip="If true, price must close beyond the pivot to confirm a break. If false, a wick is sufficient.")
+
+groupDisplay = "Display Options"
+showPivots = input.bool(true, "Show Swing Pivots (HH/HL/LH/LL)", group=groupDisplay)
+showBos = input.bool(true, "Show Break of Structure (BOS)", group=groupDisplay)
+showChoch = input.bool(true, "Show Change of Character (CHOCH)", group=groupDisplay)
+showPanel = input.bool(true, "Show Structure Dashboard", group=groupDisplay)
+
+colorBullish = input.color(color.new(color.teal, 0), "Bullish Color", group=groupDisplay)
+colorBearish = input.color(color.new(color.red, 0), "Bearish Color", group=groupDisplay)
+colorNeutral = input.color(color.new(color.gray, 0), "Neutral Color", group=groupDisplay)
+
+// -----------------------------------------------------------------------------
+// Pivot Detection
+// -----------------------------------------------------------------------------
+// A pivot high is confirmed when the high 'pivotLength' bars ago is the highest
+// among the surrounding bars.
+float ph = ta.pivothigh(high, pivotLength, pivotLength)
+float pl = ta.pivotlow(low, pivotLength, pivotLength)
+
+// State variables to track the most recent confirmed pivots
+var float lastPh = na
+var float lastPl = na
+var int lastPhBar = na
+var int lastPlBar = na
+
+// State variables to track structure sequence
+var string lastPhType = "na" // "HH" or "LH"
+var string lastPlType = "na" // "HL" or "LL"
+
+// State variable to track the current structural trend
+// 1 = Bullish (making HH/HL), -1 = Bearish (making LH/LL), 0 = Neutral/Transition
+var int structTrend = 0
+
+// Update pivots when detected (they are confirmed 'pivotLength' bars ago)
+if not na(ph)
+    bool isHH = na(lastPh) or ph > lastPh
+    lastPhType := isHH ? "HH" : "LH"
+    
+    if showPivots
+        label.new(bar_index[pivotLength], ph, lastPhType, color=color.new(color.white, 100), textcolor=isHH ? colorBullish : colorBearish, style=label.style_label_down, size=size.small)
+    
+    lastPh := ph
+    lastPhBar := bar_index[pivotLength]
+
+if not na(pl)
+    bool isHL = na(lastPl) or pl > lastPl
+    lastPlType := isHL ? "HL" : "LL"
+    
+    if showPivots
+        label.new(bar_index[pivotLength], pl, lastPlType, color=color.new(color.white, 100), textcolor=isHL ? colorBullish : colorBearish, style=label.style_label_up, size=size.small)
+    
+    lastPl := pl
+    lastPlBar := bar_index[pivotLength]
+
+// -----------------------------------------------------------------------------
+// BOS & CHOCH Detection
+// -----------------------------------------------------------------------------
+// We need to track the levels that must be broken to trigger BOS or CHOCH
+var float activeBullishBreakLevel = na
+var float activeBearishBreakLevel = na
+var bool waitBullishClose = false
+var bool waitBearishClose = false
+
+// When a new pivot is formed, it becomes the new level to break
+if not na(ph)
+    activeBullishBreakLevel := ph
+    waitBullishClose := true
+    
+if not na(pl)
+    activeBearishBreakLevel := pl
+    waitBearishClose := true
+
+// Detection logic
+bool bullishBreak = false
+bool bearishBreak = false
+
+if waitBullishClose and not na(activeBullishBreakLevel)
+    if useBodyClose
+        if close > activeBullishBreakLevel
+            bullishBreak := true
+            waitBullishClose := false
+    else
+        if high > activeBullishBreakLevel
+            bullishBreak := true
+            waitBullishClose := false
+
+if waitBearishClose and not na(activeBearishBreakLevel)
+    if useBodyClose
+        if close < activeBearishBreakLevel
+            bearishBreak := true
+            waitBearishClose := false
+    else
+        if low < activeBearishBreakLevel
+            bearishBreak := true
+            waitBearishClose := false
+
+// Classify the break as BOS or CHOCH based on current structural trend
+var string lastBreakType = "None"
+var int barsSinceBreak = 0
+
+if bullishBreak
+    barsSinceBreak := 0
+    // If we were bearish or neutral, breaking a high is a CHOCH
+    if structTrend <= 0
+        structTrend := 1
+        lastBreakType := "Bullish CHOCH"
+        if showChoch
+            line.new(lastPhBar, activeBullishBreakLevel, bar_index, activeBullishBreakLevel, color=colorBullish, style=line.style_dashed)
+            label.new(bar_index, activeBullishBreakLevel, "CHOCH", color=color.new(color.white, 100), textcolor=colorBullish, style=label.style_label_down, size=size.small)
+    // If we were already bullish, breaking a high is a BOS
+    else
+        lastBreakType := "Bullish BOS"
+        if showBos
+            line.new(lastPhBar, activeBullishBreakLevel, bar_index, activeBullishBreakLevel, color=colorBullish, style=line.style_solid)
+            label.new(bar_index, activeBullishBreakLevel, "BOS", color=color.new(color.white, 100), textcolor=colorBullish, style=label.style_label_down, size=size.small)
+else if bearishBreak
+    barsSinceBreak := 0
+    // If we were bullish or neutral, breaking a low is a CHOCH
+    if structTrend >= 0
+        structTrend := -1
+        lastBreakType := "Bearish CHOCH"
+        if showChoch
+            line.new(lastPlBar, activeBearishBreakLevel, bar_index, activeBearishBreakLevel, color=colorBearish, style=line.style_dashed)
+            label.new(bar_index, activeBearishBreakLevel, "CHOCH", color=color.new(color.white, 100), textcolor=colorBearish, style=label.style_label_up, size=size.small)
+    // If we were already bearish, breaking a low is a BOS
+    else
+        lastBreakType := "Bearish BOS"
+        if showBos
+            line.new(lastPlBar, activeBearishBreakLevel, bar_index, activeBearishBreakLevel, color=colorBearish, style=line.style_solid)
+            label.new(bar_index, activeBearishBreakLevel, "BOS", color=color.new(color.white, 100), textcolor=colorBearish, style=label.style_label_up, size=size.small)
+else
+    barsSinceBreak += 1
+
+// -----------------------------------------------------------------------------
+// Dashboard Panel
+// -----------------------------------------------------------------------------
+if showPanel
+    var table dash = table.new(position.bottom_right, 2, 5, border_width=1, border_color=color.new(color.gray, 50))
+    
+    if barstate.islast
+        color trendColor = structTrend == 1 ? colorBullish : structTrend == -1 ? colorBearish : colorNeutral
+        string trendText = structTrend == 1 ? "Bullish" : structTrend == -1 ? "Bearish" : "Neutral"
+        
+        table.cell(dash, 0, 0, "Atlas Structure Engine", text_color=color.white, bgcolor=color.new(color.gray, 80), text_size=size.small, text_halign=text.align_left)
+        table.merge_cells(dash, 0, 0, 1, 0)
+        
+        table.cell(dash, 0, 1, "Structure Bias", text_color=color.gray, bgcolor=color.new(color.black, 0), text_size=size.small, text_halign=text.align_left)
+        table.cell(dash, 1, 1, trendText, text_color=trendColor, bgcolor=color.new(color.black, 0), text_size=size.small, text_halign=text.align_right)
+        
+        table.cell(dash, 0, 2, "Last High", text_color=color.gray, bgcolor=color.new(color.black, 0), text_size=size.small, text_halign=text.align_left)
+        table.cell(dash, 1, 2, lastPhType, text_color=lastPhType == "HH" ? colorBullish : colorBearish, bgcolor=color.new(color.black, 0), text_size=size.small, text_halign=text.align_right)
+        
+        table.cell(dash, 0, 3, "Last Low", text_color=color.gray, bgcolor=color.new(color.black, 0), text_size=size.small, text_halign=text.align_left)
+        table.cell(dash, 1, 3, lastPlType, text_color=lastPlType == "HL" ? colorBullish : colorBearish, bgcolor=color.new(color.black, 0), text_size=size.small, text_halign=text.align_right)
+        
+        table.cell(dash, 0, 4, "Last Break", text_color=color.gray, bgcolor=color.new(color.black, 0), text_size=size.small, text_halign=text.align_left)
+        table.cell(dash, 1, 4, lastBreakType + " (" + str.tostring(barsSinceBreak) + " bars ago)", text_color=color.white, bgcolor=color.new(color.black, 0), text_size=size.small, text_halign=text.align_right)
+
+// -----------------------------------------------------------------------------
+// Data Export (for Atlas Research Engine)
+// -----------------------------------------------------------------------------
+// These invisible plots allow the Python research engine to read the structure state
+plot(structTrend, "Export_StructTrend", display=display.none)
+plot(bullishBreak ? 1 : bearishBreak ? -1 : 0, "Export_BreakEvent", display=display.none)
+plot(activeBullishBreakLevel, "Export_BullishBreakLevel", display=display.none)
+plot(activeBearishBreakLevel, "Export_BearishBreakLevel", display=display.none)
