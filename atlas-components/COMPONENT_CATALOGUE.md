@@ -27,6 +27,21 @@ These describe the **event**. They define the specific mechanical entry signal. 
 
 ---
 
+## Trusted Execution Models
+
+The following execution models have passed both Stream D validation and Stream B independent stress testing. They are approved for use in Stream C (Capital Intelligence).
+
+### Atlas Execution Model A1
+- **Structural Component:** C-STR-001 (Volatility Expansion)
+- **Trigger Component:** C-TRG-001 (Depth-Constrained Pullback)
+- **Timeframe:** 5-minute MNQ
+- **Risk/Reward:** 1:2 (Stop = 1.0 ATR, Target = 2.0 ATR)
+- **Performance:** PF 1.387, Net +$3,231, Max DD -$516, 286 trades (2-year MNQ)
+- **Validation:** Survived 4-tick slippage, parameter neighbourhood shifts, 100% quarterly stability, and Monte Carlo sequence risk (Sprint 025).
+- **Status:** Trusted
+
+---
+
 ## Validated Components
 
 The following components have successfully passed Stream D validation and are available for use in Stream B Strategy Assembly.
