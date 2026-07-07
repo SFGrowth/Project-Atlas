@@ -89,6 +89,20 @@ This sprint supports the Atlas objective by:
 
 If this section cannot be answered honestly, the sprint should be challenged.
 
+## The Research Cycle
+
+Atlas operates on a research-driven development model. Code is simply the implementation of validated knowledge. Every engine or feature must pass through the 9-step Research Cycle before being merged:
+
+1. **Research Question**: What are we trying to understand?
+2. **Hypothesis**: What is the proposed solution or relationship?
+3. **Experimental Design**: How will we test this while isolating variables?
+4. **Test Harness**: The Python code to run the experiment.
+5. **Statistical Validation**: Running against the 2-year dataset (in-sample).
+6. **Evidence Review**: Evaluating the 12 robustness metrics.
+7. **Accept / Reject**: Decision based purely on evidence, not intuition.
+8. **Update Atlas Knowledge Base**: Record the findings in `KNOWLEDGE_BASE.md`.
+9. **Commit to Repository**: Only if accepted, merge the implementation to `main`.
+
 ## Module Admission Criteria
 
 No module enters production until it has:
