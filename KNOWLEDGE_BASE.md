@@ -52,3 +52,19 @@ This document is the institutional memory of Project Atlas. Every completed expe
 **Future Research:** 
 1. (Stream B) Research execution entries from first principles (sweeps, breakouts, mean reversion).
 2. (Stream C) Redesign Guardian to consume account-state information (consecutive losses, daily drawdown, prop firm limits) so it allocates capital rather than classifying markets.
+---
+
+## 2026-07-07 | Sprint 021: Execution Baseline & Regime Engine Contribution
+
+**Research Stream:** B — Execution Intelligence  
+**Research Question:** Do the four candidate execution models (Pullback, Liquidity Sweep, Breakout, Mean Reversion) possess a statistical edge independently of the Regime Engine? Does the frozen Regime Engine v1.0 improve them?  
+**Hypothesis:** Each entry type produces PF > 1.20 when traded unconditionally during RTH.  
+**Experimental Design:** Dual-experiment framework. Experiment A (Execution only, no Regime Engine) vs Experiment B (Execution + frozen Regime Engine v1.0). Tested on 2-year MNQ dataset.  
+**Results:** 
+- **Baseline:** All four models failed (PF ~ 1.0, Max DD > $2,800).
+- **With Regime Engine:** Liquidity Sweep DD dropped from $2,809 to $794, but PF only reached 1.071. Other models were starved of trades (< 100) because the Regime Engine passed only 0.7% of bars.  
+**Decision:** **REJECTED** (All four execution models lack edge; Regime Engine v1.0 is too restrictive).  
+**Lessons Learned:** 
+1. The simple execution models lack intrinsic edge.
+2. The frozen Regime Engine v1.0 (ATR ratio ≤ 0.7) is too restrictive, filtering out 99.3% of the market and starving the system of opportunities.  
+**Future Research:** Initiate Stream A research for **Regime Engine v2.0** to discover a classification threshold that balances capital protection with opportunity generation.
