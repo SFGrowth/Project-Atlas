@@ -1,4 +1,4 @@
-# Atlas Component Catalogue
+# Atlas Execution Component Library
 
 ## Purpose
 This catalogue is the central repository for all independently validated components in Project Atlas. 
@@ -6,6 +6,32 @@ This catalogue is the central repository for all independently validated compone
 Atlas does not build complete strategies as monolithic blocks. Instead, Atlas discovers, validates, and catalogues **components** (e.g., Regime Filters, Entry Triggers, Momentum Confirmations). 
 
 Execution models (strategies) are then constructed by combining these validated components.
+
+---
+
+## Component Taxonomy
+
+Components are classified into the following categories:
+
+### 1. Market Regime Components (C-REG)
+Components that classify the current market environment (e.g., Trend, Range, Compression, Expansion).
+
+### 2. Structural Components (C-STR)
+Components that identify market structure (e.g., Break of Structure, Change of Character, Swing Highs/Lows).
+
+### 3. Momentum & Pressure Components (C-MOM)
+Components that measure directional commitment and strength (e.g., Strong Close, Volume Expansion).
+
+### 4. Location Components (C-LOC)
+Components that define value areas and key levels (e.g., VWAP Deviation, Premium/Discount, Support/Resistance).
+
+### 5. Liquidity Components (C-LIQ)
+Components that identify liquidity pools and stop runs (e.g., Liquidity Sweeps, Equal Highs/Lows).
+
+### 6. Entry Trigger Components (C-TRG)
+Components that define the specific entry mechanic (e.g., Pullback Continuation, Breakout, Mean Reversion).
+
+---
 
 ## 1. Regime Components (Stream A)
 
@@ -38,4 +64,15 @@ These components manage risk, position sizing, and account health.
 
 ---
 
-*Note: A component only enters this catalogue after completing the 9-step Research Cycle and demonstrating a statistically robust edge across the 12 Atlas robustness metrics.*
+## Experimental Components (Pending Validation)
+
+The following components are currently undergoing Stream D validation and are **not yet approved** for use in Stream B Strategy Assembly.
+
+- **C-TRG-001: Pullback Continuation** (Failed baseline in Sprint 021, pending refinement)
+- **C-LIQ-001: Liquidity Sweep** (Failed baseline in Sprint 021, pending refinement)
+- **C-TRG-002: Breakout Continuation** (Failed baseline in Sprint 021, pending refinement)
+- **C-TRG-003: Mean Reversion** (Failed baseline in Sprint 021, pending refinement)
+
+---
+
+*Note: A component only enters this catalogue after completing the 12-step Research Workflow and demonstrating a statistically robust edge across the 12 Atlas robustness metrics.*

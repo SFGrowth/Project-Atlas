@@ -89,19 +89,22 @@ This sprint supports the Atlas objective by:
 
 If this section cannot be answered honestly, the sprint should be challenged.
 
-## The Research Cycle
+## The Research Workflow
 
-Atlas operates on a research-driven development model. Code is simply the implementation of validated knowledge. Every engine or feature must pass through the 9-step Research Cycle before being merged:
+Atlas operates on a research-driven development model. Code is simply the implementation of validated knowledge. Every engine or feature must pass through the 12-step Research Workflow before being merged:
 
 1. **Research Question**: What are we trying to understand?
 2. **Hypothesis**: What is the proposed solution or relationship?
-3. **Experimental Design**: How will we test this while isolating variables?
-4. **Test Harness**: The Python code to run the experiment.
-5. **Statistical Validation**: Running against the 2-year dataset (in-sample).
-6. **Evidence Review**: Evaluating the 12 robustness metrics.
-7. **Accept / Reject**: Decision based purely on evidence, not intuition.
-8. **Update Atlas Knowledge Base**: Record the findings in `KNOWLEDGE_BASE.md`.
-9. **Commit to Repository**: Only if accepted, merge the implementation to `main` (or add to Execution Component Library).
+3. **Component Development**: Building the testable component logic.
+4. **Component Validation**: Independent statistical testing of the component.
+5. **Knowledge Base Update**: Record the findings in `KNOWLEDGE_BASE.md`.
+6. **Strategy Assembly**: Combining validated components into an execution model.
+7. **Integrated Validation**: Testing the assembled model against the 2-year dataset.
+8. **Out-of-Sample Validation**: Testing against unseen data to prevent curve-fitting.
+9. **Walk-Forward Validation**: Rolling out-of-sample testing across time periods.
+10. **Paper Trading**: Live market testing without real capital risk.
+11. **Prop Firm Simulation**: Testing against specific prop firm rules (drawdown limits, consistency rules).
+12. **Production Approval**: Formal sign-off to deploy with live capital.
 
 ## Execution Component Library
 

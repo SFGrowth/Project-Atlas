@@ -22,15 +22,21 @@ Every module, rule, signal, alert, dashboard element, workflow, and automation f
 
 ## The Final Principle
 
-**Atlas must never optimise for a strategy. Atlas must optimise for understanding.**
+**Atlas does not search for perfect strategies. Atlas discovers durable market truths. Strategies are temporary combinations of validated knowledge.**
 
-Every engine should improve Atlas' ability to understand the market. Every validated improvement should make every future strategy better. If we remain disciplined and continue building Atlas one validated hypothesis at a time, we are creating a quantitative research platform that can continue evolving for many years, rather than a single strategy that eventually stops working.
+If we remain disciplined and continue building Atlas one validated hypothesis at a time, we are creating a platform that will continue improving for many years rather than chasing the next optimisation.
 
 ## The Knowledge Principle
 
 **Atlas does not build features. Atlas discovers knowledge. Features are simply the implementation of validated knowledge.**
 
 The primary output of Atlas is no longer code. The primary output of Atlas is knowledge. Code simply implements validated knowledge.
+
+## The Understanding Principle
+
+**Atlas must never optimise for a strategy. Atlas must optimise for understanding.**
+
+Every engine should improve Atlas' ability to understand the market. Every validated improvement should make every future strategy better.
 
 ## The Atlas Test
 
@@ -105,25 +111,29 @@ Atlas is not a trading bot with a research component. Atlas is a **quantitative 
 
 Every engine developed must be strategy-agnostic. Engines are reusable infrastructure that every current and future strategy will inherit.
 
-### The Three Permanent Research Streams
+### The Four Permanent Research Streams
 
-Following Sprint 020b, Atlas has permanently transitioned from a sprint-driven development model to a research-driven development model. Research is separated into three independent streams. They must be solved independently before being combined into a single decision engine.
+Following Sprint 021, Atlas has permanently transitioned from a sprint-driven development model to a research-driven development model. Research is separated into four independent streams. They must be solved independently before being combined into a single decision engine.
 
 1. **Stream A — Market Intelligence**
    - Understanding market regimes.
    - Purpose: Answer *"What kind of market is this?"*
 
 2. **Stream B — Execution Intelligence**
-   - Discovering statistically robust execution models from first principles.
-   - Treat entries as hypotheses (pullbacks, sweeps, breakouts, mean reversion) and let them compete on evidence alone.
-   - Purpose: Answer *"What is the highest expectancy entry in this environment?"*
-
-   - **Execution Component Library:** Atlas does not research complete strategies. Atlas researches execution components (e.g., Pullback Component, Liquidity Sweep Component, Momentum Confirmation Component). Validated components become reusable building blocks that every future execution model can inherit.
+   - Assembling complete execution models (strategies) from validated components.
+   - Every execution model becomes a hypothesis built from previously validated building blocks (e.g., Liquidity Sweep + Trend Alignment + High Tradeability Regime).
+   - Purpose: Answer *"Which combination of validated components produces the highest statistical edge in this environment?"*
 
 3. **Stream C — Capital Intelligence**
    - Optimising capital preservation, position sizing, and risk allocation.
    - Guardian must consume information unavailable to the Regime Engine: consecutive losses, daily/weekly drawdown, prop firm trailing drawdown limits, live vs evaluation mode, and position sizing.
    - Purpose: Answer *"Given everything Atlas knows, how much capital deserves to be risked?"*
+
+4. **Stream D — Component Intelligence**
+   - Discovering which individual market behaviours consistently add statistical value.
+   - Atlas does not treat Pullbacks, Liquidity Sweeps, or Breakouts as complete strategies. They are individual market behaviours researched as independent components.
+   - Purpose: Answer *"Does this specific market behaviour possess intrinsic statistical edge?"*
+   - Validated components are stored in the **Execution Component Library** and become reusable building blocks for Stream B.
 
 ### The Three-Question Ordering
 
@@ -175,19 +185,24 @@ Future user interface layer for concise decision quality, not visual clutter.
 
 Future module for replay notes, signal review, expectancy analysis, drawdown analysis, and feature validation.
 
-### The Research Cycle
+### The Research Workflow
 
-Every future engine or feature must be developed through the formal 9-step Research Cycle:
+Every future engine or feature must be developed through the formal 12-step Research Workflow:
 
 1. **Research Question**
 2. **Hypothesis**
-3. **Experimental Design**
-4. **Test Harness**
-5. **Statistical Validation**
-6. **Evidence Review**
-7. **Accept / Reject**
-8. **Update Atlas Knowledge Base**
-9. **Commit to Repository**
+3. **Component Development**
+4. **Component Validation**
+5. **Knowledge Base Update**
+6. **Strategy Assembly**
+7. **Integrated Validation**
+8. **Out-of-Sample Validation**
+9. **Walk-Forward Validation**
+10. **Paper Trading**
+11. **Prop Firm Simulation**
+12. **Production Approval**
+
+Atlas should never optimise a complete strategy until every component within that strategy has independently earned its place.
 
 ### Research Standards
 

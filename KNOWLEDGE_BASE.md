@@ -36,6 +36,28 @@ This document is the institutional memory of Project Atlas. Every completed expe
 **Lessons Learned:** Compression and VWAP proximity are highly effective filters for avoiding noise in MNQ futures.  
 **Future Research:** Validate the frozen Regime Engine v1.0 on out-of-sample data.
 
+### Component Knowledge Record: Volatility Compression (C-REG-001)
+- **Purpose:** Identifies periods of volatility contraction relative to recent history to filter out high-noise, low-expectancy environments.
+- **Hypothesis:** Trading only when short-term volatility is compressed relative to long-term volatility reduces drawdown.
+- **Statistical Evidence:** Improved PF from 0.95 to 1.222; reduced Max Drawdown by $14,071 on 2-year MNQ data.
+- **Confidence Level:** High (In-Sample)
+- **Replication Status:** Pending Out-of-Sample Validation
+- **Strengths:** Exceptional capital protection; avoids major chop zones.
+- **Weaknesses:** Highly restrictive (passes only 0.7% of bars at 0.7 threshold).
+- **Suitable Market Regimes:** All (acts as a universal filter).
+- **Strategies Using This Component:** None yet (pending Regime Engine v2.0 opportunity density improvements).
+
+### Component Knowledge Record: VWAP Deviation (C-REG-002)
+- **Purpose:** Ensures price is within a reasonable distance from VWAP, avoiding over-extended entries.
+- **Hypothesis:** Mean reversion forces eventually overwhelm trend continuation when price is too far from VWAP.
+- **Statistical Evidence:** Reduced Max Drawdown by $9,952 on 2-year MNQ data.
+- **Confidence Level:** High (In-Sample)
+- **Replication Status:** Pending Out-of-Sample Validation
+- **Strengths:** Prevents buying the top or selling the bottom of over-extended moves.
+- **Weaknesses:** May miss the strongest runaway trend days.
+- **Suitable Market Regimes:** Trend Continuation.
+- **Strategies Using This Component:** None yet.
+
 ---
 
 ## 2026-07-07 | Sprint 020b: Guardian Contribution Analysis
