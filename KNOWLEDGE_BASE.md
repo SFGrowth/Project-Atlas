@@ -14,6 +14,19 @@ Every entry in this Knowledge Base represents a specific instance of converting 
 
 ---
 
+## 2026-07-08 | Sprint 039: ARI Validation (H-C001) — VALIDATED
+
+**Research Stream:** C — Capital & Portfolio Intelligence  
+**Research Question:** Does dynamic capital allocation through Atlas Risk Intelligence (ARI) reduce drawdown and improve portfolio robustness without changing the underlying execution models?  
+**Hypothesis (H-C001):** Dynamic capital allocation is an independent source of statistical edge.  
+**Experimental Design:** Five candidate ARI inputs validated individually. ARI v1.0 built from three validated inputs (daily loss limit, rolling drawdown, consecutive losses). Static Portfolio vs ARI Portfolio compared across 15 metrics and Monte Carlo.  
+**Results:** ARI v1.0 reduced maximum drawdown by 21% ($827 → $655). MC pass rate improved from 98.9% to 99.6%. PF maintained within 5% margin (1.324 → 1.297). 106/346 trades (30.6%) had risk scaled to 50%. Ulcer Index worsened (deeper-but-shorter drawdowns replaced by shallower-but-longer recovery periods).  
+**Decision:** **VALIDATED. H-C001 confirmed. ARI v1.0 is a validated capital allocation framework.**  
+**Lessons Learned:** Intelligent capital allocation is an independent source of statistical edge. The rolling drawdown input revealed a counter-intuitive finding: trades taken during portfolio drawdown have *higher* expectancy (PF 2.158 vs 1.204), suggesting the models are mean-reverting at the portfolio level. This is a significant discovery that should be investigated further. ADX regime confidence (>32) strongly predicts higher expectancy.  
+**Future Research:** Sprint 040 — Model A2 Discovery (High-ADX RTH Breakout). Complete the regime matrix. Then integrate ARI into Portfolio v2.0 with three models.
+
+---
+
 ## 2026-07-08 | Sprint 038: Portfolio Validation (H-P001) — REJECTED
 
 **Research Stream:** C — Capital & Portfolio Intelligence  
