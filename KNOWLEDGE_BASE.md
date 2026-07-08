@@ -14,6 +14,25 @@ Every entry in this Knowledge Base represents a specific instance of converting 
 
 ---
 
+## 2026-07-08 | Sprint 041: Cross-Market Generalisation (H-G001) — REJECTED
+
+**Research Stream:** G — Guardian & Robustness  
+**Research Question:** Do Atlas' validated market truths generalise beyond MNQ?  
+**Hypothesis (H-G001):** Atlas has discovered behavioural principles of financial markets rather than behaviours unique to MNQ.  
+**Experimental Design:** Frozen Model A1, Model A3, and ARI v2.0 deployed on NQ, ES, MES, YM, MYM, RTY. Identical 2-year window. $800 risk per trade. No parameter tuning.  
+**Results:**
+- NQ: A1 PF=1.171 (REPLICATES), A3 PF=1.633 (REPLICATES/STRENGTHENS). Portfolio Net +$65,603.
+- RTY: A1 PF=1.062 (marginal), A3 PF=0.908 (WEAKENS). Portfolio Net +$2,548.
+- ES: A1 PF=0.868, A3 PF=0.838. Portfolio Net -$40,262. FAILS.
+- YM: A1 PF=0.948, A3 PF=0.909. Portfolio Net -$17,145. FAILS.
+- MES/MYM: Both fail. Consistent with full-size contracts.
+**Decision:** **H-G001 REJECTED. Atlas models are Nasdaq-specific, not universal market principles.**  
+**Critical Discovery:** The overnight volatility contraction asymmetry (Model A3) is unique to the Nasdaq 100. ES/YM overnight breakouts lack the follow-through required to hit a 2.5R target. The S&P 500 and Dow Jones have structurally different pullback characteristics that invalidate Model A1's ATR depth constraints. The Theory of Edge (uncertainty reduction) is validated universally — but the specific mechanisms by which uncertainty is reduced are instrument-specific.  
+**Knowledge Confidence Updates:** Overnight Contraction Asymmetry demoted from 'High (General)' to 'High (Nasdaq Only)'. Model A1 structural anchoring demoted to 'High (Nasdaq Only)'. Theory of Edge and Regime Dependence remain 'High (Universal)'.  
+**Future Research:** Sprint 042 — Model A2 Discovery (High-ADX RTH Breakout, Nasdaq Only). All future execution models will be engineered exclusively for NQ/MNQ.
+
+---
+
 ## 2026-07-08 | Sprint 040: ARI Rule Attribution (H-C002) — COMPLETED
 
 **Research Stream:** C — Capital & Portfolio Intelligence  
