@@ -276,6 +276,11 @@ Every experiment must answer:
 
 ### The Research Workflow
 
+**The Research Gate Rule:** Every experiment must answer one of two questions:
+1. Does this increase Atlas's knowledge?
+2. Does this improve the Atlas portfolio?
+If the answer to both is no, the experiment should not be run. This rule prevents parameter fishing and keeps research disciplined.
+
 Every future engine or feature must be developed through the formal 12-step Research Workflow:
 
 1. **Research Question**
