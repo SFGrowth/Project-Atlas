@@ -56,6 +56,12 @@ Discovering a statistical edge in a backtest is only the first milestone (Valida
 
 Before any trusted model is allocated capital, it must be fully characterised. Atlas must understand exactly when the model performs best and when it should stand aside—decomposed by session, day of week, volatility quartile, and trend strength. Every future execution model must undergo this characterisation process before being trusted with capital.
 
+## The Epistemology Principle
+
+**The success of Atlas is measured not only by the quality of its execution models, but by the rate at which it converts uncertainty into validated knowledge.**
+
+Atlas is an epistemology project. It exists to answer one question: "How do we know something is true?" Every research stream exists to reduce uncertainty through evidence. Knowledge is the compounding asset. Everything else—including profit—is simply an application of that knowledge.
+
 ## The Atlas Test
 
 Before any feature is accepted into Atlas, it must answer these questions:
@@ -211,6 +217,17 @@ Future user interface layer for concise decision quality, not visual clutter.
 
 Future module for replay notes, signal review, expectancy analysis, drawdown analysis, and feature validation.
 
+### The Knowledge Gain Framework
+
+Every completed research cycle must measure **Knowledge Gain** rather than just Profit Factor. A profitable experiment with little understanding is less valuable than a negative experiment that permanently eliminates an entire branch of research.
+
+Every experiment must answer:
+1. What did we learn?
+2. What uncertainty was removed?
+3. What future work has been eliminated?
+4. What new research questions were created?
+5. Did Atlas become objectively smarter?
+
 ### The Research Workflow
 
 Every future engine or feature must be developed through the formal 12-step Research Workflow:
@@ -248,11 +265,22 @@ Every experiment must report:
 - Session Performance
 - Regime Performance
 
+## Atlas Maturity Model
+
+Atlas has progressed through six stages of evolution. Every future decision should move Atlas further into Stage 6.
+
+1. **Strategy Development:** Attempting to build profitable algorithms.
+2. **Quantitative Research:** Testing ideas with historical data.
+3. **Knowledge Preservation:** Recording what does not work.
+4. **Component Architecture:** Breaking strategies into isolated, testable behaviours.
+5. **AI-Assisted Discovery:** Using machine learning to find hidden relationships.
+6. **Scientific Learning:** Building a system that continuously improves its fundamental understanding of financial markets.
+
 ## Definition of Success
 
-Atlas succeeds when it becomes a maintainable software project that produces disciplined, statistically validated trading decisions and supports a sustainable lifestyle rather than chasing short-term profits.
+Atlas succeeds when it becomes a system that continuously improves its understanding of financial markets, converting uncertainty into validated knowledge. Profitable execution models emerge naturally as a byproduct of this compounding knowledge.
 
-Atlas is successful only if it helps preserve capital, improve decision quality, and keep the trader aligned with the long-term mission.
+Atlas is successful only if it helps preserve capital, improve decision quality, and keep the trader aligned with the long-term mission of sustainable freedom.
 
 ## Non-Goals
 
