@@ -14,6 +14,23 @@ Every entry in this Knowledge Base represents a specific instance of converting 
 
 ---
 
+## 2026-07-08 | Sprint 045: Reverse Market Causality Engine (RMCE) — DISCOVERY COMPLETE
+
+**Research Stream:** E — AI Discovery Methodology  
+**Research Question:** What market conditions consistently precede exceptional directional moves (≥2.0R) in MNQ?  
+**Methodology:** Outcome-first reverse causality. 1,541 qualifying events identified. 4,623 control non-events matched. 16 precursor features extracted. K-Means clustering (K=2). Random Forest + Information Gain contrast analysis.  
+**Results:**
+- ATR Acceleration (ATR_current / ATR_20bars_ago): Cohen's d = +0.889, p = 0.0000. The single most powerful discriminating feature. Events: mean 1.44. Controls: mean 0.93.
+- Relative Volume: Cohen's d = +0.585, p = 0.0000. Events: mean 1.21. Controls: mean 0.92.
+- Session Timing (Minutes Since Open): Cohen's d = -0.461, p = 0.0000. Events cluster in the first 140 minutes of RTH; controls average 259 minutes.
+- Two event clusters discovered: Cluster 0 (N=540) = PM Trend Acceleration (ADX=41.4, ATR_accel=2.17, 75% PM session); Cluster 1 (N=1,001) = AM Volatility Breakout (ADX=30.3, ATR_accel=1.08, 46% Open session).
+- ADX shows no discriminating power (ratio ≈ 1.0 across all ADX bands). Session timing and volatility state are the primary drivers.
+**Decision:** **RMCE COMPLETE. Three new hypotheses generated and ranked.** H-RMCE-01 (AM Volatility Breakout), H-RMCE-02 (ATR Acceleration Filter for existing models), H-RMCE-03 (Volume/Structure Divergence).  
+**Critical Discovery:** Exceptional moves are not randomly distributed. They are preceded by measurable volatility acceleration and relative volume expansion. The AM session (currently avoided by Atlas) contains 65% of all qualifying events. ADX — Atlas' primary regime filter — has near-zero discriminating power for event prediction, suggesting the regime engine requires augmentation with volatility state features.  
+**Future Research:** Sprint 046 — H-RMCE-02 (ATR Acceleration Filter): test whether adding ATR_accel > 1.2 to existing Models A1/A2/A3 improves Profit Factor without reducing trade frequency below minimum thresholds.
+
+---
+
 ## 2026-07-08 | Sprint 044: Prop Firm Execution Layer (H-PF001) — VALIDATED (Partial)
 
 **Research Stream:** C — Capital & Portfolio Intelligence  
