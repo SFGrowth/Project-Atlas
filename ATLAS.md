@@ -86,6 +86,14 @@ Atlas is an epistemology project. It exists to answer one question: "How do we k
 
 The purpose of research is no longer simply to discover knowledge. The purpose of research is to continuously improve a complete trading system capable of repeatedly passing prop firm evaluations under realistic conditions.
 
+## The Framework Repeatability Principle
+
+**The ultimate measure of Atlas is not the performance of any single execution model. The ultimate measure is whether the research framework can repeatedly transform uncertainty into validated knowledge, and validated knowledge into profitable execution models.**
+
+One successful model proves an idea. Multiple independently discovered models prove a research framework. The highest-level research objective of Atlas is to validate **H-F001 (Framework Repeatability)**: demonstrating that the scientific process itself constitutes a statistical edge.
+
+If this hypothesis is validated, Atlas itself becomes the edge.
+
 ## The Portfolio Principle
 
 The Portfolio Principle is the ninth constitutional principle of Atlas. Unlike the preceding principles, which govern how execution models are discovered, tested, and validated, the Portfolio Principle governs how validated models relate to one another. It defines the architecture of Atlas rather than the methodology of its research.
@@ -266,6 +274,13 @@ Future module for replay notes, signal review, expectancy analysis, drawdown ana
 ### The Knowledge Gain Framework
 
 Every completed research cycle must measure **Knowledge Gain** rather than just Profit Factor. A profitable experiment with little understanding is less valuable than a negative experiment that permanently eliminates an entire branch of research.
+
+#### The Theory of Edge and URS v1.0
+Atlas operates on the validated hypothesis that **trading edge exists whenever market uncertainty temporarily decreases.** 
+To enforce this, Atlas uses the **Uncertainty Reduction Score (URS)**. Before any execution model or complex behavioural hypothesis is subjected to a backtest, its theoretical URS must be calculated across six dimensions (Regime, Volatility, Structural, Trend, Session, Execution). If the score is below 60/100, the hypothesis is structurally deficient and must be redesigned. URS v1.0 is currently frozen.
+
+#### Knowledge Confidence
+Every validated market truth in Atlas must maintain a permanent **Knowledge Confidence** metric, tracking the number of supporting experiments, contradictory experiments, replication status, and cross-market validation status. Knowledge in Atlas evolves exactly as scientific theories evolve.
 
 Every experiment must answer:
 1. What did we learn?
