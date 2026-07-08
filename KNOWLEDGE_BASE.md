@@ -14,6 +14,26 @@ Every entry in this Knowledge Base represents a specific instance of converting 
 
 ---
 
+## 2026-07-08 | Sprint 040: ARI Rule Attribution (H-C002) — COMPLETED
+
+**Research Stream:** C — Capital & Portfolio Intelligence  
+**Research Question:** Which individual ARI rules independently improve portfolio performance?  
+**Hypothesis (H-C002):** Every ARI rule must independently demonstrate measurable statistical value before earning permanent inclusion.  
+**Experimental Design:** Six candidate rules (A–F) tested independently against frozen static portfolio baseline. Rule G tested as combined ARI v2.0 using only promoted rules.  
+**Results:**
+- Rule A (Daily Loss Stop $300): **PROMOTE** — circuit breaker against tail risk; rarely triggered but mathematically sound.
+- Rule B (Drawdown Scaling): **REJECT** — reduces risk during periods of *highest* expectancy. Inverse rule (boosting during DD) outperforms. Destroys recovery.
+- Rule C (Consecutive Loss Scaling): **PROMOTE** — reduces DD to -$654, improves MC to 99.6%, maintains PF.
+- Rule D (ADX Confidence Scaling): **EXPERIMENTAL** — boosts PF to 1.469 and Net Profit +37%, but inflates absolute DD. Needs refinement.
+- Rule E (Knowledge Confidence): **REJECT** — research metric, not a live execution metric. Degrades performance.
+- Rule F (URS Scaling): **REJECT** — both models have URS=100; no differentiation possible. Concept valid for future portfolios with heterogeneous URS scores.
+- ARI v2.0 (A+C+D): PF 1.368, DD -$682, MC 99.7%, Net $3,912. Outperforms ARI v1.0 on all key metrics.  
+**Decision:** **H-C002 VALIDATED. ARI v2.0 specification frozen. Rule B permanently rejected.**  
+**Critical Discovery:** The Atlas portfolio exhibits mean-reversion at the portfolio level. Drawdown Scaling (Rule B) is mathematically destructive because it suppresses the highest-expectancy trades. ARI must scale based on *sequence risk* (Rule C) and *regime confidence* (Rule D), not dollar drawdown.  
+**Future Research:** Sprint 041 — Model A2 Discovery (High-ADX RTH). Complete the execution regime matrix.
+
+---
+
 ## 2026-07-08 | Sprint 039: ARI Validation (H-C001) — VALIDATED
 
 **Research Stream:** C — Capital & Portfolio Intelligence  
