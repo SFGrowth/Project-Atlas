@@ -45,6 +45,12 @@ Project-Atlas/
 └─ archive/
 ```
 
+## Architecture Freeze v1.0
+
+As of 2026-07-08, the core Atlas architecture is in **Architecture Freeze v1.0**.
+
+The architecture is now stable. The research is now dynamic. The engineering objective is no longer to redesign the system, but to use the stable framework to discover new knowledge, validate hypotheses, expand the Knowledge Base, and improve execution models and capital allocation.
+
 ## Development Modes
 
 Atlas must move through clear maturity stages.

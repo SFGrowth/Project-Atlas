@@ -2,7 +2,21 @@
 
 ## Status
 
-Foundation documentation created on 2026-07-04.
+**Atlas OS Version 1.0 — Architecture Freeze**
+
+Foundation documentation created on 2026-07-04. Architectural maturity achieved and frozen on 2026-07-08.
+
+### Architecture Freeze Declaration
+
+Effective immediately, the core Atlas architecture is in **Architecture Freeze v1.0**.
+- No new research streams.
+- No new constitutional principles.
+- No major architectural redesigns.
+- No philosophical additions.
+
+From this point forward, the burden of proof shifts. If anyone proposes a change to Atlas' core architecture, they must demonstrate that the existing architecture cannot solve the problem first. The architecture is now stable; the research is now dynamic.
+
+The primary objective is no longer to build a better architecture. The objective is to use the stable scientific framework to generate a larger body of validated knowledge.
 
 ## Identity
 
