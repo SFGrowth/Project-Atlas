@@ -84,6 +84,23 @@ Every entry in this Knowledge Base represents a specific instance of converting 
 2. (Stream C) Redesign Guardian to consume account-state information (consecutive losses, daily drawdown, prop firm limits) so it allocates capital rather than classifying markets.
 ---
 
+## 2026-07-08 | Sprint 027: Edge Attribution Analysis (Model A1)
+
+**Research Stream:** B — Execution Intelligence  
+**Research Question:** What is the root cause of Model A1's underperformance in Year 1, and can it be solved through alternative parameters or regime exclusion?  
+**Hypotheses Tested:** Feature importance ranking across trade duration, VWAP distance, pullback depth, ADX, ATR percentile, and volatility expansion. Tested alternative exits, dynamic sizing, and ADX-based regime exclusion.  
+**Experimental Design:** Partitioned all historical Model A1 trades by regime variables at entry. Simulated alternative solutions on the full 2-year dataset.  
+**Results:** 
+- **Root Cause:** Model A1 is a trend-initiation model that fails during late-stage trend exhaustion.
+- **Predictive Power:** ADX (Trend Strength) has the highest pre-trade predictive power (PF spread 0.920).
+- **Regime Dependency:** In low-ADX environments (ADX < 30), Model A1 produced PF 1.854. In high-ADX environments (ADX > 30), it failed completely.
+- **Alternative Solutions:** Blocking trades when ADX > 30 improved PF but starved the system of trades (97 over two years) and did not solve the Year 1 drawdown (Year 1 PF 1.026).  
+**Decision:** **MODEL A2 REQUIRED**.  
+**Lessons Learned:** Model A1 cannot be "fixed" to perform in high-ADX environments because its structural logic (pullback continuation) is fundamentally incompatible with late-stage trend exhaustion. A complementary execution model is required for high-ADX regimes.  
+**Future Research:** Stream B (Execution Intelligence). Discover and validate Model A2 specifically for high-ADX trending environments.
+
+---
+
 ## 2026-07-08 | Sprint 026: Execution Model Characterisation (Model A1)
 
 **Research Stream:** B — Execution Intelligence  
