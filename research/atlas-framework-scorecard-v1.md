@@ -15,11 +15,11 @@ These metrics evaluate the performance of the Atlas laboratory, not just the str
 ### 2.1 Research Velocity & Efficiency
 | Metric | Current Value | Target | Notes |
 |---|---|---|---|
-| **Total Sprints Completed** | 37 | N/A | Sprints 018-037 under new architecture |
-| **Total Hypotheses Tested** | 12 | N/A | Since Architecture Freeze v1.0 |
+| **Total Sprints Completed** | 38 | N/A | Sprints 018-038 under new architecture |
+| **Total Hypotheses Tested** | 13 | N/A | Since Architecture Freeze v1.0 |
 | **Validated Hypotheses** | 4 | N/A | Model A1, Model A3, Contraction Asymmetry, Theory of Edge |
-| **Rejected Hypotheses** | 8 | N/A | D200 EMA, Momentum Cont, 15m VA, etc. |
-| **Validation Success Rate** | 33.3% | > 20% | A healthy framework rejects most ideas. |
+| **Rejected Hypotheses** | 9 | N/A | D200 EMA, Momentum Cont, 15m VA, H-P001, etc. |
+| **Validation Success Rate** | 30.8% | > 20% | A healthy framework rejects most ideas. |
 
 ### 2.2 Portfolio Output
 | Metric | Current Value | Target | Notes |

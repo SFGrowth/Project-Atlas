@@ -14,6 +14,19 @@ Every entry in this Knowledge Base represents a specific instance of converting 
 
 ---
 
+## 2026-07-08 | Sprint 038: Portfolio Validation (H-P001) — REJECTED
+
+**Research Stream:** C — Capital & Portfolio Intelligence  
+**Research Question:** Does a portfolio of independently validated execution models (A1 + A3) produce a statistically superior trading system compared with the best standalone model?  
+**Hypothesis (H-P001):** A portfolio of complementary models in different regimes/sessions produces superior robustness, lower drawdown, and higher prop firm survivability.  
+**Experimental Design:** Three systems compared on identical 2-year data: System A (A1 only), System B (A3 only), System C (A1 + A3 portfolio). 15 metrics, correlation analysis, Monte Carlo.  
+**Results:** Portfolio produced highest net P&L ($3,848.77) and best RoMaD (4.652) and smoothest equity (R² 0.9179). However, portfolio drawdown (-$827) exceeded both standalone models (-$765, -$668). Ulcer Index worsened significantly (652 vs 116 and 371). MC pass rate degraded from 100% to 98.9%. Daily correlation between models: 0.0783. Zero simultaneous trades.  
+**Decision:** **REJECTED. Portfolio v1.0 not promoted.**  
+**Lessons Learned:** Zero correlation between models is insufficient to prevent drawdown stacking. To reduce portfolio drawdown, Atlas needs either (a) negatively correlated models, or (b) Portfolio-Level Risk Intelligence (ARI) that dynamically scales risk when models enter concurrent drawdowns. A portfolio of uncorrelated profitable models increases returns but does not inherently reduce risk.  
+**Future Research:** Discover Model A2 (High-ADX RTH session) to complete the regime matrix. Then engineer ARI (Atlas Risk Intelligence) as a dynamic capital allocation layer before attempting Portfolio v2.0 validation.
+
+---
+
 ## 2026-07-08 | Sprint 037: Model A3 Engineering — VALIDATED
 
 **Research Stream:** C — Execution Engineering  
