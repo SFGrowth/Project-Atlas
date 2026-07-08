@@ -14,6 +14,32 @@ Every entry in this Knowledge Base represents a specific instance of converting 
 
 ---
 
+## 2026-07-08 | Sprint 036: Framework Validation (H-F001)
+
+**Research Stream:** Architecture / Framework  
+**Research Question:** Can the Atlas Research Framework repeatedly generate statistically robust execution models across multiple independent market behaviours?  
+**Hypothesis (H-F001):** The scientific process itself constitutes a statistical edge.  
+**Experimental Design:** Shift the burden of proof from validating a single model (Model A1) to validating the repeatability of the framework. Introduce the Atlas Framework Scorecard to track framework-level statistics (Validation Rate, Average URS, Portfolio Correlation).  
+**Results:** Architecture Freeze v1.0 enforced. URS v1.0 frozen. Knowledge Confidence metric introduced.  
+**Decision:** **H-F001 is now the Master Hypothesis of Project Atlas.**  
+**Lessons Learned:** One successful model proves an idea. Multiple independently discovered models prove a research framework.  
+**Future Research:** The immediate objective is to discover Model A2 and Model A3 using the frozen scientific process to populate the Framework Scorecard.
+
+---
+
+## 2026-07-08 | Sprint 035: Theory of Edge Validation
+
+**Research Stream:** Architecture / Framework  
+**Research Question:** What fundamentally creates statistical edge in financial markets?  
+**Hypothesis:** Trading edge exists whenever market uncertainty temporarily decreases.  
+**Experimental Design:** Analysed all 14 validated and rejected experiments in the Atlas knowledge base through the lens of uncertainty reduction across six dimensions (Regime, Volatility, Structural, Trend, Session, Execution).  
+**Results:** 14 out of 14 experiments supported the hypothesis. Validated models (e.g., Model A1) succeeded because they simultaneously reduced multiple dimensions of uncertainty. Rejected models (e.g., Unconditional Pullbacks, Daily 200 EMA) failed because uncertainty remained too high or the reduction was false.  
+**Decision:** **VALIDATED.**  
+**Lessons Learned:** Edge is not created by indicators; it emerges when noise is structurally removed. The Uncertainty Reduction Score (URS) was created to enforce this. Any future hypothesis scoring below 60/100 URS will not be backtested.  
+**Future Research:** Apply the URS to all future Stream B and Stream D research. Redirect Stream E (AI Discovery) to search for uncertainty reduction rather than pure profitability.
+
+---
+
 ## 2026-07-07 | Sprint 018: Thomas Wade Execution Component Validation
 
 **Research Stream:** B — Execution Intelligence  
