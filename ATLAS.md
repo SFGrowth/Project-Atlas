@@ -88,9 +88,15 @@ The purpose of research is no longer simply to discover knowledge. The purpose o
 
 ## The Portfolio Principle
 
-**A candidate is not promoted because it is profitable. A candidate is promoted only if it improves the Atlas portfolio.**
+**A candidate is not promoted because it is profitable. A candidate is promoted only if it improves the performance of the Atlas portfolio.**
 
-Atlas is no longer building standalone strategies; it is building a portfolio of execution models. A model that earns less profit but materially smooths equity or reduces portfolio drawdown may be more valuable than a higher-profit standalone model. Model A2 does not need to outperform A1—it needs to make Atlas better.
+Atlas does not build standalone trading strategies. It builds a portfolio of complementary execution models, each designed to exploit a distinct market inefficiency. The success of any model is measured not only by its standalone performance, but by its contribution to the portfolio as a whole.
+
+A model that generates lower standalone returns may be more valuable than a higher-return model if it materially reduces drawdown, smooths the equity curve, improves risk-adjusted returns, or increases the probability of passing prop firm evaluation constraints.
+
+Model A2 is not required to outperform Model A1. It is required to improve Atlas.
+
+This principle applies to every future execution model. No model is promoted into production unless objective evidence demonstrates that it increases the overall performance and robustness of the Atlas portfolio.
 
 ## The Atlas Test
 
