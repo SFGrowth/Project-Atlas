@@ -118,7 +118,7 @@ Atlas does not build complete strategies. Atlas builds an Execution Component Li
 
 Market events (e.g., Pullback, Liquidity Sweep, Momentum Confirmation) are researched as independent components. Once validated, they are catalogued in the Execution Component Library. 
 
-Execution models (strategies) are then constructed by combining validated components (e.g., Pullback + Momentum Confirmation + Guardian PASS). This allows Atlas to evolve continuously without becoming dependent on any single strategy.
+Execution models (strategies) are then constructed by combining validated components (e.g., Pullback + Momentum Confirmation + ARI PASS). This allows Atlas to evolve continuously without becoming dependent on any single strategy.
 
 All validated components must be documented in `atlas-components/COMPONENT_CATALOGUE.md`.
 
@@ -172,7 +172,7 @@ Examples:
 
 ```text
 sprint/001-observer-foundation
-feature/guardian-risk-engine-prototype
+feature/ari-risk-engine-prototype
 docs/foundation-documentation
 fix/observer-alert-payload
 ```

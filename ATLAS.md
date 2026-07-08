@@ -164,8 +164,8 @@ Following Sprint 021, Atlas has permanently transitioned from a sprint-driven de
 
 3. **Stream C — Capital Intelligence**
    - Optimising capital preservation, position sizing, and risk allocation.
-   - Guardian must consume information unavailable to the Regime Engine: consecutive losses, daily/weekly drawdown, prop firm trailing drawdown limits, live vs evaluation mode, and position sizing.
-   - Purpose: Answer *"Given everything Atlas knows, how much capital deserves to be risked?"*
+   - Atlas Risk Intelligence (ARI) must consume information from three domains: Market Intelligence (regime, volatility), Execution Intelligence (model confidence, operating conditions), and Capital Intelligence (drawdown, consecutive losses, prop firm limits).
+   - Purpose: Answer *"Given everything Atlas currently knows about the market, the execution model, and the account, what level of risk is objectively justified right now?"*
 
 4. **Stream D — Component Intelligence**
    - Discovering which individual market behaviours consistently add statistical value.
@@ -186,7 +186,7 @@ Following Sprint 021, Atlas has permanently transitioned from a sprint-driven de
 Once the research streams mature, Atlas must answer three questions, strictly in this order, before any execution is permitted:
 
 1. **What kind of market is this?** *(Market Regime Engine)*
-2. **Given everything Atlas knows, how much capital deserves to be risked on this opportunity?** *(Guardian Risk Intelligence Engine)*
+2. **Given everything Atlas knows, how much capital deserves to be risked on this opportunity?** *(Atlas Risk Intelligence Engine)*
 3. **Which strategy has the highest statistical edge in this environment?** *(Strategy Selection Layer)*
 
 This ordering is fundamental and must not be reversed.
@@ -219,9 +219,9 @@ Future module for momentum, directional pressure, impulse quality, and exhaustio
 
 Future module for premium/discount, VWAP relationship, session location, prior levels, and contextual trade location.
 
-### Guardian Risk Engine
+### Atlas Risk Intelligence (ARI)
 
-Future module for capital preservation, rule compliance, drawdown awareness, daily limits, and stand-down logic.
+The executive decision-maker of Atlas. ARI continuously evaluates whether risk deserves to exist at all, and if so, how much. It synthesises Market Intelligence, Execution Intelligence, and Capital Intelligence to output dynamic risk allocations (BLOCK, OBSERVE ONLY, PAPER TRADE, REDUCED RISK, STANDARD RISK). Execution models discover opportunity; ARI determines whether opportunity deserves capital.
 
 ### Dashboard
 
