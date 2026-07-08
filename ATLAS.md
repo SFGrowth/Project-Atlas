@@ -2,6 +2,10 @@
 
 ## Status
 
+**Atlas Trading System v1.0 — Integrated**
+
+ATS v1.0 was integrated and simulated on 2026-07-08. It combines the Market Regime Engine, Execution Model A1, and Atlas Risk Intelligence (ARI) into a single operational pipeline.
+
 **Atlas OS Version 1.0 — Architecture Freeze**
 
 Foundation documentation created on 2026-07-04. Architectural maturity achieved and frozen on 2026-07-08.
@@ -75,6 +79,12 @@ Before any trusted model is allocated capital, it must be fully characterised. A
 **The success of Atlas is measured not only by the quality of its execution models, but by the rate at which it converts uncertainty into validated knowledge.**
 
 Atlas is an epistemology project. It exists to answer one question: "How do we know something is true?" Every research stream exists to reduce uncertainty through evidence. Knowledge is the compounding asset. Everything else—including profit—is simply an application of that knowledge.
+
+## The Mission Principle
+
+**Research without application becomes academic. Application without research becomes speculation. Atlas must now combine both.**
+
+The purpose of research is no longer simply to discover knowledge. The purpose of research is to continuously improve a complete trading system capable of repeatedly passing prop firm evaluations under realistic conditions.
 
 ## The Atlas Test
 
@@ -181,13 +191,17 @@ Following Sprint 021, Atlas has permanently transitioned from a sprint-driven de
    - Purpose: Answer *"What combinations of market conditions consistently precede statistically significant directional movement?"*
    - Every discovery must survive the Validation Principle before entering Stream D.
 
-### The Three-Question Ordering
+### The Seven-Question Decision Framework
 
-Once the research streams mature, Atlas must answer three questions, strictly in this order, before any execution is permitted:
+Atlas Trading System (ATS) v1.0 integrates all research streams into a single operating system. Before any order is placed, ATS must answer seven questions in strict sequence. If any question returns a negative or blocking response, the sequence terminates.
 
-1. **What kind of market is this?** *(Market Regime Engine)*
-2. **Given everything Atlas knows, how much capital deserves to be risked on this opportunity?** *(Atlas Risk Intelligence Engine)*
-3. **Which strategy has the highest statistical edge in this environment?** *(Strategy Selection Layer)*
+1. **Is the market tradeable?** *(Market Regime Engine)*
+2. **Is the model appropriate for this environment?** *(Model Characterisation)*
+3. **Is current account risk acceptable?** *(Atlas Risk Intelligence)*
+4. **What position size is justified?** *(ARI Capital Allocation)*
+5. **Should Atlas execute this trade?** *(Execution Model Logic)*
+6. **How should the trade be managed?** *(Trade Management Logic)*
+7. **When should trading stop for the day?** *(ARI Daily Limits)*
 
 This ordering is fundamental and must not be reversed.
 
@@ -292,7 +306,9 @@ Atlas has progressed through six stages of evolution. Every future decision shou
 
 ## Definition of Success
 
-Atlas succeeds when it becomes a system that continuously improves its understanding of financial markets, converting uncertainty into validated knowledge. Profitable execution models emerge naturally as a byproduct of this compounding knowledge.
+The primary measure of success for Project Atlas is no longer discovering interesting market behaviour. The objective is to build a complete trading system capable of consistently passing and scaling prop firm evaluations. 
+
+Research without application becomes academic. Application without research becomes speculation. Atlas must combine both. The purpose of research is to continuously improve a complete trading system that survives real-world trading conditions.
 
 Atlas is successful only if it helps preserve capital, improve decision quality, and keep the trader aligned with the long-term mission of sustainable freedom.
 
