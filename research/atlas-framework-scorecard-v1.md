@@ -15,32 +15,32 @@ These metrics evaluate the performance of the Atlas laboratory, not just the str
 ### 2.1 Research Velocity & Efficiency
 | Metric | Current Value | Target | Notes |
 |---|---|---|---|
-| **Total Sprints Completed** | 36 | N/A | Sprints 018-036 under new architecture |
-| **Total Hypotheses Tested** | 11 | N/A | Since Architecture Freeze v1.0 |
-| **Validated Hypotheses** | 3 | N/A | Model A1, Contraction Asymmetry, Theory of Edge |
+| **Total Sprints Completed** | 37 | N/A | Sprints 018-037 under new architecture |
+| **Total Hypotheses Tested** | 12 | N/A | Since Architecture Freeze v1.0 |
+| **Validated Hypotheses** | 4 | N/A | Model A1, Model A3, Contraction Asymmetry, Theory of Edge |
 | **Rejected Hypotheses** | 8 | N/A | D200 EMA, Momentum Cont, 15m VA, etc. |
-| **Validation Success Rate** | 27.2% | > 20% | A healthy framework rejects most ideas. |
+| **Validation Success Rate** | 33.3% | > 20% | A healthy framework rejects most ideas. |
 
 ### 2.2 Portfolio Output
 | Metric | Current Value | Target | Notes |
 |---|---|---|---|
-| **Execution Models Promoted** | 1 | > 3 | Model A1 |
-| **Models in Pipeline** | 1 | N/A | Model A3 (Overnight Contraction) pending |
-| **Average Portfolio PF** | 1.387 | > 1.25 | Currently based on Model A1 alone |
-| **Average Portfolio Max DD** | -$516 | > -$2,000 | Currently based on Model A1 alone |
+| **Execution Models Promoted** | 2 | > 3 | Model A1, Model A3 |
+| **Models in Pipeline** | 1 | N/A | Model A2 (High-ADX RTH Breakout) pending |
+| **Average Portfolio PF** | 1.477 | > 1.25 | Average of Model A1 (1.387) and Model A3 (1.566) |
+| **Average Portfolio Max DD** | -$593 | > -$2,000 | Average of Model A1 (-$516) and Model A3 (-$669) |
 | **Portfolio Correlation** | N/A | < 0.30 | Cannot measure until Model A2/A3 promoted |
 
 ### 2.3 Knowledge Quality
 | Metric | Current Value | Target | Notes |
 |---|---|---|---|
 | **Average URS Score (Tested)** | 55.0 | > 60.0 | Historical average of tested hypotheses |
-| **Average URS Score (Validated)**| 100.0 | > 80.0 | URS of Model A1 |
-| **Average Behaviour Confidence** | 90/100 | > 80/100 | Based on Volatility Contraction Asymmetry |
+| **Average URS Score (Validated)**| 100.0 | > 80.0 | URS of Model A1 and Model A3 |
+| **Average Behaviour Confidence** | 90/100 | > 80/100 | Based on Volatility Contraction Asymmetry (Sprint 033) |
 
 ### 2.4 Simulation Performance
 | Metric | Current Value | Target | Notes |
 |---|---|---|---|
-| **Prop Firm Pass Rate (MC)** | 56.7% | > 75.0% | Based on ATS v1.0 Model A1 simulation |
+| **Prop Firm Pass Rate (MC)** | 100.0% | > 75.0% | Model A3 standalone MC (100%). Portfolio MC TBD. |
 
 ## 3. The Execution Model Portfolio
 
@@ -50,7 +50,7 @@ This section tracks the independent models discovered by the framework. To valid
 |---|---|---|---|---|---|---|
 | **Model A1** | Promoted | Depth-constrained pullback continuation | Low ADX | PM (13:00-16:00) | 1.387 | 100 |
 | **Model A2** | Discovery | High-ADX continuation (Breakouts) | High ADX | RTH | TBD | TBD |
-| **Model A3** | Engineering | Volatility Contraction Asymmetry | High ADX | Overnight | TBD | TBD |
+| **Model A3** | **Promoted** | Volatility Contraction Asymmetry | High ADX (>25) | Overnight | **1.566** | **100** |
 
 ## 4. The Knowledge Confidence Ledger
 
