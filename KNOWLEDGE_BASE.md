@@ -14,6 +14,23 @@ Every entry in this Knowledge Base represents a specific instance of converting 
 
 ---
 
+## 2026-07-08 | Sprint 044: Prop Firm Execution Layer (H-PF001) — VALIDATED (Partial)
+
+**Research Stream:** C — Capital & Portfolio Intelligence  
+**Research Question:** Which portfolio execution policy maximises prop firm survivability while preserving long-term expectancy?  
+**Hypothesis (H-PF001):** Prop-firm performance is determined not only by execution models, but also by the portfolio execution policy governing simultaneous trade opportunities.  
+**Experimental Design:** Four policies (SAS, Risk Budget, Priority Queue, Hybrid) tested at $400/$500/$800 risk. 3,000 MC simulations per configuration. Topstep 50K, Apex 50K, Generic 50K prop firm rules.  
+**Results:**
+- Policy C (Priority Queue) @ $800: Topstep Pass 42.6%, Net=$69,854, PF=1.370, MaxDD=-$11,593. Best configuration.
+- Policy A (SAS) @ $800: Topstep Pass 37.0%, Net=$36,292, MaxDD=-$7,345. Lowest drawdown but sacrifices too much expectancy.
+- Policy B/D (Risk Budget/Hybrid) @ $800: Topstep Pass 36.9%, Net=$37,960. No improvement over SAS.
+- Counter-intuitive: $800 risk passes more often than $400 risk under Priority Queue (42.6% vs 41.1%) because faster profit target attainment outweighs daily loss risk.
+**Decision:** **H-PF001: VALIDATED (Partial). Policy C (Priority Queue) is promoted as the permanent execution policy.** 42.6% pass rate is a major improvement over Sprint 043 (12.3%) but below the 75% target. Remaining gap to be closed by ARI v3.0 milestone compounding.  
+**Critical Discovery:** Priority Queue outperforms SAS because it selects the highest-expectancy opportunity on conflict (A3 > A2 > A1 by BCS), preserving the best trades rather than blocking all concurrent signals. PF improved from 1.228 (SAS) to 1.370 (Priority Queue).  
+**Future Research:** Sprint 045 — RMCE (Reverse Market Causality Engine). New discovery methodology: identify exceptional moves first, then reverse-engineer their precursors.
+
+---
+
 ## 2026-07-08 | Sprint 043: Atlas Trading System v1.0 Validation — EXPERIMENTAL
 
 **Research Stream:** A — Execution Model Engineering / C — Capital & Portfolio Intelligence  
