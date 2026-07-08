@@ -177,6 +177,18 @@ Every entry in this Knowledge Base represents a specific instance of converting 
 
 ---
 
+## 2026-07-08 | Sprint 029: Momentum Continuation (Model A2 Candidate)
+
+**Research Stream:** B — Execution Intelligence
+**Research Question:** Can a Momentum Continuation model (entering long when multiple consecutive bars close near their highs within an established high-ADX trend) produce statistically significant edge?
+**Hypothesis:** Entering in the direction of an established high-ADX trend immediately following a sequence of strong closes produces statistical edge.
+**Experimental Design:** Parameter sweep of N consecutive bars (2,3,4) closing in top X% (25%,33%,50%) on 2-year MNQ data. Risk management identical to Model A1.
+**Results:** REJECTED. Best configuration achieved PF 1.034.
+**Lessons Learned:** The null hypothesis could not be rejected. Entering after 3-4 strong closes frequently buys the immediate top of the micro-impulse. Even in high-ADX trends, price pulls back, routinely triggering a 1 ATR stop. High-ADX execution models still require structural entry points (like consolidations) rather than pure momentum chasing.
+**Future Research:** Proceed to test Breakout Continuation (micro-consolidation break) as the next Model A2 candidate.
+
+---
+
 ## 2026-07-08 | Sprint 022: Daily 200 EMA Mean Reversion (H-B005)
 
 **Research Stream:** D — Component Intelligence  
