@@ -14,6 +14,21 @@ Every entry in this Knowledge Base represents a specific instance of converting 
 
 ---
 
+## 2026-07-08 | Sprint 037: Model A3 Engineering — VALIDATED
+
+**Research Stream:** C — Execution Engineering  
+**Research Question:** Can the validated Volatility Contraction → Expansion Asymmetry behaviour (Sprint 033) be engineered into a production-ready overnight execution model?  
+**Hypothesis:** An overnight contraction breakout model (ADX > 25, overnight session, EMA stack aligned) will produce PF > 1.20.  
+**URS Score:** 100/100  
+**Experimental Design:** 5-minute MNQ data, 2-year backtest. Entry on expansion trigger bar breakout. Stop at compression zone extreme. Target 2.5R. Time-exit at RTH open.  
+**Results:** PF = 1.566, Net = $2,214.25, Max DD = -$668.50, Win Rate = 28.3%, 60 trades. MC Prop Firm Pass Rate = 100%. Profitable in 6/8 quarters. Strong long/short symmetry (Long PF 1.77, Short PF 1.35). Parameter neighbourhood stable across ADX 20-30, Compression 0.75-0.85, Expansion 1.2-1.4.  
+**Key Finding:** ADX decile analysis revealed edge concentrated in D3 (33-39) and D5 (51+). Transition-phase ADX (D1, D2, D4) produces near-zero expectancy.  
+**Decision:** **VALIDATED. Model A3 promoted to Atlas Portfolio.**  
+**Lessons Learned:** The overnight session is a genuine structural edge. Volatility compression followed by expansion in a trending environment is a repeatable, measurable phenomenon. This validates H-F001 progress — Atlas has now produced two independent execution models using the same frozen scientific process.  
+**Future Research:** Investigate the ADX bimodal distribution finding. Why do D3 and D5 outperform while D4 underperforms? This may represent a regime transition effect.
+
+---
+
 ## 2026-07-08 | Sprint 036: Framework Validation (H-F001)
 
 **Research Stream:** Architecture / Framework  
