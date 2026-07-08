@@ -129,9 +129,9 @@ Atlas is not a trading bot with a research component. Atlas is a **quantitative 
 
 Every engine developed must be strategy-agnostic. Engines are reusable infrastructure that every current and future strategy will inherit.
 
-### The Four Permanent Research Streams
+### The Five Permanent Research Streams
 
-Following Sprint 021, Atlas has permanently transitioned from a sprint-driven development model to a research-driven development model. Research is separated into four independent streams. They must be solved independently before being combined into a single decision engine.
+Following Sprint 021, Atlas has permanently transitioned from a sprint-driven development model to a research-driven development model. Research is separated into five independent streams. They must be solved independently before being combined into a single decision engine.
 
 1. **Stream A — Market Intelligence**
    - Understanding market regimes.
@@ -154,6 +154,12 @@ Following Sprint 021, Atlas has permanently transitioned from a sprint-driven de
      - **Trigger Components:** Describe the event (e.g., Pullback, Liquidity Sweep, Breakout, Mean Reversion). A trigger should never be expected to produce an edge by itself.
    - Purpose: Answer *"Does this specific market behaviour possess intrinsic statistical edge?"*
    - Validated components are stored in the **Execution Component Library** and become reusable building blocks for Stream B.
+
+5. **Stream E — AI Discovery Engine**
+   - Deploying unsupervised machine learning and multi-dimensional analysis to discover hidden market relationships that humans may not consider.
+   - Output: Ranked list of statistically significant market behaviours, new hypotheses, and potential Execution Components.
+   - Purpose: Answer *"What combinations of market conditions consistently precede statistically significant directional movement?"*
+   - Every discovery must survive the Validation Principle before entering Stream D.
 
 ### The Three-Question Ordering
 
