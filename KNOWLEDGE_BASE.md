@@ -14,6 +14,24 @@ Every entry in this Knowledge Base represents a specific instance of converting 
 
 ---
 
+## 2026-07-08 | Sprint 043: Atlas Trading System v1.0 Validation — EXPERIMENTAL
+
+**Research Stream:** A — Execution Model Engineering / C — Capital & Portfolio Intelligence  
+**Research Question:** Does Atlas Trading System v1.0 (Models A1+A2+A3 + ARI v2.0) achieve the primary mission of passing and scaling prop firm evaluations?  
+**Hypothesis (H-S001):** ATS v1.0 constitutes a complete, production-ready trading system capable of passing $50K prop firm evaluations.  
+**Experimental Design:** Full ATS v1.0 assembled. All three models run at $800 risk/trade on identical 2-year MNQ data. ARI v2.0 applied. 16 metrics computed. 3,000 MC simulations for Apex 50K, Topstep 50K, Generic 50K.  
+**Results:**
+- Static Portfolio: N=598, PF=1.171, Net=$38,587, MaxDD=-$14,509, Monthly=68%.
+- ARI Portfolio: N=598, PF=1.182, Net=$28,443, MaxDD=-$10,803, Monthly=72%.
+- Correlation: A1/A2=0.032, A1/A3=-0.021, A2/A3=-0.020. Near-zero. Models are independent.
+- Apex 50K MC Pass Rate: 8.0%. Topstep 50K: 12.3%. Generic 50K: 14.6%. ALL FAIL.
+- Criteria Met: 4/8 (Expectancy, Drawdown, RoMaD, Monthly Consistency pass. PF, Prop Firm rates, Risk of Ruin fail).
+**Decision:** **H-S001: EXPERIMENTAL. ATS v1.0 is not ready for production prop firm deployment.**  
+**Critical Discovery:** The prop firm failure is caused by Concurrent Execution Risk. Model A1 and A2 both operate in the PM session and can trigger simultaneously, stacking $1,600 of risk against a $1,000 daily loss limit. The underlying statistical edge is real ($28,443 net profit), but the risk architecture is incompatible with prop firm constraints at $800/trade. Solution: Single Active Strategy (SAS) concurrency rule + milestone-based risk compounding.  
+**Future Research:** Sprint 044 — ARI v3.0 (Concurrency & Prop Firm Engineering). Implement SAS rule, milestone compounding, and prop-firm-optimised base risk to convert EXPERIMENTAL → PROMOTE TO PRODUCTION.
+
+---
+
 ## 2026-07-08 | Sprint 042: Model A2 Discovery — VALIDATED (Promoted)
 
 **Research Stream:** A — Execution Model Engineering  
