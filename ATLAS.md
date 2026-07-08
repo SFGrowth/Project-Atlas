@@ -86,6 +86,12 @@ Atlas is an epistemology project. It exists to answer one question: "How do we k
 
 The purpose of research is no longer simply to discover knowledge. The purpose of research is to continuously improve a complete trading system capable of repeatedly passing prop firm evaluations under realistic conditions.
 
+## The Portfolio Principle
+
+**A candidate is not promoted because it is profitable. A candidate is promoted only if it improves the Atlas portfolio.**
+
+Atlas is no longer building standalone strategies; it is building a portfolio of execution models. A model that earns less profit but materially smooths equity or reduces portfolio drawdown may be more valuable than a higher-profit standalone model. Model A2 does not need to outperform A1—it needs to make Atlas better.
+
 ## The Atlas Test
 
 Before any feature is accepted into Atlas, it must answer these questions:

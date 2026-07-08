@@ -74,20 +74,35 @@ Five distinct execution concepts were evaluated from first principles.
 2. **Complementary to Model A1:** Model A1 requires a pullback (depth). Momentum Continuation explicitly avoids waiting for depth, entering when velocity is highest.
 3. **Robustness:** It relies on the internal structure of the bars (close vs high/low) rather than arbitrary price levels or moving averages, making it less susceptible to curve-fitting.
 
-### Test Specification
-**Regime Filter:**
-* ADX(14) > 30 (Initial threshold, subject to testing)
-* EMA9 > EMA21 > EMA50 (Trend alignment)
+### Proposed Test Specification
+
+**Regime Filter (initial hypothesis — subject to validation):**
+* ADX(14) > 30
+* EMA9 > EMA21 > EMA50 (trend alignment)
 
 **Execution Trigger:**
-* A sequence of N bars (e.g., 3 bars) where the Close is in the top 25% of the bar range (for Longs).
-* No volatility climax (e.g., current bar range < 2.0 * ATR).
+* N consecutive bullish bars (test N = 2, 3, 4)
+* Each bar closes within the top X% of its range (test X = 25%, 33%, 50%)
+* Current bar range < 2.0 × ATR (exclude volatility climax)
 
-**Validation Criteria:**
-* Profit Factor > 1.20
-* Positive expectancy across both Year 1 and Year 2.
-* Trade count > 100 over the 2-year dataset.
-* Drawdown compatible with prop firm limits.
+**Risk Management:**
+Use the existing Atlas A1 risk framework initially to isolate the edge. Position sizing, stop methodology and exits should remain unchanged unless research indicates otherwise.
+
+### Acceptance Criteria
+
+A candidate progresses only if it satisfies all of the following:
+* Profit Factor ≥ 1.20
+* Positive expectancy in Year 1 and Year 2
+* Minimum 100 trades
+* Maximum drawdown within prop-firm limits
+* Monte Carlo pass rate not materially worse than Model A1
+* Low parameter sensitivity (robust across neighbouring parameter values)
+* Out-of-sample performance consistent with in-sample results
+* Demonstrates diversification benefit when combined with Model A1 (improved combined equity curve, reduced drawdown, or improved portfolio Sharpe/Sortino)
+
+### Promotion Rule
+
+A candidate is not promoted because it is profitable. A candidate is promoted only if it improves the Atlas portfolio. A model that earns less profit but materially smooths equity or reduces portfolio drawdown may be more valuable than a higher-profit standalone model.
 
 ---
 
