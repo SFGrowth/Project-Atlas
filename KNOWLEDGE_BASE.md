@@ -6,6 +6,14 @@ This document is the institutional memory of Project Atlas. Every completed expe
 
 ---
 
+## The Epistemology Principle
+
+Atlas is an epistemology project. It exists to answer one question: "How do we know something is true?" Every research stream exists to reduce uncertainty through evidence. Knowledge is the compounding asset. Everything else—including profit—is simply an application of that knowledge.
+
+Every entry in this Knowledge Base represents a specific instance of converting uncertainty into validated knowledge.
+
+---
+
 ## 2026-07-07 | Sprint 018: Thomas Wade Execution Component Validation
 
 **Research Stream:** B — Execution Intelligence  
