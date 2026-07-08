@@ -177,6 +177,18 @@ Every entry in this Knowledge Base represents a specific instance of converting 
 
 ---
 
+## 2026-07-08 | Sprint 030: External Strategy Evaluation (Casper SMC First Candle Value)
+
+**Research Stream:** D — Component Intelligence  
+**Research Question:** Does the 15-minute Opening Range Value Area possess predictive power as a structural boundary for intraday MNQ trading?  
+**Hypothesis:** Entering failed breakouts (close back inside VA) or confirmed breakout pullbacks (touching VA high/low) produces statistical edge.  
+**Experimental Design:** Replicated exact strategy rules. Volume profile (70% VA) calculated over first 15 mins. Tested both setups independently across 2-year MNQ data with 1.0 ATR stop and 2.0 RR target.  
+**Results:** REJECTED. Failed Breakout achieved PF 0.779. Confirmed Breakout Pullback achieved PF 0.718. Combined system achieved PF 0.747.  
+**Lessons Learned:** The 15-minute Opening Range Value Area has zero predictive power as a structural boundary for the remainder of the session. The strategy relies on discretionary trailing stops rather than intrinsic statistical edge.  
+**Future Research:** Archived in Rejected Components. Do not re-test.
+
+---
+
 ## 2026-07-08 | Sprint 029: Momentum Continuation (Model A2 Candidate)
 
 **Research Stream:** B — Execution Intelligence

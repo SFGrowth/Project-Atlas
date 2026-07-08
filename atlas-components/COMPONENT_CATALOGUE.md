@@ -93,6 +93,7 @@ The following components are currently undergoing Stream D validation and are **
 
 The following components have been rigorously tested and definitively proven to lack statistical edge. They must not be used in Strategy Assembly.
 
+- **External Strategy: Casper SMC First Candle Value:** The 15-minute Opening Range Value Area (70% volume profile) has zero predictive power as a structural boundary for the remainder of the session (Sprint 030). Both failed breakouts (mean reversion) and confirmed breakout pullbacks (continuation) produced negative expectancy (PF 0.779 and 0.718).
 - **Momentum Continuation (Model A2 Candidate):** Entering immediately after 3-4 consecutive strong closes in a high-ADX environment failed completely (Sprint 029). Enters "in the air" without structural support; highly vulnerable to routine micro-pullbacks even in strong trends. Best PF 1.034.
 - **Daily 200 EMA Location (H-B005):** Fading extensions and trading bounces at the Daily 200 EMA both failed completely (Sprint 022). The market treats the level as liquidity, not structure.
 - **Sprint 023 Interactions (H-B006 to H-B009):** Liquidity Sweep + High Tradeability, Pullback + Volatility Expansion, Mean Reversion + Low Trend Strength, and Breakout + Volatility Compression all failed to produce a tradable edge (PF > 1.20). Pullback + Volatility Expansion performed best (PF 1.023) but is insufficient for live execution.
