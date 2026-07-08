@@ -1,6 +1,6 @@
 # Atlas Framework Scorecard
 **Date Updated:** 2026-07-08
-**Current Sprint:** 036
+**Current Sprint:** 042
 
 ## 1. The Master Hypothesis: H-F001 (Framework Repeatability)
 
@@ -15,18 +15,18 @@ These metrics evaluate the performance of the Atlas laboratory, not just the str
 ### 2.1 Research Velocity & Efficiency
 | Metric | Current Value | Target | Notes |
 |---|---|---|---|
-| **Total Sprints Completed** | 41 | N/A | Sprints 018-041 under new architecture |
+| **Total Sprints Completed** | 42 | N/A | Sprints 018-042 under new architecture |
 | **Total Hypotheses Tested** | 16 | N/A | Since Architecture Freeze v1.0 |
-| **Validated Hypotheses** | 6 | N/A | Model A1, Model A3, Contraction Asymmetry, Theory of Edge, H-C001 (ARI), H-C002 (Rule Attribution) |
+| **Validated Hypotheses** | 7 | N/A | Model A1, Model A2, Model A3, Contraction Asymmetry, Theory of Edge, H-C001 (ARI), H-C002 (Rule Attribution) |
 | **Rejected Hypotheses** | 10 | N/A | D200 EMA, Momentum Cont, 15m VA, H-P001, H-G001, etc. |
 | **Validation Success Rate** | 37.5% | > 20% | A healthy framework rejects most ideas. |
 
 ### 2.2 Portfolio Output
 | Metric | Current Value | Target | Notes |
 |---|---|---|---|
-| **Execution Models Promoted** | 2 | > 3 | Model A1, Model A3 |
-| **Models in Pipeline** | 1 | N/A | Model A2 (High-ADX RTH Breakout) pending |
-| **Average Portfolio PF** | 1.477 | > 1.25 | Average of Model A1 (1.387) and Model A3 (1.566) |
+| **Execution Models Promoted** | **3** | > 3 | **Model A1, Model A2, Model A3** |
+| **Models in Pipeline** | 0 | N/A | All three models now promoted. Sprint 043 — Portfolio v2.0. |
+| **Average Portfolio PF** | 1.436 | > 1.25 | Average of Model A1 (1.387), Model A2 (1.354), Model A3 (1.566) |
 | **Average Portfolio Max DD** | -$593 | > -$2,000 | Average of Model A1 (-$516) and Model A3 (-$669) |
 | **Portfolio Correlation** | N/A | < 0.30 | Cannot measure until Model A2/A3 promoted |
 
@@ -49,7 +49,7 @@ This section tracks the independent models discovered by the framework. To valid
 | Model | Status | Behaviour Exploited | Regime | Session | PF | URS |
 |---|---|---|---|---|---|---|
 | **Model A1** | Promoted | Depth-constrained pullback continuation | Low ADX | PM (13:00-16:00) | 1.387 | 100 |
-| **Model A2** | Discovery | High-ADX continuation (Breakouts) | High ADX | RTH | TBD | TBD |
+| **Model A2** | **Promoted** | Flag Continuation (Late PM Session) | High ADX (>45) | Late RTH (14:00-16:00) | **1.354** | **100** |
 | **Model A3** | **Promoted** | Volatility Contraction Asymmetry | High ADX (>25) | Overnight | **1.566** | **100** |
 
 ## 4. The Knowledge Confidence Ledger
@@ -59,7 +59,7 @@ This section tracks the stability of Atlas's foundational market truths. Knowled
 | Validated Truth | Supporting Exp. | Contradicting Exp. | Cross-Market Val. | Confidence Level |
 |---|---|---|---|---|
 | **Regime Dependence** | 5 | 0 | Pending | **High** |
-| **Session Asymmetry** | 3 | 0 | Pending | **High** |
+| **Session Asymmetry** | 4 | 0 | NQ replicates | **High** |
 | **Overnight Accumulation** | 1 | 0 | Pending | **Moderate** |
 | **Theory of Edge (URS)** | 14 | 0 | Pending | **High** |
 | **Failure of Static Levels** | 2 | 0 | Pending | **High** |

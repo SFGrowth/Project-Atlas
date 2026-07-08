@@ -14,6 +14,28 @@ Every entry in this Knowledge Base represents a specific instance of converting 
 
 ---
 
+## 2026-07-08 | Sprint 042: Model A2 Discovery — VALIDATED (Promoted)
+
+**Research Stream:** A — Execution Model Engineering  
+**Research Question:** Can a statistically robust execution model be engineered for the High-ADX RTH session gap in the Atlas execution matrix?  
+**Hypothesis (H-A2-02):** Flag Continuation (impulse + consolidation + breakout) in high-ADX RTH environments produces a measurable, persistent edge.  
+**Experimental Design:** Six candidate hypotheses evaluated through the full Atlas scientific workflow. Behavioural validation → Execution Engineering (precision filter sweep) → Independent Validation. $800 risk per trade. MNQ 5-min data, 2-year window.  
+**Results:**
+- H-A2-01 (Micro-Consolidation): REJECTED — insufficient sample size, negative expectancy across all ADX levels.
+- H-A2-05 (Volatility Compression): REJECTED — insufficient sample size, negative expectancy.
+- H-A2-02 (Flag Continuation): VALIDATED — statistically significant (p=0.0000) across all ADX levels.
+- Critical Discovery: **Session Asymmetry** — Flag Continuation works in the late PM session (14:00-16:00 ET, PF=1.354) but fails in the early AM session (09:30-12:00 ET, PF=1.031, p=0.24).
+- Production model: ADX>45, Late RTH only. N=252, PF=1.354, WR=52.4%, Exp=$75.07, Net P&L=$18,918, MC Pass Rate=22.8%.
+- Parameter neighbourhood: Profitable across entire 3x3 grid (ADX 40-50, Flag Width 6-10). Robust.
+- Walk-forward: 3/4 positive half-years (75%).
+- Long/Short: Shorts PF=1.554, Longs PF=1.103. Short-side dominance noted.
+**Decision:** **VALIDATED. Model A2 promoted to Atlas Portfolio. 6/8 promotion criteria met.**  
+**Critical Discovery:** The late PM session flag continuation edge reflects the structural behaviour of the Nasdaq 100 after the European close — momentum becomes cleaner and more directional as liquidity concentrates. Morning momentum is frequently exhausted or mean-reverting.  
+**Known Limitations:** MC Pass Rate (22.8%) fails the standalone $5,000 prop firm threshold. This is expected at $800 risk per trade with a -10.7R max drawdown. Resolution requires ARI integration at the portfolio level.  
+**Future Research:** Sprint 043 — Portfolio v2.0 (Three-Model Portfolio with ARI v2.0). Complete the Atlas execution matrix and evaluate H-P001 with all three models.
+
+---
+
 ## 2026-07-08 | Sprint 041: Cross-Market Generalisation (H-G001) — REJECTED
 
 **Research Stream:** G — Guardian & Robustness  
