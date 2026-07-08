@@ -88,6 +88,12 @@ The purpose of research is no longer simply to discover knowledge. The purpose o
 
 ## The Portfolio Principle
 
+The Portfolio Principle is the ninth constitutional principle of Atlas. Unlike the preceding principles, which govern how execution models are discovered, tested, and validated, the Portfolio Principle governs how validated models relate to one another. It defines the architecture of Atlas rather than the methodology of its research.
+
+Atlas is no longer pursuing a single optimal trading strategy. It is engineering a portfolio of complementary execution models, each designed to exploit a distinct market regime or behavioural edge. The objective is therefore no longer to maximise the performance of any individual model. The objective is to maximise the performance, robustness, and survivability of the Atlas portfolio as a whole.
+
+The Portfolio Principle marks the transition from strategy research to portfolio engineering. Every future execution model will be evaluated not only on its standalone merit, but on its measurable contribution to the complete Atlas system. Each model is a hypothesis; the portfolio is the engineered product. That separation keeps Atlas focused on optimising the system rather than chasing a single perfect strategy.
+
 **A candidate is not promoted because it is profitable. A candidate is promoted only if it improves the performance of the Atlas portfolio.**
 
 Atlas does not build standalone trading strategies. It builds a portfolio of complementary execution models, each designed to exploit a distinct market inefficiency. The success of any model is measured not only by its standalone performance, but by its contribution to the portfolio as a whole.
