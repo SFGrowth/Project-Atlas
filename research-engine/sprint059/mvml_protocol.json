@@ -1,0 +1,174 @@
+{
+  "protocol": {
+    "name": "Atlas MVML Discovery Protocol v1.0",
+    "terminology": {
+      "MVC": "Minimum Viable Combination \u2014 an irreducible behavioural structure observed in the Atlas MNQ dataset",
+      "Candidate_Market_Law": "A MVC that has survived all internal validation tests and is being tracked for cross-instrument replication",
+      "Market_Law": "Aspirational label \u2014 requires replication across multiple instruments and independent time periods"
+    },
+    "acceptance_criteria": {
+      "win_rate": ">= 60% (vs 52.3% baseline)",
+      "profit_factor": ">= 1.8",
+      "oos_pf": ">= 1.5 (must not degrade OOS)",
+      "mc_pass_rate": ">= 90%",
+      "wf_windows": ">= 8/12 above 55% WR",
+      "permutation_p": "< 0.001",
+      "permutation_z": ">= 5.0",
+      "irreducibility": "Removing any component must reduce WR by >= 5pp or PF below 1.5",
+      "simplicity": "No simpler formulation achieves equivalent performance",
+      "economic_mechanism": "Must have a plausible institutional or structural explanation"
+    },
+    "rejection_criteria": [
+      "Can be simplified to fewer variables without performance loss",
+      "Duplicates an existing MVC",
+      "Relies on proxy variables (fails causal independence test)",
+      "Fails OOS validation (PF degrades by > 30%)",
+      "Permutation Z-score < 5.0",
+      "MC pass rate < 90%",
+      "No plausible economic mechanism"
+    ],
+    "search_strategy": {
+      "feature_space": "88 features from Sprint 056 feature matrix",
+      "combination_orders": [
+        2,
+        3,
+        4
+      ],
+      "pre_filter": "Activation rate 2-15% of RTH bars (to ensure adequate N)",
+      "initial_screen": "WR >= 60% and N >= 200 bars",
+      "full_validation": "Applied to all candidates passing initial screen"
+    }
+  },
+  "ml001": {
+    "id": "ML-001",
+    "name": "Participation-Amplified Directional Momentum",
+    "status": "Candidate MVC (single-instrument, single-period)",
+    "components": {
+      "D-01": {
+        "variable": "rel_txn",
+        "operator": ">=",
+        "threshold": 1.33,
+        "description": "Relative transaction rate >= 1.33x 20-bar mean"
+      },
+      "D-03": {
+        "variable": "ov_range_vs_atr14",
+        "operator": ">=",
+        "threshold": 10.85,
+        "description": "Overnight range >= 10.85x ATR14 (large overnight range)"
+      },
+      "D-02_bull": {
+        "variable": "ov_dir",
+        "operator": "==",
+        "threshold": 1,
+        "description": "Overnight session direction is bullish"
+      }
+    },
+    "behaviour": "When institutional participation surges (D-01) during a session where the overnight range was large (D-03) and directionally bullish (D-02_bull), the probability of a sustained AM directional move is significantly elevated.",
+    "economic_mechanism": "Large bullish overnight ranges indicate institutional positioning. When the subsequent AM session opens with elevated participation (order fragmentation), it signals institutional continuation rather than reversal. The three conditions together identify the rare confluence of institutional intent + institutional execution + market structure alignment.",
+    "irreducibility_evidence": {
+      "remove_D01": "PF drops from 2.536 to 1.876 (D03\u00d7D02 only)",
+      "remove_D03": "PF drops from 2.536 to 1.613 (D01\u00d7D02 only)",
+      "remove_D02": "PF drops from 2.536 to 0.939 (D01\u00d7D03 only \u2014 below 1.0)",
+      "permutation_z": 10.45,
+      "permutation_p": 0.0
+    },
+    "validation_scores": {
+      "oos_pf": 2.903,
+      "is_pf": 2.406,
+      "mc_pass_rate": 100.0,
+      "wf_windows_above_55pct": "11/12",
+      "rolling_windows_above_55pct": "29/29",
+      "year_stability": {
+        "2024": 65.3,
+        "2025": 65.8,
+        "2026": 64.5
+      }
+    },
+    "replication_required": [
+      "NQ (same underlying)",
+      "ES (different underlying)",
+      "additional time periods"
+    ],
+    "promotion_criteria_met": true,
+    "notes": "Terminology: This is a Candidate MVC within the Atlas MNQ research framework. The label \"Market Law\" is aspirational and requires cross-instrument replication before it can be claimed.",
+    "verified_metrics": {
+      "n": 1698,
+      "wr": 65.31213191990577,
+      "pf": 2.5363827205292835
+    }
+  },
+  "available_features": [
+    {
+      "feature": "rel_txn",
+      "category": "Participation"
+    },
+    {
+      "feature": "rel_vol_20",
+      "category": "Participation"
+    },
+    {
+      "feature": "rel_dollar_vol",
+      "category": "Participation"
+    },
+    {
+      "feature": "ov_dir",
+      "category": "Overnight"
+    },
+    {
+      "feature": "ov_range_vs_atr14",
+      "category": "Overnight"
+    },
+    {
+      "feature": "ema_alignment",
+      "category": "Trend"
+    },
+    {
+      "feature": "adx14",
+      "category": "Trend"
+    },
+    {
+      "feature": "adx_slope",
+      "category": "Trend"
+    },
+    {
+      "feature": "volcomp_5_14",
+      "category": "Volatility"
+    },
+    {
+      "feature": "atr14",
+      "category": "Volatility"
+    },
+    {
+      "feature": "bar_range",
+      "category": "Volatility"
+    },
+    {
+      "feature": "day_range_vs_atr14",
+      "category": "Volatility"
+    },
+    {
+      "feature": "hour",
+      "category": "Session"
+    },
+    {
+      "feature": "minute",
+      "category": "Session"
+    },
+    {
+      "feature": "dow",
+      "category": "Session"
+    },
+    {
+      "feature": "close_vs_ema50",
+      "category": "Price_Structure"
+    },
+    {
+      "feature": "bar_dir",
+      "category": "Momentum"
+    },
+    {
+      "feature": "bar_body",
+      "category": "Momentum"
+    }
+  ]
+}
