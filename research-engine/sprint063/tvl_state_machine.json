@@ -1,0 +1,52 @@
+{
+  "states": {
+    "PENDING": "TVL has received the ARI-approved trade and is running validations",
+    "VERIFIED": "All 6 validation categories passed. Webhook may be transmitted.",
+    "REJECTED": "One or more validation rules failed. Webhook must NOT be transmitted. Record in Observatory.",
+    "DELAYED": "Validation cannot be completed yet (e.g., waiting for bar close confirmation). Retry on next bar.",
+    "EMERGENCY_BLOCK": "A critical safety condition detected (e.g., duplicate position, broker disconnect). All trading halted until manual review."
+  },
+  "transitions": [
+    {
+      "from": "PENDING",
+      "to": "VERIFIED",
+      "condition": "All 6 categories pass"
+    },
+    {
+      "from": "PENDING",
+      "to": "REJECTED",
+      "condition": "Any non-critical rule fails"
+    },
+    {
+      "from": "PENDING",
+      "to": "DELAYED",
+      "condition": "Bar not yet confirmed (barstate.isrealtime == false)"
+    },
+    {
+      "from": "PENDING",
+      "to": "EMERGENCY_BLOCK",
+      "condition": "Critical safety condition detected"
+    },
+    {
+      "from": "DELAYED",
+      "to": "PENDING",
+      "condition": "Next bar close \u2014 re-evaluate"
+    },
+    {
+      "from": "EMERGENCY_BLOCK",
+      "to": "PENDING",
+      "condition": "Manual reset only"
+    },
+    {
+      "from": "REJECTED",
+      "to": "PENDING",
+      "condition": "New signal on subsequent bar"
+    },
+    {
+      "from": "VERIFIED",
+      "to": "PENDING",
+      "condition": "New signal on subsequent bar"
+    }
+  ],
+  "rule": "Only VERIFIED state may result in webhook transmission. All other states must suppress execution."
+}

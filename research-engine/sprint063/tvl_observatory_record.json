@@ -1,0 +1,22 @@
+{
+  "record_type": "TVL_VERIFICATION",
+  "fields": {
+    "ts_utc": "UTC timestamp of verification",
+    "signal_id": "Unique signal identifier",
+    "model_id": "Execution model that generated the signal",
+    "ade_edge_score": "Edge score from ADE evaluation",
+    "ari_decision": "ARI decision (APPROVED/REJECTED/etc.)",
+    "tvl_result": "Final TVL result (VERIFIED/REJECTED/DELAYED/EMERGENCY_BLOCK)",
+    "categories_passed": "List of validation categories that passed",
+    "categories_failed": "List of validation categories that failed",
+    "rejection_codes": "List of specific rejection codes (e.g., TVL-C2-01)",
+    "rejection_reasons": "Human-readable rejection reasons",
+    "verification_time_ms": "Time taken to complete all validations (milliseconds)",
+    "webhook_transmitted": "True if webhook was sent (only possible if VERIFIED)",
+    "broker_acknowledged": "True if broker confirmed order receipt",
+    "final_execution": "True if order was filled at broker",
+    "audit_hash": "SHA256 of the complete record for tamper detection"
+  },
+  "retention": "Permanent",
+  "access": "Read-only"
+}

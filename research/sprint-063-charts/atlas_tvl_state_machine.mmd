@@ -1,0 +1,37 @@
+stateDiagram-v2
+    [*] --> PENDING : ARI APPROVED
+
+    PENDING --> VERIFIED : All 38 rules pass
+    PENDING --> REJECTED : Non-critical rule fails
+    PENDING --> DELAYED : Bar not confirmed or broker unavailable
+    PENDING --> EMERGENCY_BLOCK : Critical safety condition
+
+    VERIFIED --> [*] : Webhook transmitted
+
+    REJECTED --> PENDING : New signal on next bar
+    DELAYED --> PENDING : Next bar close — re-evaluate
+    EMERGENCY_BLOCK --> PENDING : Manual reset only
+
+    note right of VERIFIED
+        Webhook transmitted
+        Observatory: TVL_VERIFIED
+    end note
+
+    note right of REJECTED
+        Webhook suppressed
+        Observatory: TVL_REJECTED
+        Rejection codes logged
+    end note
+
+    note right of DELAYED
+        Webhook suppressed
+        Observatory: TVL_DELAYED
+        Signal remains valid
+        Retry on next bar
+    end note
+
+    note right of EMERGENCY_BLOCK
+        ALL trading halted
+        Observatory: EMERGENCY_BLOCK
+        Requires manual reset
+    end note

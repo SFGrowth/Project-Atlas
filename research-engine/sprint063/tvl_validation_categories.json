@@ -1,0 +1,351 @@
+{
+  "C1_execution_model": {
+    "description": "Verify the execution model identity and eligibility",
+    "failure_action": "REJECTED",
+    "rules": {
+      "C1-01": {
+        "name": "Valid Model ID",
+        "check": "model_id in ['A1', 'A3', 'B1']",
+        "rejection_code": "TVL-C1-01",
+        "rejection_reason": "Unknown or unregistered model ID",
+        "implementation": "Pine Script",
+        "critical": true
+      },
+      "C1-02": {
+        "name": "Model Currently Promoted",
+        "check": "model_id in PROMOTED_MODELS (static list, updated each sprint)",
+        "rejection_code": "TVL-C1-02",
+        "rejection_reason": "Model is not in the current promoted models registry",
+        "implementation": "Pine Script",
+        "critical": true
+      },
+      "C1-03": {
+        "name": "Model Eligible in Current Market State",
+        "check": "model.eligible == true (from ADE evaluation output)",
+        "rejection_code": "TVL-C1-03",
+        "rejection_reason": "Model was not marked eligible by ADE on this bar",
+        "implementation": "Pine Script",
+        "critical": true
+      },
+      "C1-04": {
+        "name": "Model Selected by ADE",
+        "check": "model_id == ade_selected_model_id",
+        "rejection_code": "TVL-C1-04",
+        "rejection_reason": "Model ID in trade does not match ADE-selected model",
+        "implementation": "Pine Script",
+        "critical": true
+      },
+      "C1-05": {
+        "name": "Edge Score Above Activation Threshold",
+        "check": "edge_score >= 60",
+        "rejection_code": "TVL-C1-05",
+        "rejection_reason": "Edge score below activation threshold of 60",
+        "implementation": "Pine Script",
+        "critical": false
+      }
+    }
+  },
+  "C2_market_state": {
+    "description": "Verify the market state has not materially changed since ADE evaluation",
+    "failure_action": "REJECTED",
+    "rules": {
+      "C2-01": {
+        "name": "Current Bar Unchanged",
+        "check": "barstate.isrealtime == true (not a historical replay)",
+        "rejection_code": "TVL-C2-01",
+        "rejection_reason": "Bar is not a live real-time bar \u2014 possible TradingView replay or restart",
+        "implementation": "Pine Script",
+        "critical": true,
+        "note": "This is the most important Pine guard. barstate.isrealtime prevents historical alerts."
+      },
+      "C2-02": {
+        "name": "Session Still Valid",
+        "check": "current_session == signal_session (session has not changed since signal generation)",
+        "rejection_code": "TVL-C2-02",
+        "rejection_reason": "Session changed between signal generation and TVL verification",
+        "implementation": "Pine Script",
+        "critical": false
+      },
+      "C2-03": {
+        "name": "Regime Unchanged",
+        "check": "abs(current_adx - signal_adx) <= 3.0 (ADX has not shifted materially)",
+        "rejection_code": "TVL-C2-03",
+        "rejection_reason": "ADX regime changed materially (>3 points) since signal generation",
+        "implementation": "Pine Script",
+        "critical": false
+      },
+      "C2-04": {
+        "name": "Trading Window Still Open",
+        "check": "hour_et < 15 OR (hour_et == 15 AND minute_et < 30)",
+        "rejection_code": "TVL-C2-04",
+        "rejection_reason": "Trading window has closed (after 15:30 ET)",
+        "implementation": "Pine Script",
+        "critical": true
+      },
+      "C2-05": {
+        "name": "Market State Object Integrity",
+        "check": "mso.ts_utc == current_bar_time (MSO was computed on this bar, not a stale snapshot)",
+        "rejection_code": "TVL-C2-05",
+        "rejection_reason": "MSO timestamp does not match current bar \u2014 stale state detected",
+        "implementation": "Pine Script",
+        "critical": true
+      },
+      "C2-06": {
+        "name": "Price Reasonableness",
+        "check": "abs(entry_price - close) / close < 0.005 (entry within 0.5% of current close)",
+        "rejection_code": "TVL-C2-06",
+        "rejection_reason": "Entry price deviates more than 0.5% from current close \u2014 possible data error",
+        "implementation": "Pine Script + Webhook",
+        "critical": false
+      }
+    }
+  },
+  "C3_ari_state": {
+    "description": "Re-verify all ARI rules at the moment of transmission (final ARI check)",
+    "failure_action": "REJECTED",
+    "note": "These checks duplicate ARI rules intentionally. The TVL performs an independent re-verification.",
+    "rules": {
+      "C3-01": {
+        "name": "Daily Loss Limit",
+        "check": "ari_daily_pnl > -2000 (live) / -1500 (prop)",
+        "rejection_code": "TVL-C3-01",
+        "rejection_reason": "Daily loss limit reached between ARI approval and TVL verification",
+        "implementation": "Pine Script",
+        "critical": true
+      },
+      "C3-02": {
+        "name": "Consecutive Loss Rule",
+        "check": "ari_consecutive_losses < 2",
+        "rejection_code": "TVL-C3-02",
+        "rejection_reason": "Consecutive loss count changed between ARI approval and TVL verification",
+        "implementation": "Pine Script",
+        "critical": true
+      },
+      "C3-03": {
+        "name": "Circuit Breaker",
+        "check": "ari_circuit_breaker == false",
+        "rejection_code": "TVL-C3-03",
+        "rejection_reason": "ARI circuit breaker is active",
+        "implementation": "Pine Script",
+        "critical": true,
+        "failure_action_override": "EMERGENCY_BLOCK"
+      },
+      "C3-04": {
+        "name": "Daily Trade Count",
+        "check": "ari_daily_trade_count < 3",
+        "rejection_code": "TVL-C3-04",
+        "rejection_reason": "Daily trade limit (3) already reached",
+        "implementation": "Pine Script",
+        "critical": true
+      },
+      "C3-05": {
+        "name": "Active Position Check",
+        "check": "ari_active_position == false",
+        "rejection_code": "TVL-C3-05",
+        "rejection_reason": "An active position exists \u2014 only one position per instrument permitted",
+        "implementation": "Pine Script + Webhook",
+        "critical": true,
+        "failure_action_override": "EMERGENCY_BLOCK"
+      },
+      "C3-06": {
+        "name": "Risk Multiplier Sanity",
+        "check": "0.25 <= ari_risk_multiplier <= 2.0",
+        "rejection_code": "TVL-C3-06",
+        "rejection_reason": "Risk multiplier outside valid range [0.25, 2.0]",
+        "implementation": "Pine Script",
+        "critical": false
+      }
+    }
+  },
+  "C4_trade_parameters": {
+    "description": "Verify all trade parameters are mathematically valid and internally consistent",
+    "failure_action": "REJECTED",
+    "rules": {
+      "C4-01": {
+        "name": "Entry Price Valid",
+        "check": "entry_price > 0 AND entry_price is not na",
+        "rejection_code": "TVL-C4-01",
+        "rejection_reason": "Entry price is zero, negative, or undefined",
+        "implementation": "Pine Script",
+        "critical": true
+      },
+      "C4-02": {
+        "name": "Stop Price Valid",
+        "check": "stop_price > 0 AND stop_price != entry_price AND (direction==LONG: stop_price < entry_price) AND (direction==SHORT: stop_price > entry_price)",
+        "rejection_code": "TVL-C4-02",
+        "rejection_reason": "Stop price is invalid, equal to entry, or on wrong side of entry",
+        "implementation": "Pine Script",
+        "critical": true
+      },
+      "C4-03": {
+        "name": "Target Price Valid",
+        "check": "target_price > 0 AND target_price != entry_price AND (direction==LONG: target_price > entry_price) AND (direction==SHORT: target_price < entry_price)",
+        "rejection_code": "TVL-C4-03",
+        "rejection_reason": "Target price is invalid, equal to entry, or on wrong side of entry",
+        "implementation": "Pine Script",
+        "critical": true
+      },
+      "C4-04": {
+        "name": "Risk Points Consistent",
+        "check": "abs(risk_pts - abs(entry_price - stop_price)) < 0.5 (within 0.5 points of calculated risk)",
+        "rejection_code": "TVL-C4-04",
+        "rejection_reason": "Risk points in payload do not match entry/stop calculation",
+        "implementation": "Pine Script + Webhook",
+        "critical": true
+      },
+      "C4-05": {
+        "name": "Contract Quantity Valid",
+        "check": "contracts >= 1 AND contracts <= 10 AND contracts is integer",
+        "rejection_code": "TVL-C4-05",
+        "rejection_reason": "Contract quantity is zero, fractional, or exceeds hard cap of 10",
+        "implementation": "Pine Script",
+        "critical": true
+      },
+      "C4-06": {
+        "name": "Risk Dollars Consistent",
+        "check": "abs(risk_dollars - (contracts * risk_pts * 2.0)) < 10 (within $10 of calculated risk)",
+        "rejection_code": "TVL-C4-06",
+        "rejection_reason": "Risk dollars in payload do not match contracts \u00d7 risk_pts \u00d7 point_value",
+        "implementation": "Pine Script + Webhook",
+        "critical": false
+      },
+      "C4-07": {
+        "name": "R Multiple Valid",
+        "check": "rr_ratio >= 1.5 (minimum acceptable reward:risk)",
+        "rejection_code": "TVL-C4-07",
+        "rejection_reason": "Reward:Risk ratio below minimum threshold of 1.5",
+        "implementation": "Pine Script",
+        "critical": false
+      },
+      "C4-08": {
+        "name": "Order Direction Valid",
+        "check": "direction in ['LONG', 'SHORT']",
+        "rejection_code": "TVL-C4-08",
+        "rejection_reason": "Order direction is undefined or invalid",
+        "implementation": "Pine Script",
+        "critical": true
+      },
+      "C4-09": {
+        "name": "Stop Distance Minimum",
+        "check": "risk_pts >= 0.5 * atr_14 (stop is at least 50% of ATR14 \u2014 prevents stop too tight)",
+        "rejection_code": "TVL-C4-09",
+        "rejection_reason": "Stop distance is less than 50% of ATR14 \u2014 stop is too tight for current volatility",
+        "implementation": "Pine Script",
+        "critical": false
+      }
+    }
+  },
+  "C5_duplicate_prevention": {
+    "description": "Verify this is not a duplicate or replayed signal",
+    "failure_action": "REJECTED",
+    "rules": {
+      "C5-01": {
+        "name": "Unique Signal ID",
+        "check": "signal_id not in signal_id_cache (60-second rolling cache)",
+        "rejection_code": "TVL-C5-01",
+        "rejection_reason": "Signal ID already processed within the last 60 seconds \u2014 duplicate detected",
+        "implementation": "Webhook Receiver",
+        "critical": true
+      },
+      "C5-02": {
+        "name": "Current Bar Not Already Traded",
+        "check": "last_trade_bar_index != current_bar_index",
+        "rejection_code": "TVL-C5-02",
+        "rejection_reason": "A trade was already taken on this bar \u2014 one trade per bar maximum",
+        "implementation": "Pine Script",
+        "critical": true
+      },
+      "C5-03": {
+        "name": "No Pending Webhook",
+        "check": "webhook_pending_flag == false",
+        "rejection_code": "TVL-C5-03",
+        "rejection_reason": "A webhook transmission is already in progress for this signal",
+        "implementation": "Webhook Receiver",
+        "critical": true
+      },
+      "C5-04": {
+        "name": "No Pending Order",
+        "check": "broker_pending_order == false (no unacknowledged order at broker)",
+        "rejection_code": "TVL-C5-04",
+        "rejection_reason": "An unacknowledged order exists at the broker",
+        "implementation": "TradersPost",
+        "critical": true
+      },
+      "C5-05": {
+        "name": "Duplicate JSON Payload",
+        "check": "sha256(payload) not in payload_hash_cache (5-minute rolling cache)",
+        "rejection_code": "TVL-C5-05",
+        "rejection_reason": "Identical JSON payload received within the last 5 minutes",
+        "implementation": "Webhook Receiver",
+        "critical": true
+      },
+      "C5-06": {
+        "name": "Position Reconciliation",
+        "check": "pine_position_size == broker_position_size (Pine and broker agree on position state)",
+        "rejection_code": "TVL-C5-06",
+        "rejection_reason": "Pine Script position state does not match broker position \u2014 reconciliation required",
+        "implementation": "TradersPost + External",
+        "critical": true,
+        "failure_action_override": "EMERGENCY_BLOCK"
+      }
+    }
+  },
+  "C6_broker_safety": {
+    "description": "Verify broker connectivity and payload integrity before transmission",
+    "failure_action": "DELAYED",
+    "note": "C6 failures result in DELAYED (not REJECTED) because they are transient infrastructure issues, not logical errors. The signal remains valid; transmission is deferred.",
+    "rules": {
+      "C6-01": {
+        "name": "Trading Session Open",
+        "check": "broker_session_status == 'OPEN'",
+        "rejection_code": "TVL-C6-01",
+        "rejection_reason": "Broker reports trading session is not open",
+        "implementation": "TradersPost",
+        "critical": false,
+        "failure_action_override": "DELAYED"
+      },
+      "C6-02": {
+        "name": "Symbol Matches",
+        "check": "payload.ticker == configured_symbol (e.g., 'MNQ1!')",
+        "rejection_code": "TVL-C6-02",
+        "rejection_reason": "Ticker symbol in payload does not match configured instrument",
+        "implementation": "Webhook Receiver",
+        "critical": true
+      },
+      "C6-03": {
+        "name": "Account Available",
+        "check": "traderspost_account_status == 'ACTIVE'",
+        "rejection_code": "TVL-C6-03",
+        "rejection_reason": "TradersPost account is not active or has been suspended",
+        "implementation": "TradersPost",
+        "critical": true,
+        "failure_action_override": "EMERGENCY_BLOCK"
+      },
+      "C6-04": {
+        "name": "Broker Connected",
+        "check": "tradovate_connection_status == 'CONNECTED'",
+        "rejection_code": "TVL-C6-04",
+        "rejection_reason": "Tradovate broker connection is not active",
+        "implementation": "TradersPost",
+        "critical": false,
+        "failure_action_override": "DELAYED"
+      },
+      "C6-05": {
+        "name": "Webhook Payload Valid",
+        "check": "all required fields present AND all types correct",
+        "rejection_code": "TVL-C6-05",
+        "rejection_reason": "Webhook payload is missing required fields or has type errors",
+        "implementation": "Webhook Receiver",
+        "critical": true
+      },
+      "C6-06": {
+        "name": "JSON Schema Valid",
+        "check": "payload validates against ADE webhook_payload_schema v1.0",
+        "rejection_code": "TVL-C6-06",
+        "rejection_reason": "JSON payload does not conform to the registered schema",
+        "implementation": "Webhook Receiver",
+        "critical": true
+      }
+    }
+  }
+}

@@ -1,0 +1,129 @@
+sequenceDiagram
+    participant MD as Market Data
+    participant MSE as Layer 1<br/>MSE
+    participant ADE as Layer 2<br/>ADE
+    participant ARI as Layer 3<br/>ARI
+    participant TVL as Layer 4<br/>TVL
+    participant PINE as TradingView<br/>Pine Strategy
+    participant WH as Webhook<br/>Receiver
+    participant TP as TradersPost
+    participant TV as Tradovate
+    participant OBS as Observatory
+
+    Note over MD,OBS: Atlas End-to-End Production Flow v2.2 — Every 5-minute bar close
+
+    MD->>MSE: OHLCV + transactions
+    activate MSE
+    MSE->>MSE: Compute 56-field Market State Object
+    MSE-->>OBS: MARKET_STATE_SNAPSHOT
+    MSE->>ADE: Market State Object (immutable)
+    deactivate MSE
+
+    activate ADE
+    Note over ADE: Parallel evaluation of A1, A3, B1
+    ADE->>ADE: Compute Edge Scores (C1–C7)
+    ADE->>ADE: Rank eligible models (threshold ≥ 60)
+    ADE-->>OBS: ADE_EVALUATION record
+
+    alt No model eligible
+        ADE-->>OBS: NO_TRADE record
+        Note over ADE: Atlas does not trade
+    else Candidate Model selected
+        ADE->>ARI: Candidate Model + Edge Score
+        deactivate ADE
+
+        activate ARI
+        ARI->>ARI: R1: Active position block
+        ARI->>ARI: R2: Circuit breaker
+        ARI->>ARI: R3: Daily loss limit
+        ARI->>ARI: R4: Consecutive loss caution
+        ARI->>ARI: R5: Daily trade limit
+        ARI->>ARI: R6: Drawdown reduction
+        ARI->>ARI: R7: Profit compounding
+        ARI->>ARI: R8: Session end block
+        ARI->>ARI: Calculate contracts + risk multiplier
+        ARI-->>OBS: ARI_DECISION record
+
+        alt ARI Rejects
+            ARI-->>OBS: MISSED_OPPORTUNITY record
+        else ARI Approves
+            ARI->>TVL: Approved trade parameters
+            deactivate ARI
+
+            activate TVL
+            Note over TVL: 6-Category Independent Verification
+
+            TVL->>TVL: C1: Execution Model Verification
+            Note right of TVL: Valid ID · Promoted · Eligible<br/>ADE-selected · Edge Score ≥ 60
+
+            TVL->>TVL: C2: Market State Verification
+            Note right of TVL: barstate.isrealtime · Session valid<br/>Regime unchanged · Window open<br/>MSO integrity · Price reasonable
+
+            TVL->>TVL: C3: ARI Re-Verification
+            Note right of TVL: Daily loss · Consecutive losses<br/>Circuit breaker · Trade count<br/>Active position · Risk multiplier
+
+            TVL->>TVL: C4: Trade Parameter Verification
+            Note right of TVL: Entry/Stop/Target valid<br/>Risk pts consistent · Contracts 1–10<br/>R:R ≥ 1.5 · Direction valid
+
+            TVL->>TVL: C5: Duplicate Prevention
+            Note right of TVL: Unique signal_id · Bar not traded<br/>No pending webhook · No pending order<br/>No duplicate payload · Position reconciled
+
+            TVL->>TVL: C6: Broker Safety
+            Note right of TVL: Session open · Symbol matches<br/>Account active · Broker connected<br/>Payload valid · Schema valid
+
+            TVL-->>OBS: TVL_VERIFICATION record
+
+            alt TVL → EMERGENCY BLOCK
+                TVL-->>OBS: EMERGENCY_BLOCK record
+                Note over TVL: All trading halted — manual review required
+            else TVL → REJECTED
+                TVL-->>OBS: TVL_REJECTED record (with rejection codes)
+                Note over TVL: Webhook suppressed
+            else TVL → DELAYED
+                TVL-->>OBS: TVL_DELAYED record
+                Note over TVL: Retry on next bar close
+            else TVL → VERIFIED
+                TVL->>PINE: VERIFIED — transmit alert
+                deactivate TVL
+
+                activate PINE
+                PINE->>PINE: Confirm barstate.isrealtime
+                PINE->>PINE: Attach signal_id to JSON payload
+                PINE->>WH: HTTP POST (webhook payload)
+                deactivate PINE
+
+                activate WH
+                WH->>WH: Validate JSON schema (C6-05, C6-06)
+                WH->>WH: Check signal_id cache (C5-01)
+                WH->>WH: Check payload hash cache (C5-05)
+                WH->>WH: Verify symbol (C6-02)
+                WH->>WH: Check pending webhook flag (C5-03)
+                WH->>TP: Validated trade instruction
+                deactivate WH
+
+                activate TP
+                TP->>TP: Check account status (C6-03)
+                TP->>TP: Check broker connection (C6-04)
+                TP->>TP: Check pending orders (C5-04)
+                TP->>TP: Check session open (C6-01)
+                TP->>TV: Order (Prop Acct 1)
+                TP->>TV: Order (Prop Acct 2)
+                TP->>TV: Order (Live Account)
+                deactivate TP
+
+                activate TV
+                TV->>TV: Execute market order
+                TV-->>OBS: TRADE_ENTRY record
+                deactivate TV
+
+                Note over TV,OBS: Trade is live — monitoring begins
+
+                TV-->>ARI: Trade outcome (P&L)
+                ARI->>ARI: Update state (consec_losses, daily_pnl, equity_peak)
+                TV-->>OBS: TRADE_EXIT record
+            end
+        end
+    end
+
+    OBS-->>OBS: Retain all records (immutable, permanent)
+    Note over OBS: Read-only — never modifies production behaviour

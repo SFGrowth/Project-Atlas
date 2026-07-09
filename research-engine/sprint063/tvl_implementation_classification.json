@@ -1,0 +1,69 @@
+{
+  "Pine Script": {
+    "description": "Executed inside TradingView Pine Script on every bar close",
+    "capabilities": "Access to all OHLCV data, indicators, strategy state (position_size, etc.), barstate flags",
+    "limitations": "Cannot make external HTTP calls. Cannot access broker state directly. Cannot persist state across sessions without var declarations.",
+    "rules": [
+      "C1-01",
+      "C1-02",
+      "C1-03",
+      "C1-04",
+      "C1-05",
+      "C2-01",
+      "C2-02",
+      "C2-03",
+      "C2-04",
+      "C2-05",
+      "C2-06",
+      "C3-01",
+      "C3-02",
+      "C3-03",
+      "C3-04",
+      "C3-05",
+      "C3-06",
+      "C4-01",
+      "C4-02",
+      "C4-03",
+      "C4-04",
+      "C4-05",
+      "C4-06",
+      "C4-07",
+      "C4-08",
+      "C4-09",
+      "C5-02"
+    ]
+  },
+  "Webhook Receiver": {
+    "description": "Executed by the webhook endpoint before passing to TradersPost",
+    "capabilities": "Full access to payload, can maintain state (signal_id cache, payload hash cache), can make HTTP calls",
+    "limitations": "Cannot access TradingView Pine state directly. Cannot query broker positions directly.",
+    "rules": [
+      "C5-01",
+      "C5-03",
+      "C5-05",
+      "C6-02",
+      "C6-05",
+      "C6-06"
+    ]
+  },
+  "TradersPost": {
+    "description": "Executed by TradersPost before routing to Tradovate",
+    "capabilities": "Access to broker connection status, account status, pending orders",
+    "limitations": "Cannot access Pine Script state. Relies on payload data for signal context.",
+    "rules": [
+      "C5-04",
+      "C6-01",
+      "C6-03",
+      "C6-04"
+    ]
+  },
+  "External Atlas Service": {
+    "description": "A future external service (e.g., Atlas Monitor) that reconciles Pine and broker state",
+    "capabilities": "Can query both TradingView (via REST API) and Tradovate simultaneously",
+    "limitations": "Requires additional infrastructure. Not available in current production setup.",
+    "rules": [
+      "C5-06"
+    ],
+    "interim_solution": "For now, C5-06 is handled by TradersPost position query + manual reconciliation if mismatch detected"
+  }
+}
