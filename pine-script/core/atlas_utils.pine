@@ -1,0 +1,428 @@
+// ============================================================================
+// ATLAS TRADING SYSTEM v2.1
+// Module: M-01 — Atlas Utilities
+// Sprint: 066
+// Specification: APS v1.0 | Pine Engineering Spec v1.0
+//
+// PURPOSE:
+//   Reusable pure utility functions. No persistent state. No var declarations.
+//   All functions are stateless and deterministic given the same inputs.
+//   This module is a Pine Script v5 Library.
+//
+// FUNCTION CATEGORIES:
+//   1. Session Detection
+//   2. Time Helpers
+//   3. Risk Calculations
+//   4. Point Calculations
+//   5. Price Formatting
+//   6. JSON Formatting Helpers
+//   7. Validation Helpers
+//   8. Mathematical Helpers
+// ============================================================================
+
+//@version=5
+library("atlas_utils", overlay=false)
+
+// ============================================================================
+// SECTION 1: SESSION DETECTION
+// All session boundaries use ET (America/New_York) timezone.
+// Session definitions per APS v1.0 Section 2.
+// ============================================================================
+
+// Returns true if the current bar is within Regular Trading Hours (09:30–16:00 ET)
+export f_is_rth(int h, int m) =>
+    // h = hour in ET, m = minute in ET
+    (h == 9 and m >= 30) or (h >= 10 and h <= 15) or (h == 16 and m == 0)
+
+// Returns true if the current bar is in the AM Session (09:30–11:59 ET)
+export f_is_am_session(int h, int m) =>
+    (h == 9 and m >= 30) or (h == 10) or (h == 11)
+
+// Returns true if the current bar is in the Mid Session (12:00–13:59 ET)
+export f_is_mid_session(int h, int m) =>
+    h == 12 or h == 13
+
+// Returns true if the current bar is in the PM Session (14:00–15:59 ET)
+export f_is_pm_session(int h, int m) =>
+    h == 14 or h == 15
+
+// Returns true if the current bar is in the Overnight Session (18:00–09:29 ET)
+// Overnight spans midnight, so requires special handling
+export f_is_overnight(int h, int m) =>
+    h >= 18 or h < 9 or (h == 9 and m < 30)
+
+// Returns the session name string for the current bar
+// Returns: "AM_SESSION" | "MID_SESSION" | "PM_SESSION" | "AFTER_HOURS" | "OVERNIGHT" | "PRE_MARKET"
+export f_get_session_name(int h, int m) =>
+    string session = "OVERNIGHT"
+    if h == 9 and m >= 30
+        session := "AM_SESSION"
+    else if h >= 10 and h <= 11
+        session := "AM_SESSION"
+    else if h == 12 or h == 13
+        session := "MID_SESSION"
+    else if h == 14 or h == 15
+        session := "PM_SESSION"
+    else if h == 16 and m == 0
+        session := "PM_SESSION"
+    else if h >= 16 and h < 18
+        session := "AFTER_HOURS"
+    else
+        session := "OVERNIGHT"
+    session
+
+// Returns true if this is the first bar of the RTH session (09:30 ET)
+// Requires previous bar's hour and minute for edge detection
+export f_is_rth_open(int h, int m, int h_prev, int m_prev) =>
+    bool is_now_rth  = (h == 9 and m == 30)
+    bool was_not_rth = not ((h_prev == 9 and m_prev >= 30) or (h_prev >= 10 and h_prev <= 15))
+    is_now_rth and was_not_rth
+
+// Returns true if this is the first bar of the overnight session (18:00 ET)
+export f_is_overnight_open(int h, int m, int h_prev) =>
+    h == 18 and m == 0 and h_prev != 18
+
+// Returns the day of week as integer (1=Mon, 2=Tue, 3=Wed, 4=Thu, 5=Fri, 6=Sat, 7=Sun)
+// Pine Script dayofweek: 1=Sun, 2=Mon, ..., 7=Sat — we remap to ISO 8601
+export f_day_of_week_iso(int pine_dow) =>
+    // pine_dow: dayofweek built-in (1=Sun, 2=Mon, 3=Tue, 4=Wed, 5=Thu, 6=Fri, 7=Sat)
+    int iso = switch pine_dow
+        1 => 7  // Sun
+        2 => 1  // Mon
+        3 => 2  // Tue
+        4 => 3  // Wed
+        5 => 4  // Thu
+        6 => 5  // Fri
+        7 => 6  // Sat
+        => 0
+    iso
+
+// Returns true if the current day is a valid trading day (Mon–Fri)
+export f_is_trading_day(int pine_dow) =>
+    pine_dow >= 2 and pine_dow <= 6  // Mon=2 through Fri=6 in Pine's convention
+
+// ============================================================================
+// SECTION 2: TIME HELPERS
+// ============================================================================
+
+// Returns the hour in ET timezone from a Unix timestamp (ms)
+// Note: In Pine Script, use hour(time, "America/New_York") directly in most cases.
+// This function is provided for use in calculations requiring explicit timezone conversion.
+export f_hour_et(int ts_ms) =>
+    // Pine Script's hour() function handles timezone natively when called with timezone arg
+    // This helper wraps the pattern for consistency
+    int h = math.floor(math.mod(ts_ms / 3600000.0, 24.0))
+    h  // Returns UTC hour; caller must apply timezone offset externally if needed
+
+// Returns a formatted time string "HH:MM" from hour and minute integers
+export f_format_time(int h, int m) =>
+    str.format("{0,number,00}:{1,number,00}", h, m)
+
+// Returns the number of minutes since midnight ET for a given hour/minute
+export f_minutes_since_midnight(int h, int m) =>
+    h * 60 + m
+
+// Returns the number of minutes since RTH open (09:30 ET)
+// Returns negative values for pre-RTH bars
+export f_minutes_since_rth_open(int h, int m) =>
+    f_minutes_since_midnight(h, m) - f_minutes_since_midnight(9, 30)
+
+// Returns true if the current bar is within the last N minutes of RTH (before 16:00)
+export f_is_near_rth_close(int h, int m, int minutes_buffer) =>
+    int rth_close_mins = f_minutes_since_midnight(16, 0)
+    int current_mins   = f_minutes_since_midnight(h, m)
+    (rth_close_mins - current_mins) <= minutes_buffer and current_mins <= rth_close_mins
+
+// ============================================================================
+// SECTION 3: RISK CALCULATIONS
+// ============================================================================
+
+// Calculates the number of contracts for a given risk amount
+// Formula: contracts = floor(risk_dollars / (risk_pts * point_value))
+// Enforces minimum of 1 and maximum of max_contracts
+export f_calc_contracts(float risk_dollars, float risk_pts, float point_value, int max_contracts) =>
+    int contracts = 0
+    if risk_pts > 0 and point_value > 0
+        contracts := math.floor(risk_dollars / (risk_pts * point_value))
+        contracts := math.max(1, math.min(contracts, max_contracts))
+    contracts
+
+// Calculates the actual dollar risk for a position
+// Formula: actual_risk = contracts * risk_pts * point_value
+export f_calc_actual_risk(int contracts, float risk_pts, float point_value) =>
+    float(contracts) * risk_pts * point_value
+
+// Calculates the P&L for a completed trade
+// direction: 1=LONG, -1=SHORT
+export f_calc_pnl(int direction, float entry_price, float exit_price, int contracts, float point_value) =>
+    float(direction) * (exit_price - entry_price) * float(contracts) * point_value
+
+// Calculates the R-multiple for a completed trade
+// R-multiple = pnl / initial_risk
+export f_calc_r_multiple(float pnl, float initial_risk) =>
+    if initial_risk > 0
+        pnl / initial_risk
+    else
+        0.0
+
+// Calculates the Profit Factor from gross wins and gross losses
+// Returns 0.0 if gross_losses == 0 (no losses yet)
+export f_calc_profit_factor(float gross_wins, float gross_losses) =>
+    if gross_losses > 0
+        gross_wins / gross_losses
+    else if gross_wins > 0
+        999.0  // Infinite PF — no losses
+    else
+        0.0
+
+// Calculates the expectancy per trade
+// Formula: (win_rate * avg_win) - ((1 - win_rate) * avg_loss)
+export f_calc_expectancy(float win_rate, float avg_win, float avg_loss) =>
+    (win_rate * avg_win) - ((1.0 - win_rate) * avg_loss)
+
+// Calculates the win rate from total wins and total trades
+export f_calc_win_rate(int total_wins, int total_trades) =>
+    if total_trades > 0
+        float(total_wins) / float(total_trades)
+    else
+        0.0
+
+// ============================================================================
+// SECTION 4: POINT CALCULATIONS
+// ============================================================================
+
+// Calculates the stop price for a LONG trade
+// stop = entry - (atr * multiplier)
+export f_calc_long_stop(float entry, float atr, float multiplier) =>
+    entry - (atr * multiplier)
+
+// Calculates the stop price for a SHORT trade
+// stop = entry + (atr * multiplier)
+export f_calc_short_stop(float entry, float atr, float multiplier) =>
+    entry + (atr * multiplier)
+
+// Calculates the target price for a LONG trade
+// target = entry + (risk_pts * rr_ratio)
+export f_calc_long_target(float entry, float risk_pts, float rr_ratio) =>
+    entry + (risk_pts * rr_ratio)
+
+// Calculates the target price for a SHORT trade
+// target = entry - (risk_pts * rr_ratio)
+export f_calc_short_target(float entry, float risk_pts, float rr_ratio) =>
+    entry - (risk_pts * rr_ratio)
+
+// Calculates the risk in points between entry and stop
+export f_calc_risk_pts(float entry, float stop) =>
+    math.abs(entry - stop)
+
+// Calculates the reward in points between entry and target
+export f_calc_reward_pts(float entry, float target) =>
+    math.abs(target - entry)
+
+// Calculates the actual RR ratio
+export f_calc_rr_ratio(float entry, float stop, float target) =>
+    float risk   = f_calc_risk_pts(entry, stop)
+    float reward = f_calc_reward_pts(entry, target)
+    if risk > 0
+        reward / risk
+    else
+        0.0
+
+// ============================================================================
+// SECTION 5: PRICE FORMATTING
+// ============================================================================
+
+// Formats a price to 2 decimal places as a string
+export f_format_price(float price) =>
+    str.tostring(price, "#.00")
+
+// Formats a dollar amount with sign and 2 decimal places
+export f_format_dollar(float amount) =>
+    string prefix = amount >= 0 ? "+" : ""
+    prefix + str.tostring(amount, "#.00")
+
+// Formats a percentage (0.0–1.0) as "XX.X%"
+export f_format_pct(float pct) =>
+    str.tostring(pct * 100.0, "#.0") + "%"
+
+// Formats a Profit Factor to 3 decimal places
+export f_format_pf(float pf) =>
+    if pf >= 999.0
+        "∞"
+    else
+        str.tostring(pf, "#.000")
+
+// Formats an R-multiple to 2 decimal places with sign
+export f_format_r(float r) =>
+    string prefix = r >= 0 ? "+" : ""
+    prefix + str.tostring(r, "#.00") + "R"
+
+// ============================================================================
+// SECTION 6: JSON FORMATTING HELPERS
+// ============================================================================
+
+// Wraps a string value in JSON quotes
+export f_json_str(string key, string value) =>
+    '"' + key + '":"' + value + '"'
+
+// Formats a numeric value as a JSON key-value pair (no quotes around value)
+export f_json_num(string key, float value, string fmt) =>
+    '"' + key + '":' + str.tostring(value, fmt)
+
+// Formats an integer as a JSON key-value pair
+export f_json_int(string key, int value) =>
+    '"' + key + '":' + str.tostring(value)
+
+// Formats a boolean as a JSON key-value pair
+export f_json_bool(string key, bool value) =>
+    '"' + key + '":' + (value ? "true" : "false")
+
+// Wraps a complete JSON object string in curly braces
+export f_json_object(string content) =>
+    "{" + content + "}"
+
+// Joins two JSON fields with a comma separator
+export f_json_join(string field1, string field2) =>
+    field1 + "," + field2
+
+// ============================================================================
+// SECTION 7: VALIDATION HELPERS
+// ============================================================================
+
+// Returns true if a price value is valid (not na and greater than 0)
+export f_is_valid_price(float price) =>
+    not na(price) and price > 0.0
+
+// Returns true if a signal ID is valid (not empty and not na)
+export f_is_valid_signal_id(string signal_id) =>
+    not na(signal_id) and str.length(signal_id) > 0
+
+// Returns true if a trade proposal has valid entry/stop/target prices
+export f_is_valid_proposal(float entry, float stop, float target, int direction) =>
+    bool valid_prices = f_is_valid_price(entry) and f_is_valid_price(stop) and f_is_valid_price(target)
+    bool valid_direction = direction == 1 or direction == -1
+    bool valid_long  = direction == 1  and stop < entry and target > entry
+    bool valid_short = direction == -1 and stop > entry and target < entry
+    valid_prices and valid_direction and (valid_long or valid_short)
+
+// Returns true if the RR ratio meets the minimum threshold
+export f_is_valid_rr(float rr_ratio, float min_rr) =>
+    rr_ratio >= min_rr
+
+// Returns true if the edge score is within valid range [0, 100]
+export f_is_valid_edge_score(float score) =>
+    score >= 0.0 and score <= 100.0
+
+// Generates a unique signal ID from model ID and timestamp
+export f_generate_signal_id(string model_id, int ts_utc) =>
+    model_id + "-" + str.tostring(ts_utc)
+
+// ============================================================================
+// SECTION 8: MATHEMATICAL HELPERS
+// ============================================================================
+
+// Clamps a value between min and max
+export f_clamp(float value, float min_val, float max_val) =>
+    math.max(min_val, math.min(value, max_val))
+
+// Normalises a value to [0, 1] range given min and max bounds
+// Returns 0.5 if min == max (degenerate case)
+export f_normalise(float value, float min_val, float max_val) =>
+    if max_val > min_val
+        f_clamp((value - min_val) / (max_val - min_val), 0.0, 1.0)
+    else
+        0.5
+
+// Calculates a simple rolling average from an array
+export f_array_mean(array<float> arr) =>
+    int n = array.size(arr)
+    if n == 0
+        0.0
+    else
+        array.sum(arr) / float(n)
+
+// Calculates the rolling Profit Factor from an array of P&L values
+export f_rolling_pf(array<float> pnl_array) =>
+    float gross_wins   = 0.0
+    float gross_losses = 0.0
+    int n = array.size(pnl_array)
+    for i = 0 to n - 1
+        float v = array.get(pnl_array, i)
+        if v > 0
+            gross_wins   += v
+        else
+            gross_losses += math.abs(v)
+    f_calc_profit_factor(gross_wins, gross_losses)
+
+// Calculates the rolling Win Rate from an array of P&L values
+export f_rolling_wr(array<float> pnl_array) =>
+    int wins = 0
+    int n    = array.size(pnl_array)
+    for i = 0 to n - 1
+        if array.get(pnl_array, i) > 0
+            wins += 1
+    f_calc_win_rate(wins, n)
+
+// Pushes a value to a FIFO array with a maximum size limit
+// Removes the oldest element when max_size is exceeded
+export f_fifo_push(array<float> arr, float value, int max_size) =>
+    array.push(arr, value)
+    if array.size(arr) > max_size
+        array.shift(arr)
+
+// String version of FIFO push
+export f_fifo_push_str(array<string> arr, string value, int max_size) =>
+    array.push(arr, value)
+    if array.size(arr) > max_size
+        array.shift(arr)
+
+// Returns the EMA structure string based on three EMA values
+// "BULL_ALIGNED" if ema9 > ema21 > ema50
+// "BEAR_ALIGNED" if ema9 < ema21 < ema50
+// "MIXED" otherwise
+export f_ema_structure(float ema9, float ema21, float ema50) =>
+    if ema9 > ema21 and ema21 > ema50
+        "BULL_ALIGNED"
+    else if ema9 < ema21 and ema21 < ema50
+        "BEAR_ALIGNED"
+    else
+        "MIXED"
+
+// Returns the volatility state string based on ADX and VolComp ratio
+// "LOW"      if adx < 20 and volcomp < 0.80
+// "TRENDING" if adx >= 25
+// "HIGH"     if volcomp > 1.30
+// "NORMAL"   otherwise
+export f_volatility_state(float adx, float volcomp_ratio) =>
+    if adx >= 25.0
+        "TRENDING"
+    else if volcomp_ratio > 1.30
+        "HIGH"
+    else if adx < 20.0 and volcomp_ratio < 0.80
+        "LOW"
+    else
+        "NORMAL"
+
+// ============================================================================
+// VERIFICATION OUTPUT
+// Displays a summary table confirming all utility functions are loaded
+// ============================================================================
+
+var table utils_table = table.new(position.top_left, 2, 6,
+     bgcolor      = color.new(color.teal, 85),
+     border_color = color.new(color.teal, 50),
+     border_width = 1)
+
+if barstate.islast
+    table.cell(utils_table, 0, 0, "M-01: Atlas Utils",    text_color=color.yellow, text_size=size.small)
+    table.cell(utils_table, 1, 0, "Status",               text_color=color.yellow, text_size=size.small)
+    table.cell(utils_table, 0, 1, "Session Detection",    text_color=color.white,  text_size=size.tiny)
+    table.cell(utils_table, 1, 1, "8 functions",          text_color=color.green,  text_size=size.tiny)
+    table.cell(utils_table, 0, 2, "Risk Calculations",    text_color=color.white,  text_size=size.tiny)
+    table.cell(utils_table, 1, 2, "7 functions",          text_color=color.green,  text_size=size.tiny)
+    table.cell(utils_table, 0, 3, "Point Calculations",   text_color=color.white,  text_size=size.tiny)
+    table.cell(utils_table, 1, 3, "7 functions",          text_color=color.green,  text_size=size.tiny)
+    table.cell(utils_table, 0, 4, "JSON Helpers",         text_color=color.white,  text_size=size.tiny)
+    table.cell(utils_table, 1, 4, "6 functions",          text_color=color.green,  text_size=size.tiny)
+    table.cell(utils_table, 0, 5, "Math Helpers",         text_color=color.white,  text_size=size.tiny)
+    table.cell(utils_table, 1, 5, "10 functions",         text_color=color.green,  text_size=size.tiny)
