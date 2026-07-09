@@ -1,0 +1,289 @@
+{
+  "MP-001_regime": {
+    "description": "Remove VolComp prerequisite from A3 (regime dependence)",
+    "deltas": {
+      "d_pf": 0.003032754828650397,
+      "d_wr": -0.02972008475521354,
+      "d_expectancy": 12.974623050206802,
+      "d_max_dd": 1587.979999999965,
+      "d_mc_pass_rate": -0.747,
+      "d_risk_of_ruin": 0.0,
+      "d_monthly_consistency": 0.0,
+      "d_trade_count": 266.0,
+      "d_equity_stability": 0.06408726685818811
+    },
+    "metrics_all": {
+      "pf": 0.8013318109733393,
+      "wr": 0.31381733021077285,
+      "expectancy": 57.6156414922656,
+      "max_dd": 9802.619999999966,
+      "mc_pass_rate": 0.123,
+      "risk_of_ruin": 1.0,
+      "monthly_consistency": 0.72,
+      "trade_count": 785.0,
+      "equity_stability": 0.9355112432561363
+    },
+    "trade_counts": {
+      "a1": 267,
+      "a2": 252,
+      "a3": 266,
+      "all": 785
+    },
+    "pas": 22.735948475521248,
+    "pas_components": {
+      "d_pf": 0.0,
+      "d_wr": 19.813389836809026,
+      "d_expectancy": 0.0,
+      "d_max_dd": 31.7595999999993,
+      "d_mc_pass_rate": 100.0,
+      "d_monthly_consistency": 0.0,
+      "d_equity_stability": 0.0
+    }
+  },
+  "MP-002_adx": {
+    "description": "Remove ADX filters from A2 and A3 (ADX thresholds)",
+    "deltas": {
+      "d_pf": -0.08769697699554135,
+      "d_wr": -0.03362005959408554,
+      "d_expectancy": -27.996184863266535,
+      "d_max_dd": 12107.640000000001,
+      "d_mc_pass_rate": -0.87,
+      "d_risk_of_ruin": 0.0,
+      "d_monthly_consistency": -0.07999999999999996,
+      "d_trade_count": 451.0,
+      "d_equity_stability": -0.21695826433608834
+    },
+    "metrics_all": {
+      "pf": 0.7106020791491475,
+      "wr": 0.30991735537190085,
+      "expectancy": 16.644833578792266,
+      "max_dd": 20322.280000000002,
+      "mc_pass_rate": 0.0,
+      "risk_of_ruin": 1.0,
+      "monthly_consistency": 0.64,
+      "trade_count": 970.0,
+      "equity_stability": 0.6544657120618599
+    },
+    "trade_counts": {
+      "a1": 267,
+      "a2": 703,
+      "a3": 0,
+      "all": 970
+    },
+    "pas": 52.42834800710039,
+    "pas_components": {
+      "d_pf": 17.539395399108272,
+      "d_wr": 22.413373062723693,
+      "d_expectancy": 55.99236972653308,
+      "d_max_dd": 100.0,
+      "d_mc_pass_rate": 100.0,
+      "d_monthly_consistency": 26.666666666666654,
+      "d_equity_stability": 72.31942144536279
+    }
+  },
+  "MP-003_session": {
+    "description": "Remove session restrictions from all models (session asymmetry)",
+    "deltas": {
+      "d_pf": 0.12002406860270043,
+      "d_wr": -0.009711713341171047,
+      "d_expectancy": -32.438786526391816,
+      "d_max_dd": 7047.979999999985,
+      "d_mc_pass_rate": -0.87,
+      "d_risk_of_ruin": 0.0,
+      "d_monthly_consistency": -0.24,
+      "d_trade_count": 1053.0,
+      "d_equity_stability": -0.10086915099904725
+    },
+    "metrics_all": {
+      "pf": 0.9183231247473893,
+      "wr": 0.33382570162481534,
+      "expectancy": 12.202231915666987,
+      "max_dd": 15262.619999999986,
+      "mc_pass_rate": 0.0,
+      "risk_of_ruin": 1.0,
+      "monthly_consistency": 0.48,
+      "trade_count": 1572.0,
+      "equity_stability": 0.770554825398901
+    },
+    "trade_counts": {
+      "a1": 918,
+      "a2": 654,
+      "a3": 0,
+      "all": 1572
+    },
+    "pas": 50.38395980868544,
+    "pas_components": {
+      "d_pf": 0.0,
+      "d_wr": 6.474475560780698,
+      "d_expectancy": 64.87757305278363,
+      "d_max_dd": 100.0,
+      "d_mc_pass_rate": 100.0,
+      "d_monthly_consistency": 80.0,
+      "d_equity_stability": 33.623050333015755
+    }
+  },
+  "MP-004_volcomp": {
+    "description": "Remove expansion signal from A1 and A3 (VolComp\u2192Expansion)",
+    "deltas": {
+      "d_pf": 0.03606949908913859,
+      "d_wr": -0.03557123784093075,
+      "d_expectancy": -16.62889425905231,
+      "d_max_dd": 2787.599999999995,
+      "d_mc_pass_rate": -0.868,
+      "d_risk_of_ruin": 0.0,
+      "d_monthly_consistency": 0.040000000000000036,
+      "d_trade_count": 2235.0,
+      "d_equity_stability": -0.3819304981712562
+    },
+    "metrics_all": {
+      "pf": 0.8343685552338275,
+      "wr": 0.30796617712505564,
+      "expectancy": 28.01212418300649,
+      "max_dd": 11002.239999999996,
+      "mc_pass_rate": 0.002,
+      "risk_of_ruin": 1.0,
+      "monthly_consistency": 0.76,
+      "trade_count": 2754.0,
+      "equity_stability": 0.48949347822669204
+    },
+    "trade_counts": {
+      "a1": 1958,
+      "a2": 252,
+      "a3": 544,
+      "all": 2754
+    },
+    "pas": 36.90859206180875,
+    "pas_components": {
+      "d_pf": 0.0,
+      "d_wr": 23.7141585606205,
+      "d_expectancy": 33.25778851810462,
+      "d_max_dd": 55.7519999999999,
+      "d_mc_pass_rate": 100.0,
+      "d_monthly_consistency": 0.0,
+      "d_equity_stability": 100.0
+    }
+  },
+  "MP-005_streaks": {
+    "description": "ARI caution removed \u2014 all streak trades included",
+    "deltas": {
+      "d_pf": -0.3677628376983225,
+      "d_wr": -0.015982238892412903,
+      "d_expectancy": -46.74344759597054,
+      "d_max_dd": 3297.4285714285725,
+      "d_mc_pass_rate": -0.345,
+      "d_risk_of_ruin": 0.0,
+      "d_monthly_consistency": 0.12,
+      "d_trade_count": 284.0,
+      "d_equity_stability": -0.00020214144638541764
+    },
+    "metrics_all": {
+      "pf": 0.9628932753758811,
+      "wr": 0.34540389972144847,
+      "expectancy": 58.480546856179146,
+      "max_dd": 8000.535714285717,
+      "mc_pass_rate": 0.641,
+      "risk_of_ruin": 1.0,
+      "monthly_consistency": 0.72,
+      "trade_count": 593.0,
+      "equity_stability": 0.8677865495334314
+    },
+    "trade_counts": {
+      "a1": 286,
+      "a2": 252,
+      "a3": 55,
+      "all": 593
+    },
+    "pas": 58.90505479134072,
+    "pas_components": {
+      "d_pf": 73.55256753966451,
+      "d_wr": 10.654825928275269,
+      "d_expectancy": 93.48689519194107,
+      "d_max_dd": 65.94857142857144,
+      "d_mc_pass_rate": 100.0,
+      "d_monthly_consistency": 0.0,
+      "d_equity_stability": 0.06738048212847256
+    }
+  },
+  "MP-006_anchoring": {
+    "description": "Remove pullback depth (A1) and flag structure (A2) \u2014 structural anchoring",
+    "deltas": {
+      "d_pf": -0.06638701994259433,
+      "d_wr": -0.013821221309892884,
+      "d_expectancy": -32.72409407231093,
+      "d_max_dd": -315.5200000000077,
+      "d_mc_pass_rate": -0.376,
+      "d_risk_of_ruin": 0.0,
+      "d_monthly_consistency": -0.15999999999999992,
+      "d_trade_count": 1011.0,
+      "d_equity_stability": -0.22648176507723694
+    },
+    "metrics_all": {
+      "pf": 0.7319120362020946,
+      "wr": 0.3297161936560935,
+      "expectancy": 11.91692436974787,
+      "max_dd": 7899.1199999999935,
+      "mc_pass_rate": 0.494,
+      "risk_of_ruin": 1.0,
+      "monthly_consistency": 0.56,
+      "trade_count": 1530.0,
+      "equity_stability": 0.6449422113207113
+    },
+    "trade_counts": {
+      "a1": 1217,
+      "a2": 313,
+      "a3": 0,
+      "all": 1530
+    },
+    "pas": 38.62673076776623,
+    "pas_components": {
+      "d_pf": 13.277403988518866,
+      "d_wr": 9.21414753992859,
+      "d_expectancy": 65.44818814462187,
+      "d_max_dd": 0.0,
+      "d_mc_pass_rate": 100.0,
+      "d_monthly_consistency": 53.33333333333331,
+      "d_equity_stability": 75.49392169241231
+    }
+  },
+  "MP-008_edge": {
+    "description": "Remove all structural constraints \u2014 pure trend + session (theory of edge)",
+    "deltas": {
+      "d_pf": -0.09307237897956999,
+      "d_wr": -0.03876135103734857,
+      "d_expectancy": -45.14542334949854,
+      "d_max_dd": 49729.55999999987,
+      "d_mc_pass_rate": -0.87,
+      "d_risk_of_ruin": 0.0,
+      "d_monthly_consistency": -0.27999999999999997,
+      "d_trade_count": 6025.0,
+      "d_equity_stability": -0.4069988565812624
+    },
+    "metrics_all": {
+      "pf": 0.7052266771651189,
+      "wr": 0.3047760639286378,
+      "expectancy": -0.5044049074397405,
+      "max_dd": 57944.199999999866,
+      "mc_pass_rate": 0.0,
+      "risk_of_ruin": 1.0,
+      "monthly_consistency": 0.44,
+      "trade_count": 6544.0,
+      "equity_stability": 0.4644251198166858
+    },
+    "trade_counts": {
+      "a1": 4391,
+      "a2": 818,
+      "a3": 1335,
+      "all": 6544
+    },
+    "pas": 66.40671439089625,
+    "pas_components": {
+      "d_pf": 18.614475795913997,
+      "d_wr": 25.840900691565714,
+      "d_expectancy": 90.29084669899709,
+      "d_max_dd": 100.0,
+      "d_mc_pass_rate": 100.0,
+      "d_monthly_consistency": 93.33333333333333,
+      "d_equity_stability": 100.0
+    }
+  }
+}

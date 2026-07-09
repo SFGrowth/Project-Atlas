@@ -1,0 +1,46 @@
+{
+  "pf": 0.7982990561446889,
+  "wr": 0.3435374149659864,
+  "expectancy": 44.6410184420588,
+  "max_dd": 8214.640000000001,
+  "mc_pass_rate": 0.87,
+  "risk_of_ruin": 1.0,
+  "monthly_consistency": 0.72,
+  "trade_count": 519.0,
+  "equity_stability": 0.8714239763979482,
+  "per_model": {
+    "A1": {
+      "pf": 1.2653571966700474,
+      "wr": 0.3672566371681416,
+      "expectancy": 12.26535045478844,
+      "max_dd": 567.2671428571671,
+      "mc_pass_rate": 1.0,
+      "risk_of_ruin": 1.0,
+      "monthly_consistency": 0.68,
+      "trade_count": 267.0,
+      "equity_stability": 0.8640698016935449
+    },
+    "A2": {
+      "pf": 0.7136750839430099,
+      "wr": 0.2647058823529412,
+      "expectancy": 78.9438095238095,
+      "max_dd": 8214.63999999999,
+      "mc_pass_rate": 0.226,
+      "risk_of_ruin": 1.0,
+      "monthly_consistency": 0.68,
+      "trade_count": 252.0,
+      "equity_stability": 0.7226211643704803
+    },
+    "A3": {
+      "pf": null,
+      "wr": null,
+      "expectancy": null,
+      "max_dd": null,
+      "mc_pass_rate": null,
+      "risk_of_ruin": null,
+      "monthly_consistency": null,
+      "trade_count": null,
+      "equity_stability": null
+    }
+  }
+}
