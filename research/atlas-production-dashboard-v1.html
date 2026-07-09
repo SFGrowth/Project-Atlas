@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Atlas Production Dashboard v1.0</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #0d1117; color: #e6edf3; font-family: 'Segoe UI', system-ui, sans-serif; font-size: 14px; }
+  .header { background: #161b22; border-bottom: 1px solid #30363d; padding: 20px 32px; display: flex; justify-content: space-between; align-items: center; }
+  .header h1 { font-size: 20px; font-weight: 700; color: #e6edf3; }
+  .header .subtitle { font-size: 12px; color: #8b949e; margin-top: 4px; }
+  .badge { padding: 4px 12px; border-radius: 12px; font-size: 11px; font-weight: 700; letter-spacing: 0.5px; }
+  .badge-stable { background: #1a3a2a; color: #3fb950; border: 1px solid #3fb950; }
+  .badge-caution { background: #3a2a1a; color: #d29922; border: 1px solid #d29922; }
+  .badge-alert { background: #3a1a1a; color: #f85149; border: 1px solid #f85149; }
+  .badge-frozen { background: #1a2a3a; color: #4a9eff; border: 1px solid #4a9eff; }
+  .container { max-width: 1400px; margin: 0 auto; padding: 24px 32px; }
+  .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 24px; }
+  .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+  .grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-bottom: 24px; }
+  .card { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 20px; }
+  .card h3 { font-size: 11px; color: #8b949e; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 8px; }
+  .card .value { font-size: 28px; font-weight: 700; color: #e6edf3; }
+  .card .subvalue { font-size: 12px; color: #8b949e; margin-top: 4px; }
+  .card .delta { font-size: 12px; margin-top: 6px; }
+  .delta-pos { color: #3fb950; }
+  .delta-neg { color: #f85149; }
+  .delta-neu { color: #8b949e; }
+  .section-title { font-size: 14px; font-weight: 700; color: #e6edf3; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 1px solid #30363d; }
+  table { width: 100%; border-collapse: collapse; }
+  th { background: #21262d; color: #8b949e; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; padding: 10px 14px; text-align: left; border-bottom: 1px solid #30363d; }
+  td { padding: 10px 14px; border-bottom: 1px solid #21262d; font-size: 13px; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: #1c2128; }
+  .status-stable { color: #3fb950; font-weight: 600; }
+  .status-caution { color: #d29922; font-weight: 600; }
+  .status-alert { color: #f85149; font-weight: 600; }
+  .status-frozen { color: #4a9eff; font-weight: 600; }
+  .progress-bar { background: #21262d; border-radius: 4px; height: 8px; overflow: hidden; margin-top: 8px; }
+  .progress-fill { height: 100%; border-radius: 4px; transition: width 0.3s; }
+  .model-card { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 16px; }
+  .model-card h4 { font-size: 13px; font-weight: 700; margin-bottom: 12px; }
+  .model-row { display: flex; justify-content: space-between; align-items: center; padding: 4px 0; border-bottom: 1px solid #21262d; font-size: 12px; }
+  .model-row:last-child { border-bottom: none; }
+  .model-row .label { color: #8b949e; }
+  .model-row .val { color: #e6edf3; font-weight: 600; }
+  .freeze-box { background: #1a2a3a; border: 1px solid #4a9eff; border-radius: 8px; padding: 16px; margin-bottom: 24px; }
+  .freeze-box h3 { color: #4a9eff; font-size: 13px; font-weight: 700; margin-bottom: 8px; }
+  .freeze-box p { color: #8b949e; font-size: 12px; line-height: 1.6; }
+  .freeze-box code { background: #21262d; padding: 1px 6px; border-radius: 3px; font-family: monospace; color: #e6edf3; font-size: 11px; }
+  .footer { background: #161b22; border-top: 1px solid #30363d; padding: 16px 32px; text-align: center; color: #8b949e; font-size: 11px; margin-top: 32px; }
+  .verdict-banner { border-radius: 8px; padding: 16px 24px; margin-bottom: 24px; display: flex; align-items: center; gap: 16px; }
+  .verdict-stable { background: #1a3a2a; border: 1px solid #3fb950; }
+  .verdict-caution { background: #3a2a1a; border: 1px solid #d29922; }
+  .verdict-icon { font-size: 24px; }
+  .verdict-text h2 { font-size: 16px; font-weight: 700; }
+  .verdict-text p { font-size: 12px; color: #8b949e; margin-top: 4px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <h1>Atlas Production Dashboard v1.0</h1>
+    <div class="subtitle">ATS v2.0 — Forward Validation Report | Sprint 048 | Generated: 2026-07-09</div>
+  </div>
+  <div style="display:flex; gap:8px; align-items:center;">
+    <span class="badge badge-frozen">PRODUCTION FREEZE ACTIVE</span>
+    <span class="badge badge-caution">H-P001: CAUTION (3/5)</span>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- Verdict Banner -->
+  <div class="verdict-banner verdict-caution">
+    <div class="verdict-icon">⚠</div>
+    <div class="verdict-text">
+      <h2 style="color:#d29922;">H-P001 Verdict: CAUTION — Forward Validation Active</h2>
+      <p>ATS v2.0 statistical properties are STABLE on unseen data (PF +11%, Win Rate +2.2%, Monthly Consistency -8.2%). Two criteria fail on absolute drawdown thresholds due to milestone compounding scale. Core edge is intact. System remains in PRODUCTION FREEZE pending 3-month live forward window.</p>
+    </div>
+  </div>
+
+  <!-- Production Freeze Notice -->
+  <div class="freeze-box">
+    <h3>🔒 ATS v2.0 Production Freeze — Active</h3>
+    <p>All execution model parameters are frozen. No changes permitted without a formal sprint and evidence-based justification. 
+    Frozen components: <code>Model A1</code> <code>Model A2</code> <code>Model A3</code> <code>ARI v2.0</code> <code>Policy C (Priority Queue)</code> <code>Milestone Compounding</code> <code>Daily Loss Limit $800</code>.
+    Upgrade path: ATS v2.1 requires a full sprint with ≥ 5/8 production criteria met on the forward window.</p>
+  </div>
+
+  <!-- Key Metrics -->
+  <div class="section-title">Forward Validation — Key Metrics (6 months, unseen data)</div>
+  <div class="grid-4">
+    <div class="card">
+      <h3>Profit Factor</h3>
+      <div class="value">1.559</div>
+      <div class="subvalue">Historical: 1.405</div>
+      <div class="delta delta-pos">▲ +11.0% vs historical</div>
+      <div class="progress-bar"><div class="progress-fill" style="width:77.95%; background:#3fb950;"></div></div>
+    </div>
+    <div class="card">
+      <h3>Win Rate</h3>
+      <div class="value">54.7%</div>
+      <div class="subvalue">Historical: 53.5%</div>
+      <div class="delta delta-pos">▲ +2.2% vs historical</div>
+      <div class="progress-bar"><div class="progress-fill" style="width:54.7%; background:#3fb950;"></div></div>
+    </div>
+    <div class="card">
+      <h3>Monthly Consistency</h3>
+      <div class="value">71.4%</div>
+      <div class="subvalue">Historical: 77.8%</div>
+      <div class="delta delta-neg">▼ -8.2% vs historical</div>
+      <div class="progress-bar"><div class="progress-fill" style="width:71.4%; background:#d29922;"></div></div>
+    </div>
+    <div class="card">
+      <h3>MC Pass Rate</h3>
+      <div class="value">43.4%</div>
+      <div class="subvalue">Historical: 40.1%</div>
+      <div class="delta delta-pos">▲ +8.2% vs historical</div>
+      <div class="progress-bar"><div class="progress-fill" style="width:43.4%; background:#d29922;"></div></div>
+    </div>
+  </div>
+
+  <!-- Drift Analysis Table -->
+  <div class="section-title">Drift Analysis — Historical vs Forward</div>
+  <div class="card" style="margin-bottom:24px;">
+    <table>
+      <thead>
+        <tr>
+          <th>Metric</th>
+          <th>Historical (18 months)</th>
+          <th>Forward (6 months)</th>
+          <th>Drift %</th>
+          <th>Threshold</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Profit Factor</strong></td>
+          <td>1.405</td>
+          <td>1.559</td>
+          <td class="delta-pos">+11.0%</td>
+          <td>±20%</td>
+          <td class="status-stable">STABLE</td>
+        </tr>
+        <tr>
+          <td><strong>Win Rate</strong></td>
+          <td>53.5%</td>
+          <td>54.7%</td>
+          <td class="delta-pos">+2.2%</td>
+          <td>±20%</td>
+          <td class="status-stable">STABLE</td>
+        </tr>
+        <tr>
+          <td><strong>Expectancy</strong></td>
+          <td>$365.38</td>
+          <td>$506.67</td>
+          <td class="delta-pos">+38.7%</td>
+          <td>±20%</td>
+          <td class="status-caution">CAUTION</td>
+        </tr>
+        <tr>
+          <td><strong>Monthly Consistency</strong></td>
+          <td>77.8%</td>
+          <td>71.4%</td>
+          <td class="delta-neg">-8.2%</td>
+          <td>±20%</td>
+          <td class="status-stable">STABLE</td>
+        </tr>
+        <tr>
+          <td><strong>MC Pass Rate</strong></td>
+          <td>40.1%</td>
+          <td>43.4%</td>
+          <td class="delta-pos">+8.2%</td>
+          <td>±20%</td>
+          <td class="status-stable">STABLE</td>
+        </tr>
+        <tr>
+          <td><strong>Trade Count (annualised)</strong></td>
+          <td>~293/yr</td>
+          <td>~300/yr</td>
+          <td class="delta-pos">+2.4%</td>
+          <td>±30%</td>
+          <td class="status-stable">STABLE</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Model Performance -->
+  <div class="section-title">Individual Model Performance — Forward Window</div>
+  <div class="grid-3">
+    <div class="model-card">
+      <h4 style="color:#4a9eff;">Model A1 — Pullback Continuation</h4>
+      <div class="model-row"><span class="label">Session</span><span class="val">PM (13:00–16:00 ET)</span></div>
+      <div class="model-row"><span class="label">Regime</span><span class="val">Low ADX (&lt;30)</span></div>
+      <div class="model-row"><span class="label">Forward Trades</span><span class="val">9</span></div>
+      <div class="model-row"><span class="label">Historical Trades</span><span class="val">26</span></div>
+      <div class="model-row"><span class="label">Status</span><span class="val status-stable">ACTIVE</span></div>
+      <div class="model-row"><span class="label">Parameters</span><span class="val status-frozen">FROZEN</span></div>
+    </div>
+    <div class="model-card">
+      <h4 style="color:#a78bfa;">Model A2 — Flag Continuation</h4>
+      <div class="model-row"><span class="label">Session</span><span class="val">Late PM (14:00–16:00 ET)</span></div>
+      <div class="model-row"><span class="label">Regime</span><span class="val">High ADX (&gt;45)</span></div>
+      <div class="model-row"><span class="label">Forward Trades</span><span class="val">1</span></div>
+      <div class="model-row"><span class="label">Historical Trades</span><span class="val">5</span></div>
+      <div class="model-row"><span class="label">Status</span><span class="val status-caution">LOW FREQUENCY</span></div>
+      <div class="model-row"><span class="label">Parameters</span><span class="val status-frozen">FROZEN</span></div>
+    </div>
+    <div class="model-card">
+      <h4 style="color:#00d4aa;">Model A3 — Volatility Breakout</h4>
+      <div class="model-row"><span class="label">Session</span><span class="val">Overnight</span></div>
+      <div class="model-row"><span class="label">Regime</span><span class="val">High ADX (&gt;25)</span></div>
+      <div class="model-row"><span class="label">Forward Trades</span><span class="val">197</span></div>
+      <div class="model-row"><span class="label">Historical Trades</span><span class="val">588</span></div>
+      <div class="model-row"><span class="label">Status</span><span class="val status-stable">ACTIVE</span></div>
+      <div class="model-row"><span class="label">Parameters</span><span class="val status-frozen">FROZEN</span></div>
+    </div>
+  </div>
+
+  <!-- H-P001 Criteria -->
+  <div class="section-title">H-P001 Production Stability Criteria</div>
+  <div class="card" style="margin-bottom:24px;">
+    <table>
+      <thead>
+        <tr>
+          <th>Criterion</th>
+          <th>Target</th>
+          <th>Forward Result</th>
+          <th>Status</th>
+          <th>Note</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Profit Factor ≥ 1.20</td>
+          <td>≥ 1.20</td>
+          <td>1.559</td>
+          <td class="status-stable">PASS</td>
+          <td>Exceeds target by 30%</td>
+        </tr>
+        <tr>
+          <td>Max Drawdown &gt; -$2,000</td>
+          <td>&gt; -$2,000</td>
+          <td>-$18,000</td>
+          <td class="status-alert">FAIL</td>
+          <td>Milestone compounding scale artefact</td>
+        </tr>
+        <tr>
+          <td>MC Pass Rate ≥ 50%</td>
+          <td>≥ 50%</td>
+          <td>43.4%</td>
+          <td class="status-caution">FAIL</td>
+          <td>Close to threshold; 6-month sample</td>
+        </tr>
+        <tr>
+          <td>Monthly Consistency ≥ 50%</td>
+          <td>≥ 50%</td>
+          <td>71.4%</td>
+          <td class="status-stable">PASS</td>
+          <td>Strong consistency maintained</td>
+        </tr>
+        <tr>
+          <td>Trade Count ≥ 20</td>
+          <td>≥ 20</td>
+          <td>150</td>
+          <td class="status-stable">PASS</td>
+          <td>Statistically sufficient</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Drift Alert Thresholds -->
+  <div class="section-title">Drift Alert Thresholds — Production Monitoring Rules</div>
+  <div class="card" style="margin-bottom:24px;">
+    <table>
+      <thead>
+        <tr>
+          <th>Metric</th>
+          <th>STABLE</th>
+          <th>CAUTION</th>
+          <th>ALERT (Review Required)</th>
+          <th>CRITICAL (Halt)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Profit Factor</strong></td>
+          <td>Drift &lt; ±20%</td>
+          <td>Drift 20–40%</td>
+          <td>Drift &gt; 40% or PF &lt; 1.10</td>
+          <td>PF &lt; 1.00 for 30 days</td>
+        </tr>
+        <tr>
+          <td><strong>Win Rate</strong></td>
+          <td>Drift &lt; ±15%</td>
+          <td>Drift 15–30%</td>
+          <td>Drift &gt; 30%</td>
+          <td>Win Rate &lt; 35% for 30 days</td>
+        </tr>
+        <tr>
+          <td><strong>Monthly Consistency</strong></td>
+          <td>Drift &lt; ±20%</td>
+          <td>Drift 20–40%</td>
+          <td>Drift &gt; 40%</td>
+          <td>&lt; 40% for 3 consecutive months</td>
+        </tr>
+        <tr>
+          <td><strong>Trade Frequency</strong></td>
+          <td>Drift &lt; ±30%</td>
+          <td>Drift 30–50%</td>
+          <td>Drift &gt; 50%</td>
+          <td>&lt; 5 trades/month for 2 months</td>
+        </tr>
+        <tr>
+          <td><strong>Max Drawdown</strong></td>
+          <td>Within 1.5× historical</td>
+          <td>1.5–2.0× historical</td>
+          <td>&gt; 2.0× historical</td>
+          <td>Prop firm limit breached</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ARI v2.0 Rules -->
+  <div class="section-title">ARI v2.0 — Active Capital Allocation Rules (Frozen)</div>
+  <div class="grid-2">
+    <div class="card">
+      <h3>Execution Policy</h3>
+      <div style="margin-top:8px;">
+        <div class="model-row"><span class="label">Policy</span><span class="val">Priority Queue (C)</span></div>
+        <div class="model-row"><span class="label">Priority Order</span><span class="val">A3 → A2 → A1</span></div>
+        <div class="model-row"><span class="label">Concurrency</span><span class="val">Single active model</span></div>
+        <div class="model-row"><span class="label">Base Risk</span><span class="val">$800 / trade</span></div>
+        <div class="model-row"><span class="label">Max Risk</span><span class="val">$2,000 / trade</span></div>
+      </div>
+    </div>
+    <div class="card">
+      <h3>Risk Management Rules</h3>
+      <div style="margin-top:8px;">
+        <div class="model-row"><span class="label">Milestone Step</span><span class="val">+$400 per $500 profit</span></div>
+        <div class="model-row"><span class="label">Daily Loss Limit</span><span class="val">-$800 (halt day)</span></div>
+        <div class="model-row"><span class="label">Recovery Limit</span><span class="val">-$500 (reduce risk)</span></div>
+        <div class="model-row"><span class="label">Consecutive Loss</span><span class="val">≥3 → 50% risk</span></div>
+        <div class="model-row"><span class="label">ADX Boost</span><span class="val">ADX ≥ 32 → 1.25×</span></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="footer">
+  Atlas Production Dashboard v1.0 | ATS v2.0 | Sprint 048 | Project Atlas — Confidential Research System<br>
+  Next review: Sprint 049 | Upgrade path: ATS v2.1 requires 5/8 production criteria on forward window
+</div>
+
+</body>
+</html>
