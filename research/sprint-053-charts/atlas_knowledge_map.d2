@@ -1,0 +1,220 @@
+direction: down
+
+title: {
+  label: "Atlas Knowledge Dependency Map v1.0"
+  near: top-center
+  style.font-size: 20
+  style.bold: true
+}
+
+# ─── Level 3: Market Principles ───────────────────────────────────────────────
+mp_layer: "Level 3 — Market Principles" {
+  style.fill: "#1a1a2e"
+  style.stroke: "#e94560"
+  style.font-color: "#e94560"
+  style.font-size: 13
+  style.bold: true
+
+  mp001: "MP-001\nRegime Dependence\nPCS 86.2" {
+    style.fill: "#16213e"
+    style.stroke: "#2ecc71"
+    style.font-color: "#2ecc71"
+    style.border-radius: 8
+  }
+  mp003: "MP-003\nSession Asymmetry\nPCS 85.0" {
+    style.fill: "#16213e"
+    style.stroke: "#2ecc71"
+    style.font-color: "#2ecc71"
+    style.border-radius: 8
+  }
+  mp004: "MP-004\nVolComp → Expansion\nPCS 83.8" {
+    style.fill: "#16213e"
+    style.stroke: "#2ecc71"
+    style.font-color: "#2ecc71"
+    style.border-radius: 8
+  }
+  mp002: "MP-002\nADX Thresholds\nPCS 82.9" {
+    style.fill: "#16213e"
+    style.stroke: "#2ecc71"
+    style.font-color: "#2ecc71"
+    style.border-radius: 8
+  }
+  mp008: "MP-008\nTheory of Edge\nPCS 82.9" {
+    style.fill: "#16213e"
+    style.stroke: "#2ecc71"
+    style.font-color: "#2ecc71"
+    style.border-radius: 8
+  }
+}
+
+# ─── Level 2: Strategy Family Principles ──────────────────────────────────────
+sf_layer: "Level 2 — Strategy Family Principles" {
+  style.fill: "#1a1a2e"
+  style.stroke: "#3498db"
+  style.font-color: "#3498db"
+  style.font-size: 13
+  style.bold: true
+
+  mp005: "MP-005\nLoss Streaks =\nRegime Transitions\nPCS 73.8" {
+    style.fill: "#16213e"
+    style.stroke: "#3498db"
+    style.font-color: "#3498db"
+    style.border-radius: 8
+  }
+  mp006: "MP-006\nStructural Anchoring\nPCS 61.7" {
+    style.fill: "#16213e"
+    style.stroke: "#3498db"
+    style.font-color: "#3498db"
+    style.border-radius: 8
+  }
+}
+
+# ─── Guardian Rules ────────────────────────────────────────────────────────────
+guardian_layer: "Guardian Rules (ARI v2.0)" {
+  style.fill: "#1a1a2e"
+  style.stroke: "#f39c12"
+  style.font-color: "#f39c12"
+  style.font-size: 13
+  style.bold: true
+
+  creg001: "C-REG-001\nVolatility\nCompression" {
+    style.fill: "#16213e"
+    style.stroke: "#f39c12"
+    style.font-color: "#f39c12"
+    style.border-radius: 8
+  }
+  ari_ruleA: "ARI Rule A\nRisk Reduction\n(Drawdown)" {
+    style.fill: "#16213e"
+    style.stroke: "#f39c12"
+    style.font-color: "#f39c12"
+    style.border-radius: 8
+  }
+  ari_ruleC: "ARI Rule C\nSequence Risk\n(ARI Caution)" {
+    style.fill: "#16213e"
+    style.stroke: "#f39c12"
+    style.font-color: "#f39c12"
+    style.border-radius: 8
+  }
+  ari_ruleD: "ARI Rule D\nADX Confidence\nScaling" {
+    style.fill: "#16213e"
+    style.stroke: "#f39c12"
+    style.font-color: "#f39c12"
+    style.border-radius: 8
+  }
+  session_filter: "Session\nFilters\n(All Models)" {
+    style.fill: "#16213e"
+    style.stroke: "#f39c12"
+    style.font-color: "#f39c12"
+    style.border-radius: 8
+  }
+}
+
+# ─── Execution Components ──────────────────────────────────────────────────────
+exec_layer: "Execution Components" {
+  style.fill: "#1a1a2e"
+  style.stroke: "#9b59b6"
+  style.font-color: "#9b59b6"
+  style.font-size: 13
+  style.bold: true
+
+  volcomp_signal: "VolComp\nSignal\n(ATR Ratio)" {
+    style.fill: "#16213e"
+    style.stroke: "#9b59b6"
+    style.font-color: "#9b59b6"
+    style.border-radius: 8
+  }
+  ema_stack: "EMA Stack\nAlignment\n(9/21/50)" {
+    style.fill: "#16213e"
+    style.stroke: "#9b59b6"
+    style.font-color: "#9b59b6"
+    style.border-radius: 8
+  }
+  adx_filter: "ADX\nRegime\nFilter" {
+    style.fill: "#16213e"
+    style.stroke: "#9b59b6"
+    style.font-color: "#9b59b6"
+    style.border-radius: 8
+  }
+  flag_structure: "Flag\nStructure\nDetection" {
+    style.fill: "#16213e"
+    style.stroke: "#9b59b6"
+    style.font-color: "#9b59b6"
+    style.border-radius: 8
+  }
+  overnight_comp: "Overnight\nCompression\nDetection" {
+    style.fill: "#16213e"
+    style.stroke: "#9b59b6"
+    style.font-color: "#9b59b6"
+    style.border-radius: 8
+  }
+}
+
+# ─── Execution Models ──────────────────────────────────────────────────────────
+model_layer: "Execution Models" {
+  style.fill: "#1a1a2e"
+  style.stroke: "#e74c3c"
+  style.font-color: "#e74c3c"
+  style.font-size: 13
+  style.bold: true
+
+  a1: "Model A1\nLow-ADX PM\nPullback\nPF 1.387" {
+    style.fill: "#16213e"
+    style.stroke: "#e74c3c"
+    style.font-color: "#e74c3c"
+    style.border-radius: 8
+  }
+  a2: "Model A2\nHigh-ADX PM\nFlag Continuation\nPF 1.354" {
+    style.fill: "#16213e"
+    style.stroke: "#e74c3c"
+    style.font-color: "#e74c3c"
+    style.border-radius: 8
+  }
+  a3: "Model A3\nOvernight\nExpansion\nPF 1.527" {
+    style.fill: "#16213e"
+    style.stroke: "#e74c3c"
+    style.font-color: "#e74c3c"
+    style.border-radius: 8
+  }
+}
+
+# ─── ATS v2.0 ─────────────────────────────────────────────────────────────────
+ats: "ATS v2.0\n(Atlas Trading System)" {
+  style.fill: "#0f3460"
+  style.stroke: "#e94560"
+  style.font-color: "#ffffff"
+  style.font-size: 15
+  style.bold: true
+  style.border-radius: 12
+}
+
+# ─── Connections: Market Principles → Guardian Rules ──────────────────────────
+mp_layer.mp001 -> guardian_layer.creg001: "Regime filter\nrequired"
+mp_layer.mp001 -> guardian_layer.ari_ruleD: "Scale up in\ncompatible regime"
+mp_layer.mp002 -> guardian_layer.ari_ruleD: "ADX threshold\nscaling"
+mp_layer.mp003 -> guardian_layer.session_filter: "Session\nboundaries"
+mp_layer.mp004 -> guardian_layer.creg001: "VolComp\ndetection"
+mp_layer.mp008 -> guardian_layer.ari_ruleA: "Structural edge\nrequired"
+
+# ─── Connections: Strategy Family → Guardian Rules ────────────────────────────
+sf_layer.mp005 -> guardian_layer.ari_ruleC: "Streak = regime\ntransition → pause"
+sf_layer.mp006 -> guardian_layer.session_filter: "Entry requires\nanchor validation"
+
+# ─── Connections: Guardian Rules → Execution Components ──────────────────────
+guardian_layer.creg001 -> exec_layer.volcomp_signal: "Activates"
+guardian_layer.ari_ruleD -> exec_layer.adx_filter: "Scales risk\nby ADX"
+guardian_layer.session_filter -> exec_layer.ema_stack: "Restricts\nto session"
+guardian_layer.ari_ruleC -> exec_layer.flag_structure: "Pauses after\n2+ losses"
+
+# ─── Connections: Execution Components → Models ───────────────────────────────
+exec_layer.volcomp_signal -> model_layer.a1: "VolComp\nprerequisite"
+exec_layer.ema_stack -> model_layer.a1: "Trend\nalignment"
+exec_layer.adx_filter -> model_layer.a1: "ADX < 30\nfilter"
+exec_layer.flag_structure -> model_layer.a2: "Flag\ndetection"
+exec_layer.adx_filter -> model_layer.a2: "ADX > 45\nfilter"
+exec_layer.overnight_comp -> model_layer.a3: "Compression\ndetection"
+exec_layer.adx_filter -> model_layer.a3: "ADX ≥ 25\nfilter"
+
+# ─── Connections: Models → ATS ────────────────────────────────────────────────
+model_layer.a1 -> ats: "Low-ADX\nedge"
+model_layer.a2 -> ats: "High-ADX\nedge"
+model_layer.a3 -> ats: "Overnight\nedge"

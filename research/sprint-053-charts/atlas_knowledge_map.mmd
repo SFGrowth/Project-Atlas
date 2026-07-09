@@ -1,0 +1,97 @@
+%%{init: {'theme': 'dark', 'themeVariables': {'primaryColor': '#16213e', 'primaryTextColor': '#ffffff', 'primaryBorderColor': '#2ecc71', 'lineColor': '#95a5a6', 'secondaryColor': '#0f3460', 'tertiaryColor': '#1a1a2e'}}}%%
+flowchart TD
+    subgraph L3["🔬 Level 3 — Market Principles"]
+        direction LR
+        MP001["MP-001\nRegime Dependence\nPCS 86.2"]
+        MP003["MP-003\nSession Asymmetry\nPCS 85.0"]
+        MP004["MP-004\nVolComp→Expansion\nPCS 83.8"]
+        MP002["MP-002\nADX Thresholds\nPCS 82.9"]
+        MP008["MP-008\nTheory of Edge\nPCS 82.9"]
+    end
+
+    subgraph L2["📐 Level 2 — Strategy Family Principles"]
+        direction LR
+        MP005["MP-005\nLoss Streaks =\nRegime Transitions\nPCS 73.8"]
+        MP006["MP-006\nStructural Anchoring\nPCS 61.7"]
+    end
+
+    subgraph GR["🛡️ Guardian Rules — ARI v2.0"]
+        direction LR
+        CREG["C-REG-001\nVolatility\nCompression"]
+        ARIA["ARI Rule A\nRisk Reduction"]
+        ARIC["ARI Rule C\nSequence Risk\nARI Caution"]
+        ARID["ARI Rule D\nADX Confidence\nScaling"]
+        SESS["Session\nFilters"]
+    end
+
+    subgraph EC["⚙️ Execution Components"]
+        direction LR
+        VCSIG["VolComp\nSignal"]
+        EMASTK["EMA Stack\nAlignment"]
+        ADXFLT["ADX Regime\nFilter"]
+        FLAGDET["Flag Structure\nDetection"]
+        OVCOMP["Overnight\nCompression"]
+    end
+
+    subgraph EM["🎯 Execution Models"]
+        direction LR
+        A1["Model A1\nLow-ADX PM\nPullback\nPF 1.387"]
+        A2["Model A2\nHigh-ADX PM\nFlag Cont.\nPF 1.354"]
+        A3["Model A3\nOvernight\nExpansion\nPF 1.527"]
+    end
+
+    ATS["🚀 ATS v2.0\nAtlas Trading System"]
+
+    MP001 --> CREG
+    MP001 --> ARID
+    MP002 --> ARID
+    MP003 --> SESS
+    MP004 --> CREG
+    MP008 --> ARIA
+    MP005 --> ARIC
+    MP006 --> SESS
+
+    CREG --> VCSIG
+    ARID --> ADXFLT
+    SESS --> EMASTK
+    ARIC --> FLAGDET
+
+    VCSIG --> A1
+    EMASTK --> A1
+    ADXFLT --> A1
+    FLAGDET --> A2
+    ADXFLT --> A2
+    OVCOMP --> A3
+    ADXFLT --> A3
+
+    A1 --> ATS
+    A2 --> ATS
+    A3 --> ATS
+
+    style L3 fill:#1a1a2e,stroke:#2ecc71,color:#2ecc71
+    style L2 fill:#1a1a2e,stroke:#3498db,color:#3498db
+    style GR fill:#1a1a2e,stroke:#f39c12,color:#f39c12
+    style EC fill:#1a1a2e,stroke:#9b59b6,color:#9b59b6
+    style EM fill:#1a1a2e,stroke:#e74c3c,color:#e74c3c
+    style ATS fill:#0f3460,stroke:#e94560,color:#ffffff
+
+    style MP001 fill:#16213e,stroke:#2ecc71,color:#2ecc71
+    style MP002 fill:#16213e,stroke:#2ecc71,color:#2ecc71
+    style MP003 fill:#16213e,stroke:#2ecc71,color:#2ecc71
+    style MP004 fill:#16213e,stroke:#2ecc71,color:#2ecc71
+    style MP008 fill:#16213e,stroke:#2ecc71,color:#2ecc71
+    style MP005 fill:#16213e,stroke:#3498db,color:#3498db
+    style MP006 fill:#16213e,stroke:#3498db,color:#3498db
+    style CREG fill:#16213e,stroke:#f39c12,color:#f39c12
+    style ARIA fill:#16213e,stroke:#f39c12,color:#f39c12
+    style ARIC fill:#16213e,stroke:#f39c12,color:#f39c12
+    style ARID fill:#16213e,stroke:#f39c12,color:#f39c12
+    style SESS fill:#16213e,stroke:#f39c12,color:#f39c12
+    style VCSIG fill:#16213e,stroke:#9b59b6,color:#9b59b6
+    style EMASTK fill:#16213e,stroke:#9b59b6,color:#9b59b6
+    style ADXFLT fill:#16213e,stroke:#9b59b6,color:#9b59b6
+    style FLAGDET fill:#16213e,stroke:#9b59b6,color:#9b59b6
+    style OVCOMP fill:#16213e,stroke:#9b59b6,color:#9b59b6
+    style A1 fill:#16213e,stroke:#e74c3c,color:#e74c3c
+    style A2 fill:#16213e,stroke:#e74c3c,color:#e74c3c
+    style A3 fill:#16213e,stroke:#e74c3c,color:#e74c3c
