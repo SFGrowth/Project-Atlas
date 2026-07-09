@@ -1,0 +1,58 @@
+[
+  {
+    "id": "D-01",
+    "name": "Participation Surge",
+    "score": 89.36,
+    "breakdown": {
+      "sig": 25,
+      "effect": 25,
+      "stability": 25,
+      "auc": 5.36,
+      "economic": 9
+    },
+    "stream": "Stream D",
+    "status": "PROMOTED"
+  },
+  {
+    "id": "D-02",
+    "name": "Overnight Inventory Direction",
+    "score": 85.0,
+    "breakdown": {
+      "sig": 25,
+      "effect": 25,
+      "stability": 25,
+      "auc": 0.0,
+      "economic": 10
+    },
+    "stream": "Stream D",
+    "status": "PROMOTED"
+  },
+  {
+    "id": "D-03",
+    "name": "Overnight Range Amplification",
+    "score": 88.32,
+    "breakdown": {
+      "sig": 25,
+      "effect": 25,
+      "stability": 25,
+      "auc": 4.32,
+      "economic": 9
+    },
+    "stream": "Stream D",
+    "status": "PROMOTED"
+  },
+  {
+    "id": "D-08",
+    "name": "Intraday Expansion State",
+    "score": 95.68,
+    "breakdown": {
+      "sig": 25,
+      "effect": 25,
+      "stability": 25,
+      "auc": 12.68,
+      "economic": 8
+    },
+    "stream": "Stream D",
+    "status": "PROMOTED"
+  }
+]
