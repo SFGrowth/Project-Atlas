@@ -1,0 +1,117 @@
+{
+  "schema_version": "1.0",
+  "description": "Standardised scoring methodology for all Atlas Execution Models. Every model returns a comparable Edge Score (0-100) enabling direct ranking by the ADE.",
+  "components": {
+    "C1_market_alignment": {
+      "weight": 20,
+      "description": "How well the current market structure aligns with the model's validated operating conditions",
+      "sub_scores": {
+        "ema_structure_match": "10 points if EMA structure matches model's historical win condition",
+        "adx_range_match": "10 points if ADX is within model's validated performance range"
+      }
+    },
+    "C2_historical_expectancy": {
+      "weight": 20,
+      "description": "The model's validated expectancy in the current regime, interpolated from the research database",
+      "sub_scores": {
+        "regime_expectancy": "10 points scaled by historical PF in current ADX/EMA regime",
+        "session_expectancy": "10 points scaled by historical WR in current session"
+      }
+    },
+    "C3_regime_match": {
+      "weight": 20,
+      "description": "Whether the current market regime matches the model's validated operating regime",
+      "sub_scores": {
+        "volatility_regime": "10 points if volatility state matches model's validated range",
+        "trend_regime": "10 points if trend direction matches model's directional bias"
+      }
+    },
+    "C4_session_match": {
+      "weight": 15,
+      "description": "Session compatibility with the model's validated time windows",
+      "sub_scores": {
+        "session_window": "15 points if current session is within model's optimal window, 0 if outside"
+      }
+    },
+    "C5_mvc_strength": {
+      "weight": 15,
+      "description": "Number and quality of active MVC signals supporting the model",
+      "sub_scores": {
+        "primary_mvc": "10 points if the model's primary MVC is active",
+        "supporting_mvc": "5 points if one or more supporting MVCs are also active"
+      }
+    },
+    "C6_behaviour_confidence": {
+      "weight": 5,
+      "description": "Confidence in the current signal based on recent model performance",
+      "sub_scores": {
+        "recent_performance": "5 points scaled by model's WR over last 10 trades (0 if < 30% WR)"
+      }
+    },
+    "C7_production_reliability": {
+      "weight": 5,
+      "description": "Model's overall production track record (static, updated monthly)",
+      "sub_scores": {
+        "validated_pf": "5 points scaled by model's validated Profit Factor (capped at PF=3.0)"
+      }
+    }
+  },
+  "activation_threshold": {
+    "value": 60,
+    "description": "A model must score >= 60 to be considered eligible. Below this threshold, the model is considered to have insufficient edge for capital allocation."
+  },
+  "model_calibration": {
+    "A1": {
+      "primary_mvc": null,
+      "optimal_session": [
+        "AM_SESSION",
+        "PM_SESSION"
+      ],
+      "optimal_adx_range": [
+        20,
+        40
+      ],
+      "optimal_ema_structure": "BULL_ALIGNED",
+      "validated_pf": 1.387,
+      "validated_wr": 0.54,
+      "c7_score": 2.3
+    },
+    "A3": {
+      "primary_mvc": "mvc_004_active",
+      "optimal_session": [
+        "AM_OPEN",
+        "AM_SESSION"
+      ],
+      "optimal_adx_range": [
+        25,
+        60
+      ],
+      "optimal_ema_structure": "BULL_ALIGNED",
+      "validated_pf": 1.566,
+      "validated_wr": 0.6,
+      "c7_score": 2.6
+    },
+    "B1": {
+      "primary_mvc": "mvc_003_active",
+      "optimal_session": [
+        "AM_OPEN",
+        "AM_SESSION"
+      ],
+      "optimal_adx_range": [
+        25,
+        60
+      ],
+      "optimal_ema_structure": "ANY",
+      "validated_pf": 2.231,
+      "validated_wr": 0.433,
+      "c7_score": 3.7
+    }
+  },
+  "ranking_rules": [
+    "1. Only models with Edge Score >= activation_threshold are eligible",
+    "2. If multiple models are eligible, the highest Edge Score wins",
+    "3. In case of tie (within 2 points), the model with higher validated_pf wins",
+    "4. If no model is eligible, Atlas does not trade (no-trade is a valid decision)",
+    "5. The selected model becomes the Candidate Model and is passed to ARI"
+  ]
+}

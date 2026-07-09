@@ -1,0 +1,81 @@
+flowchart TD
+    MD[("🗄️ Market Data Feed\nMNQ 5-min OHLCV + Transactions")]
+
+    subgraph L1["Layer 1 — Market State Engine (MSE)"]
+        direction TB
+        T["Temporal Context\nsession · hour · DOW"]
+        TR["Trend Structure\nEMA20/50/200 · ADX14 · DI+/-"]
+        V["Volatility\nATR14 · atr_ratio · vol_state"]
+        P["Participation\nrel_vol · rel_txn · part_state"]
+        OV["Overnight Inventory\nov_dir · ov_range · ov_return"]
+        MVC["MVC Signal States\nmvc_001 → mvc_006"]
+        MP["Market Principle States\nmp_001 → mp_005"]
+        MSO[["📋 Market State Object\n56 fields · immutable"]]
+        T & TR & V & P & OV & MVC & MP --> MSO
+    end
+
+    subgraph L2["Layer 2 — Atlas Decision Engine (ADE)"]
+        direction TB
+        A1E["Model A1 Evaluator\nPullback Momentum\nEdge Score: C1–C7"]
+        A3E["Model A3 Evaluator\nOvernight Expansion\nEdge Score: C1–C7"]
+        B1E["Model B1 Evaluator\nParticipation Momentum\nEdge Score: C1–C7"]
+        RANK{{"Rank by Edge Score\nThreshold ≥ 60"}}
+        CAND[["✅ Candidate Model\nHighest eligible score"]]
+        NOTRADE(["⛔ No Trade\nAll scores < 60"])
+        A1E & A3E & B1E --> RANK
+        RANK -->|"eligible"| CAND
+        RANK -->|"none eligible"| NOTRADE
+    end
+
+    subgraph L3["Layer 3 — Atlas Risk Intelligence (ARI)"]
+        direction TB
+        RULES["Rule Engine R1–R8\nR1: Active position block\nR2: Circuit breaker\nR3: Daily loss limit -$2k\nR4: Consecutive loss caution\nR5: Daily trade limit 3\nR6: Drawdown reduction\nR7: Profit compounding\nR8: Session end block"]
+        SIZING["Capital Allocation\n$800 live · $400 prop\nMax 10 contracts"]
+        ARIDEC{{"ARI Decision"}}
+        APPROVED[["✅ APPROVED\n+ contracts + risk"]]
+        REJECTED(["❌ REJECTED\n+ reason"])
+        RULES & SIZING --> ARIDEC
+        ARIDEC -->|"pass"| APPROVED
+        ARIDEC -->|"fail"| REJECTED
+    end
+
+    subgraph L4["Layer 4 — Execution Engine"]
+        direction LR
+        PINE["TradingView\nPine Strategy"]
+        ALRT["TradingView\nAlert + signal_id"]
+        WH["Webhook\nReceiver\nvalidation + dedup"]
+        TP["TradersPost\nmulti-account routing"]
+        TV["Tradovate\nFutures Broker"]
+        ACCTS["Prop Acct 1\nProp Acct 2\nLive Account"]
+        PINE --> ALRT --> WH --> TP --> TV --> ACCTS
+    end
+
+    subgraph L5["Layer 5 — Observatory (Read-Only)"]
+        direction LR
+        REC[("📚 Immutable Records\nMARKET_STATE_SNAPSHOT\nADE_EVALUATION\nARI_DECISION\nTRADE_ENTRY / EXIT\nMISSED_OPPORTUNITY")]
+        DASH["Observatory Dashboard\nLive P&L · Rolling PF\nARI rejection rate\nMissed opportunity P&L"]
+        REC --> DASH
+    end
+
+    MD --> L1
+    MSO --> A1E & A3E & B1E
+    CAND --> L3
+    APPROVED --> L4
+    ACCTS -->|"trade outcome"| L3
+
+    L1 -->|"snapshot"| REC
+    RANK -->|"evaluation"| REC
+    ARIDEC -->|"decision"| REC
+    TV -->|"entry/exit"| REC
+    REJECTED -->|"missed opp"| REC
+
+    style L1 fill:#0d2137,stroke:#2196F3,color:#e0e0e0
+    style L2 fill:#1a2e0d,stroke:#4CAF50,color:#e0e0e0
+    style L3 fill:#2e1a0d,stroke:#FF9800,color:#e0e0e0
+    style L4 fill:#2e0d2e,stroke:#9C27B0,color:#e0e0e0
+    style L5 fill:#1a1a1a,stroke:#607D8B,color:#e0e0e0
+    style MSO fill:#1565C0,color:#ffffff
+    style CAND fill:#388E3C,color:#ffffff
+    style APPROVED fill:#2E7D32,color:#ffffff
+    style REJECTED fill:#B71C1C,color:#ffffff
+    style NOTRADE fill:#37474F,color:#CFD8DC

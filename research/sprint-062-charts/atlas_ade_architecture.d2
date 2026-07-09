@@ -1,0 +1,241 @@
+direction: down
+
+title: {
+  label: "Atlas Decision Engine — Production Architecture v1.0"
+  near: top-center
+  shape: text
+  style.font-size: 22
+  style.bold: true
+}
+
+# ── External Data ──────────────────────────────────────────────────────────────
+market_data: "Market Data Feed\n(MNQ 5-min OHLCV + Transactions)" {
+  shape: cylinder
+  style.fill: "#1a1a2e"
+  style.font-color: "#e0e0e0"
+  style.stroke: "#4a4a8a"
+}
+
+# ── Layer 1: MSE ───────────────────────────────────────────────────────────────
+layer1: "Layer 1 — Market State Engine (MSE)" {
+  style.fill: "#0d2137"
+  style.stroke: "#2196F3"
+  style.stroke-width: 2
+  style.border-radius: 8
+
+  mso: "Market State Object\n(56 fields, immutable)" {
+    shape: document
+    style.fill: "#1565C0"
+    style.font-color: "#ffffff"
+  }
+
+  temporal: "Temporal Context\n(session, hour, DOW)" {
+    shape: rectangle
+    style.fill: "#0d47a1"
+    style.font-color: "#bbdefb"
+  }
+  trend: "Trend Structure\n(EMA20/50/200, ADX14, DI+/-)" {
+    shape: rectangle
+    style.fill: "#0d47a1"
+    style.font-color: "#bbdefb"
+  }
+  volatility: "Volatility\n(ATR14, atr_ratio, vol_state)" {
+    shape: rectangle
+    style.fill: "#0d47a1"
+    style.font-color: "#bbdefb"
+  }
+  participation: "Participation\n(rel_vol, rel_txn, part_state)" {
+    shape: rectangle
+    style.fill: "#0d47a1"
+    style.font-color: "#bbdefb"
+  }
+  overnight: "Overnight Inventory\n(ov_dir, ov_range, ov_return)" {
+    shape: rectangle
+    style.fill: "#0d47a1"
+    style.font-color: "#bbdefb"
+  }
+  mvc_states: "MVC Signal States\n(mvc_001 through mvc_006)" {
+    shape: rectangle
+    style.fill: "#0d47a1"
+    style.font-color: "#bbdefb"
+  }
+  mp_states: "Market Principle States\n(mp_001 through mp_005)" {
+    shape: rectangle
+    style.fill: "#0d47a1"
+    style.font-color: "#bbdefb"
+  }
+
+  temporal -> mso
+  trend -> mso
+  volatility -> mso
+  participation -> mso
+  overnight -> mso
+  mvc_states -> mso
+  mp_states -> mso
+}
+
+# ── Layer 2: ADE ───────────────────────────────────────────────────────────────
+layer2: "Layer 2 — Atlas Decision Engine (ADE)" {
+  style.fill: "#1a2e0d"
+  style.stroke: "#4CAF50"
+  style.stroke-width: 2
+  style.border-radius: 8
+
+  a1_eval: "Model A1 Evaluator\n(Pullback Momentum)\nEdge Score: C1–C7" {
+    shape: rectangle
+    style.fill: "#1B5E20"
+    style.font-color: "#C8E6C9"
+  }
+  a3_eval: "Model A3 Evaluator\n(Overnight Expansion)\nEdge Score: C1–C7" {
+    shape: rectangle
+    style.fill: "#1B5E20"
+    style.font-color: "#C8E6C9"
+  }
+  b1_eval: "Model B1 Evaluator\n(Participation Momentum)\nEdge Score: C1–C7" {
+    shape: rectangle
+    style.fill: "#1B5E20"
+    style.font-color: "#C8E6C9"
+  }
+
+  ranker: "Model Ranker\n(Sort by Edge Score)\nActivation Threshold: 60" {
+    shape: diamond
+    style.fill: "#2E7D32"
+    style.font-color: "#ffffff"
+  }
+
+  candidate: "Candidate Model\n(Highest eligible score)" {
+    shape: document
+    style.fill: "#388E3C"
+    style.font-color: "#ffffff"
+  }
+
+  no_trade: "No Trade\n(All scores < 60)" {
+    shape: oval
+    style.fill: "#37474F"
+    style.font-color: "#CFD8DC"
+  }
+
+  a1_eval -> ranker: "score, eligible"
+  a3_eval -> ranker: "score, eligible"
+  b1_eval -> ranker: "score, eligible"
+  ranker -> candidate: "eligible models exist"
+  ranker -> no_trade: "no eligible models"
+}
+
+# ── Layer 3: ARI ───────────────────────────────────────────────────────────────
+layer3: "Layer 3 — Atlas Risk Intelligence (ARI)" {
+  style.fill: "#2e1a0d"
+  style.stroke: "#FF9800"
+  style.stroke-width: 2
+  style.border-radius: 8
+
+  rules: "Rule Engine (R1–R8)\nR1: Active position block\nR2: Circuit breaker\nR3: Daily loss limit (-$2k)\nR4: Consecutive loss caution\nR5: Daily trade limit (3)\nR6: Drawdown reduction\nR7: Profit compounding\nR8: Session end block" {
+    shape: rectangle
+    style.fill: "#E65100"
+    style.font-color: "#ffffff"
+  }
+
+  sizing: "Capital Allocation\nBase risk: $800 live / $400 prop\nContracts = risk / (pts × $2)\nMax: 10 contracts" {
+    shape: rectangle
+    style.fill: "#BF360C"
+    style.font-color: "#ffffff"
+  }
+
+  ari_state: "ARI State\n(consecutive_losses, daily_pnl,\nactive_position, drawdown,\nrisk_multiplier, circuit_breaker)" {
+    shape: cylinder
+    style.fill: "#4E342E"
+    style.font-color: "#FFCCBC"
+  }
+
+  ari_decision: "ARI Decision\n(APPROVED / REJECTED /\nREDUCED_RISK / INCREASED_RISK)" {
+    shape: diamond
+    style.fill: "#F57C00"
+    style.font-color: "#ffffff"
+  }
+
+  rules -> ari_decision
+  sizing -> ari_decision
+  ari_state -> rules: "state context"
+}
+
+# ── Layer 4: Execution Engine ─────────────────────────────────────────────────
+layer4: "Layer 4 — Execution Engine" {
+  style.fill: "#2e0d2e"
+  style.stroke: "#9C27B0"
+  style.stroke-width: 2
+  style.border-radius: 8
+
+  pine: "TradingView\nPine Strategy\n(All 5 layers in Pine)" {
+    shape: rectangle
+    style.fill: "#4A148C"
+    style.font-color: "#E1BEE7"
+  }
+  alert: "TradingView Alert\n(JSON payload + signal_id)" {
+    shape: rectangle
+    style.fill: "#6A1B9A"
+    style.font-color: "#E1BEE7"
+  }
+  webhook: "Webhook Receiver\n(Validation + dedup)" {
+    shape: rectangle
+    style.fill: "#7B1FA2"
+    style.font-color: "#E1BEE7"
+  }
+  traderspost: "TradersPost\n(Multi-account routing)" {
+    shape: rectangle
+    style.fill: "#8E24AA"
+    style.font-color: "#ffffff"
+  }
+  tradovate: "Tradovate\n(Futures Broker)" {
+    shape: rectangle
+    style.fill: "#AB47BC"
+    style.font-color: "#ffffff"
+  }
+  accounts: "Prop Acct 1 | Prop Acct 2\nLive Account" {
+    shape: rectangle
+    style.fill: "#CE93D8"
+    style.font-color: "#1a1a2e"
+  }
+
+  pine -> alert: "barstate.isrealtime"
+  alert -> webhook: "HTTP POST"
+  webhook -> traderspost: "validated payload"
+  traderspost -> tradovate: "order instructions"
+  tradovate -> accounts: "routed orders"
+}
+
+# ── Layer 5: Observatory ──────────────────────────────────────────────────────
+layer5: "Layer 5 — Observatory (Read-Only)" {
+  style.fill: "#1a1a1a"
+  style.stroke: "#607D8B"
+  style.stroke-width: 2
+  style.border-radius: 8
+
+  records: "Immutable Records\nMARKET_STATE_SNAPSHOT\nADE_EVALUATION\nARI_DECISION\nTRADE_ENTRY / EXIT\nMISSED_OPPORTUNITY\nEXCEPTIONAL_BEHAVIOUR" {
+    shape: cylinder
+    style.fill: "#263238"
+    style.font-color: "#B0BEC5"
+  }
+
+  dashboard: "Observatory Dashboard\nLive P&L | Rolling PF\nARI rejection rate\nMissed opportunity P&L\nEdge Score history" {
+    shape: rectangle
+    style.fill: "#37474F"
+    style.font-color: "#CFD8DC"
+  }
+
+  records -> dashboard: "read-only queries"
+}
+
+# ── Data Flow Connections ──────────────────────────────────────────────────────
+market_data -> layer1: "OHLCV + transactions\n(every 5-min bar close)"
+layer1.mso -> layer2.a1_eval: "MSO"
+layer1.mso -> layer2.a3_eval: "MSO"
+layer1.mso -> layer2.b1_eval: "MSO"
+layer2.candidate -> layer3.rules: "Candidate Model"
+layer3.ari_decision -> layer4.pine: "APPROVED + contracts"
+layer4.accounts -> layer3.ari_state: "trade outcome\n(P&L, fill price)"
+
+# Observatory receives from all layers
+layer1.mso -> layer5.records: "snapshot"
+layer2.ranker -> layer5.records: "evaluation"
+layer3.ari_decision -> layer5.records: "decision"
+layer4.tradovate -> layer5.records: "entry/exit"

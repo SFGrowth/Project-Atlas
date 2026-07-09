@@ -1,0 +1,399 @@
+{
+  "schema_version": "1.0",
+  "description": "The complete, immutable snapshot of market conditions calculated on every completed 5-minute candle. This is the sole input to all execution model evaluators.",
+  "fields": {
+    "ts_utc": {
+      "type": "datetime",
+      "description": "UTC timestamp of the completed candle close",
+      "derivation": "bar_time",
+      "pine_var": "time"
+    },
+    "ts_et": {
+      "type": "datetime",
+      "description": "Eastern Time timestamp (accounts for DST)",
+      "derivation": "bar_time converted to America/New_York",
+      "pine_var": "timestamp('America/New_York', year, month, dayofmonth, hour, minute)"
+    },
+    "hour_et": {
+      "type": "int",
+      "range": [
+        0,
+        23
+      ],
+      "description": "Hour of day in Eastern Time",
+      "pine_var": "hour(time, 'America/New_York')"
+    },
+    "minute_et": {
+      "type": "int",
+      "range": [
+        0,
+        59
+      ],
+      "description": "Minute of hour in Eastern Time",
+      "pine_var": "minute(time, 'America/New_York')"
+    },
+    "day_of_week": {
+      "type": "int",
+      "range": [
+        1,
+        7
+      ],
+      "description": "Day of week (1=Monday, 7=Sunday)",
+      "pine_var": "dayofweek"
+    },
+    "session": {
+      "type": "enum",
+      "values": [
+        "PRE_MARKET",
+        "AM_OPEN",
+        "AM_SESSION",
+        "MID_SESSION",
+        "PM_SESSION",
+        "AFTER_HOURS",
+        "OVERNIGHT"
+      ],
+      "description": "Current trading session classification",
+      "derivation": {
+        "PRE_MARKET": "04:00-09:29 ET",
+        "AM_OPEN": "09:30-10:00 ET (first 30 min \u2014 highest volatility)",
+        "AM_SESSION": "09:30-11:59 ET",
+        "MID_SESSION": "12:00-13:59 ET (lunch lull)",
+        "PM_SESSION": "14:00-15:59 ET",
+        "AFTER_HOURS": "16:00-17:59 ET",
+        "OVERNIGHT": "18:00-04:00 ET"
+      },
+      "pine_var": "custom_session_classifier()"
+    },
+    "is_rth": {
+      "type": "bool",
+      "description": "True if current bar is within Regular Trading Hours (09:30-16:00 ET)",
+      "pine_var": "session.ismarket"
+    },
+    "mins_since_rth_open": {
+      "type": "int",
+      "description": "Minutes elapsed since 09:30 ET open (0 if not RTH)",
+      "pine_var": "custom_mins_since_open()"
+    },
+    "close": {
+      "type": "float",
+      "description": "Current bar close price",
+      "pine_var": "close"
+    },
+    "high": {
+      "type": "float",
+      "description": "Current bar high",
+      "pine_var": "high"
+    },
+    "low": {
+      "type": "float",
+      "description": "Current bar low",
+      "pine_var": "low"
+    },
+    "open": {
+      "type": "float",
+      "description": "Current bar open",
+      "pine_var": "open"
+    },
+    "volume": {
+      "type": "int",
+      "description": "Current bar volume",
+      "pine_var": "volume"
+    },
+    "transactions": {
+      "type": "int",
+      "description": "Number of transactions (order flow fragmentation proxy) \u2014 MNQ tick data",
+      "pine_var": "volume  // NOTE: Pine uses volume; transactions requires custom data feed"
+    },
+    "ema_20": {
+      "type": "float",
+      "description": "20-period EMA of close",
+      "pine_var": "ta.ema(close, 20)"
+    },
+    "ema_50": {
+      "type": "float",
+      "description": "50-period EMA of close",
+      "pine_var": "ta.ema(close, 50)"
+    },
+    "ema_200": {
+      "type": "float",
+      "description": "200-period EMA of close",
+      "pine_var": "ta.ema(close, 200)"
+    },
+    "ema_structure": {
+      "type": "enum",
+      "values": [
+        "BULL_ALIGNED",
+        "BEAR_ALIGNED",
+        "MIXED"
+      ],
+      "description": "EMA stack alignment: BULL if ema20>ema50>ema200, BEAR if ema20<ema50<ema200",
+      "derivation": "if ema20>ema50>ema200: BULL_ALIGNED; elif ema20<ema50<ema200: BEAR_ALIGNED; else: MIXED",
+      "pine_var": "custom_ema_structure()"
+    },
+    "price_vs_ema20": {
+      "type": "float",
+      "description": "Close minus EMA20, normalised by ATR14 (signed distance)",
+      "derivation": "(close - ema_20) / atr_14",
+      "pine_var": "(close - ta.ema(close,20)) / atr14"
+    },
+    "adx_14": {
+      "type": "float",
+      "range": [
+        0,
+        100
+      ],
+      "description": "14-period Average Directional Index",
+      "pine_var": "ta.dmi(14, 14)[2]  // [di_plus, di_minus, adx]"
+    },
+    "di_plus": {
+      "type": "float",
+      "description": "+DI directional indicator",
+      "pine_var": "ta.dmi(14, 14)[0]"
+    },
+    "di_minus": {
+      "type": "float",
+      "description": "-DI directional indicator",
+      "pine_var": "ta.dmi(14, 14)[1]"
+    },
+    "adx_state": {
+      "type": "enum",
+      "values": [
+        "WEAK_TREND",
+        "DEVELOPING_TREND",
+        "STRONG_TREND",
+        "EXTREME_TREND"
+      ],
+      "description": "ADX regime classification",
+      "derivation": {
+        "WEAK_TREND": "ADX < 20",
+        "DEVELOPING_TREND": "20 <= ADX < 30",
+        "STRONG_TREND": "30 <= ADX < 40",
+        "EXTREME_TREND": "ADX >= 40"
+      }
+    },
+    "trend_direction": {
+      "type": "enum",
+      "values": [
+        "BULLISH",
+        "BEARISH",
+        "NEUTRAL"
+      ],
+      "description": "Directional bias from DI+ vs DI-",
+      "derivation": "if di_plus > di_minus + 5: BULLISH; elif di_minus > di_plus + 5: BEARISH; else: NEUTRAL"
+    },
+    "atr_14": {
+      "type": "float",
+      "description": "14-period Average True Range (rolling, not EWM)",
+      "pine_var": "ta.atr(14)"
+    },
+    "atr_ratio": {
+      "type": "float",
+      "description": "Current ATR14 / 20-period rolling mean of ATR14 (volatility expansion ratio)",
+      "derivation": "atr_14 / ta.sma(ta.atr(14), 20)",
+      "pine_var": "ta.atr(14) / ta.sma(ta.atr(14), 20)"
+    },
+    "volatility_state": {
+      "type": "enum",
+      "values": [
+        "COMPRESSED",
+        "NORMAL",
+        "EXPANDING",
+        "EXTREME"
+      ],
+      "description": "Volatility regime classification",
+      "derivation": {
+        "COMPRESSED": "atr_ratio < 0.75",
+        "NORMAL": "0.75 <= atr_ratio < 1.25",
+        "EXPANDING": "1.25 <= atr_ratio < 1.75",
+        "EXTREME": "atr_ratio >= 1.75"
+      }
+    },
+    "rel_volume_20": {
+      "type": "float",
+      "description": "Current volume / 20-period SMA of volume (relative volume)",
+      "pine_var": "volume / ta.sma(volume, 20)"
+    },
+    "rel_transactions_20": {
+      "type": "float",
+      "description": "Current transactions / 20-period SMA of transactions (order fragmentation ratio \u2014 MVC-003 key variable)",
+      "pine_var": "transactions / ta.sma(transactions, 20)  // requires tick data feed"
+    },
+    "participation_state": {
+      "type": "enum",
+      "values": [
+        "LOW",
+        "NORMAL",
+        "ELEVATED",
+        "SURGE"
+      ],
+      "description": "Participation classification based on relative volume/transactions",
+      "derivation": {
+        "LOW": "rel_volume < 0.70",
+        "NORMAL": "0.70 <= rel_volume < 1.20",
+        "ELEVATED": "1.20 <= rel_volume < 1.50",
+        "SURGE": "rel_volume >= 1.50"
+      }
+    },
+    "ov_open": {
+      "type": "float",
+      "description": "Previous RTH close (overnight session opening reference price)",
+      "derivation": "close of last RTH bar of prior session"
+    },
+    "ov_close": {
+      "type": "float",
+      "description": "Close of the last overnight bar before RTH open",
+      "derivation": "close at 09:29 ET"
+    },
+    "ov_high": {
+      "type": "float",
+      "description": "Highest price during overnight session",
+      "derivation": "max(high) from 18:00 ET to 09:29 ET"
+    },
+    "ov_low": {
+      "type": "float",
+      "description": "Lowest price during overnight session",
+      "derivation": "min(low) from 18:00 ET to 09:29 ET"
+    },
+    "ov_range_pts": {
+      "type": "float",
+      "description": "Overnight range in absolute points",
+      "derivation": "ov_high - ov_low"
+    },
+    "ov_range_vs_atr14": {
+      "type": "float",
+      "description": "Overnight range normalised by ATR14 (MVC-003 key variable)",
+      "derivation": "ov_range_pts / atr_14"
+    },
+    "ov_return_vs_atr14": {
+      "type": "float",
+      "description": "Overnight directional return (ov_close - ov_open) normalised by ATR14",
+      "derivation": "(ov_close - ov_open) / atr_14"
+    },
+    "ov_direction": {
+      "type": "enum",
+      "values": [
+        "BULLISH",
+        "BEARISH",
+        "NEUTRAL"
+      ],
+      "description": "Overnight directional bias (MVC-003 key variable)",
+      "derivation": {
+        "BULLISH": "ov_return_vs_atr14 > 0.10",
+        "BEARISH": "ov_return_vs_atr14 < -0.10",
+        "NEUTRAL": "-0.10 <= ov_return_vs_atr14 <= 0.10"
+      }
+    },
+    "ov_range_state": {
+      "type": "enum",
+      "values": [
+        "TIGHT",
+        "NORMAL",
+        "LARGE",
+        "EXTREME"
+      ],
+      "description": "Overnight range classification",
+      "derivation": {
+        "TIGHT": "ov_range_vs_atr14 < 5.0",
+        "NORMAL": "5.0 <= ov_range_vs_atr14 < 10.0",
+        "LARGE": "10.0 <= ov_range_vs_atr14 < 15.0",
+        "EXTREME": "ov_range_vs_atr14 >= 15.0"
+      }
+    },
+    "intraday_range_vs_atr14": {
+      "type": "float",
+      "description": "Current day's range (high-low) normalised by ATR14 (D-08 discovery variable)",
+      "derivation": "(day_high - day_low) / atr_14"
+    },
+    "compression_state": {
+      "type": "enum",
+      "values": [
+        "COMPRESSED",
+        "NORMAL",
+        "EXPANDING",
+        "EXTENDED"
+      ],
+      "description": "Intraday range expansion state",
+      "derivation": {
+        "COMPRESSED": "intraday_range_vs_atr14 < 0.50",
+        "NORMAL": "0.50 <= intraday_range_vs_atr14 < 1.00",
+        "EXPANDING": "1.00 <= intraday_range_vs_atr14 < 1.50",
+        "EXTENDED": "intraday_range_vs_atr14 >= 1.50"
+      }
+    },
+    "mvc_001_active": {
+      "type": "bool",
+      "description": "MVC-001: High Relative Volume + Large Overnight Range + Bullish Overnight",
+      "derivation": "rel_volume_20 >= 1.33 AND ov_range_vs_atr14 >= 10.85 AND ov_direction == BULLISH"
+    },
+    "mvc_002_active": {
+      "type": "bool",
+      "description": "MVC-002: AM Session + Large Overnight Range + Bullish Overnight",
+      "derivation": "session in [AM_OPEN, AM_SESSION] AND ov_range_vs_atr14 >= 10.85 AND ov_direction == BULLISH"
+    },
+    "mvc_003_active": {
+      "type": "bool",
+      "description": "MVC-003: Participation Surge + Large Overnight Range + Bullish Overnight (B1 core signal)",
+      "derivation": "rel_transactions_20 >= 1.33 AND ov_range_vs_atr14 >= 10.85 AND ov_direction == BULLISH"
+    },
+    "mvc_004_active": {
+      "type": "bool",
+      "description": "MVC-004: High ADX + Large Overnight Range + Bullish Overnight",
+      "derivation": "adx_14 >= 35 AND ov_range_vs_atr14 >= 10.85 AND ov_direction == BULLISH"
+    },
+    "mvc_005_active": {
+      "type": "bool",
+      "description": "MVC-005: Participation Surge + Bullish Overnight + Expanding Intraday",
+      "derivation": "rel_transactions_20 >= 1.33 AND ov_direction == BULLISH AND intraday_range_vs_atr14 >= 1.00"
+    },
+    "mvc_006_active": {
+      "type": "bool",
+      "description": "MVC-006: Large Overnight Range + Bullish Overnight + Expanding Intraday",
+      "derivation": "ov_range_vs_atr14 >= 10.85 AND ov_direction == BULLISH AND intraday_range_vs_atr14 >= 1.00"
+    },
+    "mp_001_regime_active": {
+      "type": "bool",
+      "description": "MP-001: Regime Dependence \u2014 EMA structure is aligned (not MIXED)",
+      "derivation": "ema_structure != MIXED"
+    },
+    "mp_002_adx_sufficient": {
+      "type": "bool",
+      "description": "MP-002: ADX Thresholds \u2014 trend strength sufficient for directional models",
+      "derivation": "adx_14 >= 25"
+    },
+    "mp_003_session_optimal": {
+      "type": "bool",
+      "description": "MP-003: Session Asymmetry \u2014 current session has historically positive expectancy",
+      "derivation": "session in [AM_OPEN, AM_SESSION]"
+    },
+    "mp_004_volcomp_active": {
+      "type": "bool",
+      "description": "MP-004: VolComp\u2192Expansion \u2014 volatility compression followed by expansion signal",
+      "derivation": "volatility_state in [EXPANDING, EXTREME] AND atr_ratio > 1.25"
+    },
+    "mp_005_streak_clear": {
+      "type": "bool",
+      "description": "MP-005: Loss Streaks = Regime Transitions \u2014 ARI consecutive loss counter is clear (< 2)",
+      "derivation": "ari_consecutive_losses < 2  // sourced from ARI state, not MSE"
+    },
+    "ari_consecutive_losses": {
+      "type": "int",
+      "description": "Number of consecutive portfolio losses (sourced from ARI, included in MSO for model awareness)",
+      "range": [
+        0,
+        99
+      ]
+    },
+    "ari_daily_pnl": {
+      "type": "float",
+      "description": "Current day's realised P&L across all models (sourced from ARI)"
+    },
+    "ari_active_position": {
+      "type": "bool",
+      "description": "True if any model currently has an open position"
+    },
+    "ari_circuit_breaker": {
+      "type": "bool",
+      "description": "True if ARI circuit breaker is engaged (no new trades permitted)"
+    }
+  }
+}

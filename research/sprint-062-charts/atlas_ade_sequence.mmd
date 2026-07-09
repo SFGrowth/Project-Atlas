@@ -1,0 +1,124 @@
+sequenceDiagram
+    participant MD as Market Data<br/>(MNQ 5-min Feed)
+    participant MSE as Layer 1<br/>Market State Engine
+    participant ADE as Layer 2<br/>Atlas Decision Engine
+    participant A1 as Model A1<br/>Evaluator
+    participant A3 as Model A3<br/>Evaluator
+    participant B1 as Model B1<br/>Evaluator
+    participant ARI as Layer 3<br/>Atlas Risk Intelligence
+    participant EE as Layer 4<br/>Execution Engine
+    participant TV as TradingView<br/>Pine Strategy
+    participant WH as Webhook<br/>Receiver
+    participant TP as TradersPost
+    participant BR as Tradovate<br/>Broker
+    participant OBS as Layer 5<br/>Observatory
+
+    Note over MD,OBS: Every completed 5-minute candle triggers the full evaluation cycle
+
+    MD->>MSE: Bar close (OHLCV + transactions)
+    activate MSE
+    MSE->>MSE: Compute 56-field Market State Object
+    MSE->>MSE: Classify session, regime, MVC states
+    MSE-->>OBS: MARKET_STATE_SNAPSHOT record
+    MSE->>ADE: Market State Object (immutable)
+    deactivate MSE
+
+    activate ADE
+    Note over ADE: Parallel independent evaluation
+    ADE->>A1: Market State Object
+    ADE->>A3: Market State Object
+    ADE->>B1: Market State Object
+
+    activate A1
+    A1->>A1: Evaluate signal conditions
+    A1->>A1: Compute Edge Score (7 components)
+    A1-->>ADE: {eligible, edge_score, entry, stop, target}
+    deactivate A1
+
+    activate A3
+    A3->>A3: Evaluate signal conditions
+    A3->>A3: Compute Edge Score (7 components)
+    A3-->>ADE: {eligible, edge_score, entry, stop, target}
+    deactivate A3
+
+    activate B1
+    B1->>B1: Evaluate MVC-003 signal
+    B1->>B1: Compute Edge Score (7 components)
+    B1-->>ADE: {eligible, edge_score, entry, stop, target}
+    deactivate B1
+
+    ADE->>ADE: Rank eligible models by Edge Score
+    ADE->>ADE: Select Candidate Model (highest score >= 60)
+    ADE-->>OBS: ADE_EVALUATION record (all scores, selection)
+
+    alt No model eligible (all scores < 60)
+        ADE-->>OBS: NO_TRADE record
+        Note over ADE: Atlas does not trade
+    else Candidate Model selected
+        ADE->>ARI: Candidate Model output
+        deactivate ADE
+
+        activate ARI
+        ARI->>ARI: Check R1: Active position block
+        ARI->>ARI: Check R2: Circuit breaker
+        ARI->>ARI: Check R3: Daily loss limit
+        ARI->>ARI: Check R4: Consecutive loss caution
+        ARI->>ARI: Check R5: Daily trade limit
+        ARI->>ARI: Check R6: Drawdown reduction
+        ARI->>ARI: Check R7: Profit compounding
+        ARI->>ARI: Check R8: Session end block
+        ARI->>ARI: Calculate contracts & risk multiplier
+        ARI-->>OBS: ARI_DECISION record
+
+        alt ARI Rejects
+            ARI-->>OBS: MISSED_OPPORTUNITY record
+            Note over ARI: No execution
+        else ARI Approves
+            ARI->>EE: Approved trade (model, contracts, entry, stop, target)
+            deactivate ARI
+
+            activate EE
+            EE->>TV: Signal parameters
+            activate TV
+            TV->>TV: Validate barstate.isrealtime
+            TV->>TV: Generate alert JSON payload
+            TV->>TV: Attach signal_id (duplicate prevention)
+            TV->>WH: HTTP POST (webhook payload)
+            deactivate TV
+
+            activate WH
+            WH->>WH: Validate payload schema
+            WH->>WH: Check signal_id cache (duplicate prevention)
+            WH->>WH: Verify position not already open
+            WH->>TP: Validated trade instruction
+            deactivate WH
+
+            activate TP
+            TP->>TP: Route to all configured accounts
+            TP->>BR: Order (Prop Account 1)
+            TP->>BR: Order (Prop Account 2)
+            TP->>BR: Order (Live Account)
+            deactivate TP
+
+            activate BR
+            BR->>BR: Execute market order
+            BR-->>EE: Order confirmation + fill price
+            deactivate BR
+
+            EE-->>OBS: TRADE_ENTRY record
+            deactivate EE
+
+            Note over BR,OBS: Trade is now live — monitoring begins
+
+            BR-->>EE: Stop hit / Target hit / Manual close
+            activate EE
+            EE->>ARI: Update ARI state (P&L, consecutive losses)
+            EE-->>OBS: TRADE_EXIT record
+            deactivate EE
+
+            ARI->>ARI: Update consecutive_losses, daily_pnl, equity_peak
+        end
+    end
+
+    OBS-->>OBS: Retain immutable record
+    Note over OBS: Read-only — never modifies production behaviour

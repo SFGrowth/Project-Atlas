@@ -1,0 +1,160 @@
+{
+  "schema_version": "1.0",
+  "description": "ARI is the sole capital allocation authority. It receives the Candidate Model from the ADE and decides whether, and at what size, to allocate capital. ARI never modifies model signals; it only approves, rejects, or resizes.",
+  "inputs": {
+    "candidate_model": "The highest-ranked eligible model from the ADE (Model Evaluation Output)",
+    "ari_state": "ARI's own persistent internal state (see state schema below)"
+  },
+  "state_schema": {
+    "consecutive_losses": {
+      "type": "int",
+      "description": "Number of consecutive losses across all models since last win",
+      "reset_condition": "Any winning trade resets to 0",
+      "increment_condition": "Any losing trade (stop hit) increments by 1"
+    },
+    "daily_pnl": {
+      "type": "float",
+      "description": "Realised P&L for the current trading day (resets at 18:00 ET)",
+      "reset_condition": "New trading day (18:00 ET)"
+    },
+    "daily_trade_count": {
+      "type": "int",
+      "description": "Number of trades taken today across all models",
+      "reset_condition": "New trading day"
+    },
+    "active_position": {
+      "type": "bool",
+      "description": "True if any model currently has an open position"
+    },
+    "active_model_id": {
+      "type": "string",
+      "description": "ID of the model currently holding a position (null if none)"
+    },
+    "drawdown_from_peak": {
+      "type": "float",
+      "description": "Current drawdown from the all-time equity peak (negative number)"
+    },
+    "equity_peak": {
+      "type": "float",
+      "description": "Highest recorded equity value"
+    },
+    "risk_multiplier": {
+      "type": "float",
+      "description": "Current risk scaling factor (1.0 = base risk, 0.5 = half risk, 2.0 = double risk)",
+      "default": 1.0
+    },
+    "circuit_breaker_active": {
+      "type": "bool",
+      "description": "True if ARI circuit breaker is engaged \u2014 no new trades permitted"
+    },
+    "circuit_breaker_reset_time": {
+      "type": "datetime",
+      "description": "Time at which circuit breaker automatically resets (if applicable)"
+    }
+  },
+  "rules": {
+    "R1_active_position_block": {
+      "priority": 1,
+      "condition": "ari_state.active_position == True",
+      "action": "REJECT",
+      "reason": "One active position per instrument at all times. No new entries until current position is closed.",
+      "override": "None \u2014 this rule is absolute"
+    },
+    "R2_circuit_breaker": {
+      "priority": 2,
+      "condition": "ari_state.circuit_breaker_active == True",
+      "action": "REJECT",
+      "reason": "ARI circuit breaker is engaged. No new trades permitted.",
+      "override": "Manual reset only"
+    },
+    "R3_daily_loss_limit": {
+      "priority": 3,
+      "condition": "ari_state.daily_pnl <= -2000",
+      "action": "REJECT",
+      "reason": "Daily loss limit of -$2,000 reached. No new trades today.",
+      "override": "Resets at 18:00 ET",
+      "prop_firm_variant": "For prop firm accounts, limit is -$1,500 (tighter)"
+    },
+    "R4_consecutive_loss_caution": {
+      "priority": 4,
+      "condition": "ari_state.consecutive_losses >= 2",
+      "action": "REJECT",
+      "reason": "ARI Caution: 2+ consecutive losses indicate potential regime transition. Pausing until next winning trade.",
+      "override": "Resets on next winning trade",
+      "research_basis": "Sprint 052 FS-A2-01: consecutive losses are footprints of regime transitions"
+    },
+    "R5_daily_trade_limit": {
+      "priority": 5,
+      "condition": "ari_state.daily_trade_count >= 3",
+      "action": "REJECT",
+      "reason": "Maximum 3 trades per day reached.",
+      "override": "Resets at 18:00 ET"
+    },
+    "R6_drawdown_reduction": {
+      "priority": 6,
+      "condition": "ari_state.drawdown_from_peak <= -5000",
+      "action": "REDUCED_RISK",
+      "risk_multiplier": 0.5,
+      "reason": "Drawdown exceeds $5,000 from peak. Risk reduced to 50% until recovery.",
+      "recovery_condition": "drawdown_from_peak recovers to > -2500"
+    },
+    "R7_profit_compounding": {
+      "priority": 7,
+      "condition": "ari_state.daily_pnl >= 2000",
+      "action": "INCREASED_RISK",
+      "risk_multiplier": 1.25,
+      "reason": "Daily P&L exceeds +$2,000. Risk increased to 125% for remainder of session.",
+      "cap": "Maximum risk_multiplier = 2.0"
+    },
+    "R8_session_end_block": {
+      "priority": 8,
+      "condition": "hour_et >= 15 AND minute_et >= 30",
+      "action": "REJECT",
+      "reason": "No new entries within 30 minutes of session close (15:30 ET).",
+      "override": "None"
+    }
+  },
+  "capital_allocation": {
+    "base_risk_live": 800,
+    "base_risk_prop": 400,
+    "description": "Base risk per trade in USD. Actual risk = base_risk * risk_multiplier.",
+    "contract_sizing": "contracts = max(1, round(actual_risk / (risk_pts * point_value)))",
+    "point_value_mnq": 2.0
+  },
+  "output_schema": {
+    "decision": {
+      "type": "enum",
+      "values": [
+        "APPROVED",
+        "REJECTED",
+        "REDUCED_RISK",
+        "INCREASED_RISK"
+      ],
+      "description": "ARI's capital allocation decision"
+    },
+    "approved_model_id": {
+      "type": "string",
+      "description": "Model ID if approved, null if rejected"
+    },
+    "contracts": {
+      "type": "int",
+      "description": "Number of contracts to trade (0 if rejected)"
+    },
+    "actual_risk": {
+      "type": "float",
+      "description": "Actual dollar risk for this trade"
+    },
+    "risk_multiplier": {
+      "type": "float",
+      "description": "Applied risk multiplier"
+    },
+    "rejection_reason": {
+      "type": "string",
+      "description": "Primary rejection reason if not approved"
+    },
+    "applied_rule": {
+      "type": "string",
+      "description": "ARI rule ID that determined the outcome"
+    }
+  }
+}

@@ -1,0 +1,188 @@
+{
+  "schema_version": "1.0",
+  "description": "The Execution Engine translates ARI-approved trade decisions into live broker orders via the TradingView \u2192 Webhook \u2192 TradersPost \u2192 Tradovate pipeline.",
+  "pipeline": [
+    {
+      "step": 1,
+      "component": "TradingView Pine Strategy",
+      "responsibility": "Implements all 5 ADE layers in Pine Script. Generates alerts when ARI approves a trade.",
+      "output": "TradingView Alert with JSON payload"
+    },
+    {
+      "step": 2,
+      "component": "TradingView Alert",
+      "responsibility": "Fires the webhook when the strategy generates a signal",
+      "output": "HTTP POST to webhook URL",
+      "format": "JSON payload (see webhook_payload_schema below)"
+    },
+    {
+      "step": 3,
+      "component": "Webhook Receiver",
+      "responsibility": "Receives and validates the alert payload. Routes to TradersPost.",
+      "validation": [
+        "Verify payload signature/token",
+        "Check for duplicate alert (same signal within 30 seconds = duplicate)",
+        "Validate all required fields are present",
+        "Confirm position is not already open"
+      ]
+    },
+    {
+      "step": 4,
+      "component": "TradersPost",
+      "responsibility": "Translates the Atlas signal into broker-specific order instructions. Routes to multiple accounts.",
+      "capabilities": [
+        "Multiple account routing (prop account 1, prop account 2, live account)",
+        "Order type translation (market, limit, stop)",
+        "Position size per account",
+        "Reverse position handling"
+      ]
+    },
+    {
+      "step": 5,
+      "component": "Tradovate",
+      "responsibility": "Executes the order in the futures market",
+      "instruments": [
+        "MNQ (Micro Nasdaq Futures)"
+      ],
+      "order_types": [
+        "Market",
+        "Stop",
+        "Limit"
+      ]
+    },
+    {
+      "step": 6,
+      "component": "Multiple Prop Accounts",
+      "responsibility": "Receives identical orders routed from TradersPost",
+      "account_types": [
+        "FTMO",
+        "TopStep",
+        "Apex",
+        "Live Account"
+      ]
+    }
+  ],
+  "webhook_payload_schema": {
+    "description": "The JSON payload sent by TradingView to the webhook on every trade signal",
+    "fields": {
+      "action": {
+        "type": "string",
+        "values": [
+          "buy",
+          "sell",
+          "close_long",
+          "close_short"
+        ],
+        "description": "Trade action"
+      },
+      "ticker": {
+        "type": "string",
+        "example": "MNQ1!",
+        "description": "TradingView ticker symbol"
+      },
+      "model_id": {
+        "type": "string",
+        "example": "B1",
+        "description": "Atlas model that generated the signal"
+      },
+      "edge_score": {
+        "type": "float",
+        "description": "ADE edge score at time of signal"
+      },
+      "contracts": {
+        "type": "int",
+        "description": "Number of contracts approved by ARI"
+      },
+      "entry_price": {
+        "type": "float",
+        "description": "Signal bar close price"
+      },
+      "stop_price": {
+        "type": "float",
+        "description": "Stop loss price"
+      },
+      "target_price": {
+        "type": "float",
+        "description": "Target price"
+      },
+      "risk_pts": {
+        "type": "float",
+        "description": "Risk in points"
+      },
+      "signal_id": {
+        "type": "string",
+        "description": "Unique signal identifier (timestamp + model_id hash) for duplicate prevention"
+      },
+      "account_type": {
+        "type": "string",
+        "values": [
+          "LIVE",
+          "PROP"
+        ],
+        "description": "Account type routing instruction"
+      }
+    },
+    "example": {
+      "action": "buy",
+      "ticker": "MNQ1!",
+      "model_id": "B1",
+      "edge_score": 78.5,
+      "contracts": 2,
+      "entry_price": 21450.5,
+      "stop_price": 21420.25,
+      "target_price": 21540.75,
+      "risk_pts": 30.25,
+      "signal_id": "B1_20260709_093500_7a3f",
+      "account_type": "PROP"
+    }
+  },
+  "safety_rules": {
+    "SR1_one_position_per_instrument": {
+      "description": "Only one open position per instrument at any time",
+      "implementation": "Pine Script: strategy.position_size check before entry",
+      "webhook_check": "TradersPost: reject if position already open"
+    },
+    "SR2_duplicate_prevention": {
+      "description": "Identical signal_id within 30 seconds is treated as a duplicate and rejected",
+      "implementation": "Webhook receiver maintains a 60-second signal_id cache"
+    },
+    "SR3_tradingview_restart_recovery": {
+      "description": "On TradingView restart, Pine Script re-evaluates current state without generating historical alerts",
+      "implementation": "Use barstate.isrealtime guard on all alert() calls"
+    },
+    "SR4_internet_interruption": {
+      "description": "If webhook fails to receive alert, no order is placed (fail-safe, not fail-open)",
+      "implementation": "TradingView alerts have retry logic; broker positions checked on reconnect"
+    },
+    "SR5_broker_disconnection": {
+      "description": "If Tradovate connection drops, TradersPost queues orders until reconnection",
+      "implementation": "TradersPost handles reconnection; manual reconciliation if queue exceeds 5 minutes"
+    },
+    "SR6_alert_validation": {
+      "description": "Every webhook payload is validated against the schema before processing",
+      "implementation": "Required fields check, type validation, price sanity check (entry within 0.5% of last price)"
+    },
+    "SR7_position_reconciliation": {
+      "description": "Every 5 minutes, ARI state is reconciled against actual broker positions",
+      "implementation": "TradersPost position query \u2192 compare against Pine Script strategy.position_size"
+    },
+    "SR8_emergency_shutdown": {
+      "description": "Manual kill switch that closes all positions and disables all alerts immediately",
+      "implementation": "TradingView: disable all alerts; TradersPost: close all positions; Pine Script: strategy.close_all()"
+    },
+    "SR9_order_size_cap": {
+      "description": "Maximum 10 contracts per order regardless of ARI risk multiplier",
+      "implementation": "Hard cap in Pine Script and TradersPost"
+    }
+  },
+  "multi_account_routing": {
+    "description": "TradersPost routes identical signals to multiple accounts with account-specific sizing",
+    "routing_rules": [
+      "Live account: full ARI-approved size",
+      "Prop account 1: reduced size (50% of live) with tighter daily loss limit (-$1,500)",
+      "Prop account 2: same as prop account 1",
+      "All accounts receive identical entry/stop/target prices"
+    ],
+    "account_independence": "Each prop account is treated as an independent entity. A loss on one account does not affect ARI state for other accounts."
+  }
+}

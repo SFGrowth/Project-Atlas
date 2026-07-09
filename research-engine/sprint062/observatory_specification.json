@@ -1,0 +1,135 @@
+{
+  "schema_version": "1.0",
+  "description": "The Observatory is the immutable production evidence log. It records every production decision and outcome. It is strictly read-only \u2014 it never modifies production behaviour. Its purpose is to enable post-hoc analysis, model improvement, and system auditing.",
+  "record_types": {
+    "MARKET_STATE_SNAPSHOT": {
+      "trigger": "Every completed 5-minute RTH candle",
+      "fields": [
+        "ts_utc",
+        "session",
+        "adx_14",
+        "atr_14",
+        "volatility_state",
+        "ema_structure",
+        "ov_direction",
+        "ov_range_vs_atr14",
+        "participation_state",
+        "all_mvc_states",
+        "all_mp_states"
+      ],
+      "retention": "90 days rolling"
+    },
+    "ADE_EVALUATION": {
+      "trigger": "Every bar where at least one model is evaluated",
+      "fields": [
+        "ts_utc",
+        "models_evaluated",
+        "edge_scores",
+        "eligible_models",
+        "selected_model",
+        "rejection_reasons",
+        "no_trade_reason"
+      ],
+      "retention": "180 days rolling"
+    },
+    "ARI_DECISION": {
+      "trigger": "Every time ARI receives a Candidate Model",
+      "fields": [
+        "ts_utc",
+        "candidate_model_id",
+        "ari_decision",
+        "applied_rule",
+        "contracts",
+        "actual_risk",
+        "risk_multiplier",
+        "ari_state_snapshot"
+      ],
+      "retention": "365 days"
+    },
+    "TRADE_ENTRY": {
+      "trigger": "On every approved trade entry",
+      "fields": [
+        "ts_utc",
+        "signal_id",
+        "model_id",
+        "edge_score",
+        "entry_price",
+        "stop_price",
+        "target_price",
+        "contracts",
+        "risk_pts",
+        "rr_ratio",
+        "market_state_at_entry",
+        "ari_state_at_entry"
+      ],
+      "retention": "Permanent"
+    },
+    "TRADE_EXIT": {
+      "trigger": "On every trade close",
+      "fields": [
+        "ts_utc",
+        "signal_id",
+        "model_id",
+        "exit_price",
+        "exit_reason",
+        "pnl",
+        "r_multiple",
+        "bars_held",
+        "market_state_at_exit"
+      ],
+      "retention": "Permanent"
+    },
+    "MISSED_OPPORTUNITY": {
+      "trigger": "When a model is eligible but ARI rejects the trade",
+      "fields": [
+        "ts_utc",
+        "model_id",
+        "edge_score",
+        "rejection_reason",
+        "hypothetical_outcome"
+      ],
+      "description": "Tracks what would have happened if ARI had approved the trade \u2014 enables ARI rule calibration",
+      "retention": "365 days"
+    },
+    "EXCEPTIONAL_BEHAVIOUR": {
+      "trigger": "When any metric exceeds 2 standard deviations from its rolling mean",
+      "fields": [
+        "ts_utc",
+        "metric_name",
+        "metric_value",
+        "rolling_mean",
+        "z_score",
+        "context"
+      ],
+      "description": "Flags unusual market conditions or model behaviour for review",
+      "retention": "365 days"
+    },
+    "CIRCUIT_BREAKER_EVENT": {
+      "trigger": "On every circuit breaker activation or deactivation",
+      "fields": [
+        "ts_utc",
+        "event_type",
+        "trigger_rule",
+        "ari_state_at_trigger",
+        "manual_override"
+      ],
+      "retention": "Permanent"
+    }
+  },
+  "access_policy": {
+    "write": "Production system only \u2014 no manual writes",
+    "read": "Observatory dashboard, research scripts, post-hoc analysis",
+    "modification": "PROHIBITED \u2014 records are immutable once written",
+    "deletion": "Only via retention policy (automated)"
+  },
+  "dashboard_metrics": [
+    "Live P&L by model and portfolio",
+    "Rolling PF (7-day, 30-day, 90-day) per model",
+    "ARI rejection rate by rule",
+    "Missed opportunity P&L (hypothetical)",
+    "Edge Score distribution over time",
+    "Regime state frequency",
+    "MVC activation frequency",
+    "Circuit breaker frequency"
+  ]
+}

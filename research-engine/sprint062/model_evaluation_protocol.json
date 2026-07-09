@@ -1,0 +1,84 @@
+{
+  "schema_version": "1.0",
+  "description": "The standard interface every execution model must implement to participate in ADE ranking.",
+  "input": "Market State Object (MSO) \u2014 read-only, immutable",
+  "output_schema": {
+    "model_id": {
+      "type": "string",
+      "description": "Model identifier (A1, A3, B1, etc.)"
+    },
+    "eligible": {
+      "type": "bool",
+      "description": "True if model has a valid signal in current market state"
+    },
+    "edge_score": {
+      "type": "float",
+      "range": [
+        0,
+        100
+      ],
+      "description": "Composite edge score from the 7-component framework"
+    },
+    "expected_r": {
+      "type": "float",
+      "description": "Expected R-multiple for this trade setup (positive = expected win)"
+    },
+    "confidence": {
+      "type": "enum",
+      "values": [
+        "LOW",
+        "MEDIUM",
+        "HIGH",
+        "VERY_HIGH"
+      ],
+      "description": "Qualitative confidence tier"
+    },
+    "session_compatible": {
+      "type": "bool",
+      "description": "True if current session is within model's validated window"
+    },
+    "regime_compatible": {
+      "type": "bool",
+      "description": "True if current regime matches model's validated conditions"
+    },
+    "supporting_mvcs": {
+      "type": "list[string]",
+      "description": "List of active MVC IDs that support this model's signal"
+    },
+    "entry_price": {
+      "type": "float",
+      "description": "Proposed entry price (typically close of signal bar)"
+    },
+    "stop_price": {
+      "type": "float",
+      "description": "Proposed stop loss price"
+    },
+    "target_price": {
+      "type": "float",
+      "description": "Proposed target price"
+    },
+    "risk_pts": {
+      "type": "float",
+      "description": "Risk in points (entry - stop)"
+    },
+    "reward_pts": {
+      "type": "float",
+      "description": "Reward in points (target - entry)"
+    },
+    "rr_ratio": {
+      "type": "float",
+      "description": "Reward:Risk ratio"
+    },
+    "rejection_reason": {
+      "type": "string",
+      "description": "If not eligible, the primary reason for rejection"
+    }
+  },
+  "isolation_rules": [
+    "Each model receives ONLY the Market State Object",
+    "Models must NOT access any other model's state or output",
+    "Models must NOT access ARI state directly (ARI state is included in MSO as read-only fields)",
+    "Models must NOT modify any global state",
+    "Models must return their output within one bar (synchronous evaluation)"
+  ]
+}
