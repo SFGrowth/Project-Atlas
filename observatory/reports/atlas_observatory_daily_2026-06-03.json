@@ -1,0 +1,109 @@
+{
+  "date": "2026-06-03",
+  "daily_stats": {
+    "total_trades": 0,
+    "wins": 0,
+    "losses": 0,
+    "win_rate": 0.0,
+    "net_pnl": 0,
+    "total_r": 0,
+    "ari_interventions": 0,
+    "models_active": []
+  },
+  "daily_questions": {
+    "q1_performance": "No trades today. Market conditions did not trigger any model signals.",
+    "q2_model_behaviour": "No. All models behaved within expected parameters.",
+    "q3_model_breakdown": "No. No models showing signs of regime breakdown.",
+    "q4_ari_quality": "ARI made 0 intervention(s) today. All interventions appear consistent with validated rules.",
+    "q5_missed_opportunities": "Yes \u2014 1 missed opportunity/opportunities detected: Missed 3.9R down move in unknown session at 08:45 ET. No Atlas model active.",
+    "q6_rejected_outcomes": "No trades were rejected by ARI today.",
+    "q7_new_structure": "Yes \u2014 1 structural/regime observation(s): Extreme ADX reading today: 79.6 (4.0\u03c3 above historical mean). Unusually strong t",
+    "q8_assumption_weakness": "No. All production assumptions remain intact.",
+    "q9_knowledge_confidence": "Increased (+1.00 aggregate confidence delta)."
+  },
+  "observations": [
+    {
+      "date": "2026-06-03",
+      "category": "MO",
+      "description": "Missed 3.9R down move in unknown session at 08:45 ET. No Atlas model active.",
+      "magnitude": 3.9411,
+      "sigma_deviation": 1.88,
+      "classification": "Monitor",
+      "urs_pre_score": 66,
+      "knowledge_impact": {
+        "session_asymmetry": 0
+      },
+      "recommended_action": "Investigate unknown down breakout hypothesis. Consider H-B-UN01."
+    },
+    {
+      "date": "2026-06-03",
+      "category": "RT",
+      "description": "Extreme ADX reading today: 79.6 (4.0\u03c3 above historical mean). Unusually strong trend regime. Model A3 and A2 conditions highly favourable.",
+      "magnitude": 79.5808,
+      "sigma_deviation": 3.97,
+      "classification": "Immediate Priority",
+      "urs_pre_score": 82,
+      "knowledge_impact": {
+        "regime_dependence": 1.0
+      },
+      "recommended_action": "Monitor model performance in extreme ADX conditions. Consider ADX>60 sub-regime analysis."
+    }
+  ],
+  "research_queue": {
+    "No Action": [],
+    "Monitor": [
+      {
+        "date": "2026-06-03",
+        "category": "MO",
+        "description": "Missed 3.9R down move in unknown session at 08:45 ET. No Atlas model active.",
+        "magnitude": 3.9411,
+        "sigma_deviation": 1.88,
+        "classification": "Monitor",
+        "urs_pre_score": 66,
+        "knowledge_impact": {
+          "session_asymmetry": 0
+        },
+        "recommended_action": "Investigate unknown down breakout hypothesis. Consider H-B-UN01."
+      }
+    ],
+    "Generate Hypothesis": [],
+    "Immediate Priority": [
+      {
+        "date": "2026-06-03",
+        "category": "RT",
+        "description": "Extreme ADX reading today: 79.6 (4.0\u03c3 above historical mean). Unusually strong trend regime. Model A3 and A2 conditions highly favourable.",
+        "magnitude": 79.5808,
+        "sigma_deviation": 3.97,
+        "classification": "Immediate Priority",
+        "urs_pre_score": 82,
+        "knowledge_impact": {
+          "regime_dependence": 1.0
+        },
+        "recommended_action": "Monitor model performance in extreme ADX conditions. Consider ADX>60 sub-regime analysis."
+      }
+    ]
+  },
+  "knowledge_confidence": {
+    "regime_dependence": 0.9624999999999999,
+    "session_asymmetry": 0.9,
+    "overnight_compression": 0.9,
+    "structural_anchoring": 0.85,
+    "static_level_failure": 0.8,
+    "theory_of_edge": 0.88,
+    "ari_edge": 0.85
+  },
+  "confidence_updates": {
+    "regime_dependence": {
+      "old": 0.9574999999999999,
+      "new": 0.9624999999999999,
+      "delta": 0.005
+    }
+  },
+  "total_observations": 2,
+  "queue_counts": {
+    "No Action": 0,
+    "Monitor": 1,
+    "Generate Hypothesis": 0,
+    "Immediate Priority": 1
+  }
+}

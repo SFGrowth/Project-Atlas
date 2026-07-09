@@ -1,0 +1,92 @@
+{
+  "week_start": "2026-06-02",
+  "week_end": "2026-06-07",
+  "total_trades": 0,
+  "weekly_win_rate": 0.0,
+  "weekly_wr_drift": -1.0,
+  "weekly_pnl": 0,
+  "total_observations": 11,
+  "research_queue_summary": {
+    "No Action": 3,
+    "Monitor": 2,
+    "Generate Hypothesis": 2,
+    "Immediate Priority": 4
+  },
+  "top_hypothesis_candidates": [
+    {
+      "date": "2026-06-02",
+      "category": "RT",
+      "description": "Extreme ADX reading today: 86.5 (4.5\u03c3 above historical mean). Unusually strong trend regime. Model A3 and A2 conditions highly favourable.",
+      "magnitude": 86.4903,
+      "sigma_deviation": 4.54,
+      "classification": "Immediate Priority",
+      "urs_pre_score": 82,
+      "knowledge_impact": {
+        "regime_dependence": 1.0
+      },
+      "recommended_action": "Monitor model performance in extreme ADX conditions. Consider ADX>60 sub-regime analysis."
+    },
+    {
+      "date": "2026-06-03",
+      "category": "RT",
+      "description": "Extreme ADX reading today: 79.6 (4.0\u03c3 above historical mean). Unusually strong trend regime. Model A3 and A2 conditions highly favourable.",
+      "magnitude": 79.5808,
+      "sigma_deviation": 3.97,
+      "classification": "Immediate Priority",
+      "urs_pre_score": 82,
+      "knowledge_impact": {
+        "regime_dependence": 1.0
+      },
+      "recommended_action": "Monitor model performance in extreme ADX conditions. Consider ADX>60 sub-regime analysis."
+    },
+    {
+      "date": "2026-06-04",
+      "category": "RT",
+      "description": "Extreme ADX reading today: 87.5 (4.6\u03c3 above historical mean). Unusually strong trend regime. Model A3 and A2 conditions highly favourable.",
+      "magnitude": 87.4603,
+      "sigma_deviation": 4.62,
+      "classification": "Immediate Priority",
+      "urs_pre_score": 82,
+      "knowledge_impact": {
+        "regime_dependence": 1.0
+      },
+      "recommended_action": "Monitor model performance in extreme ADX conditions. Consider ADX>60 sub-regime analysis."
+    },
+    {
+      "date": "2026-06-05",
+      "category": "RT",
+      "description": "Extreme ADX reading today: 84.1 (4.3\u03c3 above historical mean). Unusually strong trend regime. Model A3 and A2 conditions highly favourable.",
+      "magnitude": 84.1234,
+      "sigma_deviation": 4.34,
+      "classification": "Immediate Priority",
+      "urs_pre_score": 82,
+      "knowledge_impact": {
+        "regime_dependence": 1.0
+      },
+      "recommended_action": "Monitor model performance in extreme ADX conditions. Consider ADX>60 sub-regime analysis."
+    },
+    {
+      "date": "2026-06-07",
+      "category": "RT",
+      "description": "Extreme ADX reading today: 67.6 (3.0\u03c3 above historical mean). Unusually strong trend regime. Model A3 and A2 conditions highly favourable.",
+      "magnitude": 67.5729,
+      "sigma_deviation": 2.96,
+      "classification": "Generate Hypothesis",
+      "urs_pre_score": 72,
+      "knowledge_impact": {
+        "regime_dependence": 1.0
+      },
+      "recommended_action": "Monitor model performance in extreme ADX conditions. Consider ADX>60 sub-regime analysis."
+    }
+  ],
+  "knowledge_confidence_end": {
+    "regime_dependence": 0.9774999999999999,
+    "session_asymmetry": 0.9,
+    "overnight_compression": 0.9,
+    "structural_anchoring": 0.85,
+    "static_level_failure": 0.8,
+    "theory_of_edge": 0.88,
+    "ari_edge": 0.85
+  },
+  "drift_status": "ALERT"
+}

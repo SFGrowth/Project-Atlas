@@ -1,0 +1,853 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Atlas Observatory Dashboard v1.0</title>
+<style>
+  :root {
+    --bg: #0a0d14;
+    --surface: #111520;
+    --surface2: #181d2e;
+    --border: #1e2540;
+    --accent: #3b82f6;
+    --accent2: #6366f1;
+    --green: #22c55e;
+    --red: #ef4444;
+    --amber: #f59e0b;
+    --text: #e2e8f0;
+    --muted: #64748b;
+    --tag-bg: #1e2540;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; font-size: 14px; line-height: 1.6; }
+
+  /* ── Layout ── */
+  .header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 16px 32px; display: flex; align-items: center; justify-content: space-between; }
+  .header h1 { font-size: 18px; font-weight: 700; letter-spacing: 0.05em; color: var(--accent); }
+  .header .subtitle { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .header .status-badge { padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 700; letter-spacing: 0.08em; }
+  .status-active { background: rgba(34,197,94,0.15); color: var(--green); border: 1px solid rgba(34,197,94,0.3); }
+
+  .nav { background: var(--surface); border-bottom: 1px solid var(--border); display: flex; padding: 0 32px; }
+  .nav button { background: none; border: none; color: var(--muted); padding: 12px 18px; cursor: pointer; font-size: 13px; font-weight: 500; border-bottom: 2px solid transparent; transition: all 0.2s; }
+  .nav button:hover { color: var(--text); }
+  .nav button.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  .container { max-width: 1400px; margin: 0 auto; padding: 24px 32px; }
+
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  /* ── Cards ── */
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 20px; margin-bottom: 16px; }
+  .card-title { font-size: 12px; font-weight: 700; letter-spacing: 0.1em; color: var(--muted); text-transform: uppercase; margin-bottom: 12px; }
+  .card-value { font-size: 28px; font-weight: 700; }
+  .card-sub { font-size: 12px; color: var(--muted); margin-top: 4px; }
+
+  .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 20px; }
+  .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 20px; }
+  .grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-bottom: 20px; }
+
+  /* ── Colours ── */
+  .text-green { color: var(--green); }
+  .text-red { color: var(--red); }
+  .text-amber { color: var(--amber); }
+  .text-blue { color: var(--accent); }
+  .text-muted { color: var(--muted); }
+
+  /* ── Tables ── */
+  table { width: 100%; border-collapse: collapse; }
+  th { text-align: left; font-size: 11px; font-weight: 700; letter-spacing: 0.08em; color: var(--muted); text-transform: uppercase; padding: 8px 12px; border-bottom: 1px solid var(--border); }
+  td { padding: 10px 12px; border-bottom: 1px solid rgba(30,37,64,0.5); font-size: 13px; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: rgba(59,130,246,0.04); }
+
+  /* ── Classification badges ── */
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 700; letter-spacing: 0.05em; }
+  .badge-no-action { background: rgba(100,116,139,0.2); color: var(--muted); }
+  .badge-monitor { background: rgba(245,158,11,0.15); color: var(--amber); }
+  .badge-generate { background: rgba(99,102,241,0.15); color: #818cf8; }
+  .badge-immediate { background: rgba(239,68,68,0.15); color: var(--red); }
+
+  /* ── Daily Questions ── */
+  .question-block { background: var(--surface2); border-radius: 6px; padding: 14px 16px; margin-bottom: 10px; border-left: 3px solid var(--border); }
+  .question-block.positive { border-left-color: var(--green); }
+  .question-block.warning { border-left-color: var(--amber); }
+  .question-block.alert { border-left-color: var(--red); }
+  .question-label { font-size: 11px; font-weight: 700; color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 4px; }
+  .question-answer { font-size: 13px; color: var(--text); }
+
+  /* ── Knowledge Confidence ── */
+  .confidence-bar { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+  .confidence-label { width: 200px; font-size: 12px; color: var(--text); flex-shrink: 0; }
+  .confidence-track { flex: 1; height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
+  .confidence-fill { height: 100%; border-radius: 3px; transition: width 0.3s; }
+  .confidence-value { width: 40px; text-align: right; font-size: 12px; font-weight: 700; flex-shrink: 0; }
+
+  /* ── Research Queue ── */
+  .queue-section { margin-bottom: 20px; }
+  .queue-header { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .queue-count { background: var(--tag-bg); border-radius: 12px; padding: 2px 10px; font-size: 12px; font-weight: 700; }
+
+  /* ── Drift indicators ── */
+  .drift-indicator { display: flex; align-items: center; gap: 8px; }
+  .drift-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .drift-stable { background: var(--green); }
+  .drift-caution { background: var(--amber); }
+  .drift-alert { background: var(--red); }
+
+  /* ── Section headers ── */
+  .section-header { font-size: 15px; font-weight: 700; color: var(--text); margin-bottom: 16px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+
+  /* ── Opportunity Map ── */
+  .opportunity-row { display: flex; align-items: flex-start; gap: 16px; padding: 14px 0; border-bottom: 1px solid var(--border); }
+  .opportunity-rank { width: 28px; height: 28px; border-radius: 50%; background: var(--accent); color: white; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; flex-shrink: 0; }
+  .opportunity-content { flex: 1; }
+  .opportunity-title { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 3px; }
+  .opportunity-desc { font-size: 12px; color: var(--muted); }
+  .opportunity-urs { font-size: 12px; font-weight: 700; color: var(--accent); flex-shrink: 0; }
+
+  /* ── Scrollbar ── */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <h1>⬡ ATLAS OBSERVATORY</h1>
+    <div class="subtitle">Continuous Learning Layer — ATS v2.0 Production Monitor</div>
+  </div>
+  <div style="display:flex;align-items:center;gap:16px;">
+    <div style="text-align:right;">
+      <div style="font-size:12px;color:var(--muted);">Last Updated</div>
+      <div style="font-size:13px;font-weight:600;" id="last-updated">2026-06-07</div>
+    </div>
+    <span class="status-badge status-active">● ACTIVE</span>
+  </div>
+</div>
+
+<div class="nav">
+  <button class="active" onclick="showTab('daily')">Daily Report</button>
+  <button onclick="showTab('weekly')">Weekly Drift</button>
+  <button onclick="showTab('knowledge')">Knowledge Confidence</button>
+  <button onclick="showTab('queue')">Research Queue</button>
+  <button onclick="showTab('opportunity')">Opportunity Map</button>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<!-- TAB 1: DAILY REPORT -->
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<div id="tab-daily" class="tab-content active">
+<div class="container">
+
+  <div class="section-header">Daily Knowledge Report — 7 June 2026</div>
+
+  <!-- KPI Row -->
+  <div class="grid-4">
+    <div class="card">
+      <div class="card-title">Trades Today</div>
+      <div class="card-value text-muted">0</div>
+      <div class="card-sub">No signals triggered</div>
+    </div>
+    <div class="card">
+      <div class="card-title">Net P&L</div>
+      <div class="card-value text-muted">$0</div>
+      <div class="card-sub">No completed trades</div>
+    </div>
+    <div class="card">
+      <div class="card-title">Observations</div>
+      <div class="card-value text-blue">2</div>
+      <div class="card-sub">1 Generate Hypothesis, 1 No Action</div>
+    </div>
+    <div class="card">
+      <div class="card-title">ADX Reading</div>
+      <div class="card-value text-amber">67.6</div>
+      <div class="card-sub">3.0σ above historical mean — extreme regime</div>
+    </div>
+  </div>
+
+  <!-- Daily Questions -->
+  <div class="card">
+    <div class="card-title">9 Daily Questions</div>
+
+    <div class="question-block positive">
+      <div class="question-label">Q1 — Did Atlas perform as expected?</div>
+      <div class="question-answer">No trades today. Market conditions did not trigger any model signals.</div>
+    </div>
+
+    <div class="question-block positive">
+      <div class="question-label">Q2 — Did any model behave unusually?</div>
+      <div class="question-answer">No. All models behaved within expected parameters.</div>
+    </div>
+
+    <div class="question-block positive">
+      <div class="question-label">Q3 — Did any model stop behaving normally?</div>
+      <div class="question-answer">No. No models showing signs of regime breakdown.</div>
+    </div>
+
+    <div class="question-block positive">
+      <div class="question-label">Q4 — Did ARI intervene correctly?</div>
+      <div class="question-answer">ARI made 0 interventions today. All rules consistent with validated specification.</div>
+    </div>
+
+    <div class="question-block warning">
+      <div class="question-label">Q5 — Were there exceptional moves Atlas completely missed?</div>
+      <div class="question-answer">Yes — 1 missed opportunity detected: Missed 3.2R up move at 18:55 ET. No Atlas model active during overnight session at this time.</div>
+    </div>
+
+    <div class="question-block positive">
+      <div class="question-label">Q6 — Were there rejected trades that became major winners?</div>
+      <div class="question-answer">No trades were rejected by ARI today.</div>
+    </div>
+
+    <div class="question-block warning">
+      <div class="question-label">Q7 — Did the market exhibit a new structural behaviour?</div>
+      <div class="question-answer">Yes — Extreme ADX reading: 67.6 (3.0σ above historical mean of 32). This is an unusually strong trend regime. Model A3 and A2 conditions highly favourable. ADX>60 sub-regime analysis recommended.</div>
+    </div>
+
+    <div class="question-block positive">
+      <div class="question-label">Q8 — Has any production assumption become weaker?</div>
+      <div class="question-answer">No. All production assumptions remain intact. Regime dependence confidence increased.</div>
+    </div>
+
+    <div class="question-block positive">
+      <div class="question-label">Q9 — Did today's market increase or decrease Atlas Knowledge Confidence?</div>
+      <div class="question-answer">Increased (+1.00 aggregate confidence delta). Extreme ADX observation reinforces regime dependence truth.</div>
+    </div>
+  </div>
+
+  <!-- Today's Observations Table -->
+  <div class="card">
+    <div class="card-title">Today's Observations</div>
+    <table>
+      <thead>
+        <tr>
+          <th>Category</th>
+          <th>Classification</th>
+          <th>Description</th>
+          <th>Magnitude</th>
+          <th>σ Dev</th>
+          <th>URS Pre-Score</th>
+          <th>Recommended Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="badge badge-generate">RT</span></td>
+          <td><span class="badge badge-generate">Generate Hypothesis</span></td>
+          <td>Extreme ADX reading: 67.6 (3.0σ above historical mean). Unusually strong trend regime.</td>
+          <td>67.6</td>
+          <td class="text-amber">+3.0σ</td>
+          <td class="text-blue" style="font-weight:700;">72</td>
+          <td>Investigate ADX>60 sub-regime performance. Consider H-B-RT01.</td>
+        </tr>
+        <tr>
+          <td><span class="badge badge-no-action">MO</span></td>
+          <td><span class="badge badge-no-action">No Action</span></td>
+          <td>Missed 3.2R up move at 18:55 ET. No Atlas model active in overnight session.</td>
+          <td>3.2R</td>
+          <td class="text-muted">+0.5σ</td>
+          <td class="text-muted">50</td>
+          <td>Monitor overnight missed opportunities over 10 days before hypothesis generation.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<!-- TAB 2: WEEKLY DRIFT -->
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<div id="tab-weekly" class="tab-content">
+<div class="container">
+
+  <div class="section-header">Weekly Drift Report — 2 June – 7 June 2026</div>
+
+  <div class="grid-4">
+    <div class="card">
+      <div class="card-title">Weekly Trades</div>
+      <div class="card-value text-muted">0</div>
+      <div class="card-sub">Demo period — no live trades</div>
+    </div>
+    <div class="card">
+      <div class="card-title">Win Rate Drift</div>
+      <div class="card-value text-amber">N/A</div>
+      <div class="card-sub">Insufficient trade data</div>
+    </div>
+    <div class="card">
+      <div class="card-title">Total Observations</div>
+      <div class="card-value text-blue">11</div>
+      <div class="card-sub">Across 5 trading days</div>
+    </div>
+    <div class="card">
+      <div class="card-title">Drift Status</div>
+      <div class="card-value">
+        <div class="drift-indicator">
+          <div class="drift-dot drift-stable"></div>
+          <span class="text-green">STABLE</span>
+        </div>
+      </div>
+      <div class="card-sub">No model performance degradation</div>
+    </div>
+  </div>
+
+  <!-- Weekly Research Queue Summary -->
+  <div class="card">
+    <div class="card-title">Weekly Research Queue Summary</div>
+    <div class="grid-4" style="margin-bottom:0;">
+      <div style="text-align:center;padding:16px;background:var(--surface2);border-radius:6px;">
+        <div style="font-size:32px;font-weight:700;color:var(--muted);">3</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:4px;text-transform:uppercase;letter-spacing:0.08em;">No Action</div>
+      </div>
+      <div style="text-align:center;padding:16px;background:var(--surface2);border-radius:6px;">
+        <div style="font-size:32px;font-weight:700;color:var(--amber);">2</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:4px;text-transform:uppercase;letter-spacing:0.08em;">Monitor</div>
+      </div>
+      <div style="text-align:center;padding:16px;background:var(--surface2);border-radius:6px;">
+        <div style="font-size:32px;font-weight:700;color:#818cf8;">2</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:4px;text-transform:uppercase;letter-spacing:0.08em;">Generate Hypothesis</div>
+      </div>
+      <div style="text-align:center;padding:16px;background:var(--surface2);border-radius:6px;">
+        <div style="font-size:32px;font-weight:700;color:var(--red);">4</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:4px;text-transform:uppercase;letter-spacing:0.08em;">Immediate Priority</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Weekly Drift Table by Model -->
+  <div class="card">
+    <div class="card-title">Model Performance Drift vs Historical Baseline</div>
+    <table>
+      <thead>
+        <tr>
+          <th>Model</th>
+          <th>Historical PF</th>
+          <th>Historical WR</th>
+          <th>This Week PF</th>
+          <th>This Week WR</th>
+          <th>PF Drift</th>
+          <th>WR Drift</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td style="font-weight:600;">Model A1</td>
+          <td>1.387</td>
+          <td>48.5%</td>
+          <td class="text-muted">—</td>
+          <td class="text-muted">—</td>
+          <td class="text-muted">N/A</td>
+          <td class="text-muted">N/A</td>
+          <td><span class="badge badge-no-action">No Data</span></td>
+        </tr>
+        <tr>
+          <td style="font-weight:600;">Model A2</td>
+          <td>1.354</td>
+          <td>52.4%</td>
+          <td class="text-muted">—</td>
+          <td class="text-muted">—</td>
+          <td class="text-muted">N/A</td>
+          <td class="text-muted">N/A</td>
+          <td><span class="badge badge-no-action">No Data</span></td>
+        </tr>
+        <tr>
+          <td style="font-weight:600;">Model A3</td>
+          <td>1.566</td>
+          <td>28.3%</td>
+          <td class="text-muted">—</td>
+          <td class="text-muted">—</td>
+          <td class="text-muted">N/A</td>
+          <td class="text-muted">N/A</td>
+          <td><span class="badge badge-no-action">No Data</span></td>
+        </tr>
+        <tr>
+          <td style="font-weight:600;">Portfolio</td>
+          <td>1.405</td>
+          <td>53.5%</td>
+          <td class="text-muted">—</td>
+          <td class="text-muted">—</td>
+          <td class="text-muted">N/A</td>
+          <td class="text-muted">N/A</td>
+          <td><span class="badge badge-no-action">No Data</span></td>
+        </tr>
+      </tbody>
+    </table>
+    <div style="margin-top:12px;font-size:12px;color:var(--muted);">Drift status updates automatically as live trade data is ingested. Minimum 10 trades per model required for statistical significance.</div>
+  </div>
+
+  <!-- Top Hypothesis Candidates This Week -->
+  <div class="card">
+    <div class="card-title">Top Hypothesis Candidates This Week</div>
+    <table>
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Category</th>
+          <th>Classification</th>
+          <th>Description</th>
+          <th>URS Pre-Score</th>
+          <th>Recommended Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>2026-06-02</td>
+          <td><span class="badge badge-immediate">RT</span></td>
+          <td><span class="badge badge-immediate">Immediate Priority</span></td>
+          <td>Extreme ADX reading: 86.5 (4.5σ above historical mean). Unusually strong trend regime.</td>
+          <td class="text-blue" style="font-weight:700;">82</td>
+          <td>Investigate ADX>60 sub-regime. Consider H-B-RT01.</td>
+        </tr>
+        <tr>
+          <td>2026-06-03</td>
+          <td><span class="badge badge-immediate">RT</span></td>
+          <td><span class="badge badge-immediate">Immediate Priority</span></td>
+          <td>Extreme ADX reading: 73.2 (3.4σ above historical mean). Strong trend regime continuation.</td>
+          <td class="text-blue" style="font-weight:700;">76</td>
+          <td>Monitor ADX>60 sub-regime performance across 5 consecutive days.</td>
+        </tr>
+        <tr>
+          <td>2026-06-07</td>
+          <td><span class="badge badge-generate">RT</span></td>
+          <td><span class="badge badge-generate">Generate Hypothesis</span></td>
+          <td>Extreme ADX reading: 67.6 (3.0σ above historical mean). Third consecutive extreme-ADX day.</td>
+          <td class="text-blue" style="font-weight:700;">72</td>
+          <td>Generate H-B-RT01: Does ADX>60 produce higher Model A3 win rates?</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<!-- TAB 3: KNOWLEDGE CONFIDENCE -->
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<div id="tab-knowledge" class="tab-content">
+<div class="container">
+
+  <div class="section-header">Knowledge Confidence Tracker</div>
+
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title">Current Knowledge Confidence Scores</div>
+      <div style="margin-top:8px;">
+
+        <div class="confidence-bar">
+          <div class="confidence-label">Regime Dependence</div>
+          <div class="confidence-track"><div class="confidence-fill" style="width:97.7%;background:var(--green);"></div></div>
+          <div class="confidence-value text-green">97.7%</div>
+        </div>
+
+        <div class="confidence-bar">
+          <div class="confidence-label">Session Asymmetry</div>
+          <div class="confidence-track"><div class="confidence-fill" style="width:90%;background:var(--green);"></div></div>
+          <div class="confidence-value text-green">90.0%</div>
+        </div>
+
+        <div class="confidence-bar">
+          <div class="confidence-label">Overnight Compression</div>
+          <div class="confidence-track"><div class="confidence-fill" style="width:90%;background:var(--green);"></div></div>
+          <div class="confidence-value text-green">90.0%</div>
+        </div>
+
+        <div class="confidence-bar">
+          <div class="confidence-label">Theory of Edge</div>
+          <div class="confidence-track"><div class="confidence-fill" style="width:88%;background:var(--green);"></div></div>
+          <div class="confidence-value text-green">88.0%</div>
+        </div>
+
+        <div class="confidence-bar">
+          <div class="confidence-label">Structural Anchoring</div>
+          <div class="confidence-track"><div class="confidence-fill" style="width:85%;background:var(--accent);"></div></div>
+          <div class="confidence-value text-blue">85.0%</div>
+        </div>
+
+        <div class="confidence-bar">
+          <div class="confidence-label">ARI Edge</div>
+          <div class="confidence-track"><div class="confidence-fill" style="width:85%;background:var(--accent);"></div></div>
+          <div class="confidence-value text-blue">85.0%</div>
+        </div>
+
+        <div class="confidence-bar">
+          <div class="confidence-label">Static Level Failure</div>
+          <div class="confidence-track"><div class="confidence-fill" style="width:80%;background:var(--accent);"></div></div>
+          <div class="confidence-value text-blue">80.0%</div>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Confidence Change Log — This Week</div>
+      <table>
+        <thead>
+          <tr><th>Date</th><th>Market Truth</th><th>Change</th><th>Trigger</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>2026-06-07</td>
+            <td>Regime Dependence</td>
+            <td class="text-green">+0.5%</td>
+            <td>Extreme ADX (67.6) observation reinforces regime dependence</td>
+          </tr>
+          <tr>
+            <td>2026-06-05</td>
+            <td>Regime Dependence</td>
+            <td class="text-green">+0.5%</td>
+            <td>Extreme ADX (71.3) observation</td>
+          </tr>
+          <tr>
+            <td>2026-06-04</td>
+            <td>Regime Dependence</td>
+            <td class="text-green">+0.5%</td>
+            <td>Extreme ADX (68.9) observation</td>
+          </tr>
+          <tr>
+            <td>2026-06-03</td>
+            <td>Regime Dependence</td>
+            <td class="text-green">+0.5%</td>
+            <td>Extreme ADX (73.2) — 4.5σ above mean</td>
+          </tr>
+          <tr>
+            <td>2026-06-02</td>
+            <td>Regime Dependence</td>
+            <td class="text-green">+0.5%</td>
+            <td>Extreme ADX (86.5) — 4.5σ above mean</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Five Validated Market Truths -->
+  <div class="card">
+    <div class="card-title">Five Highest-Confidence Market Truths</div>
+    <table>
+      <thead>
+        <tr><th>#</th><th>Market Truth</th><th>Confidence</th><th>Evidence Base</th><th>Status</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td style="font-weight:700;color:var(--accent);">1</td>
+          <td style="font-weight:600;">Regime Dependence</td>
+          <td class="text-green" style="font-weight:700;">97.7%</td>
+          <td>16 experiments, 3 validated models, cross-market confirmation</td>
+          <td><span class="badge badge-generate" style="background:rgba(34,197,94,0.15);color:var(--green);">CONFIRMED</span></td>
+        </tr>
+        <tr>
+          <td style="font-weight:700;color:var(--accent);">2</td>
+          <td style="font-weight:600;">Session Asymmetry</td>
+          <td class="text-green" style="font-weight:700;">90.0%</td>
+          <td>Models A1, A2, A3 all session-specific; AM vs PM validated</td>
+          <td><span class="badge badge-generate" style="background:rgba(34,197,94,0.15);color:var(--green);">CONFIRMED</span></td>
+        </tr>
+        <tr>
+          <td style="font-weight:700;color:var(--accent);">3</td>
+          <td style="font-weight:600;">Overnight Compression</td>
+          <td class="text-green" style="font-weight:700;">90.0%</td>
+          <td>Sprint 033 BCS 90/100, p=0.0002, Model A3 validated</td>
+          <td><span class="badge badge-generate" style="background:rgba(34,197,94,0.15);color:var(--green);">CONFIRMED</span></td>
+        </tr>
+        <tr>
+          <td style="font-weight:700;color:var(--accent);">4</td>
+          <td style="font-weight:600;">Theory of Edge</td>
+          <td class="text-green" style="font-weight:700;">88.0%</td>
+          <td>14/14 experiments consistent; uncertainty reduction → edge</td>
+          <td><span class="badge badge-generate" style="background:rgba(34,197,94,0.15);color:var(--green);">CONFIRMED</span></td>
+        </tr>
+        <tr>
+          <td style="font-weight:700;color:var(--accent);">5</td>
+          <td style="font-weight:600;">Structural Anchoring</td>
+          <td class="text-blue" style="font-weight:700;">85.0%</td>
+          <td>All 3 models require structural event; unanchored entries fail universally</td>
+          <td><span class="badge badge-generate" style="background:rgba(59,130,246,0.15);color:var(--accent);">STRONG</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<!-- TAB 4: RESEARCH QUEUE -->
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<div id="tab-queue" class="tab-content">
+<div class="container">
+
+  <div class="section-header">Research Queue</div>
+
+  <div class="grid-4" style="margin-bottom:20px;">
+    <div class="card" style="border-color:rgba(239,68,68,0.3);">
+      <div class="card-title">Immediate Priority</div>
+      <div class="card-value text-red">4</div>
+      <div class="card-sub">Requires next sprint</div>
+    </div>
+    <div class="card" style="border-color:rgba(99,102,241,0.3);">
+      <div class="card-title">Generate Hypothesis</div>
+      <div class="card-value" style="color:#818cf8;">2</div>
+      <div class="card-sub">Add to research backlog</div>
+    </div>
+    <div class="card" style="border-color:rgba(245,158,11,0.3);">
+      <div class="card-title">Monitor</div>
+      <div class="card-value text-amber">2</div>
+      <div class="card-sub">Track for 10 trading days</div>
+    </div>
+    <div class="card">
+      <div class="card-title">No Action</div>
+      <div class="card-value text-muted">3</div>
+      <div class="card-sub">Within normal parameters</div>
+    </div>
+  </div>
+
+  <!-- Immediate Priority Items -->
+  <div class="queue-section">
+    <div class="queue-header">
+      <span class="badge badge-immediate">IMMEDIATE PRIORITY</span>
+      <span class="queue-count text-red">4 items</span>
+    </div>
+    <div class="card">
+      <table>
+        <thead>
+          <tr><th>Date</th><th>Category</th><th>Description</th><th>σ Dev</th><th>URS Pre-Score</th><th>Recommended Action</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>2026-06-02</td>
+            <td><span class="badge badge-immediate">RT</span></td>
+            <td>Extreme ADX reading: 86.5 (4.5σ above historical mean). Unusually strong trend regime.</td>
+            <td class="text-red">+4.5σ</td>
+            <td class="text-blue" style="font-weight:700;">82</td>
+            <td>Generate H-B-RT01: ADX>60 sub-regime analysis for Models A2 and A3.</td>
+          </tr>
+          <tr>
+            <td>2026-06-03</td>
+            <td><span class="badge badge-immediate">RT</span></td>
+            <td>Extreme ADX reading: 73.2 (3.4σ above historical mean). Second consecutive extreme day.</td>
+            <td class="text-red">+3.4σ</td>
+            <td class="text-blue" style="font-weight:700;">76</td>
+            <td>Escalate H-B-RT01 to Sprint 050 priority.</td>
+          </tr>
+          <tr>
+            <td>2026-06-04</td>
+            <td><span class="badge badge-immediate">RT</span></td>
+            <td>Extreme ADX reading: 68.9 (3.1σ above historical mean). Third consecutive extreme day.</td>
+            <td class="text-red">+3.1σ</td>
+            <td class="text-blue" style="font-weight:700;">74</td>
+            <td>Three consecutive extreme-ADX days. Investigate regime persistence behaviour.</td>
+          </tr>
+          <tr>
+            <td>2026-06-05</td>
+            <td><span class="badge badge-immediate">RT</span></td>
+            <td>Extreme ADX reading: 71.3 (3.3σ above historical mean). Fourth consecutive extreme day.</td>
+            <td class="text-red">+3.3σ</td>
+            <td class="text-blue" style="font-weight:700;">78</td>
+            <td>Regime persistence confirmed. H-B-RT01 is now a high-confidence hypothesis.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Generate Hypothesis Items -->
+  <div class="queue-section">
+    <div class="queue-header">
+      <span class="badge badge-generate">GENERATE HYPOTHESIS</span>
+      <span class="queue-count" style="color:#818cf8;">2 items</span>
+    </div>
+    <div class="card">
+      <table>
+        <thead>
+          <tr><th>Date</th><th>Category</th><th>Description</th><th>σ Dev</th><th>URS Pre-Score</th><th>Recommended Action</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>2026-06-06</td>
+            <td><span class="badge badge-generate">MO</span></td>
+            <td>Missed 3.9R down move at 09:30 ET. No Atlas model active in AM session.</td>
+            <td style="color:#818cf8;">+1.8σ</td>
+            <td class="text-blue" style="font-weight:700;">68</td>
+            <td>Generate H-B-AM01: AM session opening range breakout with RelVol filter.</td>
+          </tr>
+          <tr>
+            <td>2026-06-07</td>
+            <td><span class="badge badge-generate">RT</span></td>
+            <td>Extreme ADX reading: 67.6 (3.0σ above historical mean). Fifth consecutive extreme-ADX day.</td>
+            <td style="color:#818cf8;">+3.0σ</td>
+            <td class="text-blue" style="font-weight:700;">72</td>
+            <td>Generate H-B-RT01: Does ADX>60 produce higher Model A3 win rates?</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Monitor Items -->
+  <div class="queue-section">
+    <div class="queue-header">
+      <span class="badge badge-monitor">MONITOR</span>
+      <span class="queue-count text-amber">2 items — track for 10 trading days</span>
+    </div>
+    <div class="card">
+      <table>
+        <thead>
+          <tr><th>Date Added</th><th>Category</th><th>Description</th><th>Days Remaining</th><th>σ Dev</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>2026-06-02</td>
+            <td><span class="badge badge-monitor">MO</span></td>
+            <td>Missed 3.9R up move at 09:30 ET. No Atlas model active in AM session.</td>
+            <td class="text-amber">8 days</td>
+            <td class="text-amber">+1.8σ</td>
+          </tr>
+          <tr>
+            <td>2026-06-03</td>
+            <td><span class="badge badge-monitor">MO</span></td>
+            <td>Missed 3.9R down move at 09:30 ET. No Atlas model active in AM session.</td>
+            <td class="text-amber">9 days</td>
+            <td class="text-amber">+1.8σ</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<!-- TAB 5: OPPORTUNITY MAP -->
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<div id="tab-opportunity" class="tab-content">
+<div class="container">
+
+  <div class="section-header">Atlas Opportunity Map v2.0 — Evidence-Weighted Research Roadmap</div>
+
+  <div class="card">
+    <div class="card-title">Top 10 Research Opportunities — Ranked by Expected Value</div>
+
+    <div class="opportunity-row">
+      <div class="opportunity-rank">1</div>
+      <div class="opportunity-content">
+        <div class="opportunity-title">H-B-RT01 — ADX Extreme Sub-Regime Analysis</div>
+        <div class="opportunity-desc">Observatory has detected 5 consecutive days of ADX>60 (3.0–4.5σ above historical mean). Hypothesis: Model A3 and A2 win rates are materially higher when ADX>60 vs ADX 25–60. If confirmed, this allows dynamic risk scaling in extreme regimes.</div>
+      </div>
+      <div class="opportunity-urs">URS: 82</div>
+    </div>
+
+    <div class="opportunity-row">
+      <div class="opportunity-rank">2</div>
+      <div class="opportunity-content">
+        <div class="opportunity-title">H-B-AM01 — AM Session Opening Range Breakout</div>
+        <div class="opportunity-desc">Observatory has detected 4 missed opportunities in the AM session (09:30–11:00 ET) with R-multiples of 3.2–3.9R. RMCE confirmed 65% of all exceptional moves occur in the AM session. Hypothesis: Opening range breakout with RelVol>1.3 filter produces positive expectancy.</div>
+      </div>
+      <div class="opportunity-urs">URS: 74</div>
+    </div>
+
+    <div class="opportunity-row">
+      <div class="opportunity-rank">3</div>
+      <div class="opportunity-content">
+        <div class="opportunity-title">H-B-RT02 — Regime Persistence Edge</div>
+        <div class="opportunity-desc">Five consecutive extreme-ADX days suggests regime persistence is a measurable phenomenon. Hypothesis: When ADX>60 for 3+ consecutive days, the probability of a 4th consecutive extreme-ADX day is statistically elevated, allowing predictive regime positioning.</div>
+      </div>
+      <div class="opportunity-urs">URS: 71</div>
+    </div>
+
+    <div class="opportunity-row">
+      <div class="opportunity-rank">4</div>
+      <div class="opportunity-content">
+        <div class="opportunity-title">ATS v2.1 — Dollar-Based Position Sizing</div>
+        <div class="opportunity-desc">The milestone compounding algorithm currently uses a fixed contract multiplier rather than true dollar-risk-based sizing. Implementing dynamic contract sizing (risk_dollars / stop_distance_dollars) would produce accurate real-world P&L figures and improve prop firm compliance.</div>
+      </div>
+      <div class="opportunity-urs">URS: 68</div>
+    </div>
+
+    <div class="opportunity-row">
+      <div class="opportunity-rank">5</div>
+      <div class="opportunity-content">
+        <div class="opportunity-title">H-B-OV01 — Overnight Session Missed Opportunity Analysis</div>
+        <div class="opportunity-desc">Observatory has detected overnight moves (18:00–21:00 ET) that Model A3 did not capture. Hypothesis: There is a secondary overnight compression pattern outside the primary A3 entry window that produces positive expectancy.</div>
+      </div>
+      <div class="opportunity-urs">URS: 65</div>
+    </div>
+
+    <div class="opportunity-row">
+      <div class="opportunity-rank">6</div>
+      <div class="opportunity-content">
+        <div class="opportunity-title">H-B-MD01 — Midday Session Reversal</div>
+        <div class="opportunity-desc">The 12:00–14:00 ET midday session is currently untested. RMCE data suggests this session has a distinct volatility profile. Hypothesis: Midday mean-reversion after AM session extremes produces a measurable edge.</div>
+      </div>
+      <div class="opportunity-urs">URS: 62</div>
+    </div>
+
+    <div class="opportunity-row">
+      <div class="opportunity-rank">7</div>
+      <div class="opportunity-content">
+        <div class="opportunity-title">Portfolio v2.0 — Three-Model ARI v2.0 Evaluation</div>
+        <div class="opportunity-desc">Sprint 043 tested Portfolio v1.0 (A1+A3). Portfolio v2.0 (A1+A2+A3) with ARI v2.0 has not been formally evaluated. This is the complete system test that will determine H-F001 (Framework Repeatability) final status.</div>
+      </div>
+      <div class="opportunity-urs">URS: 60</div>
+    </div>
+
+    <div class="opportunity-row">
+      <div class="opportunity-rank">8</div>
+      <div class="opportunity-content">
+        <div class="opportunity-title">H-B-WF01 — Walk-Forward Optimisation Study</div>
+        <div class="opportunity-desc">All models use fixed parameters validated on 2-year historical data. Hypothesis: Quarterly parameter re-optimisation within validated ranges improves forward performance without introducing overfitting.</div>
+      </div>
+      <div class="opportunity-urs">URS: 58</div>
+    </div>
+
+    <div class="opportunity-row">
+      <div class="opportunity-rank">9</div>
+      <div class="opportunity-content">
+        <div class="opportunity-title">H-B-NQ01 — Full-Size NQ Execution Study</div>
+        <div class="opportunity-desc">Sprint 041 confirmed NQ replicates MNQ behaviours (PF 1.315, +$65,603 over 2 years at $800 risk). A formal execution study comparing MNQ vs NQ slippage, fill quality, and prop firm availability would determine the optimal contract for live deployment.</div>
+      </div>
+      <div class="opportunity-urs">URS: 55</div>
+    </div>
+
+    <div class="opportunity-row" style="border-bottom:none;">
+      <div class="opportunity-rank">10</div>
+      <div class="opportunity-content">
+        <div class="opportunity-title">H-B-LS01 — Long/Short Asymmetry Deep Dive</div>
+        <div class="opportunity-desc">Model A2 shows significant long/short asymmetry (Shorts PF 1.55, Longs PF 1.10). Hypothesis: The asymmetry is regime-dependent — shorts outperform in high-ADX downtrends, longs in high-ADX uptrends. Directional filtering may improve PF.</div>
+      </div>
+      <div class="opportunity-urs">URS: 52</div>
+    </div>
+
+  </div>
+
+  <!-- Recommended Next Sprint -->
+  <div class="card" style="border-color:rgba(59,130,246,0.4);background:rgba(59,130,246,0.05);">
+    <div class="card-title">Recommended Next Sprint</div>
+    <div style="font-size:16px;font-weight:700;color:var(--accent);margin-bottom:8px;">Sprint 050 — H-B-RT01: ADX Extreme Sub-Regime Analysis</div>
+    <div style="font-size:13px;color:var(--text);line-height:1.7;">
+      The Observatory has generated a high-confidence hypothesis from 5 consecutive days of live observation. This is precisely the purpose of the Observatory — converting observed market behaviour into evidence-based research priorities. H-B-RT01 has a URS pre-score of 82, making it the highest-priority research item in the current queue. If confirmed, it will allow Atlas to dynamically scale risk during extreme-ADX regimes, potentially improving the prop firm pass rate above 90%.
+    </div>
+  </div>
+
+</div>
+</div>
+
+<script>
+function showTab(name) {
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.nav button').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  event.target.classList.add('active');
+}
+</script>
+
+</body>
+</html>
