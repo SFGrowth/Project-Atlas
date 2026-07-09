@@ -1,0 +1,59 @@
+{
+  "information_gain": {
+    "mi_d01": 2.0844925274765558e-06,
+    "mi_d03": 6.851815308350773e-05,
+    "mi_d02": 0.009455409414127203,
+    "mi_apex": 0.0015701652196443566,
+    "conditional_d01": 0.0006599045305264173,
+    "conditional_d03": 0.005606826021644196,
+    "conditional_d02": 0.044657862446247976
+  },
+  "simplicity": {
+    "product_best_wr": 70.35490605427975,
+    "product_best_n": 479,
+    "canonical_wr": 65.31213191990577,
+    "simplification_achieves_equivalent": "True"
+  },
+  "cross_market": {
+    "NQ (NASDAQ-100 Futures)": {
+      "correlation_to_mnq": 0.99,
+      "same_underlying": true,
+      "overnight_session": true,
+      "participation_data": true,
+      "theoretical_applicability": "DIRECT",
+      "data_required": "NQ 5-min OHLCV + transactions",
+      "expected_performance": "Near-identical (same underlying, 5x contract size)",
+      "readiness": "READY (same instrument, different contract size)"
+    },
+    "ES (S&P 500 Futures)": {
+      "correlation_to_mnq": 0.92,
+      "same_underlying": false,
+      "overnight_session": true,
+      "participation_data": true,
+      "theoretical_applicability": "HIGH",
+      "data_required": "ES 5-min OHLCV + transactions",
+      "expected_performance": "Similar (high correlation, same session structure)",
+      "readiness": "READY (requires threshold recalibration)"
+    },
+    "MES (Micro S&P 500)": {
+      "correlation_to_mnq": 0.92,
+      "same_underlying": false,
+      "overnight_session": true,
+      "participation_data": true,
+      "theoretical_applicability": "HIGH",
+      "data_required": "MES 5-min OHLCV + transactions",
+      "expected_performance": "Similar to ES (micro contract, same mechanics)",
+      "readiness": "READY (requires threshold recalibration)"
+    },
+    "RTY (Russell 2000 Futures)": {
+      "correlation_to_mnq": 0.72,
+      "same_underlying": false,
+      "overnight_session": true,
+      "participation_data": true,
+      "theoretical_applicability": "MODERATE",
+      "data_required": "RTY 5-min OHLCV + transactions",
+      "expected_performance": "Lower (different sector dynamics, lower correlation)",
+      "readiness": "REQUIRES VALIDATION (lower correlation, different behaviour)"
+    }
+  }
+}
