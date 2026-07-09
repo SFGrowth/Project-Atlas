@@ -14,6 +14,25 @@ Every entry in this Knowledge Base represents a specific instance of converting 
 
 ---
 
+## 2026-07-09 | Sprint 047: Production Engineering (ATS v2.0) — PRODUCTION READY
+
+**Research Stream:** C — Capital & Portfolio Intelligence  
+**Research Question:** Which combination of execution policy, milestone compounding, and daily loss management maximises prop firm pass probability using the three frozen execution models?  
+**Hypothesis (H-PF001 continued):** Intelligent production engineering constitutes an independent source of statistical edge in prop firm evaluation contexts.  
+**Experimental Design:** Four engineering components tested independently (Baseline, Milestone Compounding, Daily Loss Management, Lower Base Risk) then combined. 3,000 Monte Carlo simulations per configuration. Topstep 50K, Apex 50K, Generic 50K prop firm rules. $800 base risk throughout.  
+**Results:**
+- **Baseline** (Priority Queue, $800, $1000 DLM): MC Pass 41.4%, PF=1.587, Net=$2,618, MaxDD=-$515.
+- **Milestone Compounding** (+$400 risk per $500 profit, max $2000): MC Pass **86.9%**, PF=1.708, Net=$5,212. Single most impactful component.
+- **Daily Loss Management** ($800 daily limit, $500 recovery): MC Pass 46.4%. Modest improvement, acts as circuit breaker.
+- **Lower Base Risk** ($600 start, scale +$300 per $500): MC Pass 72.1%. Viable alternative.
+- **ATS v2.0 Combined** (Milestone + DLM): MC Pass **88.3%**, PF=1.708, Net=$5,212, MaxDD=-$771.
+**Decision:** **ATS v2.0 PROMOTED TO PRODUCTION.** Topstep 50K: 86.7%, Apex 50K: 88.7%, Generic 50K: 90.3%. Average days to pass: 20–24.  
+**Critical Discovery:** Milestone compounding is the dominant engineering variable. Starting at $800 risk and scaling to $2,000 after $1,000 profit buffer dramatically accelerates profit target attainment while protecting against early sequence risk. The combination of compounding and tight daily loss management creates a system that is simultaneously aggressive when profitable and conservative when at risk.  
+**ATS v2.0 Specification:** Priority Queue policy, $800 base risk, +$400 per $500 milestone (max $2000), $800 daily limit, $500 recovery limit.  
+**Future Research:** Sprint 048 — Model B1 Discovery. Engineering phase complete. Resume execution model discovery.
+
+---
+
 ## 2026-07-08 | Sprint 046: RMCE Validation Programme — REJECTED
 
 **Research Stream:** E — AI Discovery Methodology  

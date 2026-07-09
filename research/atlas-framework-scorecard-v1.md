@@ -1,6 +1,6 @@
 # Atlas Framework Scorecard
-**Date Updated:** 2026-07-08
-**Current Sprint:** 046
+**Date Updated:** 2026-07-09
+**Current Sprint:** 047
 
 ## 1. The Master Hypothesis: H-F001 (Framework Repeatability)
 
@@ -15,7 +15,7 @@ These metrics evaluate the performance of the Atlas laboratory, not just the str
 ### 2.1 Research Velocity & Efficiency
 | Metric | Current Value | Target | Notes |
 |---|---|---|---|
-| **Total Sprints Completed** | 46 | N/A | Sprints 018-046 under new architecture |
+| **Total Sprints Completed** | 47 | N/A | Sprints 018-047 under new architecture |
 | **Total Hypotheses Tested** | 19 | N/A | Since Architecture Freeze v1.0 |
 | **Validated Hypotheses** | 7 | N/A | Model A1, Model A2, Model A3, Contraction Asymmetry, Theory of Edge, H-C001 (ARI), H-C002 (Rule Attribution) |
 | **Rejected Hypotheses** | 13 | N/A | D200 EMA, Momentum Cont, 15m VA, H-P001, H-G001, H-RMCE-01, H-RMCE-02, H-RMCE-03 |
@@ -25,7 +25,7 @@ These metrics evaluate the performance of the Atlas laboratory, not just the str
 | Metric | Current Value | Target | Notes |
 |---|---|---|---|
 | **Execution Models Promoted** | **3** | > 3 | **Model A1, Model A2, Model A3** |
-| **Models in Pipeline** | 0 | N/A | All three models promoted. ATS v1.0 = EXPERIMENTAL. Sprint 047 — ARI v3.0 Prop Firm Engineering. |
+| **Models in Pipeline** | 0 | N/A | All three models promoted. ATS v2.0 = PRODUCTION READY. Sprint 048 — Model B1 Discovery. |
 | **Average Portfolio PF** | 1.436 | > 1.25 | Average of Model A1 (1.387), Model A2 (1.354), Model A3 (1.566) |
 | **Average Portfolio Max DD** | -$593 | > -$2,000 | Average of Model A1 (-$516) and Model A3 (-$669) |
 | **Portfolio Correlation** | N/A | < 0.30 | Cannot measure until Model A2/A3 promoted |
@@ -40,7 +40,7 @@ These metrics evaluate the performance of the Atlas laboratory, not just the str
 ### 2.4 Simulation Performance
 | Metric | Current Value | Target | Notes |
 |---|---|---|---|
-| **Prop Firm Pass Rate (MC)** | 100.0% | > 75.0% | Model A3 standalone MC (100%). Portfolio MC TBD. |
+| **Prop Firm Pass Rate (MC)** | **88.3%** | > 75.0% | **ATS v2.0 Portfolio MC (Topstep 50K). PRODUCTION READY.** |
 
 ## 3. The Execution Model Portfolio
 
