@@ -1,0 +1,778 @@
+// ============================================================================
+// ATLAS TRADING SYSTEM v2.1
+// Module: M-03 — Atlas Market State Engine
+// Sprint: 067
+// Specification: APS v1.0 Section 2 | Pine Engineering Spec v1.0 Section 2.1
+//
+// PURPOSE:
+//   The perception layer of Atlas. Observes the market and constructs the
+//   complete immutable MarketState object on every bar close.
+//
+// RESPONSIBILITIES:
+//   - MarketState UDT definition (40 fields across 8 categories)
+//   - All indicator calculations: EMA9/21/50, ATR5/14, ADX14
+//   - Session classification (7 session types)
+//   - Overnight session tracking (high, low, open, close, direction, range)
+//   - Participation metrics (relative volume, relative transaction activity)
+//   - MVC state pre-computation (MVC-003)
+//   - Day statistics (open, high, low, range vs ATR)
+//   - Engineering Mode debug table (all 40 fields visible in real time)
+//
+// CONSTRAINTS:
+//   - MUST NOT generate trades
+//   - MUST NOT make decisions
+//   - MUST NOT allocate risk
+//   - MUST NOT declare var variables (all persistent state is in M-02)
+//   - MUST produce a complete MarketState object on every bar close
+//
+// GOVERNING PRINCIPLE:
+//   APS defines the behaviour. Pine Script implements the behaviour.
+//   No engineering decision may modify the validated scientific specification.
+// ============================================================================
+
+//@version=5
+library("atlas_market_state_engine", overlay=false)
+
+// ============================================================================
+// SECTION 1: MarketState USER DEFINED TYPE
+// 40 fields across 8 categories as defined in APS v1.0 Section 2 and
+// Pine Engineering Spec v1.0 Section 2.1.
+// This UDT is the sole output of M-03.
+// ============================================================================
+
+export type MarketState
+    // --- TEMPORAL (9 fields) ---
+    int     ts_utc              // Bar close timestamp (Unix milliseconds)
+    string  session             // "PRE_MARKET" | "AM_OPEN" | "AM_SESSION" | "MID_SESSION" | "PM_SESSION" | "AFTER_HOURS" | "OVERNIGHT"
+    bool    is_rth              // true if within 09:30–16:00 ET
+    bool    is_am_session       // true if 09:30–11:59 ET (includes AM_OPEN)
+    bool    is_pm_session       // true if 14:00–15:59 ET
+    bool    is_overnight        // true if 18:00–09:29 ET
+    int     hour_et             // Hour in Eastern Time (0–23)
+    int     minute_et           // Minute (0–59)
+    int     day_of_week         // 1=Monday, 2=Tuesday, 3=Wednesday, 4=Thursday, 5=Friday
+
+    // --- PRICE (5 fields) ---
+    float   bar_close           // Current bar close
+    float   bar_high            // Current bar high
+    float   bar_low             // Current bar low
+    float   bar_open            // Current bar open
+    float   bar_volume          // Current bar volume
+
+    // --- TREND (6 fields) ---
+    float   ema9                // 9-period EMA of close
+    float   ema21               // 21-period EMA of close
+    float   ema50               // 50-period EMA of close
+    string  ema_structure       // "BULL_ALIGNED" | "BEAR_ALIGNED" | "MIXED"
+    bool    ema_bull            // EMA9 > EMA21 > EMA50
+    bool    ema_bear            // EMA9 < EMA21 < EMA50
+
+    // --- VOLATILITY (8 fields) ---
+    float   atr14               // 14-period ATR (Wilder's smoothing, RMA)
+    float   atr5                // 5-period ATR (Wilder's smoothing, RMA)
+    float   adx14               // 14-period ADX (Wilder's method)
+    float   volcomp_ratio       // ATR(5) / ATR(5)[20] — volatility compression ratio
+    bool    is_compressed       // volcomp_ratio < 0.80 (APS 2.2)
+    bool    is_expanding        // volcomp_ratio > 1.30 (APS 2.2)
+    bool    adx_trending        // adx14 >= 25 (APS 2.2)
+    string  volatility_state    // "LOW" (ADX<25) | "TRENDING" (ADX>=25)
+
+    // --- OVERNIGHT (7 fields) ---
+    float   ov_open             // Overnight session open price
+    float   ov_high             // Overnight session high
+    float   ov_low              // Overnight session low
+    float   ov_close            // Overnight session close (= RTH open price)
+    float   ov_range_pts        // Overnight session range in points (ov_high - ov_low)
+    float   ov_range_vs_atr14   // ov_range_pts / atr14
+    int     ov_direction        // 1=Bullish (close>open), -1=Bearish, 0=Neutral
+
+    // --- PARTICIPATION (3 fields) ---
+    float   rel_vol_20          // Relative volume: bar_volume / 20-bar average volume
+    float   rel_txn             // Relative transaction activity proxy (volume/range normalised)
+    bool    participation_surge // rel_txn >= 1.33 (MVC-003 threshold)
+
+    // --- MVC STATES (1 field) ---
+    bool    mvc_003_active      // MVC-003: rel_txn>=1.33 AND ov_range_vs_atr14>=10.85 AND ov_direction==1
+
+    // --- DAY STATISTICS (4 fields) ---
+    float   day_open            // Day session open price (RTH open)
+    float   day_high            // Day session high so far
+    float   day_low             // Day session low so far
+    float   day_range_vs_atr14  // (day_high - day_low) / atr14
+
+// ============================================================================
+// SECTION 2: INDICATOR CALCULATIONS
+// All indicators calculated using Pine Script v5 built-ins.
+// Calculation methods match the Python research engine exactly.
+// ============================================================================
+
+// ---------------------------------------------------------------------------
+// 2.1 EMA Calculations
+// Pine Script's ta.ema() uses the standard EMA formula:
+//   EMA = close * k + EMA[1] * (1 - k), where k = 2 / (length + 1)
+// This matches pandas ewm(span=length, adjust=False) used in the Python engine.
+// ---------------------------------------------------------------------------
+export f_calc_emas() =>
+    float ema9  = ta.ema(close, 9)
+    float ema21 = ta.ema(close, 21)
+    float ema50 = ta.ema(close, 50)
+    [ema9, ema21, ema50]
+
+// ---------------------------------------------------------------------------
+// 2.2 EMA Structure Classification
+// BULL_ALIGNED: EMA9 > EMA21 > EMA50 (APS 2.2)
+// BEAR_ALIGNED: EMA9 < EMA21 < EMA50 (APS 2.2)
+// MIXED: Any other configuration
+// ---------------------------------------------------------------------------
+export f_classify_ema_structure(float ema9, float ema21, float ema50) =>
+    string structure = "MIXED"
+    bool   is_bull   = ema9 > ema21 and ema21 > ema50
+    bool   is_bear   = ema9 < ema21 and ema21 < ema50
+    if is_bull
+        structure := "BULL_ALIGNED"
+    else if is_bear
+        structure := "BEAR_ALIGNED"
+    [structure, is_bull, is_bear]
+
+// ---------------------------------------------------------------------------
+// 2.3 ATR Calculations
+// Pine Script's ta.atr() uses Wilder's RMA (Relative Moving Average):
+//   ATR[0] = (ATR[1] * (length-1) + TR[0]) / length
+// This matches pandas_ta atr(length=n, mamode='rma') used in the Python engine.
+// ---------------------------------------------------------------------------
+export f_calc_atrs() =>
+    float atr14 = ta.atr(14)
+    float atr5  = ta.atr(5)
+    [atr14, atr5]
+
+// ---------------------------------------------------------------------------
+// 2.4 ADX Calculation
+// Pine Script's ta.adx() uses Wilder's smoothing method.
+// ADX = 100 * RMA(|+DI - -DI| / (+DI + -DI), length)
+// This matches the standard ADX14 used in the Python research engine.
+// ---------------------------------------------------------------------------
+export f_calc_adx() =>
+    float adx14 = ta.adx(14)
+    adx14
+
+// ---------------------------------------------------------------------------
+// 2.5 Volatility Compression Ratio
+// volcomp_ratio = ATR(5) / ATR(5)[20]
+// This is the exact formula from APS 2.2 and Sprint 037 research.
+// The [20] lookback uses the ATR5 value from 20 bars ago.
+// ---------------------------------------------------------------------------
+export f_calc_volcomp(float atr5) =>
+    float atr5_20bars_ago = ta.atr(5)[20]
+    float ratio           = na(atr5_20bars_ago) or atr5_20bars_ago == 0.0 ? 1.0 : atr5 / atr5_20bars_ago
+    bool  is_compressed   = ratio < 0.80
+    bool  is_expanding    = ratio > 1.30
+    [ratio, is_compressed, is_expanding]
+
+// ---------------------------------------------------------------------------
+// 2.6 Volatility State Classification
+// LOW: ADX < 25
+// TRENDING: ADX >= 25
+// (APS 2.2)
+// ---------------------------------------------------------------------------
+export f_classify_volatility_state(float adx14) =>
+    string state      = adx14 >= 25.0 ? "TRENDING" : "LOW"
+    bool   is_trending = adx14 >= 25.0
+    [state, is_trending]
+
+// ============================================================================
+// SECTION 3: SESSION CLASSIFICATION
+// All session boundaries defined in APS v1.0 Section 2.1.
+// All times in Eastern Time (America/New_York).
+// ============================================================================
+
+// ---------------------------------------------------------------------------
+// 3.1 Session Classification Function
+// Returns the session name string and all boolean session flags.
+// ---------------------------------------------------------------------------
+export f_classify_session(int h, int m) =>
+    // Convert to minutes since midnight for clean boundary comparisons
+    int mins = h * 60 + m
+
+    // Session boundaries in minutes since midnight ET
+    // PRE_MARKET:  04:00 (240) – 09:29 (569)
+    // AM_OPEN:     09:30 (570) – 10:00 (600)
+    // AM_SESSION:  09:30 (570) – 11:59 (719)
+    // MID_SESSION: 12:00 (720) – 13:59 (839)
+    // PM_SESSION:  14:00 (840) – 15:59 (959)
+    // AFTER_HOURS: 16:00 (960) – 17:59 (1079)
+    // OVERNIGHT:   18:00 (1080) – 04:00 (240) [wraps midnight]
+
+    string session_name = "OVERNIGHT"
+    bool   is_rth       = false
+    bool   is_am        = false
+    bool   is_pm        = false
+    bool   is_overnight = false
+
+    if mins >= 240 and mins < 570
+        session_name := "PRE_MARKET"
+        is_rth       := false
+        is_am        := false
+        is_pm        := false
+        is_overnight := false
+    else if mins >= 570 and mins <= 600
+        session_name := "AM_OPEN"
+        is_rth       := true
+        is_am        := true
+        is_pm        := false
+        is_overnight := false
+    else if mins > 600 and mins < 720
+        session_name := "AM_SESSION"
+        is_rth       := true
+        is_am        := true
+        is_pm        := false
+        is_overnight := false
+    else if mins >= 720 and mins < 840
+        session_name := "MID_SESSION"
+        is_rth       := true
+        is_am        := false
+        is_pm        := false
+        is_overnight := false
+    else if mins >= 840 and mins < 960
+        session_name := "PM_SESSION"
+        is_rth       := true
+        is_am        := false
+        is_pm        := true
+        is_overnight := false
+    else if mins >= 960 and mins < 1080
+        session_name := "AFTER_HOURS"
+        is_rth       := false
+        is_am        := false
+        is_pm        := false
+        is_overnight := false
+    else
+        // Overnight: 18:00 (1080) to 04:00 (240) — wraps midnight
+        session_name := "OVERNIGHT"
+        is_rth       := false
+        is_am        := false
+        is_pm        := false
+        is_overnight := true
+
+    [session_name, is_rth, is_am, is_pm, is_overnight]
+
+// ---------------------------------------------------------------------------
+// 3.2 Day of Week Conversion
+// Pine Script's dayofweek: 1=Sunday, 2=Monday, ..., 7=Saturday
+// Atlas convention: 1=Monday, 2=Tuesday, ..., 5=Friday
+// ---------------------------------------------------------------------------
+export f_get_day_of_week() =>
+    int pine_dow = dayofweek(time, "America/New_York")
+    // Pine: 1=Sun, 2=Mon, 3=Tue, 4=Wed, 5=Thu, 6=Fri, 7=Sat
+    // Atlas: 1=Mon, 2=Tue, 3=Wed, 4=Thu, 5=Fri
+    int atlas_dow = pine_dow == 2 ? 1 :
+                    pine_dow == 3 ? 2 :
+                    pine_dow == 4 ? 3 :
+                    pine_dow == 5 ? 4 :
+                    pine_dow == 6 ? 5 : 0  // 0 = weekend
+    atlas_dow
+
+// ============================================================================
+// SECTION 4: OVERNIGHT SESSION TRACKING
+// The overnight session runs from 18:00 ET to 09:29 ET.
+// The MSE tracks the overnight high, low, open, close, and direction.
+// These values are carried forward into the RTH session for MVC evaluation.
+//
+// IMPORTANT: Pine Script libraries cannot use var variables.
+// The overnight tracking state is managed by M-02 (State Manager).
+// M-03 provides the CALCULATION functions; M-02 provides the PERSISTENT STATE.
+// M-14 (atlas_core) calls M-02 to update state and M-03 to compute values.
+// ============================================================================
+
+// ---------------------------------------------------------------------------
+// 4.1 Overnight Range Calculation
+// Called with the persisted overnight high/low from M-02.
+// ---------------------------------------------------------------------------
+export f_calc_overnight_range(float ov_high, float ov_low, float ov_open, float ov_close, float atr14) =>
+    float ov_range_pts      = na(ov_high) or na(ov_low) ? 0.0 : ov_high - ov_low
+    float ov_range_vs_atr14 = (na(atr14) or atr14 == 0.0) ? 0.0 : ov_range_pts / atr14
+    int   ov_direction      = 0
+    if not na(ov_open) and not na(ov_close)
+        if ov_close > ov_open
+            ov_direction := 1
+        else if ov_close < ov_open
+            ov_direction := -1
+    [ov_range_pts, ov_range_vs_atr14, ov_direction]
+
+// ============================================================================
+// SECTION 5: PARTICIPATION METRICS
+// Relative volume and relative transaction activity.
+// These are the components of MVC-003 (Apex Combination).
+//
+// RESEARCH VALIDATION:
+// From Sprint 056 and 059, the validated thresholds are:
+//   rel_txn >= 1.33 (MVC-003 participation surge threshold)
+//   ov_range_vs_atr14 >= 10.85 (MVC-003 overnight range threshold)
+//
+// PINE SCRIPT NOTE:
+// TradingView does not provide raw transaction count data.
+// The rel_txn proxy is computed as: (volume / bar_range) / 20-bar average of (volume / bar_range)
+// This is the exact proxy used in the Python research engine (Sprint 056).
+// ============================================================================
+
+// ---------------------------------------------------------------------------
+// 5.1 Relative Volume (20-bar rolling average)
+// rel_vol_20 = current_volume / average(volume, 20)
+// ---------------------------------------------------------------------------
+export f_calc_rel_volume() =>
+    float avg_vol_20 = ta.sma(volume, 20)
+    float rel_vol    = (na(avg_vol_20) or avg_vol_20 == 0.0) ? 1.0 : volume / avg_vol_20
+    rel_vol
+
+// ---------------------------------------------------------------------------
+// 5.2 Relative Transaction Activity (volume/range proxy)
+// The transaction rate proxy is: volume / (high - low)
+// rel_txn = current_txn_proxy / average(txn_proxy, 20)
+//
+// This is the validated proxy from Sprint 056 causal instrumentation.
+// The 1.33 threshold was validated in Sprint 058 adversarial testing.
+// ---------------------------------------------------------------------------
+export f_calc_rel_txn() =>
+    float bar_range     = high - low
+    float txn_proxy     = (na(bar_range) or bar_range == 0.0) ? 0.0 : volume / bar_range
+    float avg_txn_20    = ta.sma(txn_proxy, 20)
+    float rel_txn_val   = (na(avg_txn_20) or avg_txn_20 == 0.0) ? 1.0 : txn_proxy / avg_txn_20
+    bool  surge_active  = rel_txn_val >= 1.33
+    [rel_txn_val, surge_active]
+
+// ============================================================================
+// SECTION 6: MVC STATE PRE-COMPUTATION
+// All MVC states are pre-computed in the MSE and stored in the MarketState
+// object for direct consumption by the Execution Models.
+// This avoids redundant calculation across multiple models.
+// ============================================================================
+
+// ---------------------------------------------------------------------------
+// 6.1 MVC-003 State (Apex Combination)
+// Conditions (APS 2.3 and Sprint 059 market_laws.md):
+//   1. rel_txn >= 1.33 (Participation Surge)
+//   2. ov_range_vs_atr14 >= 10.85 (Overnight Range Amplification)
+//   3. ov_direction == 1 (Bullish Overnight Inventory)
+// ---------------------------------------------------------------------------
+export f_calc_mvc_003(float rel_txn, float ov_range_vs_atr14, int ov_direction) =>
+    bool mvc_003 = rel_txn >= 1.33 and ov_range_vs_atr14 >= 10.85 and ov_direction == 1
+    mvc_003
+
+// ============================================================================
+// SECTION 7: DAY STATISTICS
+// Day statistics track the current RTH session's open, high, and low.
+// These values are carried in M-02 persistent state and passed to M-03
+// for inclusion in the MarketState object.
+// ============================================================================
+
+// ---------------------------------------------------------------------------
+// 7.1 Day Range vs ATR14
+// day_range_vs_atr14 = (day_high - day_low) / atr14
+// ---------------------------------------------------------------------------
+export f_calc_day_range_vs_atr(float day_high, float day_low, float atr14) =>
+    float day_range     = na(day_high) or na(day_low) ? 0.0 : day_high - day_low
+    float range_vs_atr  = (na(atr14) or atr14 == 0.0) ? 0.0 : day_range / atr14
+    range_vs_atr
+
+// ============================================================================
+// SECTION 8: MARKET STATE CONSTRUCTION FUNCTION
+// The primary export of M-03. Assembles all calculated values into the
+// complete immutable MarketState object.
+//
+// Parameters sourced from M-02 (persistent state):
+//   ov_open, ov_high, ov_low, ov_close — overnight session values
+//   day_open, day_high, day_low         — day session values
+//
+// All other values are computed fresh from market data on every bar.
+// ============================================================================
+
+export f_build_market_state(
+     float ov_open_val,
+     float ov_high_val,
+     float ov_low_val,
+     float ov_close_val,
+     float day_open_val,
+     float day_high_val,
+     float day_low_val) =>
+
+    // --- Temporal ---
+    int   h_et    = hour(time, "America/New_York")
+    int   m_et    = minute(time, "America/New_York")
+    int   dow     = f_get_day_of_week()
+
+    [session_name, is_rth, is_am, is_pm, is_overnight] = f_classify_session(h_et, m_et)
+
+    // --- Price ---
+    // (bar_open, bar_high, bar_low, bar_close, bar_volume are Pine built-ins)
+
+    // --- Trend ---
+    [ema9_val, ema21_val, ema50_val] = f_calc_emas()
+    [ema_struct, ema_bull_val, ema_bear_val] = f_classify_ema_structure(ema9_val, ema21_val, ema50_val)
+
+    // --- Volatility ---
+    [atr14_val, atr5_val]                       = f_calc_atrs()
+    adx14_val                                   = f_calc_adx()
+    [volcomp_val, is_comp_val, is_exp_val]       = f_calc_volcomp(atr5_val)
+    [vol_state, adx_trending_val]               = f_classify_volatility_state(adx14_val)
+
+    // --- Overnight ---
+    [ov_range_pts_val, ov_range_vs_atr_val, ov_dir_val] = f_calc_overnight_range(
+         ov_high_val, ov_low_val, ov_open_val, ov_close_val, atr14_val)
+
+    // --- Participation ---
+    rel_vol_val                                 = f_calc_rel_volume()
+    [rel_txn_val, surge_val]                    = f_calc_rel_txn()
+
+    // --- MVC States ---
+    mvc_003_val                                 = f_calc_mvc_003(rel_txn_val, ov_range_vs_atr_val, ov_dir_val)
+
+    // --- Day Statistics ---
+    day_range_vs_atr_val                        = f_calc_day_range_vs_atr(day_high_val, day_low_val, atr14_val)
+
+    // --- Construct and return the immutable MarketState object ---
+    MarketState.new(
+         // Temporal
+         ts_utc              = time,
+         session             = session_name,
+         is_rth              = is_rth,
+         is_am_session       = is_am,
+         is_pm_session       = is_pm,
+         is_overnight        = is_overnight,
+         hour_et             = h_et,
+         minute_et           = m_et,
+         day_of_week         = dow,
+         // Price
+         bar_close           = close,
+         bar_high            = high,
+         bar_low             = low,
+         bar_open            = open,
+         bar_volume          = volume,
+         // Trend
+         ema9                = ema9_val,
+         ema21               = ema21_val,
+         ema50               = ema50_val,
+         ema_structure       = ema_struct,
+         ema_bull            = ema_bull_val,
+         ema_bear            = ema_bear_val,
+         // Volatility
+         atr14               = atr14_val,
+         atr5                = atr5_val,
+         adx14               = adx14_val,
+         volcomp_ratio       = volcomp_val,
+         is_compressed       = is_comp_val,
+         is_expanding        = is_exp_val,
+         adx_trending        = adx_trending_val,
+         volatility_state    = vol_state,
+         // Overnight
+         ov_open             = ov_open_val,
+         ov_high             = ov_high_val,
+         ov_low              = ov_low_val,
+         ov_close            = ov_close_val,
+         ov_range_pts        = ov_range_pts_val,
+         ov_range_vs_atr14   = ov_range_vs_atr_val,
+         ov_direction        = ov_dir_val,
+         // Participation
+         rel_vol_20          = rel_vol_val,
+         rel_txn             = rel_txn_val,
+         participation_surge = surge_val,
+         // MVC States
+         mvc_003_active      = mvc_003_val,
+         // Day Statistics
+         day_open            = day_open_val,
+         day_high            = day_high_val,
+         day_low             = day_low_val,
+         day_range_vs_atr14  = day_range_vs_atr_val)
+
+// ============================================================================
+// SECTION 9: ENGINEERING MODE DEBUG TABLE
+// Displays all 40 MarketState fields in real time on the chart.
+// Only active when debug_mode is enabled (passed as parameter).
+// This function is called by M-14 atlas_core in engineering mode.
+// ============================================================================
+
+export f_render_debug_table(MarketState mso, bool debug_mode) =>
+    if debug_mode and barstate.islast
+        // Create a 3-column, 42-row table (header + 40 fields + spacer)
+        var table mse_table = table.new(
+             position.top_left, 3, 43,
+             bgcolor      = color.new(color.navy, 75),
+             border_color = color.new(color.blue, 40),
+             border_width = 1,
+             frame_color  = color.new(color.blue, 20),
+             frame_width  = 2)
+
+        // Header row
+        table.cell(mse_table, 0, 0, "M-03: Market State Engine",
+             text_color=color.yellow, text_size=size.small,
+             bgcolor=color.new(color.navy, 50))
+        table.cell(mse_table, 1, 0, "Value",
+             text_color=color.yellow, text_size=size.small,
+             bgcolor=color.new(color.navy, 50))
+        table.cell(mse_table, 2, 0, "Status",
+             text_color=color.yellow, text_size=size.small,
+             bgcolor=color.new(color.navy, 50))
+
+        // Helper: status color
+        f_ok_color(bool cond) =>
+            cond ? color.new(color.green, 30) : color.new(color.gray, 50)
+
+        // Row helper function
+        f_row(table t, int row, string label, string val, color status_color) =>
+            table.cell(t, 0, row, label,
+                 text_color=color.new(color.white, 10), text_size=size.tiny)
+            table.cell(t, 1, row, val,
+                 text_color=color.aqua, text_size=size.tiny)
+            table.cell(t, 2, row, "",
+                 bgcolor=status_color, text_size=size.tiny)
+
+        // --- TEMPORAL ---
+        table.cell(mse_table, 0, 1, "── TEMPORAL ──",
+             text_color=color.new(color.yellow, 20), text_size=size.tiny)
+        table.cell(mse_table, 1, 1, "", text_size=size.tiny)
+        table.cell(mse_table, 2, 1, "", text_size=size.tiny)
+
+        f_row(mse_table, 2,  "Session",
+             mso.session,
+             mso.is_rth ? color.new(color.green, 40) : color.new(color.orange, 40))
+        f_row(mse_table, 3,  "Hour ET",
+             str.format("{0,number,00}:{1,number,00}", mso.hour_et, mso.minute_et),
+             color.new(color.gray, 50))
+        f_row(mse_table, 4,  "Day of Week",
+             mso.day_of_week == 1 ? "MON" : mso.day_of_week == 2 ? "TUE" :
+             mso.day_of_week == 3 ? "WED" : mso.day_of_week == 4 ? "THU" :
+             mso.day_of_week == 5 ? "FRI" : "WKD",
+             color.new(color.gray, 50))
+        f_row(mse_table, 5,  "Is RTH",
+             mso.is_rth ? "YES" : "NO",
+             f_ok_color(mso.is_rth))
+        f_row(mse_table, 6,  "Is AM Session",
+             mso.is_am_session ? "YES" : "NO",
+             f_ok_color(mso.is_am_session))
+        f_row(mse_table, 7,  "Is PM Session",
+             mso.is_pm_session ? "YES" : "NO",
+             f_ok_color(mso.is_pm_session))
+        f_row(mse_table, 8,  "Is Overnight",
+             mso.is_overnight ? "YES" : "NO",
+             f_ok_color(mso.is_overnight))
+
+        // --- TREND ---
+        table.cell(mse_table, 0, 9, "── TREND ──",
+             text_color=color.new(color.yellow, 20), text_size=size.tiny)
+        table.cell(mse_table, 1, 9, "", text_size=size.tiny)
+        table.cell(mse_table, 2, 9, "", text_size=size.tiny)
+
+        f_row(mse_table, 10, "EMA9",
+             str.tostring(mso.ema9, "#.00"),
+             color.new(color.gray, 50))
+        f_row(mse_table, 11, "EMA21",
+             str.tostring(mso.ema21, "#.00"),
+             color.new(color.gray, 50))
+        f_row(mse_table, 12, "EMA50",
+             str.tostring(mso.ema50, "#.00"),
+             color.new(color.gray, 50))
+        f_row(mse_table, 13, "EMA Structure",
+             mso.ema_structure,
+             mso.ema_bull ? color.new(color.green, 30) :
+             mso.ema_bear ? color.new(color.red, 30) :
+             color.new(color.orange, 40))
+
+        // --- VOLATILITY ---
+        table.cell(mse_table, 0, 14, "── VOLATILITY ──",
+             text_color=color.new(color.yellow, 20), text_size=size.tiny)
+        table.cell(mse_table, 1, 14, "", text_size=size.tiny)
+        table.cell(mse_table, 2, 14, "", text_size=size.tiny)
+
+        f_row(mse_table, 15, "ATR14",
+             str.tostring(mso.atr14, "#.00"),
+             color.new(color.gray, 50))
+        f_row(mse_table, 16, "ATR5",
+             str.tostring(mso.atr5, "#.00"),
+             color.new(color.gray, 50))
+        f_row(mse_table, 17, "ADX14",
+             str.tostring(mso.adx14, "#.0"),
+             mso.adx_trending ? color.new(color.green, 30) : color.new(color.orange, 40))
+        f_row(mse_table, 18, "VolComp Ratio",
+             str.tostring(mso.volcomp_ratio, "#.000"),
+             mso.is_compressed ? color.new(color.blue, 30) :
+             mso.is_expanding  ? color.new(color.purple, 30) :
+             color.new(color.gray, 50))
+        f_row(mse_table, 19, "Compressed",
+             mso.is_compressed ? "YES" : "NO",
+             f_ok_color(mso.is_compressed))
+        f_row(mse_table, 20, "Expanding",
+             mso.is_expanding ? "YES" : "NO",
+             f_ok_color(mso.is_expanding))
+        f_row(mse_table, 21, "Volatility State",
+             mso.volatility_state,
+             mso.adx_trending ? color.new(color.green, 30) : color.new(color.orange, 40))
+
+        // --- OVERNIGHT ---
+        table.cell(mse_table, 0, 22, "── OVERNIGHT ──",
+             text_color=color.new(color.yellow, 20), text_size=size.tiny)
+        table.cell(mse_table, 1, 22, "", text_size=size.tiny)
+        table.cell(mse_table, 2, 22, "", text_size=size.tiny)
+
+        f_row(mse_table, 23, "OV Open",
+             na(mso.ov_open) ? "N/A" : str.tostring(mso.ov_open, "#.00"),
+             color.new(color.gray, 50))
+        f_row(mse_table, 24, "OV High",
+             na(mso.ov_high) ? "N/A" : str.tostring(mso.ov_high, "#.00"),
+             color.new(color.gray, 50))
+        f_row(mse_table, 25, "OV Low",
+             na(mso.ov_low) ? "N/A" : str.tostring(mso.ov_low, "#.00"),
+             color.new(color.gray, 50))
+        f_row(mse_table, 26, "OV Close",
+             na(mso.ov_close) ? "N/A" : str.tostring(mso.ov_close, "#.00"),
+             color.new(color.gray, 50))
+        f_row(mse_table, 27, "OV Range (pts)",
+             str.tostring(mso.ov_range_pts, "#.0"),
+             color.new(color.gray, 50))
+        f_row(mse_table, 28, "OV Range / ATR14",
+             str.tostring(mso.ov_range_vs_atr14, "#.00"),
+             mso.ov_range_vs_atr14 >= 10.85 ? color.new(color.green, 30) : color.new(color.gray, 50))
+        f_row(mse_table, 29, "OV Direction",
+             mso.ov_direction == 1 ? "BULL" : mso.ov_direction == -1 ? "BEAR" : "NEUTRAL",
+             mso.ov_direction == 1 ? color.new(color.green, 30) :
+             mso.ov_direction == -1 ? color.new(color.red, 30) :
+             color.new(color.gray, 50))
+
+        // --- PARTICIPATION ---
+        table.cell(mse_table, 0, 30, "── PARTICIPATION ──",
+             text_color=color.new(color.yellow, 20), text_size=size.tiny)
+        table.cell(mse_table, 1, 30, "", text_size=size.tiny)
+        table.cell(mse_table, 2, 30, "", text_size=size.tiny)
+
+        f_row(mse_table, 31, "Rel Volume (20)",
+             str.tostring(mso.rel_vol_20, "#.00") + "x",
+             mso.rel_vol_20 >= 1.5 ? color.new(color.green, 30) : color.new(color.gray, 50))
+        f_row(mse_table, 32, "Rel Txn Activity",
+             str.tostring(mso.rel_txn, "#.00") + "x",
+             mso.participation_surge ? color.new(color.green, 30) : color.new(color.gray, 50))
+        f_row(mse_table, 33, "Participation Surge",
+             mso.participation_surge ? "ACTIVE" : "inactive",
+             f_ok_color(mso.participation_surge))
+
+        // --- MVC STATES ---
+        table.cell(mse_table, 0, 34, "── MVC STATES ──",
+             text_color=color.new(color.yellow, 20), text_size=size.tiny)
+        table.cell(mse_table, 1, 34, "", text_size=size.tiny)
+        table.cell(mse_table, 2, 34, "", text_size=size.tiny)
+
+        f_row(mse_table, 35, "MVC-003 (Apex)",
+             mso.mvc_003_active ? "ACTIVE ★" : "inactive",
+             mso.mvc_003_active ? color.new(color.yellow, 10) : color.new(color.gray, 50))
+
+        // --- DAY STATISTICS ---
+        table.cell(mse_table, 0, 36, "── DAY STATS ──",
+             text_color=color.new(color.yellow, 20), text_size=size.tiny)
+        table.cell(mse_table, 1, 36, "", text_size=size.tiny)
+        table.cell(mse_table, 2, 36, "", text_size=size.tiny)
+
+        f_row(mse_table, 37, "Day Open",
+             na(mso.day_open) ? "N/A" : str.tostring(mso.day_open, "#.00"),
+             color.new(color.gray, 50))
+        f_row(mse_table, 38, "Day High",
+             na(mso.day_high) ? "N/A" : str.tostring(mso.day_high, "#.00"),
+             color.new(color.gray, 50))
+        f_row(mse_table, 39, "Day Low",
+             na(mso.day_low) ? "N/A" : str.tostring(mso.day_low, "#.00"),
+             color.new(color.gray, 50))
+        f_row(mse_table, 40, "Day Range / ATR14",
+             str.tostring(mso.day_range_vs_atr14, "#.00"),
+             mso.day_range_vs_atr14 >= 1.0 ? color.new(color.green, 30) : color.new(color.gray, 50))
+
+        // --- PRICE ---
+        table.cell(mse_table, 0, 41, "── PRICE ──",
+             text_color=color.new(color.yellow, 20), text_size=size.tiny)
+        table.cell(mse_table, 1, 41, "", text_size=size.tiny)
+        table.cell(mse_table, 2, 41, "", text_size=size.tiny)
+
+        f_row(mse_table, 42, "Close",
+             str.tostring(mso.bar_close, "#.00"),
+             color.new(color.gray, 50))
+
+// ============================================================================
+// SECTION 10: STANDALONE VERIFICATION INDICATOR
+// When this library is loaded as a standalone indicator (not via atlas_core),
+// it runs a self-contained verification that displays all MSE outputs.
+// This is used for TradingView compilation verification and field validation.
+//
+// In production, M-14 atlas_core calls f_build_market_state() with the
+// overnight and day values from M-02. For standalone verification, we use
+// a simplified persistent state to demonstrate all fields.
+// ============================================================================
+
+// Simplified persistent state for standalone verification only
+// In production, these are managed by M-02 atlas_state_manager
+var float v_verify_ov_open  = na
+var float v_verify_ov_high  = na
+var float v_verify_ov_low   = na
+var float v_verify_ov_close = na
+var float v_verify_day_open = na
+var float v_verify_day_high = na
+var float v_verify_day_low  = na
+
+// Session detection for standalone verification
+int  _h_et    = hour(time, "America/New_York")
+int  _m_et    = minute(time, "America/New_York")
+int  _mins_et = _h_et * 60 + _m_et
+bool _is_overnight_bar = _h_et >= 18 or _h_et < 9 or (_h_et == 9 and _m_et < 30)
+bool _is_rth_bar       = (_h_et == 9 and _m_et >= 30) or (_h_et >= 10 and _h_et <= 15) or (_h_et == 16 and _m_et == 0)
+bool _is_ov_open_bar   = _h_et == 18 and _m_et == 0
+bool _is_rth_open_bar  = _h_et == 9 and _m_et == 30
+
+// Overnight session tracking
+if _is_ov_open_bar
+    v_verify_ov_open  := close
+    v_verify_ov_high  := high
+    v_verify_ov_low   := low
+    v_verify_ov_close := close
+
+if _is_overnight_bar and not _is_ov_open_bar
+    if not na(v_verify_ov_high)
+        v_verify_ov_high  := math.max(v_verify_ov_high, high)
+        v_verify_ov_low   := math.min(v_verify_ov_low, low)
+        v_verify_ov_close := close
+
+// Finalise overnight close at RTH open
+if _is_rth_open_bar
+    v_verify_ov_close := open
+
+// Day session tracking
+if _is_rth_open_bar
+    v_verify_day_open := open
+    v_verify_day_high := high
+    v_verify_day_low  := low
+
+if _is_rth_bar and not _is_rth_open_bar
+    if not na(v_verify_day_high)
+        v_verify_day_high := math.max(v_verify_day_high, high)
+        v_verify_day_low  := math.min(v_verify_day_low, low)
+
+// Build the MarketState object on every bar
+MarketState mso_verify = f_build_market_state(
+     v_verify_ov_open,
+     v_verify_ov_high,
+     v_verify_ov_low,
+     v_verify_ov_close,
+     v_verify_day_open,
+     v_verify_day_high,
+     v_verify_day_low)
+
+// Render the debug table (always active in standalone verification mode)
+f_render_debug_table(mso_verify, true)
+
+// Plot key indicators for visual verification against TradingView's built-in indicators
+// Engineers should compare these plots against TradingView's EMA and ATR indicators
+plot(mso_verify.ema9,   title="MSE EMA9",   color=color.new(color.yellow, 0), linewidth=1)
+plot(mso_verify.ema21,  title="MSE EMA21",  color=color.new(color.orange, 0), linewidth=1)
+plot(mso_verify.ema50,  title="MSE EMA50",  color=color.new(color.red, 0),    linewidth=1)
+plot(mso_verify.atr14,  title="MSE ATR14",  color=color.new(color.blue, 0),   linewidth=1, display=display.pane)
+plot(mso_verify.adx14,  title="MSE ADX14",  color=color.new(color.purple, 0), linewidth=1, display=display.pane)
+plot(mso_verify.rel_txn, title="MSE RelTxn", color=color.new(color.aqua, 0),  linewidth=1, display=display.pane)
+
+// MVC-003 background highlight — visual confirmation of activation
+bgcolor(mso_verify.mvc_003_active ? color.new(color.yellow, 85) : na, title="MVC-003 Active")
+
+// Session background colours for visual session verification
+bgcolor(mso_verify.is_am_session and not mso_verify.mvc_003_active ? color.new(color.green, 95) : na,
+     title="AM Session")
+bgcolor(mso_verify.is_pm_session ? color.new(color.blue, 95) : na, title="PM Session")
