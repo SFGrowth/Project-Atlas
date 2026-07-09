@@ -14,6 +14,22 @@ Every entry in this Knowledge Base represents a specific instance of converting 
 
 ---
 
+## 2026-07-08 | Sprint 046: RMCE Validation Programme — REJECTED
+
+**Research Stream:** E — AI Discovery Methodology  
+**Research Question:** Do the structural precursors discovered by the RMCE (ATR Acceleration, Relative Volume) constitute tradeable execution edges when subjected to real-world constraints?  
+**Methodology:** Full Atlas scientific workflow applied independently to three RMCE hypotheses. Walk-forward and Monte Carlo validation.  
+**Results:**
+- **H-RMCE-02 (ATR Acceleration Filter):** REJECTED. Decreased Model A1 PF (-0.7%), destroyed Model A2 expectancy, and collapsed Model A3 trade count below significance. It is a lagging indicator that triggers after the optimal entry point.
+- **H-RMCE-03 (Relative Volume Confirmation):** REJECTED. Marginal improvement on breakouts (+0.8%), but destroyed expectancy on flags and compression breakouts (100% loss rates). RelVol is descriptive, not predictive.
+- **H-RMCE-01 (AM Volatility Breakout):** REJECTED. Statistically significant but economically unviable (PF 1.040). The AM session contains exceptional moves but is dominated by false-breakout noise.
+- **H-RMCE-001 (Methodology Comparison):** RMCE generated 0 validated hypotheses from 3 attempts. Traditional structural theory has generated 6 validated hypotheses from 16 attempts.
+**Decision:** **RMCE hypotheses REJECTED. Traditional structural theory remains the primary discovery methodology.** RMCE is relegated to a diagnostic tool.  
+**Critical Discovery:** Data-mining historical events (RMCE) produces hypotheses with extreme survivorship bias. It identifies traits common to successful moves but fails to account for the false-positive rate of those same traits. A statistical precursor is not an execution edge.  
+**Future Research:** Sprint 047 — ARI v3.0 (Prop Firm Engineering). Return to the critical path of implementing the Sprint 044 execution policy (Priority Queue + Milestone Compounding) to pass prop firm evaluations.
+
+---
+
 ## 2026-07-08 | Sprint 045: Reverse Market Causality Engine (RMCE) — DISCOVERY COMPLETE
 
 **Research Stream:** E — AI Discovery Methodology  
