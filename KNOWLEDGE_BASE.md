@@ -14,6 +14,25 @@ Every entry in this Knowledge Base represents a specific instance of converting 
 
 ---
 
+## 2026-07-09 | Sprint 050: H-B-RT01 ADX Extreme Sub-Regime Analysis — MONITOR
+
+**Research Stream:** B — Behavioural Hypothesis Testing  
+**Research Question:** Do extreme ADX regimes (ADX > 60) materially improve the expectancy of Model A2 and Model A3?  
+**Hypothesis (H-B-RT01):** ADX > 60 represents a genuinely higher-confidence regime that justifies a dynamic risk multiplier in ARI.  
+**Source:** First hypothesis generated entirely by the Atlas Observatory (Sprint 049).  
+**Experimental Design:** ADX regime segmentation across three bands (< 45, 45–60, > 60) for Models A2 and A3. Full metrics: PF, WR, Expectancy, Net P&L, Max DD, MC Pass Rate, Year-by-Year Stability. $800 risk per trade.  
+**Results:**
+- **Model A2 (ADX 45–60):** N=182, PF=1.269, WR=52.2%, Net=+$11,514
+- **Model A2 (ADX > 60):** N=46, PF=1.943, WR=54.3%, Net=+$7,054
+- **Year-by-Year (ADX > 60):** 2024 PF=4.15 → 2025 PF=1.20 → 2026 PF=0.49 (rapid deterioration)
+- **Model A3:** 0 trades generated (implementation artefact)
+**Decision:** **H-B-RT01 MONITOR.** The ADX > 60 sub-regime shows aggregate improvement (+53% PF) but fails the year-by-year stability test. The edge deteriorated from PF=4.15 in 2024 to PF=0.49 in 2026 H1. No ARI changes implemented. Observatory will continue monitoring; hypothesis re-evaluated if edge stabilises.  
+**Critical Discovery:** Observatory-generated hypotheses are subject to the same validation standards as all other Atlas hypotheses. The Observatory correctly identified a statistical pattern; the validation pipeline correctly identified that the pattern is not sufficiently stable for production use.  
+**Deliverables:** Sprint results document (`research/atlas-sprint-050-h-b-rt01-validation.md`), ADX regime charts.  
+**Next Sprint:** Sprint 051 — Model B1 Discovery (AM Session Edge).
+
+---
+
 ## 2026-07-09 | Sprint 049: Atlas Observatory — COMPLETE ✅
 
 **Research Stream:** E — AI Discovery Engine / Continuous Learning Infrastructure  
