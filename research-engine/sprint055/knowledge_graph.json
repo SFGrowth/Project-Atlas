@@ -1,0 +1,1406 @@
+{
+  "nodes": [
+    {
+      "id": "MP-001",
+      "label": "Regime\nDependence",
+      "layer": 1,
+      "type": "principle_l3",
+      "pcs": 86.2,
+      "pas": 22.7,
+      "sprint_origin": 19,
+      "desc": "Edge only exists in compatible volatility regimes",
+      "pki": 58.16622574955909,
+      "pki_details": {
+        "pki": 58.16622574955909,
+        "direct_deps": 6,
+        "total_reach": 18,
+        "layer_weighted_reach": 7.900000000000001,
+        "type_weighted_reach": 15.2,
+        "betweenness": 0.19995590828924156,
+        "citations": 8,
+        "cascade_depth": 7,
+        "cascade_breadth": 7,
+        "affected_layers": [
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8
+        ]
+      }
+    },
+    {
+      "id": "MP-003",
+      "label": "Session\nAsymmetry",
+      "layer": 1,
+      "type": "principle_l3",
+      "pcs": 85.0,
+      "pas": 50.4,
+      "sprint_origin": 26,
+      "desc": "Different sessions have structurally different edge profiles",
+      "pki": 54.77989417989417,
+      "pki_details": {
+        "pki": 54.77989417989417,
+        "direct_deps": 1,
+        "total_reach": 21,
+        "layer_weighted_reach": 10.099999999999998,
+        "type_weighted_reach": 19.2,
+        "betweenness": 0.0013227513227513227,
+        "citations": 5,
+        "cascade_depth": 7,
+        "cascade_breadth": 8,
+        "affected_layers": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8
+        ]
+      }
+    },
+    {
+      "id": "MP-004",
+      "label": "VolComp\u2192\nExpansion",
+      "layer": 1,
+      "type": "principle_l3",
+      "pcs": 83.8,
+      "pas": 36.9,
+      "sprint_origin": 33,
+      "desc": "Volatility contraction precedes and enables expansion breakouts",
+      "pki": 58.54973544973545,
+      "pki_details": {
+        "pki": 58.54973544973545,
+        "direct_deps": 3,
+        "total_reach": 21,
+        "layer_weighted_reach": 10.1,
+        "type_weighted_reach": 19.2,
+        "betweenness": 0.0033068783068783067,
+        "citations": 6,
+        "cascade_depth": 7,
+        "cascade_breadth": 8,
+        "affected_layers": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8
+        ]
+      }
+    },
+    {
+      "id": "MP-008",
+      "label": "Theory\nof Edge",
+      "layer": 1,
+      "type": "principle_l3",
+      "pcs": 82.9,
+      "pas": 66.4,
+      "sprint_origin": 27,
+      "desc": "Edge requires structural + regime + temporal alignment",
+      "pki": 81.41666666666667,
+      "pki_details": {
+        "pki": 81.41666666666667,
+        "direct_deps": 6,
+        "total_reach": 28,
+        "layer_weighted_reach": 15.799999999999995,
+        "type_weighted_reach": 27.9,
+        "betweenness": 0.0,
+        "citations": 5,
+        "cascade_depth": 7,
+        "cascade_breadth": 8,
+        "affected_layers": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8
+        ]
+      }
+    },
+    {
+      "id": "MP-002",
+      "label": "ADX\nThresholds",
+      "layer": 2,
+      "type": "principle_l3",
+      "pcs": 82.9,
+      "pas": 52.4,
+      "sprint_origin": 25,
+      "desc": "ADX operates as absolute threshold classifier, not continuous",
+      "pki": 49.59144620811287,
+      "pki_details": {
+        "pki": 49.59144620811287,
+        "direct_deps": 2,
+        "total_reach": 18,
+        "layer_weighted_reach": 8.0,
+        "type_weighted_reach": 15.2,
+        "betweenness": 0.07914462081128748,
+        "citations": 6,
+        "cascade_depth": 6,
+        "cascade_breadth": 8,
+        "affected_layers": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8
+        ]
+      }
+    },
+    {
+      "id": "MP-005",
+      "label": "Loss Streaks\n= Regime",
+      "layer": 2,
+      "type": "principle_l2",
+      "pcs": 73.8,
+      "pas": 58.9,
+      "sprint_origin": 40,
+      "desc": "Consecutive losses are footprint of regime transitions",
+      "pki": 45.52883597883598,
+      "pki_details": {
+        "pki": 45.52883597883598,
+        "direct_deps": 1,
+        "total_reach": 18,
+        "layer_weighted_reach": 8.0,
+        "type_weighted_reach": 15.7,
+        "betweenness": 0.01455026455026455,
+        "citations": 4,
+        "cascade_depth": 6,
+        "cascade_breadth": 8,
+        "affected_layers": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8
+        ]
+      }
+    },
+    {
+      "id": "MP-006",
+      "label": "Structural\nAnchoring",
+      "layer": 2,
+      "type": "principle_l2",
+      "pcs": 61.7,
+      "pas": 38.6,
+      "sprint_origin": 25,
+      "desc": "Entries anchored to structural levels outperform random entries",
+      "pki": 52.279894179894185,
+      "pki_details": {
+        "pki": 52.279894179894185,
+        "direct_deps": 1,
+        "total_reach": 21,
+        "layer_weighted_reach": 10.1,
+        "type_weighted_reach": 19.2,
+        "betweenness": 0.0013227513227513227,
+        "citations": 3,
+        "cascade_depth": 6,
+        "cascade_breadth": 8,
+        "affected_layers": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8
+        ]
+      }
+    },
+    {
+      "id": "MP-009",
+      "label": "A3 Temporal\nRestriction",
+      "layer": 2,
+      "type": "principle_l1",
+      "pcs": 67.5,
+      "pas": null,
+      "sprint_origin": 51,
+      "desc": "A3 model incompatible with European session (00:00-08:00)",
+      "pki": 2.5,
+      "pki_details": {
+        "pki": 2.5,
+        "direct_deps": 0,
+        "total_reach": 0,
+        "layer_weighted_reach": 0,
+        "type_weighted_reach": 0,
+        "betweenness": 0.0,
+        "citations": 2,
+        "cascade_depth": 0,
+        "cascade_breadth": 0,
+        "affected_layers": []
+      }
+    },
+    {
+      "id": "EC-EMA",
+      "label": "EMA Stack\n(9/21/50)",
+      "layer": 3,
+      "type": "component",
+      "pcs": null,
+      "pas": null,
+      "sprint_origin": 19,
+      "desc": "Trend direction and alignment classifier",
+      "pki": 48.61613756613756,
+      "pki_details": {
+        "pki": 48.61613756613756,
+        "direct_deps": 3,
+        "total_reach": 20,
+        "layer_weighted_reach": 9.399999999999999,
+        "type_weighted_reach": 18.4,
+        "betweenness": 0.006613756613756613,
+        "citations": 0,
+        "cascade_depth": 5,
+        "cascade_breadth": 8,
+        "affected_layers": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8
+        ]
+      }
+    },
+    {
+      "id": "EC-ATR",
+      "label": "ATR Engine\n(5/14)",
+      "layer": 3,
+      "type": "component",
+      "pcs": null,
+      "pas": null,
+      "sprint_origin": 19,
+      "desc": "Volatility measurement for stops, sizing, regime detection",
+      "pki": 48.62275132275132,
+      "pki_details": {
+        "pki": 48.62275132275132,
+        "direct_deps": 3,
+        "total_reach": 20,
+        "layer_weighted_reach": 9.399999999999999,
+        "type_weighted_reach": 18.4,
+        "betweenness": 0.007275132275132275,
+        "citations": 0,
+        "cascade_depth": 5,
+        "cascade_breadth": 8,
+        "affected_layers": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8
+        ]
+      }
+    },
+    {
+      "id": "EC-ADX",
+      "label": "ADX Engine\n(14)",
+      "layer": 3,
+      "type": "component",
+      "pcs": null,
+      "pas": null,
+      "sprint_origin": 25,
+      "desc": "Trend strength absolute threshold classifier",
+      "pki": 42.92001763668431,
+      "pki_details": {
+        "pki": 42.92001763668431,
+        "direct_deps": 2,
+        "total_reach": 18,
+        "layer_weighted_reach": 8.2,
+        "type_weighted_reach": 16.4,
+        "betweenness": 0.05533509700176368,
+        "citations": 0,
+        "cascade_depth": 5,
+        "cascade_breadth": 8,
+        "affected_layers": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8
+        ]
+      }
+    },
+    {
+      "id": "EC-VOLC",
+      "label": "VolComp\nFilter",
+      "layer": 3,
+      "type": "component",
+      "pcs": null,
+      "pas": null,
+      "sprint_origin": 19,
+      "desc": "ATR5/ATR14 ratio compression prerequisite",
+      "pki": 41.244532627865965,
+      "pki_details": {
+        "pki": 41.244532627865965,
+        "direct_deps": 1,
+        "total_reach": 18,
+        "layer_weighted_reach": 8.2,
+        "type_weighted_reach": 16.4,
+        "betweenness": 0.012786596119929453,
+        "citations": 0,
+        "cascade_depth": 5,
+        "cascade_breadth": 8,
+        "affected_layers": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8
+        ]
+      }
+    },
+    {
+      "id": "EC-SESS",
+      "label": "Session\nFilter",
+      "layer": 3,
+      "type": "component",
+      "pcs": null,
+      "pas": null,
+      "sprint_origin": 26,
+      "desc": "RTH/PM/Overnight session boundary enforcement",
+      "pki": 48.81455026455026,
+      "pki_details": {
+        "pki": 48.81455026455026,
+        "direct_deps": 3,
+        "total_reach": 20,
+        "layer_weighted_reach": 9.399999999999999,
+        "type_weighted_reach": 18.4,
+        "betweenness": 0.026455026455026454,
+        "citations": 0,
+        "cascade_depth": 5,
+        "cascade_breadth": 8,
+        "affected_layers": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8
+        ]
+      }
+    },
+    {
+      "id": "EC-STRUC",
+      "label": "Swing\nStructure",
+      "layer": 3,
+      "type": "component",
+      "pcs": null,
+      "pas": null,
+      "sprint_origin": 25,
+      "desc": "Pullback depth, flag structure, zone anchoring",
+      "pki": 47.56455026455026,
+      "pki_details": {
+        "pki": 47.56455026455026,
+        "direct_deps": 2,
+        "total_reach": 20,
+        "layer_weighted_reach": 9.399999999999999,
+        "type_weighted_reach": 18.4,
+        "betweenness": 0.026455026455026454,
+        "citations": 0,
+        "cascade_depth": 5,
+        "cascade_breadth": 8,
+        "affected_layers": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8
+        ]
+      }
+    },
+    {
+      "id": "EC-BCS",
+      "label": "BCS Scorer",
+      "layer": 3,
+      "type": "component",
+      "pcs": null,
+      "pas": null,
+      "sprint_origin": 38,
+      "desc": "Behaviour Confidence Score for model priority ranking",
+      "pki": 43.642857142857146,
+      "pki_details": {
+        "pki": 43.642857142857146,
+        "direct_deps": 1,
+        "total_reach": 19,
+        "layer_weighted_reach": 8.899999999999999,
+        "type_weighted_reach": 17.2,
+        "betweenness": 0.005952380952380952,
+        "citations": 0,
+        "cascade_depth": 5,
+        "cascade_breadth": 8,
+        "affected_layers": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8
+        ]
+      }
+    },
+    {
+      "id": "MODEL-A1",
+      "label": "Model A1\n(Pullback)",
+      "layer": 4,
+      "type": "model",
+      "pcs": null,
+      "pas": null,
+      "sprint_origin": 25,
+      "desc": "EMA pullback, all RTH, 1:2 RR, 1-contract",
+      "pki": 47.89329805996473,
+      "pki_details": {
+        "pki": 47.89329805996473,
+        "direct_deps": 4,
+        "total_reach": 19,
+        "layer_weighted_reach": 8.899999999999999,
+        "type_weighted_reach": 17.2,
+        "betweenness": 0.05599647266313933,
+        "citations": 0,
+        "cascade_depth": 4,
+        "cascade_breadth": 8,
+        "affected_layers": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8
+        ]
+      }
+    },
+    {
+      "id": "MODEL-A2",
+      "label": "Model A2\n(Flag Cont.)",
+      "layer": 4,
+      "type": "model",
+      "pcs": null,
+      "pas": null,
+      "sprint_origin": 42,
+      "desc": "Flag continuation, ADX>45, late RTH, $800 risk",
+      "pki": 45.61622574955908,
+      "pki_details": {
+        "pki": 45.61622574955908,
+        "direct_deps": 4,
+        "total_reach": 18,
+        "layer_weighted_reach": 8.4,
+        "type_weighted_reach": 16.0,
+        "betweenness": 0.0749559082892416,
+        "citations": 0,
+        "cascade_depth": 4,
+        "cascade_breadth": 8,
+        "affected_layers": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8
+        ]
+      }
+    },
+    {
+      "id": "MODEL-A3",
+      "label": "Model A3\n(Overnight)",
+      "layer": 4,
+      "type": "model",
+      "pcs": null,
+      "pas": null,
+      "sprint_origin": 37,
+      "desc": "Overnight expansion, ADX>=25, VolComp, $800 risk",
+      "pki": 45.647089947089945,
+      "pki_details": {
+        "pki": 45.647089947089945,
+        "direct_deps": 4,
+        "total_reach": 18,
+        "layer_weighted_reach": 8.4,
+        "type_weighted_reach": 16.0,
+        "betweenness": 0.07804232804232805,
+        "citations": 0,
+        "cascade_depth": 4,
+        "cascade_breadth": 8,
+        "affected_layers": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8
+        ]
+      }
+    },
+    {
+      "id": "ARI-A",
+      "label": "ARI Rule A\n(Circuit Bkr)",
+      "layer": 5,
+      "type": "ari_rule",
+      "pcs": null,
+      "pas": null,
+      "sprint_origin": 39,
+      "desc": "Daily loss \u2264 -$300 \u2192 Risk = 0.0x (halt)",
+      "pki": 43.579629629629636,
+      "pki_details": {
+        "pki": 43.579629629629636,
+        "direct_deps": 2,
+        "total_reach": 18,
+        "layer_weighted_reach": 8.5,
+        "type_weighted_reach": 16.3,
+        "betweenness": 0.08796296296296297,
+        "citations": 0,
+        "cascade_depth": 3,
+        "cascade_breadth": 8,
+        "affected_layers": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8
+        ]
+      }
+    },
+    {
+      "id": "ARI-C",
+      "label": "ARI Rule C\n(Streak Risk)",
+      "layer": 5,
+      "type": "ari_rule",
+      "pcs": null,
+      "pas": null,
+      "sprint_origin": 40,
+      "desc": "Consecutive losses \u2265 3 \u2192 Risk = 0.5x",
+      "pki": 43.65238095238096,
+      "pki_details": {
+        "pki": 43.65238095238096,
+        "direct_deps": 2,
+        "total_reach": 18,
+        "layer_weighted_reach": 8.5,
+        "type_weighted_reach": 16.3,
+        "betweenness": 0.09523809523809523,
+        "citations": 0,
+        "cascade_depth": 3,
+        "cascade_breadth": 8,
+        "affected_layers": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8
+        ]
+      }
+    },
+    {
+      "id": "ARI-D",
+      "label": "ARI Rule D\n(ADX Boost)",
+      "layer": 5,
+      "type": "ari_rule",
+      "pcs": null,
+      "pas": null,
+      "sprint_origin": 40,
+      "desc": "ADX \u2265 32 \u2192 Risk = 1.25x (regime confidence boost)",
+      "pki": 43.77142857142858,
+      "pki_details": {
+        "pki": 43.77142857142858,
+        "direct_deps": 2,
+        "total_reach": 18,
+        "layer_weighted_reach": 8.5,
+        "type_weighted_reach": 16.3,
+        "betweenness": 0.10714285714285714,
+        "citations": 0,
+        "cascade_depth": 3,
+        "cascade_breadth": 8,
+        "affected_layers": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8
+        ]
+      }
+    },
+    {
+      "id": "ARI-PQ",
+      "label": "Priority\nQueue",
+      "layer": 5,
+      "type": "ari_rule",
+      "pcs": null,
+      "pas": null,
+      "sprint_origin": 44,
+      "desc": "A3 > A2 > A1 conflict resolution by BCS rank",
+      "pki": 42.98439153439154,
+      "pki_details": {
+        "pki": 42.98439153439154,
+        "direct_deps": 2,
+        "total_reach": 18,
+        "layer_weighted_reach": 8.5,
+        "type_weighted_reach": 16.3,
+        "betweenness": 0.028439153439153438,
+        "citations": 0,
+        "cascade_depth": 3,
+        "cascade_breadth": 8,
+        "affected_layers": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8
+        ]
+      }
+    },
+    {
+      "id": "PORT-MC",
+      "label": "Milestone\nCompounding",
+      "layer": 6,
+      "type": "portfolio",
+      "pcs": null,
+      "pas": null,
+      "sprint_origin": 47,
+      "desc": "+$400 risk per $500 profit, max $2000 risk",
+      "pki": 41.71666666666667,
+      "pki_details": {
+        "pki": 41.71666666666667,
+        "direct_deps": 1,
+        "total_reach": 18,
+        "layer_weighted_reach": 8.6,
+        "type_weighted_reach": 16.5,
+        "betweenness": 0.0,
+        "citations": 0,
+        "cascade_depth": 2,
+        "cascade_breadth": 8,
+        "affected_layers": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8
+        ]
+      }
+    },
+    {
+      "id": "PORT-DLM",
+      "label": "Daily Loss\nMgmt (DLM)",
+      "layer": 6,
+      "type": "portfolio",
+      "pcs": null,
+      "pas": null,
+      "sprint_origin": 47,
+      "desc": "$800 daily limit, $500 recovery limit",
+      "pki": 41.71666666666667,
+      "pki_details": {
+        "pki": 41.71666666666667,
+        "direct_deps": 1,
+        "total_reach": 18,
+        "layer_weighted_reach": 8.6,
+        "type_weighted_reach": 16.5,
+        "betweenness": 0.0,
+        "citations": 0,
+        "cascade_depth": 2,
+        "cascade_breadth": 8,
+        "affected_layers": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8
+        ]
+      }
+    },
+    {
+      "id": "ATS-V2",
+      "label": "ATS v2.0\nProduction",
+      "layer": 7,
+      "type": "system",
+      "pcs": null,
+      "pas": null,
+      "sprint_origin": 47,
+      "desc": "Validated production system: 88.3% MC pass rate",
+      "pki": 46.817989417989416,
+      "pki_details": {
+        "pki": 46.817989417989416,
+        "direct_deps": 2,
+        "total_reach": 18,
+        "layer_weighted_reach": 8.700000000000001,
+        "type_weighted_reach": 16.7,
+        "betweenness": 0.35846560846560843,
+        "citations": 0,
+        "cascade_depth": 1,
+        "cascade_breadth": 7,
+        "affected_layers": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          8
+        ]
+      }
+    },
+    {
+      "id": "OBS-DASH",
+      "label": "Intelligence\nDashboard",
+      "layer": 8,
+      "type": "observatory",
+      "pcs": null,
+      "pas": null,
+      "sprint_origin": 49,
+      "desc": "Live HTML interface: Daily/Weekly/Monthly reports",
+      "pki": 0.0,
+      "pki_details": {
+        "pki": 0.0,
+        "direct_deps": 0,
+        "total_reach": 0,
+        "layer_weighted_reach": 0,
+        "type_weighted_reach": 0,
+        "betweenness": 0.0,
+        "citations": 0,
+        "cascade_depth": 0,
+        "cascade_breadth": 0,
+        "affected_layers": []
+      }
+    },
+    {
+      "id": "OBS-CORE",
+      "label": "Observatory\nCore",
+      "layer": 8,
+      "type": "observatory",
+      "pcs": null,
+      "pas": null,
+      "sprint_origin": 49,
+      "desc": "Automated anomaly detection and hypothesis generation",
+      "pki": 46.66137566137566,
+      "pki_details": {
+        "pki": 46.66137566137566,
+        "direct_deps": 2,
+        "total_reach": 18,
+        "layer_weighted_reach": 8.8,
+        "type_weighted_reach": 16.9,
+        "betweenness": 0.3161375661375661,
+        "citations": 0,
+        "cascade_depth": 0,
+        "cascade_breadth": 8,
+        "affected_layers": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8
+        ]
+      }
+    },
+    {
+      "id": "OBS-KCS",
+      "label": "Knowledge\nConf. Scores",
+      "layer": 8,
+      "type": "observatory",
+      "pcs": null,
+      "pas": null,
+      "sprint_origin": 49,
+      "desc": "Live KCS updates from trade log ingestion",
+      "pki": 46.1058201058201,
+      "pki_details": {
+        "pki": 46.1058201058201,
+        "direct_deps": 3,
+        "total_reach": 18,
+        "layer_weighted_reach": 8.8,
+        "type_weighted_reach": 16.9,
+        "betweenness": 0.13558201058201058,
+        "citations": 0,
+        "cascade_depth": 0,
+        "cascade_breadth": 8,
+        "affected_layers": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8
+        ]
+      }
+    },
+    {
+      "id": "OBS-RQ",
+      "label": "Research\nQueue",
+      "layer": 8,
+      "type": "observatory",
+      "pcs": null,
+      "pas": null,
+      "sprint_origin": 49,
+      "desc": "Evidence-weighted hypothesis prioritisation",
+      "pki": 46.1058201058201,
+      "pki_details": {
+        "pki": 46.1058201058201,
+        "direct_deps": 3,
+        "total_reach": 18,
+        "layer_weighted_reach": 8.8,
+        "type_weighted_reach": 16.9,
+        "betweenness": 0.13558201058201058,
+        "citations": 0,
+        "cascade_depth": 0,
+        "cascade_breadth": 8,
+        "affected_layers": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8
+        ]
+      }
+    }
+  ],
+  "edges": [
+    {
+      "src": "MP-001",
+      "dst": "MP-002",
+      "type": "operationalises",
+      "weight": 3
+    },
+    {
+      "src": "MP-001",
+      "dst": "MP-005",
+      "type": "explains",
+      "weight": 3
+    },
+    {
+      "src": "MP-001",
+      "dst": "MP-009",
+      "type": "explains",
+      "weight": 2
+    },
+    {
+      "src": "MP-004",
+      "dst": "MP-002",
+      "type": "operationalises",
+      "weight": 2
+    },
+    {
+      "src": "MP-008",
+      "dst": "MP-001",
+      "type": "mandates",
+      "weight": 3
+    },
+    {
+      "src": "MP-008",
+      "dst": "MP-003",
+      "type": "mandates",
+      "weight": 3
+    },
+    {
+      "src": "MP-008",
+      "dst": "MP-004",
+      "type": "mandates",
+      "weight": 3
+    },
+    {
+      "src": "MP-008",
+      "dst": "MP-006",
+      "type": "mandates",
+      "weight": 2
+    },
+    {
+      "src": "MP-001",
+      "dst": "EC-VOLC",
+      "type": "mandates",
+      "weight": 3
+    },
+    {
+      "src": "MP-001",
+      "dst": "EC-ADX",
+      "type": "mandates",
+      "weight": 3
+    },
+    {
+      "src": "MP-002",
+      "dst": "EC-ADX",
+      "type": "operationalises",
+      "weight": 3
+    },
+    {
+      "src": "MP-003",
+      "dst": "EC-SESS",
+      "type": "mandates",
+      "weight": 3
+    },
+    {
+      "src": "MP-004",
+      "dst": "EC-VOLC",
+      "type": "mandates",
+      "weight": 3
+    },
+    {
+      "src": "MP-004",
+      "dst": "EC-ATR",
+      "type": "mandates",
+      "weight": 3
+    },
+    {
+      "src": "MP-006",
+      "dst": "EC-STRUC",
+      "type": "mandates",
+      "weight": 3
+    },
+    {
+      "src": "MP-008",
+      "dst": "EC-EMA",
+      "type": "mandates",
+      "weight": 2
+    },
+    {
+      "src": "MP-008",
+      "dst": "EC-BCS",
+      "type": "generates",
+      "weight": 2
+    },
+    {
+      "src": "EC-EMA",
+      "dst": "MODEL-A1",
+      "type": "enables",
+      "weight": 3
+    },
+    {
+      "src": "EC-ATR",
+      "dst": "MODEL-A1",
+      "type": "enables",
+      "weight": 3
+    },
+    {
+      "src": "EC-SESS",
+      "dst": "MODEL-A1",
+      "type": "constrains",
+      "weight": 3
+    },
+    {
+      "src": "EC-STRUC",
+      "dst": "MODEL-A1",
+      "type": "enables",
+      "weight": 3
+    },
+    {
+      "src": "EC-EMA",
+      "dst": "MODEL-A2",
+      "type": "enables",
+      "weight": 3
+    },
+    {
+      "src": "EC-ATR",
+      "dst": "MODEL-A2",
+      "type": "enables",
+      "weight": 3
+    },
+    {
+      "src": "EC-ADX",
+      "dst": "MODEL-A2",
+      "type": "constrains",
+      "weight": 3
+    },
+    {
+      "src": "EC-SESS",
+      "dst": "MODEL-A2",
+      "type": "constrains",
+      "weight": 3
+    },
+    {
+      "src": "EC-STRUC",
+      "dst": "MODEL-A2",
+      "type": "enables",
+      "weight": 3
+    },
+    {
+      "src": "EC-EMA",
+      "dst": "MODEL-A3",
+      "type": "enables",
+      "weight": 3
+    },
+    {
+      "src": "EC-ATR",
+      "dst": "MODEL-A3",
+      "type": "enables",
+      "weight": 3
+    },
+    {
+      "src": "EC-ADX",
+      "dst": "MODEL-A3",
+      "type": "constrains",
+      "weight": 3
+    },
+    {
+      "src": "EC-VOLC",
+      "dst": "MODEL-A3",
+      "type": "constrains",
+      "weight": 3
+    },
+    {
+      "src": "EC-SESS",
+      "dst": "MODEL-A3",
+      "type": "constrains",
+      "weight": 3
+    },
+    {
+      "src": "MODEL-A1",
+      "dst": "ARI-A",
+      "type": "feeds",
+      "weight": 2
+    },
+    {
+      "src": "MODEL-A2",
+      "dst": "ARI-A",
+      "type": "feeds",
+      "weight": 2
+    },
+    {
+      "src": "MODEL-A3",
+      "dst": "ARI-A",
+      "type": "feeds",
+      "weight": 2
+    },
+    {
+      "src": "MODEL-A1",
+      "dst": "ARI-C",
+      "type": "feeds",
+      "weight": 2
+    },
+    {
+      "src": "MODEL-A2",
+      "dst": "ARI-C",
+      "type": "feeds",
+      "weight": 2
+    },
+    {
+      "src": "MODEL-A3",
+      "dst": "ARI-C",
+      "type": "feeds",
+      "weight": 2
+    },
+    {
+      "src": "MODEL-A1",
+      "dst": "ARI-D",
+      "type": "feeds",
+      "weight": 2
+    },
+    {
+      "src": "MODEL-A2",
+      "dst": "ARI-D",
+      "type": "feeds",
+      "weight": 2
+    },
+    {
+      "src": "MODEL-A3",
+      "dst": "ARI-D",
+      "type": "feeds",
+      "weight": 2
+    },
+    {
+      "src": "EC-BCS",
+      "dst": "ARI-PQ",
+      "type": "enables",
+      "weight": 3
+    },
+    {
+      "src": "MODEL-A1",
+      "dst": "ARI-PQ",
+      "type": "feeds",
+      "weight": 3
+    },
+    {
+      "src": "MODEL-A2",
+      "dst": "ARI-PQ",
+      "type": "feeds",
+      "weight": 3
+    },
+    {
+      "src": "MODEL-A3",
+      "dst": "ARI-PQ",
+      "type": "feeds",
+      "weight": 3
+    },
+    {
+      "src": "MP-005",
+      "dst": "ARI-C",
+      "type": "mandates",
+      "weight": 3
+    },
+    {
+      "src": "MP-002",
+      "dst": "ARI-D",
+      "type": "mandates",
+      "weight": 3
+    },
+    {
+      "src": "MP-001",
+      "dst": "ARI-A",
+      "type": "mandates",
+      "weight": 2
+    },
+    {
+      "src": "ARI-A",
+      "dst": "PORT-DLM",
+      "type": "enables",
+      "weight": 3
+    },
+    {
+      "src": "ARI-C",
+      "dst": "PORT-DLM",
+      "type": "enables",
+      "weight": 2
+    },
+    {
+      "src": "ARI-D",
+      "dst": "PORT-MC",
+      "type": "enables",
+      "weight": 2
+    },
+    {
+      "src": "ARI-PQ",
+      "dst": "PORT-MC",
+      "type": "enables",
+      "weight": 3
+    },
+    {
+      "src": "PORT-MC",
+      "dst": "ATS-V2",
+      "type": "enables",
+      "weight": 3
+    },
+    {
+      "src": "PORT-DLM",
+      "dst": "ATS-V2",
+      "type": "enables",
+      "weight": 3
+    },
+    {
+      "src": "ARI-A",
+      "dst": "ATS-V2",
+      "type": "enables",
+      "weight": 3
+    },
+    {
+      "src": "ARI-C",
+      "dst": "ATS-V2",
+      "type": "enables",
+      "weight": 3
+    },
+    {
+      "src": "ARI-D",
+      "dst": "ATS-V2",
+      "type": "enables",
+      "weight": 3
+    },
+    {
+      "src": "ARI-PQ",
+      "dst": "ATS-V2",
+      "type": "enables",
+      "weight": 3
+    },
+    {
+      "src": "ATS-V2",
+      "dst": "OBS-DASH",
+      "type": "feeds",
+      "weight": 3
+    },
+    {
+      "src": "ATS-V2",
+      "dst": "OBS-CORE",
+      "type": "feeds",
+      "weight": 3
+    },
+    {
+      "src": "OBS-CORE",
+      "dst": "OBS-KCS",
+      "type": "generates",
+      "weight": 3
+    },
+    {
+      "src": "OBS-CORE",
+      "dst": "OBS-RQ",
+      "type": "generates",
+      "weight": 3
+    },
+    {
+      "src": "OBS-KCS",
+      "dst": "OBS-DASH",
+      "type": "informs",
+      "weight": 2
+    },
+    {
+      "src": "OBS-RQ",
+      "dst": "OBS-DASH",
+      "type": "informs",
+      "weight": 2
+    },
+    {
+      "src": "OBS-RQ",
+      "dst": "MP-001",
+      "type": "informs",
+      "weight": 1
+    },
+    {
+      "src": "OBS-RQ",
+      "dst": "MP-002",
+      "type": "informs",
+      "weight": 1
+    },
+    {
+      "src": "OBS-KCS",
+      "dst": "MP-001",
+      "type": "informs",
+      "weight": 1
+    },
+    {
+      "src": "OBS-KCS",
+      "dst": "MP-002",
+      "type": "informs",
+      "weight": 1
+    }
+  ],
+  "principle_matrix": [
+    {
+      "id": "MP-008",
+      "name": "Theory of Edge",
+      "level": 3,
+      "pcs": 82.9,
+      "pas": 66.4,
+      "pki": 81.41666666666667,
+      "cas": 76.526522005147,
+      "reach": 28,
+      "cascade_depth": 7
+    },
+    {
+      "id": "MP-001",
+      "name": "Regime Dependence",
+      "level": 3,
+      "pcs": 86.2,
+      "pas": 22.7,
+      "pki": 58.16622574955909,
+      "cas": 48.46200028756053,
+      "reach": 18,
+      "cascade_depth": 7
+    },
+    {
+      "id": "MP-003",
+      "name": "Session Asymmetry",
+      "level": 3,
+      "pcs": 85.0,
+      "pas": 50.4,
+      "pki": 54.77989417989417,
+      "cas": 61.68177797026573,
+      "reach": 21,
+      "cascade_depth": 7
+    },
+    {
+      "id": "MP-004",
+      "name": "VolComp\u2192 Expansion",
+      "level": 3,
+      "pcs": 83.8,
+      "pas": 36.9,
+      "pki": 58.54973544973545,
+      "cas": 56.57159722252919,
+      "reach": 21,
+      "cascade_depth": 7
+    },
+    {
+      "id": "MP-002",
+      "name": "ADX Thresholds",
+      "level": 3,
+      "pcs": 82.9,
+      "pas": 52.4,
+      "pki": 49.59144620811287,
+      "cas": 59.946550424871944,
+      "reach": 18,
+      "cascade_depth": 6
+    },
+    {
+      "id": "MP-005",
+      "name": "Loss Streaks = Regime",
+      "level": 2,
+      "pcs": 73.8,
+      "pas": 58.9,
+      "pki": 45.52883597883598,
+      "cas": 58.27550797552832,
+      "reach": 18,
+      "cascade_depth": 6
+    },
+    {
+      "id": "MP-006",
+      "name": "Structural Anchoring",
+      "level": 2,
+      "pcs": 61.7,
+      "pas": 38.6,
+      "pki": 52.279894179894185,
+      "cas": 49.93469361555586,
+      "reach": 21,
+      "cascade_depth": 6
+    },
+    {
+      "id": "MP-009",
+      "name": "A3 Temporal Restriction",
+      "level": 1,
+      "pcs": 67.5,
+      "pas": null,
+      "pki": 2.5,
+      "cas": null,
+      "reach": 0,
+      "cascade_depth": 0
+    }
+  ]
+}
