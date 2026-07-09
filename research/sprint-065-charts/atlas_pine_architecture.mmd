@@ -1,0 +1,78 @@
+flowchart TD
+    CFG["M-00: atlas_config\nAll input parameters"]
+
+    subgraph INFRA["Infrastructure Layer"]
+        UTILS["M-01: atlas_utils\nPure utility functions"]
+        STATE["M-02: atlas_state_manager\nvar declarations and daily reset\nconsec loss tracking and rolling stats"]
+    end
+
+    subgraph DATA["Data Layer"]
+        MSE["M-03: atlas_market_state_engine\n56-field MarketState UDT\nEMA, ADX, ATR, MVC states\nSession flags and OV data"]
+    end
+
+    subgraph MODELS["Execution Model Layer"]
+        A1["M-04: atlas_model_a1\nDepth-Constrained Pullback\nPM Session, EMA21 touch"]
+        A3["M-05: atlas_model_a3\nOvernight Expansion\nVolComp to Expansion"]
+        B1["M-06: atlas_model_b1\nParticipation-Amplified Momentum\nMVC-003, AM Session"]
+    end
+
+    subgraph DECISION["Decision Layer"]
+        ADE["M-07: atlas_decision_engine\n7-component Edge Score\nRanking and 60pt threshold\nCandidateModel UDT"]
+    end
+
+    subgraph RISK["Risk and Safety Layer"]
+        ARI["M-08: atlas_risk_engine\n8 ARI rules\nPosition sizing\nApprovedTrade UDT"]
+        TVL["M-09: atlas_verification_engine\n27 Pine-native TVL rules\nVerifiedSignal UDT"]
+    end
+
+    subgraph EXECUTION["Execution Layer"]
+        JSON["M-10: atlas_json_builder\nWebhook payload construction"]
+        ALERT["M-11: atlas_alert_manager\nDuplicate prevention\nAlert firing"]
+    end
+
+    subgraph OBS["Observability Layer"]
+        OBV["M-12: atlas_observatory\nImmutable decision log\nObservatoryRecord UDT"]
+        DBG["M-13: atlas_debug_dashboard\nEngineering mode table\nDisabled in production"]
+    end
+
+    CORE["M-14: atlas_core\nMain Script Orchestrator\n13-step execution sequence"]
+
+    CFG --> INFRA
+    CFG --> DATA
+    CFG --> MODELS
+    CFG --> DECISION
+    CFG --> RISK
+    CFG --> EXECUTION
+
+    STATE --> MSE
+    UTILS --> MSE
+    MSE --> A1
+    MSE --> A3
+    MSE --> B1
+    A1 --> ADE
+    A3 --> ADE
+    B1 --> ADE
+    STATE --> ADE
+    ADE --> ARI
+    STATE --> ARI
+    ARI --> TVL
+    MSE --> TVL
+    TVL --> JSON
+    JSON --> ALERT
+    TVL --> OBV
+    TVL --> DBG
+    STATE --> DBG
+    ADE --> DBG
+
+    CORE --> STATE
+    CORE --> MSE
+    CORE --> A1
+    CORE --> A3
+    CORE --> B1
+    CORE --> ADE
+    CORE --> ARI
+    CORE --> TVL
+    CORE --> JSON
+    CORE --> ALERT
+    CORE --> OBV
+    CORE --> DBG

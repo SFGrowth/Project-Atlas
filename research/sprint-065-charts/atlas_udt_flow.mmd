@@ -1,0 +1,17 @@
+flowchart LR
+    MSE_OUT["MarketState UDT\n56 fields\nImmutable snapshot"]
+    TP["TradeProposal UDT\nmodel_id · direction\nentry · stop · target\nrisk_pts · rr_ratio"]
+    CM["CandidateModel UDT\nmodel_id · edge_score\n7 component scores\nTradeProposal ref"]
+    AT["ApprovedTrade UDT\ncontracts · actual_risk\nrisk_multiplier\nsignal_id"]
+    VS["VerifiedSignal UDT\ntvl_status\nrejection_code\nApprovedTrade ref"]
+    JP["JSON Payload\nstring\nWebhook-ready"]
+    OR["ObservatoryRecord UDT\nrecord_type · ts_utc\npnl · r_multiple\njson_payload"]
+
+    MSE_OUT -->|"consumed by\nM-04 M-05 M-06"| TP
+    TP -->|"array of proposals\nconsumed by M-07"| CM
+    CM -->|"single candidate\nconsumed by M-08"| AT
+    AT -->|"approved trade\nconsumed by M-09"| VS
+    VS -->|"verified signal\nconsumed by M-10"| JP
+    JP -->|"payload string\nconsumed by M-11"| ALERT["alert() fired\nto TradingView"]
+    VS -->|"all outcomes\nconsumed by M-12"| OR
+    OR -->|"logged to\nchart labels"| LOG["Observatory Log"]
