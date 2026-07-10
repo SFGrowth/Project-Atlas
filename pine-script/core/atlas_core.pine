@@ -1117,6 +1117,20 @@ if i_show_signals and w_has_candidate and barstate.isconfirmed
     color sig_color = w_dir == 1 ? color.new(color.lime, 0) : color.new(color.red, 0)
     label.new(bar_index, w_dir == 1 ? low - atr14_val * 0.5 : high + atr14_val * 0.5, sig_text, color=sig_color, textcolor=color.white, style=w_dir == 1 ? label.style_label_up : label.style_label_down, size=size.small)
 
+// Trade Exit Labels — W / L / EOD
+// No-reprint guarantee: STATE_CLOSED exists for exactly one confirmed bar before
+// transitioning to STATE_ARCHIVED. Label is placed only on barstate.isconfirmed
+// so it is anchored to the close bar and never recalculates.
+if i_show_signals and v_position.status == STATE_CLOSED and barstate.isconfirmed
+    bool   _is_win      = v_position.current_pnl > 0.0
+    bool   _is_eod      = v_position.exit_reason == "EOD_CLOSE"
+    string _result      = _is_eod ? "EOD" : (_is_win ? "WIN" : "LOSS")
+    string _icon        = _is_win ? "✔" : (_is_eod ? "◆" : "✘")
+    string _exit_label  = _icon + " " + _result + "\n" + v_position.model_id + "\n" + str.tostring(v_position.r_multiple, "#.##") + "R  $" + str.tostring(v_position.current_pnl, "#.00") + "\n" + v_position.exit_reason
+    color  _exit_bg     = _is_win ? color.new(color.lime, 10) : (_is_eod ? color.new(color.orange, 20) : color.new(color.red, 10))
+    float  _exit_y      = v_position.direction == 1 ? v_position.exit_fill_price + atr14_val * 0.8 : v_position.exit_fill_price - atr14_val * 0.8
+    label.new(bar_index, _exit_y, _exit_label, color=_exit_bg, textcolor=color.white, style=(v_position.direction == 1 ? label.style_label_up : label.style_label_down), size=size.small)
+
 // Position status label (Atlas Brain)
 if v_position.status == STATE_ACTIVE and barstate.isconfirmed
     string pos_text = "ATLAS ACTIVE\n" + v_position.model_id + " " + (v_position.direction == 1 ? "LONG" : "SHORT") + "\nPnL: $" + str.tostring(v_position.current_pnl, "#.00") + "\nR: " + str.tostring(v_position.r_multiple, "#.##")
