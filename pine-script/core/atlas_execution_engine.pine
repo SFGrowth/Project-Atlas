@@ -1,0 +1,679 @@
+// ============================================================================
+// ATLAS TRADING SYSTEM v2.1
+// Module: M-10 — Atlas Execution & Order Lifecycle Engine
+// Sprint: 072
+// Specification: APS v1.0 Section 7 | Pine Engineering Spec v1.0 Section 2.6
+//
+// PURPOSE:
+//   Manages the complete lifecycle of every Atlas trade from TVL approval
+//   through archival. This module is the sole execution authority.
+//
+// RESPONSIBILITIES:
+//   - Trade activation (PENDING state creation)
+//   - Order state management (deterministic state machine)
+//   - Position lifecycle (entry, active, exit, archive)
+//   - Entry confirmation (fill detection)
+//   - Stop management (stop loss monitoring)
+//   - Target management (profit target monitoring)
+//   - Position monitoring (MFE, MAE, R-multiple, PnL)
+//   - Position closure (stop, target, EOD, manual)
+//   - Trade completion (CLOSED → ARCHIVED)
+//   - Observatory event generation
+//
+// CONSTRAINTS:
+//   - MUST NOT evaluate the market
+//   - MUST NOT change model decisions
+//   - MUST NOT change risk decisions
+//   - MUST only execute and manage approved trades
+//   - MUST be 100% deterministic
+//   - MUST prevent duplicate orders
+//   - MUST prevent impossible state transitions
+//   - MUST prevent orphaned trades
+//
+// ARCHITECTURE NOTE:
+//   This module is implemented as a standalone indicator for Sprint 072
+//   verification. In production (M-14 atlas_core), the Position UDT and
+//   state machine will be integrated with M-02 state management.
+//   Pine Script v5 libraries cannot modify global var variables inside
+//   exported functions. All var state is declared at global scope here.
+// ============================================================================
+//@version=5
+indicator("Atlas Execution Engine — M-10", overlay=true, max_labels_count=500)
+
+// ============================================================================
+// SECTION 1: USER DEFINED TYPES
+// ============================================================================
+
+// ---------------------------------------------------------------------------
+// 1.1 ApprovedTrade — Input from M-09 TVL
+// ---------------------------------------------------------------------------
+type ApprovedTrade
+    bool    is_approved
+    string  model_id
+    float   edge_score
+    int     direction
+    float   entry_price
+    float   stop_price
+    float   target_price
+    float   risk_pts
+    float   rr_ratio
+    int     contracts
+    float   actual_risk
+    float   risk_multiplier
+    string  ari_rule_applied
+    string  rejection_reason
+    string  signal_id
+
+// ---------------------------------------------------------------------------
+// 1.2 Position — Core position tracking object
+// ---------------------------------------------------------------------------
+type Position
+    string  trade_id            // Unique trade identifier (e.g., "TRD-1720000000000")
+    string  signal_id           // Signal ID from the model (e.g., "A1-1720000000000")
+    string  model_id            // Model that generated the signal (e.g., "A1", "A3", "B1")
+    string  status              // ORDER STATE: PENDING | SUBMITTED | ACKNOWLEDGED | FILLED | ACTIVE | PARTIAL_EXIT | CLOSED | ARCHIVED
+    int     direction           // 1 = Long, -1 = Short
+    float   entry_price         // Planned entry price
+    float   stop_price          // Initial stop loss price
+    float   target_price        // Profit target price
+    int     contracts           // Number of contracts
+    float   risk_amount         // Dollar risk (from ARI)
+    float   r_multiple          // Current R-multiple (positive = profit, negative = loss)
+    int     entry_time          // Bar timestamp when trade was activated (Unix ms)
+    int     exit_time           // Bar timestamp when trade was closed (Unix ms, 0 if open)
+    float   current_pnl         // Current unrealized or realized PnL in dollars
+    float   mfe                 // Maximum Favourable Excursion in points
+    float   mae                 // Maximum Adverse Excursion in points
+    string  exit_reason         // "NONE" | "STOP" | "TARGET" | "EOD" | "MANUAL" | "REVERSAL"
+    int     bars_in_trade       // Number of bars since entry
+    float   entry_fill_price    // Actual fill price (may differ from planned entry)
+    float   exit_fill_price     // Actual exit fill price
+
+// ---------------------------------------------------------------------------
+// 1.3 ExecutionEvent — Observatory observability event
+// ---------------------------------------------------------------------------
+type ExecutionEvent
+    string  event_type          // "ACTIVATION" | "STATE_CHANGE" | "MFE_UPDATE" | "MAE_UPDATE" | "EXIT" | "ARCHIVE"
+    string  trade_id            // Associated trade ID
+    string  model_id            // Associated model ID
+    string  old_state           // Previous order state
+    string  new_state           // New order state
+    float   price_at_event      // Price when event occurred
+    float   pnl_at_event        // PnL at time of event
+    float   r_at_event          // R-multiple at time of event
+    string  message             // Human-readable event description
+    int     timestamp           // Unix ms timestamp
+
+// ---------------------------------------------------------------------------
+// 1.4 OrderStateTransition — Validation record for state machine
+// ---------------------------------------------------------------------------
+type OrderStateTransition
+    string  from_state
+    string  to_state
+    bool    is_valid
+    string  reason
+
+// ============================================================================
+// SECTION 2: CONSTANTS
+// ============================================================================
+
+// Order State Constants
+string STATE_NONE           = "NONE"
+string STATE_PENDING        = "PENDING"
+string STATE_SUBMITTED      = "SUBMITTED"
+string STATE_ACKNOWLEDGED   = "ACKNOWLEDGED"
+string STATE_FILLED         = "FILLED"
+string STATE_ACTIVE         = "ACTIVE"
+string STATE_PARTIAL_EXIT   = "PARTIAL_EXIT"
+string STATE_CLOSED         = "CLOSED"
+string STATE_ARCHIVED       = "ARCHIVED"
+
+// Exit Reason Constants
+string EXIT_NONE            = "NONE"
+string EXIT_STOP            = "STOP"
+string EXIT_TARGET          = "TARGET"
+string EXIT_EOD             = "EOD"
+string EXIT_MANUAL          = "MANUAL"
+string EXIT_REVERSAL        = "REVERSAL"
+
+// Point value for MNQ (2.0 per point)
+float POINT_VALUE           = 2.0
+
+// ============================================================================
+// SECTION 3: CONFIGURATION INPUTS
+// ============================================================================
+
+string  i_group_exec        = "Execution Engine"
+bool    i_debug_mode        = input.bool(true,  "Engineering Mode",         group=i_group_exec)
+bool    i_show_debug_table  = input.bool(true,  "Show Debug Table",         group=i_group_exec)
+bool    i_show_trade_labels = input.bool(true,  "Show Trade Labels",        group=i_group_exec)
+bool    i_show_levels       = input.bool(true,  "Show Entry/Stop/Target",   group=i_group_exec)
+
+string  i_group_sim         = "Simulation"
+bool    i_sim_mode          = input.bool(true,  "Simulation Mode",          group=i_group_sim, tooltip="Simulate trade fills using bar OHLC data")
+float   i_point_value       = input.float(2.0,  "Point Value ($)",          group=i_group_sim, minval=0.5, step=0.5)
+float   i_base_risk         = input.float(800.0,"Base Risk ($)",            group=i_group_sim, minval=50.0, step=50.0)
+
+string  i_group_models      = "Model Simulation"
+bool    i_sim_a1            = input.bool(false, "Simulate A1 Signal",       group=i_group_models)
+bool    i_sim_a3            = input.bool(false, "Simulate A3 Signal",       group=i_group_models)
+bool    i_sim_b1            = input.bool(false, "Simulate B1 Signal",       group=i_group_models)
+int     i_sim_direction     = input.int(1,      "Sim Direction (1=L,-1=S)", group=i_group_models, minval=-1, maxval=1)
+float   i_sim_entry         = input.float(0.0,  "Sim Entry Price",          group=i_group_models)
+float   i_sim_stop          = input.float(0.0,  "Sim Stop Price",           group=i_group_models)
+float   i_sim_target        = input.float(0.0,  "Sim Target Price",         group=i_group_models)
+int     i_sim_contracts     = input.int(1,      "Sim Contracts",            group=i_group_models, minval=1, maxval=10)
+
+// ============================================================================
+// SECTION 4: PERSISTENT STATE (var declarations — global scope only)
+// ============================================================================
+
+// Active position tracking
+var Position    v_position          = Position.new(trade_id="NONE", signal_id="NONE", model_id="NONE", status="NONE", direction=0, entry_price=0.0, stop_price=0.0, target_price=0.0, contracts=0, risk_amount=0.0, r_multiple=0.0, entry_time=0, exit_time=0, current_pnl=0.0, mfe=0.0, mae=0.0, exit_reason="NONE", bars_in_trade=0, entry_fill_price=0.0, exit_fill_price=0.0)
+
+// Trade history counters
+var int     v_total_trades          = 0
+var int     v_total_wins            = 0
+var int     v_total_losses          = 0
+var float   v_total_pnl             = 0.0
+var float   v_gross_wins            = 0.0
+var float   v_gross_losses          = 0.0
+var int     v_daily_trades          = 0
+var float   v_daily_pnl             = 0.0
+
+// State machine validation
+var string  v_last_state            = "NONE"
+var int     v_state_change_count    = 0
+var bool    v_duplicate_guard       = false
+
+// Simulation trigger tracking
+var bool    v_sim_triggered         = false
+var int     v_sim_trigger_bar       = 0
+
+// Day tracking
+var int     v_last_day              = 0
+
+// Event log (last 5 events)
+var string  v_event_log_1           = ""
+var string  v_event_log_2           = ""
+var string  v_event_log_3           = ""
+var string  v_event_log_4           = ""
+var string  v_event_log_5           = ""
+
+// ============================================================================
+// SECTION 5: STATE MACHINE VALIDATION FUNCTIONS
+// ============================================================================
+
+// ---------------------------------------------------------------------------
+// 5.1 f_is_valid_transition — Validates that a state transition is legal
+// ---------------------------------------------------------------------------
+f_is_valid_transition(string from_state, string to_state) =>
+    bool valid = false
+    if from_state == STATE_NONE
+        valid := to_state == STATE_PENDING
+    else if from_state == STATE_PENDING
+        valid := to_state == STATE_SUBMITTED or to_state == STATE_CLOSED
+    else if from_state == STATE_SUBMITTED
+        valid := to_state == STATE_ACKNOWLEDGED or to_state == STATE_CLOSED
+    else if from_state == STATE_ACKNOWLEDGED
+        valid := to_state == STATE_FILLED or to_state == STATE_CLOSED
+    else if from_state == STATE_FILLED
+        valid := to_state == STATE_ACTIVE or to_state == STATE_CLOSED
+    else if from_state == STATE_ACTIVE
+        valid := to_state == STATE_PARTIAL_EXIT or to_state == STATE_CLOSED
+    else if from_state == STATE_PARTIAL_EXIT
+        valid := to_state == STATE_CLOSED
+    else if from_state == STATE_CLOSED
+        valid := to_state == STATE_ARCHIVED
+    else if from_state == STATE_ARCHIVED
+        valid := false
+    valid
+
+// ---------------------------------------------------------------------------
+// 5.2 f_is_terminal_state — Returns true if the state is a terminal state
+// ---------------------------------------------------------------------------
+f_is_terminal_state(string state) =>
+    state == STATE_CLOSED or state == STATE_ARCHIVED
+
+// ---------------------------------------------------------------------------
+// 5.3 f_is_active_state — Returns true if a position is currently active
+// ---------------------------------------------------------------------------
+f_is_active_state(string state) =>
+    state == STATE_PENDING or state == STATE_SUBMITTED or state == STATE_ACKNOWLEDGED or state == STATE_FILLED or state == STATE_ACTIVE or state == STATE_PARTIAL_EXIT
+
+// ============================================================================
+// SECTION 6: POSITION LIFECYCLE FUNCTIONS
+// ============================================================================
+
+// ---------------------------------------------------------------------------
+// 6.1 f_create_position — Creates a new Position from an ApprovedTrade
+// Returns a Position in PENDING state
+// ---------------------------------------------------------------------------
+f_create_position(ApprovedTrade trade, int current_time) =>
+    string trade_id = "TRD-" + str.tostring(current_time)
+    float risk_pts = math.abs(trade.entry_price - trade.stop_price)
+    Position.new( trade_id=trade_id, signal_id=trade.signal_id, model_id=trade.model_id, status=STATE_PENDING, direction=trade.direction, entry_price=trade.entry_price, stop_price=trade.stop_price, target_price=trade.target_price, contracts=trade.contracts, risk_amount=trade.actual_risk, r_multiple=0.0, entry_time=current_time, exit_time=0, current_pnl=0.0, mfe=0.0, mae=0.0, exit_reason=EXIT_NONE, bars_in_trade=0, entry_fill_price=trade.entry_price, exit_fill_price=0.0)
+
+// ---------------------------------------------------------------------------
+// 6.2 f_check_fill — Checks if a pending order has been filled
+// In simulation: checks if bar has crossed the entry price
+// Returns [is_filled, fill_price]
+// ---------------------------------------------------------------------------
+f_check_fill(Position pos, float bar_high, float bar_low, float bar_close) =>
+    bool is_filled = false
+    float fill_price = pos.entry_price
+    if pos.status == STATE_PENDING or pos.status == STATE_SUBMITTED or pos.status == STATE_ACKNOWLEDGED
+        if pos.direction == 1
+            // Long: filled when price touches or crosses entry from below
+            is_filled := bar_low <= pos.entry_price and bar_high >= pos.entry_price
+            fill_price := pos.entry_price
+        else if pos.direction == -1
+            // Short: filled when price touches or crosses entry from above
+            is_filled := bar_high >= pos.entry_price and bar_low <= pos.entry_price
+            fill_price := pos.entry_price
+    [is_filled, fill_price]
+
+// ---------------------------------------------------------------------------
+// 6.3 f_update_position_metrics — Updates MFE, MAE, PnL, R-multiple
+// Called every bar while position is ACTIVE
+// ---------------------------------------------------------------------------
+f_update_position_metrics(Position pos, float bar_high, float bar_low, float bar_close) =>
+    float risk_pts = math.abs(pos.entry_fill_price - pos.stop_price)
+    risk_pts := risk_pts > 0.0 ? risk_pts : 1.0  // Guard against zero division
+
+    // Calculate excursion in points
+    float favourable_pts = 0.0
+    float adverse_pts = 0.0
+    float current_pts = 0.0
+
+    if pos.direction == 1
+        // Long position
+        favourable_pts := bar_high - pos.entry_fill_price
+        adverse_pts := pos.entry_fill_price - bar_low
+        current_pts := bar_close - pos.entry_fill_price
+    else
+        // Short position
+        favourable_pts := pos.entry_fill_price - bar_low
+        adverse_pts := bar_high - pos.entry_fill_price
+        current_pts := pos.entry_fill_price - bar_close
+
+    float new_mfe = math.max(pos.mfe, favourable_pts)
+    float new_mae = math.max(pos.mae, adverse_pts)
+    float new_pnl = current_pts * float(pos.contracts) * i_point_value
+    float new_r = current_pts / risk_pts
+
+    Position.new( trade_id=pos.trade_id, signal_id=pos.signal_id, model_id=pos.model_id, status=pos.status, direction=pos.direction, entry_price=pos.entry_price, stop_price=pos.stop_price, target_price=pos.target_price, contracts=pos.contracts, risk_amount=pos.risk_amount, r_multiple=new_r, entry_time=pos.entry_time, exit_time=pos.exit_time, current_pnl=new_pnl, mfe=new_mfe, mae=new_mae, exit_reason=pos.exit_reason, bars_in_trade=pos.bars_in_trade + 1, entry_fill_price=pos.entry_fill_price, exit_fill_price=pos.exit_fill_price)
+
+// ---------------------------------------------------------------------------
+// 6.4 f_check_exit — Checks if an active position should be closed
+// Returns [should_exit, exit_reason, exit_price]
+// ---------------------------------------------------------------------------
+f_check_exit(Position pos, float bar_high, float bar_low, float bar_open, bool is_last_bar_of_day) =>
+    bool should_exit = false
+    string exit_reason = EXIT_NONE
+    float exit_price = bar_open
+
+    if pos.status == STATE_ACTIVE
+        if pos.direction == 1
+            // Long: stop is below entry, target is above entry
+            if bar_low <= pos.stop_price
+                should_exit := true
+                exit_reason := EXIT_STOP
+                exit_price := pos.stop_price
+            else if bar_high >= pos.target_price
+                should_exit := true
+                exit_reason := EXIT_TARGET
+                exit_price := pos.target_price
+        else if pos.direction == -1
+            // Short: stop is above entry, target is below entry
+            if bar_high >= pos.stop_price
+                should_exit := true
+                exit_reason := EXIT_STOP
+                exit_price := pos.stop_price
+            else if bar_low <= pos.target_price
+                should_exit := true
+                exit_reason := EXIT_TARGET
+                exit_price := pos.target_price
+
+        // EOD forced exit (last bar of RTH session)
+        if not should_exit and is_last_bar_of_day
+            should_exit := true
+            exit_reason := EXIT_EOD
+            exit_price := bar_open
+
+    [should_exit, exit_reason, exit_price]
+
+// ---------------------------------------------------------------------------
+// 6.5 f_close_position — Closes a position and calculates final metrics
+// ---------------------------------------------------------------------------
+f_close_position(Position pos, string exit_reason, float exit_price, int exit_time) =>
+    float risk_pts = math.abs(pos.entry_fill_price - pos.stop_price)
+    risk_pts := risk_pts > 0.0 ? risk_pts : 1.0
+
+    float exit_pts = 0.0
+    if pos.direction == 1
+        exit_pts := exit_price - pos.entry_fill_price
+    else
+        exit_pts := pos.entry_fill_price - exit_price
+
+    float final_pnl = exit_pts * float(pos.contracts) * i_point_value
+    float final_r = exit_pts / risk_pts
+
+    Position.new( trade_id=pos.trade_id, signal_id=pos.signal_id, model_id=pos.model_id, status=STATE_CLOSED, direction=pos.direction, entry_price=pos.entry_price, stop_price=pos.stop_price, target_price=pos.target_price, contracts=pos.contracts, risk_amount=pos.risk_amount, r_multiple=final_r, entry_time=pos.entry_time, exit_time=exit_time, current_pnl=final_pnl, mfe=pos.mfe, mae=pos.mae, exit_reason=exit_reason, bars_in_trade=pos.bars_in_trade, entry_fill_price=pos.entry_fill_price, exit_fill_price=exit_price)
+
+// ---------------------------------------------------------------------------
+// 6.6 f_archive_position — Transitions a CLOSED position to ARCHIVED
+// ---------------------------------------------------------------------------
+f_archive_position(Position pos) =>
+    Position.new( trade_id=pos.trade_id, signal_id=pos.signal_id, model_id=pos.model_id, status=STATE_ARCHIVED, direction=pos.direction, entry_price=pos.entry_price, stop_price=pos.stop_price, target_price=pos.target_price, contracts=pos.contracts, risk_amount=pos.risk_amount, r_multiple=pos.r_multiple, entry_time=pos.entry_time, exit_time=pos.exit_time, current_pnl=pos.current_pnl, mfe=pos.mfe, mae=pos.mae, exit_reason=pos.exit_reason, bars_in_trade=pos.bars_in_trade, entry_fill_price=pos.entry_fill_price, exit_fill_price=pos.exit_fill_price)
+
+// ============================================================================
+// SECTION 7: OBSERVABILITY EVENT FUNCTIONS
+// ============================================================================
+
+// ---------------------------------------------------------------------------
+// 7.1 f_create_event — Creates an ExecutionEvent for the Observatory
+// ---------------------------------------------------------------------------
+f_create_event(string event_type, Position pos, string old_state, string new_state, float price, string message) =>
+    ExecutionEvent.new( event_type=event_type, trade_id=pos.trade_id, model_id=pos.model_id, old_state=old_state, new_state=new_state, price_at_event=price, pnl_at_event=pos.current_pnl, r_at_event=pos.r_multiple, message=message, timestamp=time)
+
+// ---------------------------------------------------------------------------
+// 7.2 f_event_to_string — Converts an event to a log string
+// ---------------------------------------------------------------------------
+f_event_to_string(ExecutionEvent evt) =>
+    str.tostring(evt.timestamp) + " | " + evt.event_type + " | " + evt.trade_id + " | " + evt.old_state + " → " + evt.new_state + " | " + evt.message
+
+// ============================================================================
+// SECTION 8: SIMULATION HELPERS
+// ============================================================================
+
+// ---------------------------------------------------------------------------
+// 8.1 f_build_sim_trade — Builds a simulated ApprovedTrade for testing
+// ---------------------------------------------------------------------------
+f_build_sim_trade(string model_id, int direction, float entry, float stop, float target, int contracts, float base_risk) =>
+    float risk_pts = math.abs(entry - stop)
+    float rr = risk_pts > 0.0 ? math.abs(target - entry) / risk_pts : 0.0
+    ApprovedTrade.new( is_approved=true, model_id=model_id, edge_score=75.0, direction=direction, entry_price=entry, stop_price=stop, target_price=target, risk_pts=risk_pts, rr_ratio=rr, contracts=contracts, actual_risk=base_risk, risk_multiplier=1.0, ari_rule_applied="NONE", rejection_reason="NONE", signal_id=model_id + "-SIM-" + str.tostring(time))
+
+// ============================================================================
+// SECTION 9: SESSION DETECTION
+// ============================================================================
+
+// Detect RTH session (09:30–15:59 ET) — simplified using time()
+bool is_rth = not na(time("5", "0930-1600", "America/New_York"))
+bool is_eod = not na(time("5", "1555-1600", "America/New_York"))
+
+// Day change detection
+int current_day = dayofweek
+bool is_new_day = current_day != v_last_day and is_rth
+
+// ============================================================================
+// SECTION 10: MAIN EXECUTION LOGIC (Global Scope State Machine)
+// ============================================================================
+
+// --- 10.1 Day Reset ---
+if is_new_day
+    v_last_day := current_day
+    v_daily_trades := 0
+    v_daily_pnl := 0.0
+
+// --- 10.2 Simulation Trade Trigger ---
+// Build a simulated ApprovedTrade when the user enables a model simulation
+bool has_new_sim_trade = false
+ApprovedTrade sim_trade = ApprovedTrade.new( is_approved=false, model_id="NONE", edge_score=0.0, direction=0, entry_price=0.0, stop_price=0.0, target_price=0.0, risk_pts=0.0, rr_ratio=0.0, contracts=0, actual_risk=0.0, risk_multiplier=1.0, ari_rule_applied="NONE", rejection_reason="NONE", signal_id="NONE")
+
+string sim_model = i_sim_a1 ? "A1" : i_sim_a3 ? "A3" : i_sim_b1 ? "B1" : "NONE"
+bool sim_requested = (i_sim_a1 or i_sim_a3 or i_sim_b1) and i_sim_entry > 0.0 and i_sim_stop > 0.0 and i_sim_target > 0.0
+
+if sim_requested and not v_sim_triggered and v_position.status == STATE_NONE
+    sim_trade := f_build_sim_trade(sim_model, i_sim_direction, i_sim_entry, i_sim_stop, i_sim_target, i_sim_contracts, i_base_risk)
+    has_new_sim_trade := true
+    v_sim_triggered := true
+    v_sim_trigger_bar := bar_index
+
+// --- 10.3 Activate New Trade (NONE → PENDING) ---
+if has_new_sim_trade and sim_trade.is_approved
+    if v_position.status == STATE_NONE or v_position.status == STATE_ARCHIVED
+        if f_is_valid_transition(v_position.status, STATE_PENDING)
+            v_position := f_create_position(sim_trade, time)
+            v_last_state := STATE_PENDING
+            v_state_change_count := v_state_change_count + 1
+            // Log event
+            string evt_msg = "Trade activated: " + sim_trade.model_id + " " + (i_sim_direction == 1 ? "LONG" : "SHORT") + " @ " + str.tostring(i_sim_entry, "#.00")
+            v_event_log_5 := v_event_log_4
+            v_event_log_4 := v_event_log_3
+            v_event_log_3 := v_event_log_2
+            v_event_log_2 := v_event_log_1
+            v_event_log_1 := "ACTIVATION | " + v_position.trade_id + " | NONE → PENDING | " + evt_msg
+
+// --- 10.4 Order Submission (PENDING → SUBMITTED → ACKNOWLEDGED) ---
+// In simulation mode, orders are instantly submitted and acknowledged
+if v_position.status == STATE_PENDING
+    if f_is_valid_transition(STATE_PENDING, STATE_SUBMITTED)
+        v_position.status := STATE_SUBMITTED
+        v_last_state := STATE_SUBMITTED
+        v_state_change_count := v_state_change_count + 1
+        v_event_log_5 := v_event_log_4
+        v_event_log_4 := v_event_log_3
+        v_event_log_3 := v_event_log_2
+        v_event_log_2 := v_event_log_1
+        v_event_log_1 := "STATE_CHANGE | " + v_position.trade_id + " | PENDING → SUBMITTED | Order sent"
+
+if v_position.status == STATE_SUBMITTED
+    if f_is_valid_transition(STATE_SUBMITTED, STATE_ACKNOWLEDGED)
+        v_position.status := STATE_ACKNOWLEDGED
+        v_last_state := STATE_ACKNOWLEDGED
+        v_state_change_count := v_state_change_count + 1
+        v_event_log_5 := v_event_log_4
+        v_event_log_4 := v_event_log_3
+        v_event_log_3 := v_event_log_2
+        v_event_log_2 := v_event_log_1
+        v_event_log_1 := "STATE_CHANGE | " + v_position.trade_id + " | SUBMITTED → ACKNOWLEDGED | Broker acknowledged"
+
+// --- 10.5 Fill Detection (ACKNOWLEDGED → FILLED → ACTIVE) ---
+if v_position.status == STATE_ACKNOWLEDGED
+    [is_filled, fill_price] = f_check_fill(v_position, high, low, close)
+    if is_filled
+        if f_is_valid_transition(STATE_ACKNOWLEDGED, STATE_FILLED)
+            v_position.status := STATE_FILLED
+            v_position.entry_fill_price := fill_price
+            v_last_state := STATE_FILLED
+            v_state_change_count := v_state_change_count + 1
+            v_event_log_5 := v_event_log_4
+            v_event_log_4 := v_event_log_3
+            v_event_log_3 := v_event_log_2
+            v_event_log_2 := v_event_log_1
+            v_event_log_1 := "STATE_CHANGE | " + v_position.trade_id + " | ACKNOWLEDGED → FILLED | Fill @ " + str.tostring(fill_price, "#.00")
+
+if v_position.status == STATE_FILLED
+    if f_is_valid_transition(STATE_FILLED, STATE_ACTIVE)
+        v_position.status := STATE_ACTIVE
+        v_last_state := STATE_ACTIVE
+        v_state_change_count := v_state_change_count + 1
+        v_event_log_5 := v_event_log_4
+        v_event_log_4 := v_event_log_3
+        v_event_log_3 := v_event_log_2
+        v_event_log_2 := v_event_log_1
+        v_event_log_1 := "STATE_CHANGE | " + v_position.trade_id + " | FILLED → ACTIVE | Position live"
+
+// --- 10.6 Position Monitoring (ACTIVE state) ---
+if v_position.status == STATE_ACTIVE
+    v_position := f_update_position_metrics(v_position, high, low, close)
+
+// --- 10.7 Exit Detection (ACTIVE → CLOSED) ---
+if v_position.status == STATE_ACTIVE
+    [should_exit, exit_rsn, exit_px] = f_check_exit(v_position, high, low, open, is_eod)
+    if should_exit
+        if f_is_valid_transition(STATE_ACTIVE, STATE_CLOSED)
+            v_position := f_close_position(v_position, exit_rsn, exit_px, time)
+            v_last_state := STATE_CLOSED
+            v_state_change_count := v_state_change_count + 1
+            // Update statistics
+            v_total_trades := v_total_trades + 1
+            v_daily_trades := v_daily_trades + 1
+            v_total_pnl := v_total_pnl + v_position.current_pnl
+            v_daily_pnl := v_daily_pnl + v_position.current_pnl
+            if v_position.current_pnl > 0.0
+                v_total_wins := v_total_wins + 1
+                v_gross_wins := v_gross_wins + v_position.current_pnl
+            else
+                v_total_losses := v_total_losses + 1
+                v_gross_losses := v_gross_losses + math.abs(v_position.current_pnl)
+            // Log event
+            string exit_msg = "Exit: " + exit_rsn + " @ " + str.tostring(exit_px, "#.00") + " | PnL: $" + str.tostring(v_position.current_pnl, "#.00") + " | R: " + str.tostring(v_position.r_multiple, "#.00")
+            v_event_log_5 := v_event_log_4
+            v_event_log_4 := v_event_log_3
+            v_event_log_3 := v_event_log_2
+            v_event_log_2 := v_event_log_1
+            v_event_log_1 := "EXIT | " + v_position.trade_id + " | ACTIVE → CLOSED | " + exit_msg
+
+// --- 10.8 Archive (CLOSED → ARCHIVED) ---
+// Archive on the next bar after close to allow Observatory to read the final state
+if v_position.status == STATE_CLOSED
+    if f_is_valid_transition(STATE_CLOSED, STATE_ARCHIVED)
+        v_position := f_archive_position(v_position)
+        v_last_state := STATE_ARCHIVED
+        v_state_change_count := v_state_change_count + 1
+        v_event_log_5 := v_event_log_4
+        v_event_log_4 := v_event_log_3
+        v_event_log_3 := v_event_log_2
+        v_event_log_2 := v_event_log_1
+        v_event_log_1 := "ARCHIVE | " + v_position.trade_id + " | CLOSED → ARCHIVED | Trade complete"
+
+// ============================================================================
+// SECTION 11: VISUAL OUTPUTS
+// ============================================================================
+
+// --- 11.1 Entry/Stop/Target Level Lines ---
+// Draw horizontal lines for entry, stop, and target when position is active
+bool pos_is_active = f_is_active_state(v_position.status)
+
+plot(pos_is_active ? v_position.entry_price : na, "Entry", color=color.new(color.blue, 0), linewidth=1, style=plot.style_linebr)
+plot(pos_is_active ? v_position.stop_price : na, "Stop", color=color.new(color.red, 0), linewidth=1, style=plot.style_linebr)
+plot(pos_is_active ? v_position.target_price : na, "Target", color=color.new(color.green, 0), linewidth=1, style=plot.style_linebr)
+
+// --- 11.2 Trade Labels ---
+// Entry label
+bool just_activated = v_position.status == STATE_ACTIVE and v_position.bars_in_trade == 1
+if just_activated and i_show_trade_labels
+    string dir_str = v_position.direction == 1 ? "▲ LONG" : "▼ SHORT"
+    label.new(bar_index, v_position.entry_fill_price, text=dir_str + "\n" + v_position.model_id + "\nEntry: " + str.tostring(v_position.entry_fill_price, "#.00") + "\nStop: " + str.tostring(v_position.stop_price, "#.00") + "\nTarget: " + str.tostring(v_position.target_price, "#.00") + "\nContracts: " + str.tostring(v_position.contracts) + "\nRisk: $" + str.tostring(v_position.risk_amount, "#.00"), style=v_position.direction == 1 ? label.style_label_up : label.style_label_down, color=v_position.direction == 1 ? color.new(color.blue, 20) : color.new(color.orange, 20), textcolor=color.white, size=size.small)
+
+// Exit label
+bool just_closed = v_position.status == STATE_ARCHIVED and v_last_state == STATE_ARCHIVED and v_state_change_count > 0
+// Note: We use the archive event to draw the exit label since CLOSED transitions to ARCHIVED on the next bar
+bool draw_exit_label = v_position.status == STATE_ARCHIVED and v_position.exit_fill_price > 0.0 and ta.change(v_state_change_count) != 0
+if draw_exit_label and i_show_trade_labels
+    color exit_col = v_position.current_pnl > 0.0 ? color.new(color.green, 20) : color.new(color.red, 20)
+    string pnl_str = v_position.current_pnl >= 0.0 ? "+$" + str.tostring(v_position.current_pnl, "#.00") : "-$" + str.tostring(math.abs(v_position.current_pnl), "#.00")
+    label.new(bar_index, v_position.exit_fill_price, text="EXIT: " + v_position.exit_reason + "\n" + pnl_str + "\nR: " + str.tostring(v_position.r_multiple, "#.00") + "\nBars: " + str.tostring(v_position.bars_in_trade), style=label.style_label_down, color=exit_col, textcolor=color.white, size=size.small)
+
+// ============================================================================
+// SECTION 12: ENGINEERING MODE DEBUG TABLE
+// ============================================================================
+
+if i_debug_mode and i_show_debug_table and barstate.islast
+    // Create debug table in top-right corner
+    var table debug_table = table.new(position.top_right, 2, 20, bgcolor=color.new(color.black, 10), border_width=1, border_color=color.new(color.gray, 50))
+
+    // Helper colours
+    color c_header  = color.new(color.navy, 0)
+    color c_label   = color.new(color.gray, 20)
+    color c_value   = color.new(color.white, 0)
+    color c_green   = color.new(color.green, 0)
+    color c_red     = color.new(color.red, 0)
+    color c_yellow  = color.new(color.yellow, 0)
+    color c_blue    = color.new(color.blue, 0)
+
+    // State colour
+    color state_col = v_position.status == STATE_ACTIVE ? c_green : v_position.status == STATE_CLOSED ? c_red : v_position.status == STATE_ARCHIVED ? c_yellow : v_position.status == STATE_NONE ? c_label : c_blue
+
+    // PnL colour
+    color pnl_col = v_position.current_pnl > 0.0 ? c_green : v_position.current_pnl < 0.0 ? c_red : c_value
+
+    // Header
+    table.cell(debug_table, 0, 0, "ATLAS M-10 — EXECUTION ENGINE", text_color=color.white, bgcolor=c_header, text_size=size.small)
+    table.cell(debug_table, 1, 0, "Engineering Mode", text_color=color.aqua, bgcolor=c_header, text_size=size.small)
+
+    // Position Info
+    table.cell(debug_table, 0, 1, "Trade ID", text_color=c_label, text_size=size.tiny)
+    table.cell(debug_table, 1, 1, v_position.trade_id, text_color=c_value, text_size=size.tiny)
+
+    table.cell(debug_table, 0, 2, "Signal ID", text_color=c_label, text_size=size.tiny)
+    table.cell(debug_table, 1, 2, v_position.signal_id, text_color=c_value, text_size=size.tiny)
+
+    table.cell(debug_table, 0, 3, "Order State", text_color=c_label, text_size=size.tiny)
+    table.cell(debug_table, 1, 3, v_position.status, text_color=state_col, text_size=size.tiny)
+
+    table.cell(debug_table, 0, 4, "Model", text_color=c_label, text_size=size.tiny)
+    table.cell(debug_table, 1, 4, v_position.model_id, text_color=c_value, text_size=size.tiny)
+
+    // Trade Parameters
+    table.cell(debug_table, 0, 5, "Entry", text_color=c_label, text_size=size.tiny)
+    table.cell(debug_table, 1, 5, v_position.entry_fill_price > 0.0 ? str.tostring(v_position.entry_fill_price, "#.00") : "—", text_color=c_blue, text_size=size.tiny)
+
+    table.cell(debug_table, 0, 6, "Stop", text_color=c_label, text_size=size.tiny)
+    table.cell(debug_table, 1, 6, v_position.stop_price > 0.0 ? str.tostring(v_position.stop_price, "#.00") : "—", text_color=c_red, text_size=size.tiny)
+
+    table.cell(debug_table, 0, 7, "Target", text_color=c_label, text_size=size.tiny)
+    table.cell(debug_table, 1, 7, v_position.target_price > 0.0 ? str.tostring(v_position.target_price, "#.00") : "—", text_color=c_green, text_size=size.tiny)
+
+    // Live Metrics
+    table.cell(debug_table, 0, 8, "Current R", text_color=c_label, text_size=size.tiny)
+    table.cell(debug_table, 1, 8, str.tostring(v_position.r_multiple, "#.00") + "R", text_color=v_position.r_multiple >= 0.0 ? c_green : c_red, text_size=size.tiny)
+
+    table.cell(debug_table, 0, 9, "Current P&L", text_color=c_label, text_size=size.tiny)
+    string pnl_display = v_position.current_pnl >= 0.0 ? "+$" + str.tostring(v_position.current_pnl, "#.00") : "-$" + str.tostring(math.abs(v_position.current_pnl), "#.00")
+    table.cell(debug_table, 1, 9, pnl_display, text_color=pnl_col, text_size=size.tiny)
+
+    table.cell(debug_table, 0, 10, "MFE / MAE", text_color=c_label, text_size=size.tiny)
+    table.cell(debug_table, 1, 10, str.tostring(v_position.mfe, "#.0") + " / " + str.tostring(v_position.mae, "#.0") + " pts", text_color=c_value, text_size=size.tiny)
+
+    table.cell(debug_table, 0, 11, "Bars In Trade", text_color=c_label, text_size=size.tiny)
+    table.cell(debug_table, 1, 11, str.tostring(v_position.bars_in_trade), text_color=c_value, text_size=size.tiny)
+
+    table.cell(debug_table, 0, 12, "Exit Reason", text_color=c_label, text_size=size.tiny)
+    table.cell(debug_table, 1, 12, v_position.exit_reason, text_color=v_position.exit_reason == EXIT_TARGET ? c_green : v_position.exit_reason == EXIT_STOP ? c_red : c_value, text_size=size.tiny)
+
+    // Session Statistics
+    table.cell(debug_table, 0, 13, "── SESSION STATS ──", text_color=c_label, bgcolor=color.new(color.gray, 80), text_size=size.tiny)
+    table.cell(debug_table, 1, 13, "", bgcolor=color.new(color.gray, 80), text_size=size.tiny)
+
+    table.cell(debug_table, 0, 14, "Daily Trades", text_color=c_label, text_size=size.tiny)
+    table.cell(debug_table, 1, 14, str.tostring(v_daily_trades), text_color=c_value, text_size=size.tiny)
+
+    table.cell(debug_table, 0, 15, "Daily P&L", text_color=c_label, text_size=size.tiny)
+    string daily_pnl_str = v_daily_pnl >= 0.0 ? "+$" + str.tostring(v_daily_pnl, "#.00") : "-$" + str.tostring(math.abs(v_daily_pnl), "#.00")
+    table.cell(debug_table, 1, 15, daily_pnl_str, text_color=v_daily_pnl >= 0.0 ? c_green : c_red, text_size=size.tiny)
+
+    // All-time Statistics
+    table.cell(debug_table, 0, 16, "── ALL TIME ──", text_color=c_label, bgcolor=color.new(color.gray, 80), text_size=size.tiny)
+    table.cell(debug_table, 1, 16, "", bgcolor=color.new(color.gray, 80), text_size=size.tiny)
+
+    float win_rate = v_total_trades > 0 ? float(v_total_wins) / float(v_total_trades) * 100.0 : 0.0
+    float profit_factor = v_gross_losses > 0.0 ? v_gross_wins / v_gross_losses : v_gross_wins > 0.0 ? 999.0 : 0.0
+
+    table.cell(debug_table, 0, 17, "Trades / W / L", text_color=c_label, text_size=size.tiny)
+    table.cell(debug_table, 1, 17, str.tostring(v_total_trades) + " / " + str.tostring(v_total_wins) + " / " + str.tostring(v_total_losses), text_color=c_value, text_size=size.tiny)
+
+    table.cell(debug_table, 0, 18, "Win Rate / PF", text_color=c_label, text_size=size.tiny)
+    table.cell(debug_table, 1, 18, str.tostring(win_rate, "#.0") + "% / " + str.tostring(profit_factor, "#.00"), text_color=win_rate >= 60.0 ? c_green : c_red, text_size=size.tiny)
+
+    table.cell(debug_table, 0, 19, "Total P&L", text_color=c_label, text_size=size.tiny)
+    string total_pnl_str = v_total_pnl >= 0.0 ? "+$" + str.tostring(v_total_pnl, "#.00") : "-$" + str.tostring(math.abs(v_total_pnl), "#.00")
+    table.cell(debug_table, 1, 19, total_pnl_str, text_color=v_total_pnl >= 0.0 ? c_green : c_red, text_size=size.tiny)
+
+// ============================================================================
+// SECTION 13: OBSERVATORY EVENT LOG TABLE
+// ============================================================================
+
+if i_debug_mode and barstate.islast
+    var table event_table = table.new(position.bottom_right, 1, 7, bgcolor=color.new(color.black, 10), border_width=1, border_color=color.new(color.gray, 50))
+
+    table.cell(event_table, 0, 0, "ATLAS M-10 — OBSERVATORY EVENT LOG", text_color=color.white, bgcolor=color.new(color.navy, 0), text_size=size.tiny)
+    table.cell(event_table, 0, 1, v_event_log_1 != "" ? v_event_log_1 : "No events", text_color=color.new(color.aqua, 0), text_size=size.tiny)
+    table.cell(event_table, 0, 2, v_event_log_2 != "" ? v_event_log_2 : "—", text_color=color.new(color.silver, 0), text_size=size.tiny)
+    table.cell(event_table, 0, 3, v_event_log_3 != "" ? v_event_log_3 : "—", text_color=color.new(color.silver, 0), text_size=size.tiny)
+    table.cell(event_table, 0, 4, v_event_log_4 != "" ? v_event_log_4 : "—", text_color=color.new(color.gray, 0), text_size=size.tiny)
+    table.cell(event_table, 0, 5, v_event_log_5 != "" ? v_event_log_5 : "—", text_color=color.new(color.gray, 0), text_size=size.tiny)
+    table.cell(event_table, 0, 6, "State Changes: " + str.tostring(v_state_change_count) + " | Total Trades: " + str.tostring(v_total_trades), text_color=color.new(color.yellow, 0), text_size=size.tiny)

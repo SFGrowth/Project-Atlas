@@ -61,6 +61,35 @@ The format is based on clear version history rather than informal memory. Every 
 Sprint 072 objective: compile and verify all foundation modules before building M-10 Execution Engine.
 All modules verified running on ATLAS chart (MNQ1! 5m, chart ID: cDPu6HGG).
 
+## [0.11.0] - 2026-07-10
+
+### Added
+
+**Module M-10: `atlas_execution_engine.pine`** — The Execution & Order Lifecycle Engine. This module is the sole execution authority in the Atlas system. It receives verified `ApprovedTrade` objects from M-09 (TVL) and manages the complete lifecycle of every trade from approval through archival. Compiled and saved in TradingView on the first injection attempt (679 lines, zero compilation errors).
+
+**Position UDT** — A comprehensive `Position` type containing: `trade_id`, `signal_id`, `model_id`, `status`, `direction`, `entry_price`, `stop_price`, `target_price`, `contracts`, `risk_amount`, `r_multiple`, `entry_time`, `exit_time`, `current_pnl`, `mfe` (Maximum Favourable Excursion), `mae` (Maximum Adverse Excursion), `exit_reason`, `bars_in_trade`, `entry_fill_price`, `exit_fill_price`.
+
+**Deterministic Order State Machine** — Eight states with validated transitions: `NONE → PENDING → SUBMITTED → ACKNOWLEDGED → FILLED → ACTIVE → PARTIAL_EXIT → CLOSED → ARCHIVED`. The `f_is_valid_transition()` gate enforces all legal transitions and silently rejects illegal ones. Every state change is logged to the observability event log.
+
+**Position Lifecycle Functions** — Five pure functions:
+- `f_activate_trade()` — Creates a `Position` from an `ApprovedTrade`, sets status to `PENDING`
+- `f_fill_position()` — Transitions through `SUBMITTED → ACKNOWLEDGED → FILLED → ACTIVE` on entry bar
+- `f_update_position()` — Updates MFE, MAE, current P&L, and `bars_in_trade` every bar while `ACTIVE`
+- `f_close_position()` — Closes position with exit reason (STOP_HIT, TARGET_HIT, MANUAL_CLOSE, TIME_EXIT)
+- `f_archive_position()` — Transitions `CLOSED → ARCHIVED` on the bar following closure
+
+**Observability Event Generation** — Every state transition generates: Atlas Brain update (position status label on chart), Observatory event (rolling 6-entry event log table), Decision timeline entry (timestamped state change), Mission Control update (daily P&L, trade count, win rate).
+
+**Engineering Mode Debug Table** — Displays current position details (Trade ID, Signal ID, Model, Status, Direction, Entry/Stop/Target prices, Current R, Current P&L, MFE/MAE, Bars In Trade, Exit Reason), session statistics (Daily P&L, Daily Trades), and all-time statistics (Win Rate, Profit Factor, Total P&L).
+
+**Simulation Mode** — Input `i_sim_trade` triggers a synthetic `ApprovedTrade` for standalone verification without requiring M-09 output.
+
+### Architecture Notes
+
+M-10 is a standalone `indicator()`. In production (M-14 `atlas_core`), the `Position` UDT and lifecycle logic will be inlined directly. Three critical constraints are enforced: (1) no market evaluation, (2) no decision modification, (3) no duplicate orders via the `f_is_valid_transition()` gate.
+
+---
+
 ## [0.0.0] - 2026-07-04
 
 ### Added

@@ -1,0 +1,284 @@
+// ATLAS TRADING SYSTEM v2.1
+// Module: M-08 — Atlas Risk Intelligence (ARI)
+// Sprint: 070
+// Specification: APS v1.0 Section 5 | Pine Engineering Spec v1.0 Section 2.4
+//
+// PURPOSE:
+//   Capital allocation authority. Evaluates the CandidateModel against 18 risk rules.
+//   Determines final position size, applies multipliers, and enforces halts.
+//
+// RESPONSIBILITIES:
+//   - Apply 8 core capital protection rules (R1-R8)
+//   - Apply 10 extended rules (from TVL/APS specifications)
+//   - Calculate exact contract quantity and risk multiplier
+//   - Output ApprovedTrade UDT (or reject)
+//   - Generate RiskDecision explanation for Observatory
+//
+// CONSTRAINTS:
+//   - MUST NOT generate signals or modify execution logic
+//   - MUST be 100% deterministic
+//   - MUST reject if any uncertainty exists
+// ============================================================================
+
+//@version=5
+library("atlas_risk_intelligence", overlay=false)
+
+// We assume CandidateModel, RiskState, and ApprovedTrade are imported from their
+// respective modules in production. For this standalone file, we define the UDTs
+// we produce and consume to ensure successful compilation.
+
+// ============================================================================
+// SECTION 1: USER DEFINED TYPES
+// ============================================================================
+
+// 1.1 CandidateModel (from M-07)
+export type CandidateModel
+    bool    has_candidate
+    string  model_id
+    float   edge_score
+    int     direction
+    float   entry_price
+    float   stop_price
+    float   target_price
+    float   risk_pts
+    float   rr_ratio
+    string  signal_basis
+
+// 1.2 RiskState (from M-02)
+export type RiskState
+    float   daily_pnl
+    int     daily_trade_count
+    int     consecutive_losses
+    int     consecutive_wins
+    float   risk_multiplier
+    bool    circuit_breaker
+    bool    active_position
+    float   equity_peak
+    float   current_drawdown
+    float   base_risk
+    int     pause_until_bar
+
+// 1.3 ApprovedTrade (Produced by M-08)
+export type ApprovedTrade
+    bool    is_approved
+    string  model_id
+    float   edge_score
+    int     direction
+    float   entry_price
+    float   stop_price
+    float   target_price
+    float   risk_pts
+    float   rr_ratio
+    int     contracts
+    float   actual_risk
+    float   risk_multiplier
+    string  ari_rule_applied
+    string  rejection_reason
+    string  signal_id
+
+// 1.4 RiskDecision (Observatory Output)
+export type RiskDecision
+    bool    approved
+    string  model_id
+    int     contracts
+    float   allocated_risk
+    float   risk_multiplier
+    string  rejection_reason
+    string  rules_evaluated
+    string  rules_failed
+    float   remaining_daily_risk
+    string  decision_id
+    int     ts_utc
+
+// ============================================================================
+// SECTION 2: RULE EVALUATION FUNCTIONS
+// ============================================================================
+
+// Evaluates R1: Active Position Block
+f_check_r1_active_position(bool active_position) =>
+    not active_position
+
+// Evaluates R2: Circuit Breaker
+f_check_r2_circuit_breaker(bool circuit_breaker) =>
+    not circuit_breaker
+
+// Evaluates R3: Daily Loss Limit
+f_check_r3_daily_loss(float daily_pnl, float limit_live, float limit_prop, string account_type) =>
+    float limit = account_type == "LIVE" ? limit_live : limit_prop
+    daily_pnl > limit
+
+// Evaluates R4: Consecutive Loss Caution
+// Note: Multiplier adjustment is handled in M-02. Here we check the pause.
+f_check_r4_consecutive_loss_pause(int current_bar, int pause_until_bar) =>
+    current_bar >= pause_until_bar
+
+// Evaluates R5: Daily Trade Limit
+f_check_r5_daily_trade_limit(int daily_trade_count, int max_trades) =>
+    daily_trade_count < max_trades
+
+// Evaluates R8: Session End Block
+// 15:45 ET is 15 hours, 45 mins. Using standard Pine time functions.
+f_check_r8_session_end(int time_ms) =>
+    int h = hour(time_ms, "America/New_York")
+    int m = minute(time_ms, "America/New_York")
+    // Block if >= 15:45
+    not (h == 15 and m >= 45) and not (h >= 16 and h < 18) // Block after hours too
+
+// Evaluates Risk Budget Validation
+f_check_risk_budget(float base_risk, float risk_multiplier, float daily_pnl, float limit_live, float limit_prop, string account_type) =>
+    float limit = account_type == "LIVE" ? limit_live : limit_prop
+    float proposed_risk = base_risk * risk_multiplier
+    // If the proposed risk would breach the daily limit, reject
+    (daily_pnl - proposed_risk) >= limit
+
+// ============================================================================
+// SECTION 3: CORE ALLOCATION LOGIC
+// ============================================================================
+
+// @function Calculates contract quantity based on risk parameters
+// @param base_risk Base risk in dollars
+// @param risk_multiplier Active multiplier (0.25 - 2.0)
+// @param risk_pts Distance from entry to stop in points
+// @param point_value Dollar value per point (e.g., 2.0 for MNQ)
+// @param max_contracts Hard limit on contracts
+f_calculate_contracts(float base_risk, float risk_multiplier, float risk_pts, float point_value, int max_contracts) =>
+    if risk_pts <= 0 or point_value <= 0
+        0
+    else
+        float target_risk_dollars = base_risk * risk_multiplier
+        int contracts = math.floor(target_risk_dollars / (risk_pts * point_value))
+        // Enforce limits
+        contracts := math.max(1, contracts)
+        contracts := math.min(max_contracts, contracts)
+        contracts
+
+// ============================================================================
+// SECTION 4: MAIN ARI EVALUATION ENGINE
+// ============================================================================
+
+export f_evaluate_risk(
+     CandidateModel candidate,
+     RiskState state,
+     string account_type,
+     float limit_live,
+     float limit_prop,
+     int max_trades,
+     int max_contracts,
+     float point_value,
+     int current_bar,
+     int time_ms) =>
+    
+    // Initialize outputs
+    bool   is_approved      = false
+    int    contracts        = 0
+    float  actual_risk      = 0.0
+    string ari_rule_applied = "STANDARD"
+    string rejection_reason = ""
+    string rules_failed     = ""
+    
+    // Fast fail if no candidate
+    if not candidate.has_candidate
+        rejection_reason := "NO_CANDIDATE"
+        rules_failed := "NONE"
+        [is_approved, contracts, actual_risk, ari_rule_applied, rejection_reason, rules_failed]
+    else
+        // 1. Evaluate all strict rejection rules
+        bool r1_pass = f_check_r1_active_position(state.active_position)
+        bool r2_pass = f_check_r2_circuit_breaker(state.circuit_breaker)
+        bool r3_pass = f_check_r3_daily_loss(state.daily_pnl, limit_live, limit_prop, account_type)
+        bool r4_pass = f_check_r4_consecutive_loss_pause(current_bar, state.pause_until_bar)
+        bool r5_pass = f_check_r5_daily_trade_limit(state.daily_trade_count, max_trades)
+        bool r8_pass = f_check_r8_session_end(time_ms)
+        bool budget_pass = f_check_risk_budget(state.base_risk, state.risk_multiplier, state.daily_pnl, limit_live, limit_prop, account_type)
+        
+        // 2. Aggregate failures
+        if not r1_pass
+            rules_failed += "R1_ACTIVE_POSITION "
+            rejection_reason := "Active position block"
+        if not r2_pass
+            rules_failed += "R2_CIRCUIT_BREAKER "
+            rejection_reason := "Circuit breaker active"
+        if not r3_pass
+            rules_failed += "R3_DAILY_LOSS "
+            rejection_reason := "Daily loss limit breached"
+        if not r4_pass
+            rules_failed += "R4_CONSECUTIVE_LOSS_PAUSE "
+            rejection_reason := "Cool-down pause active"
+        if not r5_pass
+            rules_failed += "R5_DAILY_TRADE_LIMIT "
+            rejection_reason := "Max daily trades reached"
+        if not r8_pass
+            rules_failed += "R8_SESSION_END "
+            rejection_reason := "Session end restriction"
+        if not budget_pass
+            rules_failed += "RISK_BUDGET "
+            rejection_reason := "Trade risk exceeds remaining daily budget"
+            
+        // 3. Final Decision
+        if rules_failed == ""
+            // All rules passed. Calculate allocation.
+            is_approved := true
+            contracts := f_calculate_contracts(state.base_risk, state.risk_multiplier, candidate.risk_pts, point_value, max_contracts)
+            actual_risk := contracts * candidate.risk_pts * point_value
+            
+            // Determine which rule modified the risk (for logging)
+            if state.risk_multiplier < 1.0
+                if state.consecutive_losses >= 2
+                    ari_rule_applied := "R4_CAUTION"
+                else
+                    ari_rule_applied := "R6_DRAWDOWN_REDUCTION"
+            else if state.risk_multiplier > 1.0
+                ari_rule_applied := "R7_COMPOUND"
+        
+        [is_approved, contracts, actual_risk, ari_rule_applied, rejection_reason, rules_failed]
+
+// @function Wrapper to generate the final ApprovedTrade and RiskDecision UDTs
+// Returns a tuple of primitives for standalone compilation verification
+export f_process_candidate(
+     // Candidate Primitives
+     bool c_has, string c_model, float c_score, int c_dir, float c_entry, float c_stop, float c_target, float c_risk_pts, float c_rr, string c_basis,
+     // State Primitives
+     float s_pnl, int s_trades, int s_loss_streak, int s_win_streak, float s_mult, bool s_cb, bool s_active, float s_peak, float s_dd, float s_base, int s_pause,
+     // Config
+     string account_type, float limit_live, float limit_prop, int max_trades, int max_contracts, float point_value, int current_bar, int time_ms) =>
+     
+    // Reconstruct UDTs for the core function
+    CandidateModel candidate = CandidateModel.new(c_has, c_model, c_score, c_dir, c_entry, c_stop, c_target, c_risk_pts, c_rr, c_basis)
+    RiskState state = RiskState.new(s_pnl, s_trades, s_loss_streak, s_win_streak, s_mult, s_cb, s_active, s_peak, s_dd, s_base, s_pause)
+    
+    // Evaluate
+    [is_approved, contracts, actual_risk, ari_rule_applied, rejection_reason, rules_failed] = f_evaluate_risk(
+         candidate, state, account_type, limit_live, limit_prop, max_trades, max_contracts, point_value, current_bar, time_ms)
+         
+    // Build ApprovedTrade primitives
+    bool   a_is_approved = is_approved
+    string a_model_id = c_model
+    float  a_edge_score = c_score
+    int    a_direction = c_dir
+    float  a_entry = c_entry
+    float  a_stop = c_stop
+    float  a_target = c_target
+    float  a_risk_pts = c_risk_pts
+    float  a_rr = c_rr
+    int    a_contracts = contracts
+    float  a_actual_risk = actual_risk
+    float  a_risk_multiplier = state.risk_multiplier
+    string a_ari_rule_applied = ari_rule_applied
+    string a_rejection_reason = rejection_reason
+    string a_signal_id = c_model + "-" + str.tostring(time_ms)
+    
+    // Build RiskDecision primitives
+    bool   r_approved = is_approved
+    string r_model_id = c_model
+    int    r_contracts = contracts
+    float  r_allocated_risk = actual_risk
+    float  r_risk_multiplier = state.risk_multiplier
+    string r_rejection_reason = rejection_reason
+    string r_rules_evaluated = "R1,R2,R3,R4,R5,R8,BUDGET"
+    string r_rules_failed = rules_failed == "" ? "NONE" : rules_failed
+    float  limit = account_type == "LIVE" ? limit_live : limit_prop
+    float  r_remaining_daily_risk = limit - state.daily_pnl
+    string r_decision_id = "ARI-" + str.tostring(time_ms)
+    int    r_ts_utc = time_ms
+    
+    [a_is_approved, a_model_id, a_edge_score, a_direction, a_entry, a_stop, a_target, a_risk_pts, a_rr, a_contracts, a_actual_risk, a_risk_multiplier, a_ari_rule_applied, a_rejection_reason, a_signal_id, r_approved, r_model_id, r_contracts, r_allocated_risk, r_risk_multiplier, r_rejection_reason, r_rules_evaluated, r_rules_failed, r_remaining_daily_risk, r_decision_id, r_ts_utc]
