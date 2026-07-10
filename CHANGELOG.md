@@ -90,6 +90,52 @@ M-10 is a standalone `indicator()`. In production (M-14 `atlas_core`), the `Posi
 
 ---
 
+## [0.12.0] - 2026-07-10
+
+### Added
+
+**Module M-14: `atlas_core.pine`** — The Atlas Kernel. The master orchestration layer of the entire Atlas operating system. 1,264 lines. Zero compilation errors. Zero warnings. Compiled and saved in TradingView on the ATLAS chart (MNQ1! 5m, chart ID: cDPu6HGG).
+
+**14-Stage Deterministic Pipeline** — Executed in strict order on every completed bar:
+1. Configuration Update
+2. State Manager Refresh
+3. Market State Engine (M-03 inline)
+4. Model A1 Evaluation (M-04 inline)
+5. Model A3 Evaluation (M-05 inline)
+6. Model B1 Evaluation (M-06 inline)
+7. Atlas Decision Engine (M-07 inline)
+8. Atlas Risk Intelligence (M-08 inline)
+9. Trade Verification Layer (M-09 inline)
+10. Execution Engine (M-10 inline)
+11. Observatory Event Generation
+12. Atlas Brain Update
+13. Mission Control Update
+14. Heartbeat
+
+**PipelineReport UDT** — One immutable record per completed bar (35 fields): identity, stage results, market state summary, decision summary, risk summary, TVL summary, execution summary, performance metrics, statistics.
+
+**KernelState UDT** — Persistent kernel health: pipeline run count, heartbeat count, avg/worst pipeline time, total state changes, total signals generated, total trades approved/rejected.
+
+**Fail-Safe Architecture** — Any stage failure stops the pipeline immediately. No partial execution. No webhook generation on failure. Observatory error event generated. Atlas Brain explanation displayed.
+
+**Engineering Mode Debug Table** — 22-row, 3-column table: kernel identity, pipeline stage status, market state, model results, ADE decision, ARI risk, TVL verification, execution state, position details, performance metrics, state changes, event log, heartbeat.
+
+**Observatory Pipeline Report** — 10-row table: pipeline run count, market state, ADE candidate, ARI approval, TVL status, execution state, position P&L, event log, heartbeat.
+
+**Heartbeat Label** — Generated on every bar with kernel version, sprint, pipeline run count, and timestamp.
+
+### Fixed (Pine Script v5 compatibility — discovered during Sprint 073 injection)
+
+- `if ... then ...` single-line syntax converted to proper `if\n    statement` block syntax (Pine Script v5 does not support inline `then`)
+- `table.cell(..., colspan=N)` — `colspan` is a Pine Script v6-only parameter; removed from all 15 occurrences
+- `str.tostring(time, "HH:mm:ss", "America/New_York")` — 3-argument timezone form not supported in v5; reduced to 2-argument form
+
+### Architecture Notes
+
+M-14 is the production execution script. All upstream modules (M-02, M-04, M-05, M-06, M-10) are inlined directly because Pine Script libraries cannot modify global `var` variables in exported functions. M-01, M-03, M-07, M-08, M-09 are pure function libraries and are also inlined for performance and to avoid library import overhead. The Kernel contains no trading logic — it only orchestrates.
+
+---
+
 ## [0.0.0] - 2026-07-04
 
 ### Added

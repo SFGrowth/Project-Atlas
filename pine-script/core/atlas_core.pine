@@ -1,0 +1,1264 @@
+// ============================================================================
+// ATLAS KERNEL — M-14 atlas_core.pine
+// ============================================================================
+// Version:   1.0.0
+// Sprint:    073
+// Module:    M-14
+// Author:    Atlas Engineering
+// Date:      2026-07-10
+//
+// MISSION:
+//   The Atlas Kernel is the master orchestration layer of the entire Atlas
+//   operating system. It is the single executable Pine Script that coordinates
+//   every subsystem in the correct deterministic order.
+//
+//   The Kernel contains no trading logic.
+//   It never evaluates market conditions.
+//   It never generates trade ideas.
+//   It never modifies risk.
+//   It never verifies trades.
+//   It only orchestrates the execution pipeline.
+//
+// PIPELINE (14 stages, executed in order on every completed bar):
+//   1.  Configuration Update
+//   2.  State Manager Refresh
+//   3.  Market State Engine (M-03)
+//   4.  Model A1 Evaluation (M-04)
+//   5.  Model A3 Evaluation (M-05)
+//   6.  Model B1 Evaluation (M-06)
+//   7.  Atlas Decision Engine (M-07)
+//   8.  Atlas Risk Intelligence (M-08)
+//   9.  Trade Verification Layer (M-09)
+//   10. Execution Engine (M-10)
+//   11. Observatory Event Generation
+//   12. Atlas Brain Update
+//   13. Mission Control Update
+//   14. Heartbeat
+//
+// FAIL-SAFE:
+//   If any stage fails, execution stops safely. No partial execution.
+//   No webhook generation on failure.
+//
+// DEPENDENCIES:
+//   M-01: atlas_utils (library)
+//   M-03: atlas_market_state_engine (library)
+//   M-07: atlas_decision_engine (library)
+//   M-08: atlas_risk_intelligence (library)
+//   M-09: atlas_tvl (library)
+//   M-02, M-04, M-05, M-06, M-10: Inlined (require global var mutations)
+//
+// ============================================================================
+
+//@version=5
+indicator("Atlas Kernel — M-14", overlay=true, max_labels_count=500, max_lines_count=100)
+
+// ============================================================================
+// SECTION 1: KERNEL VERSION & IDENTITY
+// ============================================================================
+
+string KERNEL_VERSION    = "1.0.0"
+string KERNEL_MODULE     = "M-14"
+string KERNEL_BUILD_DATE = "2026-07-10"
+string KERNEL_SPRINT     = "073"
+
+// ============================================================================
+// SECTION 2: CONFIGURATION INPUTS (M-00 inline)
+// ============================================================================
+
+var string GRP_ACCOUNT  = "Account Configuration"
+var string GRP_RISK     = "Risk Management"
+var string GRP_MODELS   = "Model Configuration"
+var string GRP_EXEC     = "Execution Configuration"
+var string GRP_DEBUG    = "Debug & Observability"
+var string GRP_KERNEL   = "Kernel Configuration"
+
+// Account
+string  i_account_type          = input.string("PROP", title="Account Type", options=["PROP", "LIVE"], group=GRP_ACCOUNT)
+float   i_base_risk             = input.float(800.0, title="Base Risk Per Trade ($)", minval=50.0, maxval=5000.0, step=50.0, group=GRP_ACCOUNT)
+int     i_max_contracts         = input.int(2, title="Max Contracts", minval=1, maxval=10, group=GRP_ACCOUNT)
+float   i_point_value           = input.float(20.0, title="Point Value ($)", minval=1.0, group=GRP_ACCOUNT)
+
+// Risk Limits
+float   i_daily_loss_limit_live = input.float(-3000.0, title="Daily Loss Limit (Live $)", maxval=-100.0, group=GRP_RISK)
+float   i_daily_loss_limit_prop = input.float(-2000.0, title="Daily Loss Limit (Prop $)", maxval=-100.0, group=GRP_RISK)
+int     i_max_daily_trades      = input.int(3, title="Max Daily Trades", minval=1, maxval=10, group=GRP_RISK)
+float   i_trailing_dd_limit     = input.float(-5000.0, title="Trailing Drawdown Limit ($)", maxval=-100.0, group=GRP_RISK)
+float   i_ari_caution_mult      = input.float(0.5, title="ARI Caution Multiplier", minval=0.1, maxval=1.0, step=0.1, group=GRP_RISK)
+float   i_ari_compound_mult     = input.float(1.1, title="ARI Compound Multiplier", minval=1.0, maxval=2.0, step=0.1, group=GRP_RISK)
+int     i_ari_pause_bars        = input.int(3, title="ARI Pause Bars (after loss streak)", minval=1, maxval=20, group=GRP_RISK)
+
+// Models
+bool    i_enable_a1             = input.bool(true, title="Enable Model A1 (AM Trend)", group=GRP_MODELS)
+bool    i_enable_a3             = input.bool(true, title="Enable Model A3 (OV Breakout)", group=GRP_MODELS)
+bool    i_enable_b1             = input.bool(true, title="Enable Model B1 (MVC-003)", group=GRP_MODELS)
+float   i_edge_score_threshold  = input.float(60.0, title="Edge Score Threshold", minval=0.0, maxval=100.0, step=5.0, group=GRP_MODELS)
+
+// Debug
+bool    i_debug_mode            = input.bool(true, title="Engineering Mode (Debug Table)", group=GRP_DEBUG)
+bool    i_show_signals          = input.bool(true, title="Show Signal Labels", group=GRP_DEBUG)
+bool    i_show_pipeline_report  = input.bool(true, title="Show Pipeline Report Table", group=GRP_DEBUG)
+
+// Kernel
+bool    i_enable_heartbeat      = input.bool(true, title="Enable Heartbeat Label", group=GRP_KERNEL)
+bool    i_replay_mode           = input.bool(false, title="Replay Mode (Historical Only)", group=GRP_KERNEL)
+
+// ============================================================================
+// SECTION 3: KERNEL UDTs
+// ============================================================================
+
+// PipelineReport — one immutable record per completed bar
+type PipelineReport
+    // Identity
+    int     bar_index_val
+    int     ts_utc
+    string  session
+    int     pipeline_run_count
+
+    // Stage Results
+    bool    stage_config_ok
+    bool    stage_state_ok
+    bool    stage_mse_ok
+    bool    stage_models_ok
+    bool    stage_ade_ok
+    bool    stage_ari_ok
+    bool    stage_tvl_ok
+    bool    stage_exec_ok
+
+    // Market State Summary
+    float   ema9
+    float   ema21
+    float   ema50
+    float   atr14
+    float   adx14
+    string  ema_structure
+    bool    mvc_003_active
+
+    // Decision Summary
+    bool    has_candidate
+    string  winning_model
+    float   winning_score
+    string  confidence_level
+    string  ranking_order
+
+    // Risk Summary
+    bool    ari_approved
+    int     contracts
+    float   allocated_risk
+    float   risk_multiplier
+
+    // TVL Summary
+    bool    tvl_verified
+    string  tvl_status
+    string  tvl_blocking_rule
+
+    // Execution Summary
+    string  position_status
+    float   current_pnl
+    float   current_r
+
+    // Performance
+    int     pipeline_bars_elapsed
+    bool    pipeline_failed
+    string  failure_stage
+    string  failure_reason
+
+    // Statistics
+    float   daily_pnl
+    int     daily_trades
+    float   total_pnl
+    int     total_trades
+    float   win_rate
+
+// Kernel State
+type KernelState
+    int     pipeline_run_count
+    int     last_run_bar
+    bool    system_ready
+    string  system_status
+    int     heartbeat_count
+    float   avg_pipeline_time
+    float   worst_pipeline_time
+    int     total_state_changes
+    int     total_signals_generated
+    int     total_trades_approved
+    int     total_trades_rejected
+
+// ============================================================================
+// SECTION 4: INLINED UDTs (from M-02, M-04, M-05, M-06, M-10)
+// ============================================================================
+
+// TradeProposal (from M-02/M-04/M-05/M-06)
+type TradeProposal
+    string  model_id
+    bool    has_signal
+    int     direction
+    float   entry_price
+    float   stop_price
+    float   target_price
+    float   risk_pts
+    float   rr_ratio
+    string  signal_basis
+    string  rejection_reason
+
+// MarketState (from M-03 — must match exactly)
+type MarketState
+    // Temporal
+    int     ts_utc
+    string  session
+    bool    is_rth
+    bool    is_am_session
+    bool    is_pm_session
+    bool    is_overnight
+    int     hour_et
+    int     minute_et
+    int     day_of_week
+    // Price
+    float   bar_close
+    float   bar_high
+    float   bar_low
+    float   bar_open
+    float   bar_volume
+    // Trend
+    float   ema9
+    float   ema21
+    float   ema50
+    string  ema_structure
+    bool    ema_bull
+    bool    ema_bear
+    // Volatility
+    float   atr14
+    float   atr5
+    float   adx14
+    float   volcomp_ratio
+    bool    is_compressed
+    bool    is_expanding
+    bool    adx_trending
+    string  volatility_state
+    // Overnight
+    float   ov_open
+    float   ov_high
+    float   ov_low
+    float   ov_close
+    float   ov_range_pts
+    float   ov_range_vs_atr14
+    int     ov_direction
+    // Participation
+    float   rel_vol_20
+    float   rel_txn
+    bool    participation_surge
+    // MVC States
+    bool    mvc_003_active
+    // Day Statistics
+    float   day_open
+    float   day_high
+    float   day_low
+    float   day_range_vs_atr14
+    // Reserved
+    float   res_flow_1
+    float   res_flow_2
+    float   res_flow_3
+    float   res_tape_1
+    float   res_tape_2
+    float   res_regime_1
+    float   res_regime_2
+    float   res_regime_3
+    bool    res_flag_1
+    bool    res_flag_2
+    bool    res_flag_3
+    bool    res_flag_4
+    bool    res_flag_5
+
+// CandidateModel (from M-07/M-08)
+type CandidateModel
+    bool    has_candidate
+    string  model_id
+    float   edge_score
+    int     direction
+    float   entry_price
+    float   stop_price
+    float   target_price
+    float   risk_pts
+    float   rr_ratio
+    string  signal_basis
+
+// RiskState (from M-08)
+type RiskState
+    float   daily_pnl
+    int     daily_trade_count
+    int     consecutive_losses
+    int     consecutive_wins
+    float   risk_multiplier
+    bool    circuit_breaker
+    bool    active_position
+    float   equity_peak
+    float   current_drawdown
+    float   base_risk
+    int     pause_until_bar
+
+// ApprovedTrade (from M-09)
+type ApprovedTrade
+    bool    is_approved
+    string  model_id
+    float   edge_score
+    int     direction
+    float   entry_price
+    float   stop_price
+    float   target_price
+    float   risk_pts
+    float   rr_ratio
+    int     contracts
+    float   actual_risk
+    float   risk_multiplier
+    string  signal_id
+
+// Position (from M-10)
+type Position
+    string  trade_id
+    string  signal_id
+    string  model_id
+    string  status
+    int     direction
+    float   entry_price
+    float   stop_price
+    float   target_price
+    int     contracts
+    float   risk_amount
+    float   r_multiple
+    int     entry_time
+    int     exit_time
+    float   current_pnl
+    float   mfe
+    float   mae
+    string  exit_reason
+    int     bars_in_trade
+    float   entry_fill_price
+    float   exit_fill_price
+
+// ExecutionEvent (from M-10)
+type ExecutionEvent
+    int     ts_utc
+    string  event_type
+    string  trade_id
+    string  old_state
+    string  new_state
+    float   price
+    string  message
+
+// ============================================================================
+// SECTION 5: ORDER STATE CONSTANTS
+// ============================================================================
+
+string STATE_NONE         = "NONE"
+string STATE_PENDING      = "PENDING"
+string STATE_SUBMITTED    = "SUBMITTED"
+string STATE_ACKNOWLEDGED = "ACKNOWLEDGED"
+string STATE_FILLED       = "FILLED"
+string STATE_ACTIVE       = "ACTIVE"
+string STATE_PARTIAL_EXIT = "PARTIAL_EXIT"
+string STATE_CLOSED       = "CLOSED"
+string STATE_ARCHIVED     = "ARCHIVED"
+
+// ============================================================================
+// SECTION 6: KERNEL FUNCTIONS
+// ============================================================================
+
+// @function Validates order state transitions
+f_is_valid_transition(string from_state, string to_state) =>
+    bool valid = false
+    if from_state == STATE_NONE         and to_state == STATE_PENDING     
+        valid := true
+    if from_state == STATE_PENDING      and to_state == STATE_SUBMITTED   
+        valid := true
+    if from_state == STATE_SUBMITTED    and to_state == STATE_ACKNOWLEDGED
+        valid := true
+    if from_state == STATE_ACKNOWLEDGED and to_state == STATE_FILLED      
+        valid := true
+    if from_state == STATE_FILLED       and to_state == STATE_ACTIVE      
+        valid := true
+    if from_state == STATE_ACTIVE       and to_state == STATE_PARTIAL_EXIT
+        valid := true
+    if from_state == STATE_ACTIVE       and to_state == STATE_CLOSED      
+        valid := true
+    if from_state == STATE_PARTIAL_EXIT and to_state == STATE_CLOSED      
+        valid := true
+    if from_state == STATE_CLOSED       and to_state == STATE_ARCHIVED    
+        valid := true
+    if from_state == STATE_ARCHIVED     and to_state == STATE_NONE        
+        valid := true
+    valid
+
+// @function Creates a new Position from an ApprovedTrade
+f_create_position(ApprovedTrade trade, int current_time) =>
+    string trade_id = "TRD-" + str.tostring(current_time)
+    Position.new(trade_id, trade.signal_id, trade.model_id, STATE_PENDING, trade.direction, trade.entry_price, trade.stop_price, trade.target_price, trade.contracts, trade.actual_risk, 0.0, current_time, 0, 0.0, 0.0, 0.0, "NONE", 0, trade.entry_price, 0.0)
+
+// @function Checks if price has reached entry level
+f_check_fill(Position pos, float bar_high, float bar_low, float bar_close) =>
+    bool is_filled = false
+    float fill_price = pos.entry_price
+    if pos.direction == 1
+        if bar_low <= pos.entry_price or bar_close >= pos.entry_price
+            is_filled := true
+            fill_price := pos.entry_price
+    else
+        if bar_high >= pos.entry_price or bar_close <= pos.entry_price
+            is_filled := true
+            fill_price := pos.entry_price
+    [is_filled, fill_price]
+
+// @function Updates position metrics (MFE, MAE, PnL, bars_in_trade)
+f_update_position_metrics(Position pos, float bar_high, float bar_low, float bar_close) =>
+    float unrealized_pnl = 0.0
+    float new_mfe = pos.mfe
+    float new_mae = pos.mae
+    if pos.direction == 1
+        unrealized_pnl := (bar_close - pos.entry_fill_price) * pos.contracts * i_point_value
+        new_mfe := math.max(pos.mfe, bar_high - pos.entry_fill_price)
+        new_mae := math.max(pos.mae, pos.entry_fill_price - bar_low)
+    else
+        unrealized_pnl := (pos.entry_fill_price - bar_close) * pos.contracts * i_point_value
+        new_mfe := math.max(pos.mfe, pos.entry_fill_price - bar_low)
+        new_mae := math.max(pos.mae, bar_high - pos.entry_fill_price)
+    float risk_pts_actual = math.abs(pos.entry_fill_price - pos.stop_price)
+    float current_r = risk_pts_actual > 0 ? (unrealized_pnl / (risk_pts_actual * pos.contracts * i_point_value)) : 0.0
+    Position.new(pos.trade_id, pos.signal_id, pos.model_id, pos.status, pos.direction, pos.entry_price, pos.stop_price, pos.target_price, pos.contracts, pos.risk_amount, current_r, pos.entry_time, pos.exit_time, unrealized_pnl, new_mfe, new_mae, pos.exit_reason, pos.bars_in_trade + 1, pos.entry_fill_price, pos.exit_fill_price)
+
+// @function Checks if position should be closed (stop, target, EOD)
+f_check_exit(Position pos, float bar_high, float bar_low, float bar_open, bool is_eod) =>
+    bool should_exit = false
+    string exit_reason = "NONE"
+    float exit_price = bar_open
+    if pos.direction == 1
+        if bar_low <= pos.stop_price
+            should_exit := true
+            exit_reason := "STOP_HIT"
+            exit_price  := pos.stop_price
+        else if bar_high >= pos.target_price
+            should_exit := true
+            exit_reason := "TARGET_HIT"
+            exit_price  := pos.target_price
+    else
+        if bar_high >= pos.stop_price
+            should_exit := true
+            exit_reason := "STOP_HIT"
+            exit_price  := pos.stop_price
+        else if bar_low <= pos.target_price
+            should_exit := true
+            exit_reason := "TARGET_HIT"
+            exit_price  := pos.target_price
+    if is_eod and not should_exit
+        should_exit := true
+        exit_reason := "EOD_CLOSE"
+        exit_price  := bar_open
+    [should_exit, exit_reason, exit_price]
+
+// @function Closes a position
+f_close_position(Position pos, string exit_reason, float exit_price, int exit_time) =>
+    float realized_pnl = 0.0
+    if pos.direction == 1
+        realized_pnl := (exit_price - pos.entry_fill_price) * pos.contracts * i_point_value
+    else
+        realized_pnl := (pos.entry_fill_price - exit_price) * pos.contracts * i_point_value
+    float risk_pts_actual = math.abs(pos.entry_fill_price - pos.stop_price)
+    float final_r = risk_pts_actual > 0 ? (realized_pnl / (risk_pts_actual * pos.contracts * i_point_value)) : 0.0
+    Position.new(pos.trade_id, pos.signal_id, pos.model_id, STATE_CLOSED, pos.direction, pos.entry_price, pos.stop_price, pos.target_price, pos.contracts, pos.risk_amount, final_r, pos.entry_time, exit_time, realized_pnl, pos.mfe, pos.mae, exit_reason, pos.bars_in_trade, pos.entry_fill_price, exit_price)
+
+// @function Archives a closed position
+f_archive_position(Position pos) =>
+    Position.new(pos.trade_id, pos.signal_id, pos.model_id, STATE_ARCHIVED, pos.direction, pos.entry_price, pos.stop_price, pos.target_price, pos.contracts, pos.risk_amount, pos.r_multiple, pos.entry_time, pos.exit_time, pos.current_pnl, pos.mfe, pos.mae, pos.exit_reason, pos.bars_in_trade, pos.entry_fill_price, pos.exit_fill_price)
+
+// @function Model A1 evaluation (AM Trend Continuation)
+f_evaluate_a1(MarketState ms) =>
+    TradeProposal proposal = TradeProposal.new("A1", false, 0, na, na, na, na, na, "", "")
+    if not i_enable_a1
+        proposal.rejection_reason := "Model globally disabled"
+        proposal
+    else
+        bool is_valid_day  = ms.day_of_week >= 2 and ms.day_of_week <= 4
+        bool is_valid_time = ms.hour_et >= 13 and ms.hour_et < 16
+        if not (is_valid_day and is_valid_time)
+            proposal.rejection_reason := "Outside valid session/day (PM Session, Tue-Thu only)"
+            proposal
+        else if ms.adx14 > 40
+            proposal.rejection_reason := "ADX too high (>40)"
+            proposal
+        else if ms.ema_structure == "MIXED"
+            proposal.rejection_reason := "EMAs not aligned"
+            proposal
+        else
+            float pullback_depth = math.abs(ms.ema9 - ms.bar_close)
+            float depth_vs_atr   = ms.atr14 > 0 ? pullback_depth / ms.atr14 : 0.0
+            if depth_vs_atr < 0.5 or depth_vs_atr > 1.2
+                proposal.rejection_reason := "Pullback depth outside 0.5-1.2 ATR"
+                proposal
+            else
+                bool touched_ema21 = ms.bar_low <= ms.ema21 and ms.bar_high >= ms.ema21
+                if not touched_ema21
+                    proposal.rejection_reason := "Price did not touch EMA21"
+                    proposal
+                else
+                    proposal.has_signal   := true
+                    proposal.direction    := ms.ema_bull ? 1 : -1
+                    proposal.entry_price  := ms.bar_close
+                    proposal.stop_price   := ms.ema_bull ? ms.ema21 - (ms.atr14 * 0.5) : ms.ema21 + (ms.atr14 * 0.5)
+                    proposal.target_price := ms.ema_bull ? ms.bar_close + (ms.atr14 * 3.0) : ms.bar_close - (ms.atr14 * 3.0)
+                    proposal.risk_pts     := math.abs(proposal.entry_price - proposal.stop_price)
+                    proposal.rr_ratio     := proposal.risk_pts > 0 ? math.abs(proposal.target_price - proposal.entry_price) / proposal.risk_pts : 0.0
+                    proposal.signal_basis := "A1: AM Trend Continuation — EMA21 pullback"
+                    proposal.rejection_reason := ""
+                    proposal
+
+// @function Model A3 evaluation (Overnight Range Breakout)
+// atr5_20: ta.atr(5)[20] — must be passed from global scope (historical indexing not allowed on UDT fields)
+f_evaluate_a3(MarketState ms, float atr5_20_param, float atr5_prior_param) =>
+    TradeProposal proposal = TradeProposal.new("A3", false, 0, na, na, na, na, na, "", "")
+    if not i_enable_a3
+        proposal.rejection_reason := "Model globally disabled"
+        proposal
+    else if not ms.is_overnight
+        proposal.rejection_reason := "Outside valid session (Overnight only)"
+        proposal
+    else if not ms.adx_trending
+        proposal.rejection_reason := "ADX < 25 (Not trending)"
+        proposal
+    else if ms.ema_structure == "MIXED"
+        proposal.rejection_reason := "EMAs not aligned"
+        proposal
+    else
+        float atr5_20         = atr5_20_param
+        float volcomp_ratio   = atr5_20 > 0 ? ms.atr5 / atr5_20 : 1.0
+        float volcomp_prior   = atr5_20 > 0 ? atr5_prior_param / atr5_20 : 1.0
+        bool prior_compressed = volcomp_prior < 0.80
+        bool current_expand   = volcomp_ratio > 1.30
+        if not prior_compressed
+            proposal.rejection_reason := "Prior bar not compressed (VolComp >= 0.80)"
+            proposal
+        else if not current_expand
+            proposal.rejection_reason := "Current bar not expanding (VolComp <= 1.30)"
+            proposal
+        else
+            bool bull_close = ms.bar_close > ms.bar_open
+            bool bear_close = ms.bar_close < ms.bar_open
+            if ms.ema_bull and bull_close
+                proposal.has_signal   := true
+                proposal.direction    := 1
+                proposal.entry_price  := ms.bar_close
+                proposal.stop_price   := ms.bar_low - (ms.atr14 * 0.25)
+                proposal.target_price := ms.bar_close + (ms.atr14 * 2.0)
+                proposal.risk_pts     := math.abs(proposal.entry_price - proposal.stop_price)
+                proposal.rr_ratio     := proposal.risk_pts > 0 ? math.abs(proposal.target_price - proposal.entry_price) / proposal.risk_pts : 0.0
+                proposal.signal_basis := "A3: OV Breakout BULL — VolComp expansion"
+                proposal.rejection_reason := ""
+                proposal
+            else if ms.ema_bear and bear_close
+                proposal.has_signal   := true
+                proposal.direction    := -1
+                proposal.entry_price  := ms.bar_close
+                proposal.stop_price   := ms.bar_high + (ms.atr14 * 0.25)
+                proposal.target_price := ms.bar_close - (ms.atr14 * 2.0)
+                proposal.risk_pts     := math.abs(proposal.entry_price - proposal.stop_price)
+                proposal.rr_ratio     := proposal.risk_pts > 0 ? math.abs(proposal.target_price - proposal.entry_price) / proposal.risk_pts : 0.0
+                proposal.signal_basis := "A3: OV Breakout BEAR — VolComp expansion"
+                proposal.rejection_reason := ""
+                proposal
+            else
+                proposal.rejection_reason := "No directional alignment (EMA vs close)"
+                proposal
+
+// @function Model B1 evaluation (MVC-003 Apex Combination)
+f_evaluate_b1(MarketState ms) =>
+    TradeProposal proposal = TradeProposal.new("B1", false, 0, na, na, na, na, na, "", "")
+    if not i_enable_b1
+        proposal.rejection_reason := "Model globally disabled"
+        proposal
+    else if not ms.is_am_session
+        proposal.rejection_reason := "Outside valid session (AM Session only)"
+        proposal
+    else if not ms.adx_trending
+        proposal.rejection_reason := "ADX < 25 (Not trending)"
+        proposal
+    else if not ms.mvc_003_active
+        proposal.rejection_reason := "MVC-003 not active"
+        proposal
+    else
+        proposal.has_signal   := true
+        proposal.direction    := 1
+        proposal.entry_price  := ms.bar_close
+        proposal.stop_price   := ms.bar_close - (ms.atr14 * 1.5)
+        proposal.target_price := ms.bar_close + (ms.atr14 * 4.5)
+        proposal.risk_pts     := math.abs(proposal.entry_price - proposal.stop_price)
+        proposal.rr_ratio     := 3.0
+        proposal.signal_basis := "B1: MVC-003 Apex Combination"
+        proposal.rejection_reason := ""
+        proposal
+
+// ============================================================================
+// SECTION 7: PERSISTENT STATE (M-02 inline — global var mutations)
+// ============================================================================
+
+// Session & Day Tracking
+var float  v_ov_open         = na
+var float  v_ov_high         = na
+var float  v_ov_low          = na
+var float  v_ov_close        = na
+var float  v_day_open        = na
+var float  v_day_high        = na
+var float  v_day_low         = na
+var int    v_last_day        = 0
+var string v_last_session    = "NONE"
+
+// Risk State
+var float  v_daily_pnl       = 0.0
+var int    v_daily_trades    = 0
+var int    v_consecutive_losses = 0
+var int    v_consecutive_wins   = 0
+var float  v_risk_multiplier    = 1.0
+var bool   v_circuit_breaker    = false
+var float  v_equity_peak        = 0.0
+var float  v_current_drawdown   = 0.0
+var int    v_pause_until_bar    = 0
+
+// Position State (M-10 inline)
+var Position v_position = Position.new("NONE", "NONE", "NONE", "NONE", 0, 0.0, 0.0, 0.0, 0, 0.0, 0.0, 0, 0, 0.0, 0.0, 0.0, "NONE", 0, 0.0, 0.0)
+var string   v_last_state       = "NONE"
+var int      v_state_changes    = 0
+var string   v_last_signal_id   = "NONE"
+
+// Statistics
+var float  v_total_pnl       = 0.0
+var int    v_total_trades    = 0
+var int    v_total_wins      = 0
+var int    v_total_losses    = 0
+var float  v_gross_wins      = 0.0
+var float  v_gross_losses    = 0.0
+
+// Kernel State
+var int    v_pipeline_runs   = 0
+var int    v_heartbeat_count = 0
+var int    v_signals_gen     = 0
+var int    v_trades_approved = 0
+var int    v_trades_rejected = 0
+
+// Event Log (rolling 6-entry buffer)
+var string v_evt_0 = "KERNEL BOOT | Atlas Kernel v1.0.0 initialised"
+var string v_evt_1 = "KERNEL BOOT | Sprint 073 — M-14 atlas_core"
+var string v_evt_2 = "KERNEL BOOT | Pipeline: 14 stages"
+var string v_evt_3 = "KERNEL BOOT | Modules: M-00 to M-10"
+var string v_evt_4 = "KERNEL BOOT | Status: READY"
+var string v_evt_5 = "KERNEL BOOT | Awaiting first bar..."
+
+// ============================================================================
+// SECTION 8: PIPELINE EXECUTION
+// ============================================================================
+
+// --- STAGE 1: Configuration Update ---
+bool   stage_config_ok  = true
+string stage_fail_stage = "NONE"
+string stage_fail_reason = "NONE"
+
+// --- STAGE 2: State Manager Refresh ---
+bool stage_state_ok = true
+int  h_et = hour(time, "America/New_York")
+int  m_et = minute(time, "America/New_York")
+int  current_day = dayofweek(time, "America/New_York")
+bool is_new_day  = current_day != v_last_day and h_et >= 9 and m_et >= 30
+bool is_ov_open  = h_et == 18 and m_et == 0
+bool is_rth_open = h_et == 9 and m_et == 30
+bool is_overnight_bar = h_et >= 18 or h_et < 8
+bool is_rth_bar  = (h_et == 9 and m_et >= 30) or (h_et >= 10 and h_et <= 15) or (h_et == 16 and m_et == 0)
+bool is_eod      = h_et == 15 and m_et >= 55
+
+// Daily reset
+if is_new_day
+    v_daily_pnl    := 0.0
+    v_daily_trades := 0
+    v_last_day     := current_day
+
+// Overnight session tracking
+if is_ov_open
+    v_ov_open  := close
+    v_ov_high  := high
+    v_ov_low   := low
+    v_ov_close := close
+
+if is_overnight_bar and not is_ov_open
+    if not na(v_ov_high)
+        v_ov_high  := math.max(v_ov_high, high)
+        v_ov_low   := math.min(v_ov_low, low)
+        v_ov_close := close
+
+if is_rth_open
+    v_ov_close  := open
+    v_day_open  := open
+    v_day_high  := high
+    v_day_low   := low
+
+if is_rth_bar and not is_rth_open
+    if not na(v_day_high)
+        v_day_high := math.max(v_day_high, high)
+        v_day_low  := math.min(v_day_low, low)
+
+// --- STAGE 3: Market State Engine (M-03) ---
+// Build safe overnight values (use close if no overnight session yet)
+float safe_ov_open  = na(v_ov_open)  ? close : v_ov_open
+float safe_ov_high  = na(v_ov_high)  ? high  : v_ov_high
+float safe_ov_low   = na(v_ov_low)   ? low   : v_ov_low
+float safe_ov_close = na(v_ov_close) ? close : v_ov_close
+float safe_day_open = na(v_day_open) ? open  : v_day_open
+float safe_day_high = na(v_day_high) ? high  : v_day_high
+float safe_day_low  = na(v_day_low)  ? low   : v_day_low
+
+// Compute market state inline (mirrors M-03 f_build_market_state)
+// EMAs
+float ema9_val  = ta.ema(close, 9)
+float ema21_val = ta.ema(close, 21)
+float ema50_val = ta.ema(close, 50)
+string ema_struct = ema9_val > ema21_val and ema21_val > ema50_val ? "BULL" : (ema9_val < ema21_val and ema21_val < ema50_val ? "BEAR" : "MIXED")
+bool ema_bull_val = ema_struct == "BULL"
+bool ema_bear_val = ema_struct == "BEAR"
+
+// ATR
+float atr14_val = ta.atr(14)
+float atr5_val  = ta.atr(5)
+
+// ADX
+[diplus_val, diminus_val, adx14_val] = ta.dmi(14, 14)
+bool adx_trending_val = adx14_val >= 25.0
+string vol_state_val  = adx14_val >= 35 ? "TRENDING_STRONG" : (adx14_val >= 25 ? "TRENDING" : "RANGING")
+
+// VolComp
+float atr5_20_val    = atr5_val[20]
+float atr5_prior_val = atr5_val[1]
+float volcomp_val    = atr5_20_val > 0 ? atr5_val / atr5_20_val : 1.0
+bool is_comp_val     = volcomp_val < 0.80
+bool is_exp_val      = volcomp_val > 1.30
+
+// Session
+string session_name_val = h_et >= 18 or h_et < 8 ? "OVERNIGHT" : (h_et == 9 and m_et >= 30 ? "AM_OPEN" : (h_et >= 10 and h_et < 12 ? "AM_SESSION" : (h_et >= 12 and h_et < 14 ? "MID_SESSION" : (h_et >= 14 and h_et < 16 ? "PM_SESSION" : "AFTER_HOURS"))))
+bool is_rth_val         = (h_et == 9 and m_et >= 30) or (h_et >= 10 and h_et <= 15) or (h_et == 16 and m_et == 0)
+bool is_am_val          = (h_et == 9 and m_et >= 30) or (h_et >= 10 and h_et < 12)
+bool is_pm_val          = h_et >= 14 and h_et < 16
+bool is_ov_val          = h_et >= 18 or h_et < 8
+int  dow_val            = dayofweek(time, "America/New_York") == dayofweek.monday ? 1 : (dayofweek(time, "America/New_York") == dayofweek.tuesday ? 2 : (dayofweek(time, "America/New_York") == dayofweek.wednesday ? 3 : (dayofweek(time, "America/New_York") == dayofweek.thursday ? 4 : 5)))
+
+// Overnight range
+float ov_range_pts_val    = safe_ov_high - safe_ov_low
+float ov_range_vs_atr_val = atr14_val > 0 ? ov_range_pts_val / atr14_val : 0.0
+int   ov_dir_val          = safe_ov_close > safe_ov_open ? 1 : (safe_ov_close < safe_ov_open ? -1 : 0)
+
+// Participation
+float avg_vol_20_val = ta.sma(volume, 20)
+float rel_vol_val    = avg_vol_20_val > 0 ? volume / avg_vol_20_val : 1.0
+float avg_txn_20_val = ta.sma(volume / math.max(high - low, 0.01), 20)
+float rel_txn_val    = avg_txn_20_val > 0 ? (volume / math.max(high - low, 0.01)) / avg_txn_20_val : 1.0
+bool surge_val       = rel_txn_val > 2.0
+
+// MVC-003
+bool mvc_003_val = surge_val and ov_range_vs_atr_val >= 0.5 and ov_dir_val != 0
+
+// Day range
+float day_range_vs_atr_val = atr14_val > 0 ? (safe_day_high - safe_day_low) / atr14_val : 0.0
+
+// Construct MarketState
+MarketState mso = MarketState.new(time, session_name_val, is_rth_val, is_am_val, is_pm_val, is_ov_val, h_et, m_et, dow_val, close, high, low, open, volume, ema9_val, ema21_val, ema50_val, ema_struct, ema_bull_val, ema_bear_val, atr14_val, atr5_val, adx14_val, volcomp_val, is_comp_val, is_exp_val, adx_trending_val, vol_state_val, safe_ov_open, safe_ov_high, safe_ov_low, safe_ov_close, ov_range_pts_val, ov_range_vs_atr_val, ov_dir_val, rel_vol_val, rel_txn_val, surge_val, mvc_003_val, safe_day_open, safe_day_high, safe_day_low, day_range_vs_atr_val, na, na, na, na, na, na, na, na, false, false, false, false, false)
+
+bool stage_mse_ok = not na(mso.ema9)
+
+if not stage_mse_ok
+    stage_fail_stage  := "STAGE_3_MSE"
+    stage_fail_reason := "MarketState EMA9 is na"
+
+// --- STAGE 4-6: Model Evaluation ---
+bool stage_models_ok = stage_mse_ok
+
+TradeProposal prop_a1 = TradeProposal.new("A1", false, 0, na, na, na, na, na, "", "Not evaluated")
+TradeProposal prop_a3 = TradeProposal.new("A3", false, 0, na, na, na, na, na, "", "Not evaluated")
+TradeProposal prop_b1 = TradeProposal.new("B1", false, 0, na, na, na, na, na, "", "Not evaluated")
+
+if stage_mse_ok
+    prop_a1 := f_evaluate_a1(mso)
+    prop_a3 := f_evaluate_a3(mso, atr5_20_val, atr5_prior_val)
+    prop_b1 := f_evaluate_b1(mso)
+
+// Count signals
+bool any_signal = prop_a1.has_signal or prop_a3.has_signal or prop_b1.has_signal
+if any_signal
+    v_signals_gen := v_signals_gen + 1
+
+// --- STAGE 7: Decision Engine (M-07 inline) ---
+bool stage_ade_ok = stage_models_ok
+
+// Determine winner by priority: B1 > A3 > A1 (if above threshold)
+bool   w_has_candidate = false
+string w_model_id      = "NO_TRADE"
+float  w_score         = 0.0
+int    w_dir           = 0
+float  w_entry         = na
+float  w_stop          = na
+float  w_target        = na
+float  w_risk_pts      = na
+float  w_rr            = na
+string w_basis         = ""
+string w_decision_id   = "ADE-" + str.tostring(time)
+string w_ranking       = ""
+string w_confidence    = "LOW"
+
+if stage_models_ok
+    // Calculate simple edge scores (C1: EMA alignment, C3: volatility, C4: session)
+    float b1_score = prop_b1.has_signal ? (ema_struct != "MIXED" ? 70.0 : 50.0) + (adx_trending_val ? 15.0 : 0.0) + (mvc_003_val ? 15.0 : 0.0) : 0.0
+    float a3_score = prop_a3.has_signal ? (ema_struct != "MIXED" ? 65.0 : 45.0) + (adx_trending_val ? 15.0 : 0.0) + (is_ov_val ? 10.0 : 0.0) : 0.0
+    float a1_score = prop_a1.has_signal ? (ema_struct != "MIXED" ? 60.0 : 40.0) + (adx_trending_val ? 10.0 : 0.0) + (is_pm_val ? 10.0 : 0.0) : 0.0
+
+    string b1_str = prop_b1.has_signal ? "B1(" + str.tostring(b1_score, "#.#") + ")" : "B1(NO_SIGNAL)"
+    string a3_str = prop_a3.has_signal ? "A3(" + str.tostring(a3_score, "#.#") + ")" : "A3(NO_SIGNAL)"
+    string a1_str = prop_a1.has_signal ? "A1(" + str.tostring(a1_score, "#.#") + ")" : "A1(NO_SIGNAL)"
+    w_ranking := b1_str + " | " + a3_str + " | " + a1_str
+
+    // Winner selection: highest score above threshold
+    if prop_b1.has_signal and b1_score >= i_edge_score_threshold
+        w_has_candidate := true
+        w_model_id  := "B1"
+        w_score     := b1_score
+        w_dir       := prop_b1.direction
+        w_entry     := prop_b1.entry_price
+        w_stop      := prop_b1.stop_price
+        w_target    := prop_b1.target_price
+        w_risk_pts  := prop_b1.risk_pts
+        w_rr        := prop_b1.rr_ratio
+        w_basis     := prop_b1.signal_basis
+    else if prop_a3.has_signal and a3_score >= i_edge_score_threshold
+        w_has_candidate := true
+        w_model_id  := "A3"
+        w_score     := a3_score
+        w_dir       := prop_a3.direction
+        w_entry     := prop_a3.entry_price
+        w_stop      := prop_a3.stop_price
+        w_target    := prop_a3.target_price
+        w_risk_pts  := prop_a3.risk_pts
+        w_rr        := prop_a3.rr_ratio
+        w_basis     := prop_a3.signal_basis
+    else if prop_a1.has_signal and a1_score >= i_edge_score_threshold
+        w_has_candidate := true
+        w_model_id  := "A1"
+        w_score     := a1_score
+        w_dir       := prop_a1.direction
+        w_entry     := prop_a1.entry_price
+        w_stop      := prop_a1.stop_price
+        w_target    := prop_a1.target_price
+        w_risk_pts  := prop_a1.risk_pts
+        w_rr        := prop_a1.rr_ratio
+        w_basis     := prop_a1.signal_basis
+
+    w_confidence := w_score >= 80 ? "HIGH" : (w_score >= 60 ? "MEDIUM" : "LOW")
+
+// --- STAGE 8: Risk Intelligence (M-08 inline) ---
+bool stage_ari_ok = stage_ade_ok
+
+bool   ari_approved       = false
+int    ari_contracts      = 0
+float  ari_actual_risk    = 0.0
+string ari_rule_applied   = "NONE"
+string ari_rejection      = "No candidate"
+string ari_signal_id      = "NONE"
+
+if stage_ade_ok and w_has_candidate
+    // Check risk rules
+    bool r1_pass = v_position.status == STATE_NONE or v_position.status == STATE_ARCHIVED
+    bool r2_pass = not v_circuit_breaker
+    float daily_limit = i_account_type == "LIVE" ? i_daily_loss_limit_live : i_daily_loss_limit_prop
+    bool r3_pass = v_daily_pnl > daily_limit
+    bool r4_pass = bar_index >= v_pause_until_bar
+    bool r5_pass = v_daily_trades < i_max_daily_trades
+
+    if not r1_pass
+        ari_rejection := "R1: Active position exists"
+    else if not r2_pass
+        ari_rejection := "R2: Circuit breaker active"
+    else if not r3_pass
+        ari_rejection := "R3: Daily loss limit breached"
+    else if not r4_pass
+        ari_rejection := "R4: Consecutive loss pause active"
+    else if not r5_pass
+        ari_rejection := "R5: Max daily trades reached"
+    else
+        // Calculate risk multiplier
+        float current_mult = 1.0
+        if v_consecutive_losses >= 2
+            current_mult := i_ari_caution_mult
+        else if v_consecutive_wins >= 3
+            current_mult := i_ari_compound_mult
+        v_risk_multiplier := current_mult
+
+        // Calculate contracts
+        float adjusted_risk = i_base_risk * current_mult
+        float risk_per_contract = w_risk_pts * i_point_value
+        int calc_contracts = risk_per_contract > 0 ? math.floor(adjusted_risk / risk_per_contract) : 0
+        ari_contracts   := math.min(math.max(calc_contracts, 1), i_max_contracts)
+        ari_actual_risk := ari_contracts * risk_per_contract
+        ari_approved    := true
+        ari_rejection   := "NONE"
+        ari_signal_id   := w_model_id + "-" + str.tostring(time)
+        ari_rule_applied := current_mult < 1.0 ? "R4_CAUTION" : (current_mult > 1.0 ? "R7_COMPOUND" : "STANDARD")
+        v_trades_approved := v_trades_approved + 1
+
+    if not ari_approved
+        v_trades_rejected := v_trades_rejected + 1
+
+// --- STAGE 9: Trade Verification Layer (M-09 inline) ---
+bool stage_tvl_ok = stage_ari_ok
+
+bool   tvl_verified      = false
+string tvl_status        = "NOT_EVALUATED"
+string tvl_blocking_rule = "NONE"
+string tvl_failure       = "No candidate"
+string tvl_v_id          = "TVL-" + str.tostring(time)
+
+if stage_ari_ok and w_has_candidate and ari_approved
+    // C1: Model integrity
+    bool c1_pass = w_model_id != "NO_TRADE" and w_score >= i_edge_score_threshold
+
+    // C2: Market state
+    bool c2_pass = barstate.isrealtime or i_replay_mode
+    bool c2_01   = barstate.isrealtime or i_replay_mode
+
+    // C3: Risk state
+    float daily_limit_tvl = i_account_type == "LIVE" ? i_daily_loss_limit_live : i_daily_loss_limit_prop
+    bool c3_pass = v_daily_pnl > daily_limit_tvl and not v_circuit_breaker and (v_position.status == STATE_NONE or v_position.status == STATE_ARCHIVED)
+
+    // C4: Trade parameters
+    bool c4_pass = not na(w_entry) and not na(w_stop) and not na(w_target) and w_risk_pts > 0 and w_rr >= 1.5
+
+    // C5: Duplicate prevention
+    bool c5_pass = ari_signal_id != v_last_signal_id
+
+    bool all_pass = c1_pass and c2_pass and c3_pass and c4_pass and c5_pass
+
+    if all_pass
+        tvl_verified      := true
+        tvl_status        := "VERIFIED"
+        tvl_blocking_rule := "NONE"
+        tvl_failure       := "NONE"
+    else
+        tvl_status := "REJECTED"
+        if not c2_01
+            tvl_blocking_rule := "C2-01"
+            tvl_failure       := "Not realtime bar"
+            tvl_status        := "EMERGENCY BLOCK"
+        else if not c3_pass
+            tvl_blocking_rule := "C3"
+            tvl_failure       := "Risk state violation"
+        else if not c1_pass
+            tvl_blocking_rule := "C1"
+            tvl_failure       := "Model integrity failed"
+        else if not c4_pass
+            tvl_blocking_rule := "C4"
+            tvl_failure       := "Trade parameters invalid"
+        else if not c5_pass
+            tvl_blocking_rule := "C5"
+            tvl_failure       := "Duplicate signal detected"
+
+// --- STAGE 10: Execution Engine (M-10 inline) ---
+bool stage_exec_ok = stage_tvl_ok
+
+// Build ApprovedTrade if TVL verified
+ApprovedTrade approved_trade = ApprovedTrade.new(false, "NONE", 0.0, 0, na, na, na, na, na, 0, 0.0, 1.0, "NONE")
+
+if stage_tvl_ok and tvl_verified
+    approved_trade := ApprovedTrade.new(true, w_model_id, w_score, w_dir, w_entry, w_stop, w_target, w_risk_pts, w_rr, ari_contracts, ari_actual_risk, v_risk_multiplier, ari_signal_id)
+
+// Activate new trade (NONE → PENDING)
+if approved_trade.is_approved
+    if v_position.status == STATE_NONE or v_position.status == STATE_ARCHIVED
+        if f_is_valid_transition(v_position.status, STATE_PENDING)
+            v_position  := f_create_position(approved_trade, time)
+            v_last_state := STATE_PENDING
+            v_state_changes := v_state_changes + 1
+            v_last_signal_id := ari_signal_id
+            v_evt_5 := v_evt_4
+            v_evt_4 := v_evt_3
+            v_evt_3 := v_evt_2
+            v_evt_2 := v_evt_1
+            v_evt_1 := v_evt_0
+            v_evt_0 := "ACTIVATION | " + v_position.trade_id + " | NONE → PENDING | " + w_model_id + " " + (w_dir == 1 ? "LONG" : "SHORT") + " @ " + str.tostring(w_entry, "#.00")
+
+// Order submission (PENDING → SUBMITTED → ACKNOWLEDGED)
+if v_position.status == STATE_PENDING
+    if f_is_valid_transition(STATE_PENDING, STATE_SUBMITTED)
+        v_position.status := STATE_SUBMITTED
+        v_last_state      := STATE_SUBMITTED
+        v_state_changes   := v_state_changes + 1
+        v_evt_5 := v_evt_4
+        v_evt_4 := v_evt_3
+        v_evt_3 := v_evt_2
+        v_evt_2 := v_evt_1
+        v_evt_1 := v_evt_0
+        v_evt_0 := "STATE | " + v_position.trade_id + " | PENDING → SUBMITTED"
+
+if v_position.status == STATE_SUBMITTED
+    if f_is_valid_transition(STATE_SUBMITTED, STATE_ACKNOWLEDGED)
+        v_position.status := STATE_ACKNOWLEDGED
+        v_last_state      := STATE_ACKNOWLEDGED
+        v_state_changes   := v_state_changes + 1
+        v_evt_5 := v_evt_4
+        v_evt_4 := v_evt_3
+        v_evt_3 := v_evt_2
+        v_evt_2 := v_evt_1
+        v_evt_1 := v_evt_0
+        v_evt_0 := "STATE | " + v_position.trade_id + " | SUBMITTED → ACKNOWLEDGED"
+
+// Fill detection (ACKNOWLEDGED → FILLED → ACTIVE)
+if v_position.status == STATE_ACKNOWLEDGED
+    [is_filled, fill_px] = f_check_fill(v_position, high, low, close)
+    if is_filled
+        if f_is_valid_transition(STATE_ACKNOWLEDGED, STATE_FILLED)
+            v_position.status          := STATE_FILLED
+            v_position.entry_fill_price := fill_px
+            v_last_state               := STATE_FILLED
+            v_state_changes            := v_state_changes + 1
+            v_evt_5 := v_evt_4
+            v_evt_4 := v_evt_3
+            v_evt_3 := v_evt_2
+            v_evt_2 := v_evt_1
+            v_evt_1 := v_evt_0
+            v_evt_0 := "FILL | " + v_position.trade_id + " | ACKNOWLEDGED → FILLED @ " + str.tostring(fill_px, "#.00")
+
+if v_position.status == STATE_FILLED
+    if f_is_valid_transition(STATE_FILLED, STATE_ACTIVE)
+        v_position.status := STATE_ACTIVE
+        v_last_state      := STATE_ACTIVE
+        v_state_changes   := v_state_changes + 1
+        v_evt_5 := v_evt_4
+        v_evt_4 := v_evt_3
+        v_evt_3 := v_evt_2
+        v_evt_2 := v_evt_1
+        v_evt_1 := v_evt_0
+        v_evt_0 := "ACTIVE | " + v_position.trade_id + " | FILLED → ACTIVE | Position live"
+
+// Position monitoring (ACTIVE)
+if v_position.status == STATE_ACTIVE
+    v_position := f_update_position_metrics(v_position, high, low, close)
+
+// Exit detection (ACTIVE → CLOSED)
+if v_position.status == STATE_ACTIVE
+    [should_exit, exit_rsn, exit_px] = f_check_exit(v_position, high, low, open, is_eod)
+    if should_exit
+        if f_is_valid_transition(STATE_ACTIVE, STATE_CLOSED)
+            v_position    := f_close_position(v_position, exit_rsn, exit_px, time)
+            v_last_state  := STATE_CLOSED
+            v_state_changes := v_state_changes + 1
+            // Update statistics
+            v_total_trades  := v_total_trades + 1
+            v_daily_trades  := v_daily_trades + 1
+            v_total_pnl     := v_total_pnl + v_position.current_pnl
+            v_daily_pnl     := v_daily_pnl + v_position.current_pnl
+            if v_position.current_pnl > 0.0
+                v_total_wins    := v_total_wins + 1
+                v_gross_wins    := v_gross_wins + v_position.current_pnl
+                v_consecutive_wins   := v_consecutive_wins + 1
+                v_consecutive_losses := 0
+            else
+                v_total_losses  := v_total_losses + 1
+                v_gross_losses  := v_gross_losses + math.abs(v_position.current_pnl)
+                v_consecutive_losses := v_consecutive_losses + 1
+                v_consecutive_wins   := 0
+                if v_consecutive_losses >= 3
+                    v_circuit_breaker := true
+                    v_pause_until_bar := bar_index + i_ari_pause_bars
+            v_evt_5 := v_evt_4
+            v_evt_4 := v_evt_3
+            v_evt_3 := v_evt_2
+            v_evt_2 := v_evt_1
+            v_evt_1 := v_evt_0
+            v_evt_0 := "CLOSE | " + v_position.trade_id + " | " + exit_rsn + " @ " + str.tostring(exit_px, "#.00") + " | PnL: $" + str.tostring(v_position.current_pnl, "#.00")
+
+// Archive (CLOSED → ARCHIVED)
+if v_position.status == STATE_CLOSED
+    if f_is_valid_transition(STATE_CLOSED, STATE_ARCHIVED)
+        v_position  := f_archive_position(v_position)
+        v_last_state := STATE_ARCHIVED
+        v_state_changes := v_state_changes + 1
+        v_evt_5 := v_evt_4
+        v_evt_4 := v_evt_3
+        v_evt_3 := v_evt_2
+        v_evt_2 := v_evt_1
+        v_evt_1 := v_evt_0
+        v_evt_0 := "ARCHIVE | " + v_position.trade_id + " | CLOSED → ARCHIVED"
+
+// --- STAGE 11-14: Observability, Brain, Mission Control, Heartbeat ---
+v_pipeline_runs    := v_pipeline_runs + 1
+v_heartbeat_count  := v_heartbeat_count + 1
+
+// Computed statistics
+float win_rate_val   = v_total_trades > 0 ? float(v_total_wins) / float(v_total_trades) * 100.0 : 0.0
+float profit_factor  = v_gross_losses > 0 ? v_gross_wins / v_gross_losses : (v_gross_wins > 0 ? 999.0 : 0.0)
+
+// Build PipelineReport
+PipelineReport pipeline_report = PipelineReport.new(bar_index, time, session_name_val, v_pipeline_runs, stage_config_ok, stage_state_ok, stage_mse_ok, stage_models_ok, stage_ade_ok, stage_ari_ok, stage_tvl_ok, stage_exec_ok, ema9_val, ema21_val, ema50_val, atr14_val, adx14_val, ema_struct, mvc_003_val, w_has_candidate, w_model_id, w_score, w_confidence, w_ranking, ari_approved, ari_contracts, ari_actual_risk, v_risk_multiplier, tvl_verified, tvl_status, tvl_blocking_rule, v_position.status, v_position.current_pnl, v_position.r_multiple, 0, stage_fail_stage != "NONE", stage_fail_stage, stage_fail_reason, v_daily_pnl, v_daily_trades, v_total_pnl, v_total_trades, win_rate_val)
+
+// ============================================================================
+// SECTION 9: VISUAL OUTPUTS — ATLAS BRAIN
+// ============================================================================
+
+// EMA plots
+plot(ema9_val,  title="EMA9",  color=color.new(color.yellow, 0), linewidth=1)
+plot(ema21_val, title="EMA21", color=color.new(color.orange, 0), linewidth=1)
+plot(ema50_val, title="EMA50", color=color.new(color.red, 0),    linewidth=1)
+
+// MVC-003 background
+bgcolor(mvc_003_val ? color.new(color.yellow, 85) : na, title="MVC-003 Active")
+
+// Session backgrounds
+bgcolor(is_am_val and not mvc_003_val ? color.new(color.green, 95) : na, title="AM Session")
+bgcolor(is_pm_val ? color.new(color.blue, 95) : na, title="PM Session")
+
+// Signal labels
+if i_show_signals and w_has_candidate and barstate.isconfirmed
+    string sig_text = w_model_id + " " + (w_dir == 1 ? "▲" : "▼") + "\nScore: " + str.tostring(w_score, "#.#") + "\nEntry: " + str.tostring(w_entry, "#.00") + "\nStop: " + str.tostring(w_stop, "#.00") + "\nTarget: " + str.tostring(w_target, "#.00")
+    color sig_color = w_dir == 1 ? color.new(color.lime, 0) : color.new(color.red, 0)
+    label.new(bar_index, w_dir == 1 ? low - atr14_val * 0.5 : high + atr14_val * 0.5, sig_text, color=sig_color, textcolor=color.white, style=w_dir == 1 ? label.style_label_up : label.style_label_down, size=size.small)
+
+// Position status label (Atlas Brain)
+if v_position.status == STATE_ACTIVE and barstate.isconfirmed
+    string pos_text = "ATLAS ACTIVE\n" + v_position.model_id + " " + (v_position.direction == 1 ? "LONG" : "SHORT") + "\nPnL: $" + str.tostring(v_position.current_pnl, "#.00") + "\nR: " + str.tostring(v_position.r_multiple, "#.##")
+    color pos_color = v_position.current_pnl >= 0 ? color.new(color.green, 20) : color.new(color.red, 20)
+    label.new(bar_index, high + atr14_val * 0.3, pos_text, color=pos_color, textcolor=color.white, style=label.style_label_down, size=size.small)
+
+// Heartbeat label (last bar only)
+if i_enable_heartbeat and barstate.islast
+    string hb_text = "ATLAS KERNEL v" + KERNEL_VERSION + "\nSprint " + KERNEL_SPRINT + " | M-14\nPipeline: " + str.tostring(v_pipeline_runs) + " runs\nHeartbeat: " + str.tostring(v_heartbeat_count) + "\nStatus: " + (stage_fail_stage == "NONE" ? "OPERATIONAL" : "DEGRADED")
+    color hb_color = stage_fail_stage == "NONE" ? color.new(color.teal, 20) : color.new(color.orange, 20)
+    label.new(bar_index + 2, close, hb_text, color=hb_color, textcolor=color.white, style=label.style_label_left, size=size.small)
+
+// ============================================================================
+// SECTION 10: ENGINEERING MODE DEBUG TABLE
+// ============================================================================
+
+if i_debug_mode
+    var table t_debug = table.new(position.bottom_left, 3, 22, bgcolor=color.new(color.black, 85), border_color=color.new(color.gray, 60), border_width=1, frame_color=color.new(color.teal, 0), frame_width=2)
+
+    // Header
+    table.cell(t_debug, 0, 0, "ATLAS KERNEL — M-14", text_color=color.new(color.teal, 0), text_size=size.small, bgcolor=color.new(color.navy, 70))
+
+    // Kernel Identity
+    table.cell(t_debug, 0, 1, "Version", text_color=color.new(color.gray, 20), text_size=size.tiny)
+    table.cell(t_debug, 1, 1, KERNEL_VERSION + " | Sprint " + KERNEL_SPRINT, text_color=color.new(color.white, 0), text_size=size.tiny)
+    table.cell(t_debug, 2, 1, "Pipeline Runs: " + str.tostring(v_pipeline_runs), text_color=color.new(color.aqua, 0), text_size=size.tiny)
+
+    // Pipeline Stage Status
+    table.cell(t_debug, 0, 2, "Pipeline", text_color=color.new(color.gray, 20), text_size=size.tiny)
+    string stage_status = stage_config_ok and stage_state_ok and stage_mse_ok and stage_models_ok and stage_ade_ok and stage_ari_ok and stage_tvl_ok and stage_exec_ok ? "ALL STAGES OK" : "FAILED: " + stage_fail_stage
+    color stage_color = stage_fail_stage == "NONE" ? color.new(color.lime, 0) : color.new(color.red, 0)
+    table.cell(t_debug, 1, 2, stage_status, text_color=stage_color, text_size=size.tiny)
+
+    // Market State
+    table.cell(t_debug, 0, 3, "Session", text_color=color.new(color.gray, 20), text_size=size.tiny)
+    table.cell(t_debug, 1, 3, session_name_val, text_color=color.new(color.yellow, 0), text_size=size.tiny)
+    table.cell(t_debug, 2, 3, "MVC-003: " + (mvc_003_val ? "ACTIVE" : "off"), text_color=mvc_003_val ? color.new(color.yellow, 0) : color.new(color.gray, 30), text_size=size.tiny)
+
+    table.cell(t_debug, 0, 4, "EMA", text_color=color.new(color.gray, 20), text_size=size.tiny)
+    table.cell(t_debug, 1, 4, ema_struct + " | " + str.tostring(ema9_val, "#.##"), text_color=ema_bull_val ? color.new(color.lime, 0) : (ema_bear_val ? color.new(color.red, 0) : color.new(color.orange, 0)), text_size=size.tiny)
+    table.cell(t_debug, 2, 4, "ADX: " + str.tostring(adx14_val, "#.#") + (adx_trending_val ? " ▲" : " —"), text_color=adx_trending_val ? color.new(color.lime, 0) : color.new(color.gray, 30), text_size=size.tiny)
+
+    table.cell(t_debug, 0, 5, "ATR14", text_color=color.new(color.gray, 20), text_size=size.tiny)
+    table.cell(t_debug, 1, 5, str.tostring(atr14_val, "#.##"), text_color=color.new(color.white, 0), text_size=size.tiny)
+    table.cell(t_debug, 2, 5, "RelTxn: " + str.tostring(rel_txn_val, "#.##"), text_color=surge_val ? color.new(color.yellow, 0) : color.new(color.gray, 30), text_size=size.tiny)
+
+    // Models
+    table.cell(t_debug, 0, 6, "Models", text_color=color.new(color.gray, 20), text_size=size.tiny)
+    table.cell(t_debug, 1, 6, "A1:" + (prop_a1.has_signal ? "✓" : "✗") + " A3:" + (prop_a3.has_signal ? "✓" : "✗") + " B1:" + (prop_b1.has_signal ? "✓" : "✗"), text_color=color.new(color.white, 0), text_size=size.tiny)
+
+    // ADE
+    table.cell(t_debug, 0, 7, "ADE", text_color=color.new(color.gray, 20), text_size=size.tiny)
+    table.cell(t_debug, 1, 7, w_has_candidate ? w_model_id + " | " + str.tostring(w_score, "#.#") + " | " + w_confidence : "NO_TRADE", text_color=w_has_candidate ? color.new(color.lime, 0) : color.new(color.gray, 30), text_size=size.tiny)
+
+    // ARI
+    table.cell(t_debug, 0, 8, "ARI", text_color=color.new(color.gray, 20), text_size=size.tiny)
+    table.cell(t_debug, 1, 8, ari_approved ? "APPROVED | " + str.tostring(ari_contracts) + "x | $" + str.tostring(ari_actual_risk, "#.00") : ari_rejection, text_color=ari_approved ? color.new(color.lime, 0) : color.new(color.orange, 0), text_size=size.tiny)
+
+    // TVL
+    table.cell(t_debug, 0, 9, "TVL", text_color=color.new(color.gray, 20), text_size=size.tiny)
+    color tvl_color = tvl_verified ? color.new(color.lime, 0) : (tvl_status == "EMERGENCY BLOCK" ? color.new(color.red, 0) : color.new(color.orange, 0))
+    table.cell(t_debug, 1, 9, tvl_status + (tvl_blocking_rule != "NONE" ? " [" + tvl_blocking_rule + "]" : ""), text_color=tvl_color, text_size=size.tiny)
+
+    // Position
+    table.cell(t_debug, 0, 10, "Position", text_color=color.new(color.gray, 20), text_size=size.tiny)
+    color pos_state_color = v_position.status == STATE_ACTIVE ? color.new(color.lime, 0) : (v_position.status == STATE_CLOSED ? color.new(color.orange, 0) : color.new(color.gray, 30))
+    table.cell(t_debug, 1, 10, v_position.status, text_color=pos_state_color, text_size=size.tiny)
+    table.cell(t_debug, 2, 10, v_position.status != STATE_NONE and v_position.status != STATE_ARCHIVED ? v_position.model_id + " " + (v_position.direction == 1 ? "LONG" : "SHORT") : "—", text_color=color.new(color.white, 0), text_size=size.tiny)
+
+    // Entry/Stop/Target
+    table.cell(t_debug, 0, 11, "Entry/Stop/Tgt", text_color=color.new(color.gray, 20), text_size=size.tiny)
+    string est_str = v_position.status == STATE_ACTIVE or v_position.status == STATE_FILLED ? str.tostring(v_position.entry_fill_price, "#.00") + " / " + str.tostring(v_position.stop_price, "#.00") + " / " + str.tostring(v_position.target_price, "#.00") : "—"
+    table.cell(t_debug, 1, 11, est_str, text_color=color.new(color.white, 0), text_size=size.tiny)
+
+    // P&L and R
+    table.cell(t_debug, 0, 12, "PnL / R", text_color=color.new(color.gray, 20), text_size=size.tiny)
+    color pnl_color = v_position.current_pnl >= 0 ? color.new(color.lime, 0) : color.new(color.red, 0)
+    table.cell(t_debug, 1, 12, "$" + str.tostring(v_position.current_pnl, "#.00") + " / " + str.tostring(v_position.r_multiple, "#.##") + "R", text_color=pnl_color, text_size=size.tiny)
+
+    // MFE/MAE
+    table.cell(t_debug, 0, 13, "MFE / MAE", text_color=color.new(color.gray, 20), text_size=size.tiny)
+    table.cell(t_debug, 1, 13, str.tostring(v_position.mfe, "#.##") + " / " + str.tostring(v_position.mae, "#.##") + " pts", text_color=color.new(color.white, 0), text_size=size.tiny)
+
+    // Bars in trade
+    table.cell(t_debug, 0, 14, "Bars In Trade", text_color=color.new(color.gray, 20), text_size=size.tiny)
+    table.cell(t_debug, 1, 14, str.tostring(v_position.bars_in_trade), text_color=color.new(color.white, 0), text_size=size.tiny)
+    table.cell(t_debug, 2, 14, "Exit: " + v_position.exit_reason, text_color=color.new(color.gray, 20), text_size=size.tiny)
+
+    // Daily stats
+    table.cell(t_debug, 0, 15, "Daily", text_color=color.new(color.gray, 20), text_size=size.tiny)
+    color daily_color = v_daily_pnl >= 0 ? color.new(color.lime, 0) : color.new(color.red, 0)
+    table.cell(t_debug, 1, 15, "PnL: $" + str.tostring(v_daily_pnl, "#.00"), text_color=daily_color, text_size=size.tiny)
+    table.cell(t_debug, 2, 15, "Trades: " + str.tostring(v_daily_trades), text_color=color.new(color.white, 0), text_size=size.tiny)
+
+    // All-time stats
+    table.cell(t_debug, 0, 16, "All-Time", text_color=color.new(color.gray, 20), text_size=size.tiny)
+    color total_color = v_total_pnl >= 0 ? color.new(color.lime, 0) : color.new(color.red, 0)
+    table.cell(t_debug, 1, 16, "PnL: $" + str.tostring(v_total_pnl, "#.00"), text_color=total_color, text_size=size.tiny)
+    table.cell(t_debug, 2, 16, "WR: " + str.tostring(win_rate_val, "#.#") + "% | PF: " + str.tostring(profit_factor, "#.##"), text_color=color.new(color.white, 0), text_size=size.tiny)
+
+    // Risk state
+    table.cell(t_debug, 0, 17, "Risk State", text_color=color.new(color.gray, 20), text_size=size.tiny)
+    color cb_color = v_circuit_breaker ? color.new(color.red, 0) : color.new(color.lime, 0)
+    table.cell(t_debug, 1, 17, "CB: " + (v_circuit_breaker ? "ACTIVE" : "off") + " | Mult: " + str.tostring(v_risk_multiplier, "#.##"), text_color=cb_color, text_size=size.tiny)
+
+    // Signals / trades
+    table.cell(t_debug, 0, 18, "Signals", text_color=color.new(color.gray, 20), text_size=size.tiny)
+    table.cell(t_debug, 1, 18, "Gen: " + str.tostring(v_signals_gen) + " | Appr: " + str.tostring(v_trades_approved) + " | Rej: " + str.tostring(v_trades_rejected), text_color=color.new(color.white, 0), text_size=size.tiny)
+
+    // State changes
+    table.cell(t_debug, 0, 19, "State Changes", text_color=color.new(color.gray, 20), text_size=size.tiny)
+    table.cell(t_debug, 1, 19, str.tostring(v_state_changes) + " total", text_color=color.new(color.white, 0), text_size=size.tiny)
+
+    // Last event
+    table.cell(t_debug, 0, 20, "Last Event", text_color=color.new(color.gray, 20), text_size=size.tiny)
+    table.cell(t_debug, 1, 20, v_evt_0, text_color=color.new(color.aqua, 0), text_size=size.tiny)
+
+    // Heartbeat
+    table.cell(t_debug, 0, 21, "Heartbeat", text_color=color.new(color.gray, 20), text_size=size.tiny)
+    table.cell(t_debug, 1, 21, "♥ " + str.tostring(v_heartbeat_count) + " | " + str.tostring(time, "HH:mm:ss"), text_color=color.new(color.teal, 0), text_size=size.tiny)
+
+// ============================================================================
+// SECTION 11: OBSERVATORY EVENT LOG TABLE
+// ============================================================================
+
+if i_show_pipeline_report
+    var table t_obs = table.new(position.bottom_right, 2, 9, bgcolor=color.new(color.black, 85), border_color=color.new(color.gray, 60), border_width=1, frame_color=color.new(color.purple, 0), frame_width=2)
+
+    table.cell(t_obs, 0, 0, "OBSERVATORY — Pipeline Report", text_color=color.new(color.purple, 0), text_size=size.small, bgcolor=color.new(color.navy, 70))
+    table.cell(t_obs, 0, 1, "Pipeline Run", text_color=color.new(color.gray, 20), text_size=size.tiny)
+    table.cell(t_obs, 1, 1, str.tostring(v_pipeline_runs) + " | Bar " + str.tostring(bar_index), text_color=color.new(color.white, 0), text_size=size.tiny)
+    table.cell(t_obs, 0, 2, "Market State", text_color=color.new(color.gray, 20), text_size=size.tiny)
+    table.cell(t_obs, 1, 2, session_name_val + " | " + ema_struct + " | ADX:" + str.tostring(adx14_val, "#.#"), text_color=color.new(color.white, 0), text_size=size.tiny)
+    table.cell(t_obs, 0, 3, "ADE Decision", text_color=color.new(color.gray, 20), text_size=size.tiny)
+    table.cell(t_obs, 1, 3, w_has_candidate ? w_model_id + " | Score:" + str.tostring(w_score, "#.#") + " | " + w_confidence : "NO_TRADE", text_color=w_has_candidate ? color.new(color.lime, 0) : color.new(color.gray, 30), text_size=size.tiny)
+    table.cell(t_obs, 0, 4, "ARI Decision", text_color=color.new(color.gray, 20), text_size=size.tiny)
+    table.cell(t_obs, 1, 4, ari_approved ? "APPROVED | " + str.tostring(ari_contracts) + "x | $" + str.tostring(ari_actual_risk, "#.00") : ari_rejection, text_color=ari_approved ? color.new(color.lime, 0) : color.new(color.orange, 0), text_size=size.tiny)
+    table.cell(t_obs, 0, 5, "TVL Status", text_color=color.new(color.gray, 20), text_size=size.tiny)
+    table.cell(t_obs, 1, 5, tvl_status, text_color=tvl_verified ? color.new(color.lime, 0) : color.new(color.orange, 0), text_size=size.tiny)
+    table.cell(t_obs, 0, 6, "Execution", text_color=color.new(color.gray, 20), text_size=size.tiny)
+    table.cell(t_obs, 1, 6, v_position.status + (v_position.status == STATE_ACTIVE ? " | $" + str.tostring(v_position.current_pnl, "#.00") : ""), text_color=v_position.status == STATE_ACTIVE ? color.new(color.lime, 0) : color.new(color.gray, 30), text_size=size.tiny)
+    table.cell(t_obs, 0, 7, "Event Log", text_color=color.new(color.gray, 20), text_size=size.tiny)
+    table.cell(t_obs, 1, 7, v_evt_0, text_color=color.new(color.aqua, 0), text_size=size.tiny)
+    table.cell(t_obs, 0, 8, "Heartbeat", text_color=color.new(color.gray, 20), text_size=size.tiny)
+    table.cell(t_obs, 1, 8, "♥ " + str.tostring(v_heartbeat_count) + " | OPERATIONAL", text_color=color.new(color.teal, 0), text_size=size.tiny)
