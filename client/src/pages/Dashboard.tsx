@@ -487,8 +487,9 @@ function StarkIDPanel({ p, sseStatus, reportCount }: { p: PipelineReportPayload 
   }, []);
 
   const now = new Date();
-  const timeStr = now.toLocaleTimeString("en-US", { hour12: false, hour: "2-digit", minute: "2-digit", second: "2-digit" });
-  const dateStr = now.toLocaleDateString("en-US", { weekday: "short", year: "numeric", month: "short", day: "2-digit" });
+  const NY_TZ = "America/New_York";
+  const timeStr = now.toLocaleTimeString("en-US", { hour12: false, hour: "2-digit", minute: "2-digit", second: "2-digit", timeZone: NY_TZ });
+  const dateStr = now.toLocaleDateString("en-US", { weekday: "short", year: "numeric", month: "short", day: "2-digit", timeZone: NY_TZ });
 
   return (
     <div className="hud-panel hud-panel-br flex flex-col gap-0">

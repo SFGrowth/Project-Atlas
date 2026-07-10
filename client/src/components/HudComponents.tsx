@@ -42,7 +42,7 @@ export function fmtPct(v: number | null | undefined): string {
 
 export function fmtTime(iso: string | null | undefined): string {
   if (!iso) return "—";
-  try { return new Date(iso).toLocaleTimeString("en-US", { hour12: false, hour: "2-digit", minute: "2-digit", second: "2-digit" }); }
+  try { return new Date(iso).toLocaleTimeString("en-US", { hour12: false, hour: "2-digit", minute: "2-digit", second: "2-digit", timeZone: "America/New_York" }); }
   catch { return iso; }
 }
 
@@ -50,13 +50,13 @@ export function fmtDateTime(iso: string | null | undefined): string {
   if (!iso) return "—";
   try {
     const d = new Date(iso);
-    return `${d.toLocaleDateString("en-US", { month: "2-digit", day: "2-digit" })} ${d.toLocaleTimeString("en-US", { hour12: false, hour: "2-digit", minute: "2-digit" })}`;
+    return `${d.toLocaleDateString("en-US", { month: "2-digit", day: "2-digit", timeZone: "America/New_York" })} ${d.toLocaleTimeString("en-US", { hour12: false, hour: "2-digit", minute: "2-digit", timeZone: "America/New_York" })}`;
   } catch { return iso ?? "—"; }
 }
 
 export function fmtDate(iso: string | null | undefined): string {
   if (!iso) return "—";
-  try { return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" }); }
+  try { return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric", timeZone: "America/New_York" }); }
   catch { return iso; }
 }
 

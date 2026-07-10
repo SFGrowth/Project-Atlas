@@ -29,7 +29,7 @@ export default function TimelinePage() {
                   {reports.map((r) => (
                     <tr key={r.id} className="border-b border-[oklch(0.18_0.05_220/0.3)] hover:bg-[oklch(0.18_0.05_220/0.3)] transition-colors">
                       <td className="py-1.5 px-2 text-[var(--arc-cyan)]">{fmtDateTime(r.receivedAt)}</td>
-                      <td className="py-1.5 px-2 text-[var(--color-muted-foreground)]">{r.barTime ? new Date(r.barTime).toLocaleTimeString("en-US", { hour12: false, hour: "2-digit", minute: "2-digit" }) : "—"}</td>
+                      <td className="py-1.5 px-2 text-[var(--color-muted-foreground)]">{r.barTime ? new Date(r.barTime).toLocaleTimeString("en-US", { hour12: false, hour: "2-digit", minute: "2-digit", timeZone: "America/New_York" }) : "—"}</td>
                       <td className="py-1.5 px-2"><StateBadge value={r.masterState} /></td>
                       <td className="py-1.5 px-2"><SignalBadge value={(r.payload as any)?.ade_decision} /></td>
                       <td className="py-1.5 px-2"><ApprovalBadge value={(r.payload as any)?.ari_approved} /></td>

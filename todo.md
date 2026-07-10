@@ -74,3 +74,15 @@
 - [x] Vitest: 15/15 tests pass
 - [x] Checkpoint saved
 - [x] Publish instructions delivered
+
+## Sprint 077 — Backend Hardening + Analytics
+
+- [x] Timeframe validation: reject payloads where timeframe !== "5" with HTTP 422
+- [x] Notification deduplication: per-type cooldown windows (ARI_REJECTION 5min, CIRCUIT_BREAKER 30min, WEBHOOK_FAILURE 1hr, TV_DISCONNECTED 2hr)
+- [x] 10-minute startup grace period before WEBHOOK_FAILURE/TV_DISCONNECTED checks activate
+- [x] tvDisconnectNotified resets on every successful webhook receipt
+- [x] M-15 Pine Script: add webhook_secret and pipeline_run_id fields
+- [x] Performance Analytics page (/analytics): equity curve, daily P&L, model breakdown, trade log
+- [x] Fix all dashboard clocks and timestamps to display in New York (ET) timezone
+- [x] Vitest: 17/17 tests pass
+- [ ] Add trade entry/exit labels to M-15 Pine Script (W/L labels, no reprints, bar-close confirmed)

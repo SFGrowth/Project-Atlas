@@ -32,8 +32,9 @@ export default function Home() {
   }, []);
 
   const now = new Date();
-  const timeStr = now.toLocaleTimeString("en-US", { hour12: false, hour: "2-digit", minute: "2-digit", second: "2-digit" });
-  const dateStr = now.toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "2-digit" });
+  const NY_TZ = "America/New_York";
+  const timeStr = now.toLocaleTimeString("en-US", { hour12: false, hour: "2-digit", minute: "2-digit", second: "2-digit", timeZone: NY_TZ });
+  const dateStr = now.toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "2-digit", timeZone: NY_TZ });
 
   const p = latestReport?.payload ?? null;
   const reportCount = stats?.totalReports ?? 0;
