@@ -30,6 +30,37 @@ The format is based on clear version history rather than informal memory. Every 
 
 - Execution boundary clarified: Atlas begins as observer-only and should not connect to live execution before validation.
 
+## [0.10.0] - 2026-07-10
+
+### Added
+
+- All 10 Pine Script core modules (M-00 through M-09) compiled and saved in TradingView Pine Editor.
+  - M-00: Atlas Configuration (atlas_config.pine) — system-wide constants and configuration table
+  - M-01: Atlas Utilities (atlas_utils.pine) — shared utility functions (EMA, ATR, session detection, FIFO queues)
+  - M-02: Atlas State Manager (atlas_state_manager.pine) — persistent state machine for session, risk, and trade tracking
+  - M-03: Atlas Market State Engine (atlas_market_state_engine.pine) — MarketState UDT builder with EMA, ATR, ADX, volume, overnight analysis
+  - M-04: Atlas Model A1 (atlas_model_a1.pine) — AM Session Trend Continuation model
+  - M-05: Atlas Model A3 (atlas_model_a3.pine) — Overnight Range Breakout model
+  - M-06: Atlas Model B1 (atlas_model_b1.pine) — MVC-003 Apex Combination model
+  - M-07: Atlas Decision Engine (atlas_decision_engine.pine) — multi-model candidate evaluation and winner selection
+  - M-08: Atlas Risk Intelligence (atlas_risk_intelligence.pine) — position sizing, risk multipliers, capital allocation
+  - M-09: Atlas TVL (atlas_tvl.pine) — Trade Verification Layer with 18-rule safety barrier
+
+### Fixed (Pine Script v5 Compatibility)
+
+- `math.mod` replaced with `%` operator (not available in Pine Script v5)
+- Unused function parameters resolved by adding no-op expressions to satisfy compiler
+- `library()` declaration converted to `indicator()` for stateful modules (Pine Script libraries cannot modify global `var` variables in exported functions)
+- `ta.adx()` replaced with `ta.dmi()` destructuring syntax
+- Multi-line ternary expressions and `.new()` constructor calls joined to single lines
+- Nested function definitions moved to global scope
+- `TradeProposal.new()` named arguments converted to positional arguments
+
+### Notes
+
+Sprint 072 objective: compile and verify all foundation modules before building M-10 Execution Engine.
+All modules verified running on ATLAS chart (MNQ1! 5m, chart ID: cDPu6HGG).
+
 ## [0.0.0] - 2026-07-04
 
 ### Added

@@ -99,6 +99,20 @@ export type MarketState
     float   day_high            // Day session high so far
     float   day_low             // Day session low so far
     float   day_range_vs_atr14  // (day_high - day_low) / atr14
+    // --- RESERVED FIELDS (13 fields for future use) ---
+    float   res_flow_1          // Reserved: order flow metric 1
+    float   res_flow_2          // Reserved: order flow metric 2
+    float   res_flow_3          // Reserved: order flow metric 3
+    float   res_tape_1          // Reserved: tape reading metric 1
+    float   res_tape_2          // Reserved: tape reading metric 2
+    float   res_regime_1        // Reserved: regime metric 1
+    float   res_regime_2        // Reserved: regime metric 2
+    float   res_regime_3        // Reserved: regime metric 3
+    bool    res_flag_1          // Reserved: flag 1
+    bool    res_flag_2          // Reserved: flag 2
+    bool    res_flag_3          // Reserved: flag 3
+    bool    res_flag_4          // Reserved: flag 4
+    bool    res_flag_5          // Reserved: flag 5
 
 // ============================================================================
 // SECTION 2: INDICATOR CALCULATIONS
@@ -152,7 +166,7 @@ export f_calc_atrs() =>
 // This matches the standard ADX14 used in the Python research engine.
 // ---------------------------------------------------------------------------
 export f_calc_adx() =>
-    float adx14 = ta.adx(14)
+    [_diplus14, _diminus14, adx14] = ta.dmi(14, 14)
     adx14
 
 // ---------------------------------------------------------------------------
@@ -263,11 +277,7 @@ export f_get_day_of_week() =>
     int pine_dow = dayofweek(time, "America/New_York")
     // Pine: 1=Sun, 2=Mon, 3=Tue, 4=Wed, 5=Thu, 6=Fri, 7=Sat
     // Atlas: 1=Mon, 2=Tue, 3=Wed, 4=Thu, 5=Fri
-    int atlas_dow = pine_dow == 2 ? 1 :
-                    pine_dow == 3 ? 2 :
-                    pine_dow == 4 ? 3 :
-                    pine_dow == 5 ? 4 :
-                    pine_dow == 6 ? 5 : 0  // 0 = weekend
+    int atlas_dow = pine_dow == 2 ? 1 : pine_dow == 3 ? 2 : pine_dow == 4 ? 3 : pine_dow == 5 ? 4 : pine_dow == 6 ? 5 : 0  // 0 = weekend
     atlas_dow
 
 // ============================================================================
@@ -479,7 +489,21 @@ export f_build_market_state(
          day_open            = day_open_val,
          day_high            = day_high_val,
          day_low             = day_low_val,
-         day_range_vs_atr14  = day_range_vs_atr_val)
+         day_range_vs_atr14  = day_range_vs_atr_val,
+         // Future Reserved Fields
+         res_flow_1          = na,
+         res_flow_2          = na,
+         res_flow_3          = na,
+         res_tape_1          = na,
+         res_tape_2          = na,
+         res_regime_1        = na,
+         res_regime_2        = na,
+         res_regime_3        = na,
+         res_flag_1          = false,
+         res_flag_2          = false,
+         res_flag_3          = false,
+         res_flag_4          = false,
+         res_flag_5          = false)
 
 // ============================================================================
 // SECTION 9: ENGINEERING MODE DEBUG TABLE
@@ -487,6 +511,19 @@ export f_build_market_state(
 // Only active when debug_mode is enabled (passed as parameter).
 // This function is called by M-14 atlas_core in engineering mode.
 // ============================================================================
+
+// ============================================================================
+// SECTION 7b: DEBUG TABLE HELPER FUNCTIONS (global scope)
+// ============================================================================
+// @function Returns green if condition is true, gray otherwise
+f_ok_color(bool cond) =>
+    cond ? color.new(color.green, 30) : color.new(color.gray, 50)
+
+// @function Renders a single row in the debug table
+f_row(table t, int row, string label, string val, color status_color) =>
+    table.cell(t, 0, row, label, text_color=color.new(color.white, 10), text_size=size.tiny)
+    table.cell(t, 1, row, val, text_color=color.aqua, text_size=size.tiny)
+    table.cell(t, 2, row, "", bgcolor=status_color, text_size=size.tiny)
 
 export f_render_debug_table(MarketState mso, bool debug_mode) =>
     if debug_mode and barstate.islast
@@ -510,19 +547,6 @@ export f_render_debug_table(MarketState mso, bool debug_mode) =>
              text_color=color.yellow, text_size=size.small,
              bgcolor=color.new(color.navy, 50))
 
-        // Helper: status color
-        f_ok_color(bool cond) =>
-            cond ? color.new(color.green, 30) : color.new(color.gray, 50)
-
-        // Row helper function
-        f_row(table t, int row, string label, string val, color status_color) =>
-            table.cell(t, 0, row, label,
-                 text_color=color.new(color.white, 10), text_size=size.tiny)
-            table.cell(t, 1, row, val,
-                 text_color=color.aqua, text_size=size.tiny)
-            table.cell(t, 2, row, "",
-                 bgcolor=status_color, text_size=size.tiny)
-
         // --- TEMPORAL ---
         table.cell(mse_table, 0, 1, "── TEMPORAL ──",
              text_color=color.new(color.yellow, 20), text_size=size.tiny)
@@ -536,9 +560,7 @@ export f_render_debug_table(MarketState mso, bool debug_mode) =>
              str.format("{0,number,00}:{1,number,00}", mso.hour_et, mso.minute_et),
              color.new(color.gray, 50))
         f_row(mse_table, 4,  "Day of Week",
-             mso.day_of_week == 1 ? "MON" : mso.day_of_week == 2 ? "TUE" :
-             mso.day_of_week == 3 ? "WED" : mso.day_of_week == 4 ? "THU" :
-             mso.day_of_week == 5 ? "FRI" : "WKD",
+             mso.day_of_week == 1 ? "MON" : mso.day_of_week == 2 ? "TUE" : mso.day_of_week == 3 ? "WED" : mso.day_of_week == 4 ? "THU" : mso.day_of_week == 5 ? "FRI" : "WKD",
              color.new(color.gray, 50))
         f_row(mse_table, 5,  "Is RTH",
              mso.is_rth ? "YES" : "NO",
@@ -570,9 +592,7 @@ export f_render_debug_table(MarketState mso, bool debug_mode) =>
              color.new(color.gray, 50))
         f_row(mse_table, 13, "EMA Structure",
              mso.ema_structure,
-             mso.ema_bull ? color.new(color.green, 30) :
-             mso.ema_bear ? color.new(color.red, 30) :
-             color.new(color.orange, 40))
+             mso.ema_bull ? color.new(color.green, 30) : mso.ema_bear ? color.new(color.red, 30) : color.new(color.orange, 40))
 
         // --- VOLATILITY ---
         table.cell(mse_table, 0, 14, "── VOLATILITY ──",
@@ -591,9 +611,7 @@ export f_render_debug_table(MarketState mso, bool debug_mode) =>
              mso.adx_trending ? color.new(color.green, 30) : color.new(color.orange, 40))
         f_row(mse_table, 18, "VolComp Ratio",
              str.tostring(mso.volcomp_ratio, "#.000"),
-             mso.is_compressed ? color.new(color.blue, 30) :
-             mso.is_expanding  ? color.new(color.purple, 30) :
-             color.new(color.gray, 50))
+             mso.is_compressed ? color.new(color.blue, 30) : mso.is_expanding ? color.new(color.purple, 30) : color.new(color.gray, 50))
         f_row(mse_table, 19, "Compressed",
              mso.is_compressed ? "YES" : "NO",
              f_ok_color(mso.is_compressed))
@@ -630,9 +648,7 @@ export f_render_debug_table(MarketState mso, bool debug_mode) =>
              mso.ov_range_vs_atr14 >= 10.85 ? color.new(color.green, 30) : color.new(color.gray, 50))
         f_row(mse_table, 29, "OV Direction",
              mso.ov_direction == 1 ? "BULL" : mso.ov_direction == -1 ? "BEAR" : "NEUTRAL",
-             mso.ov_direction == 1 ? color.new(color.green, 30) :
-             mso.ov_direction == -1 ? color.new(color.red, 30) :
-             color.new(color.gray, 50))
+             mso.ov_direction == 1 ? color.new(color.green, 30) : mso.ov_direction == -1 ? color.new(color.red, 30) : color.new(color.gray, 50))
 
         // --- PARTICIPATION ---
         table.cell(mse_table, 0, 30, "── PARTICIPATION ──",
@@ -714,7 +730,7 @@ var float v_verify_day_low  = na
 int  _h_et    = hour(time, "America/New_York")
 int  _m_et    = minute(time, "America/New_York")
 int  _mins_et = _h_et * 60 + _m_et
-bool _is_overnight_bar = _h_et >= 18 or _h_et < 9 or (_h_et == 9 and _m_et < 30)
+bool _is_overnight_bar = _h_et >= 18 or _h_et < 8
 bool _is_rth_bar       = (_h_et == 9 and _m_et >= 30) or (_h_et >= 10 and _h_et <= 15) or (_h_et == 16 and _m_et == 0)
 bool _is_ov_open_bar   = _h_et == 18 and _m_et == 0
 bool _is_rth_open_bar  = _h_et == 9 and _m_et == 30

@@ -34,29 +34,39 @@ export f_is_rth(int h, int m) =>
     // h = hour in ET, m = minute in ET
     (h == 9 and m >= 30) or (h >= 10 and h <= 15) or (h == 16 and m == 0)
 
-// Returns true if the current bar is in the AM Session (09:30–11:59 ET)
+// Returns true if the current bar is in the AM Session (10:00–11:59 ET)
 export f_is_am_session(int h, int m) =>
-    (h == 9 and m >= 30) or (h == 10) or (h == 11)
+    ((h == 10) or (h == 11)) and m >= 0
+
+// Returns true if the current bar is in the AM Open Session (09:30–09:59 ET)
+export f_is_am_open(int h, int m) =>
+    h == 9 and m >= 30
+
+// Returns true if the current bar is in the Pre-Market Session (08:00–09:29 ET)
+export f_is_pre_market(int h, int m) =>
+    h == 8 or (h == 9 and m < 30)
 
 // Returns true if the current bar is in the Mid Session (12:00–13:59 ET)
 export f_is_mid_session(int h, int m) =>
-    h == 12 or h == 13
+    (h == 12 or h == 13) and m >= 0
 
 // Returns true if the current bar is in the PM Session (14:00–15:59 ET)
 export f_is_pm_session(int h, int m) =>
-    h == 14 or h == 15
+    (h == 14 or h == 15) and m >= 0
 
-// Returns true if the current bar is in the Overnight Session (18:00–09:29 ET)
+// Returns true if the current bar is in the Overnight Session (18:00–07:59 ET)
 // Overnight spans midnight, so requires special handling
 export f_is_overnight(int h, int m) =>
-    h >= 18 or h < 9 or (h == 9 and m < 30)
+    (h >= 18 or h < 8) and m >= 0
 
 // Returns the session name string for the current bar
 // Returns: "AM_SESSION" | "MID_SESSION" | "PM_SESSION" | "AFTER_HOURS" | "OVERNIGHT" | "PRE_MARKET"
 export f_get_session_name(int h, int m) =>
     string session = "OVERNIGHT"
-    if h == 9 and m >= 30
-        session := "AM_SESSION"
+    if h == 8 or (h == 9 and m < 30)
+        session := "PRE_MARKET"
+    else if h == 9 and m >= 30
+        session := "AM_OPEN"
     else if h >= 10 and h <= 11
         session := "AM_SESSION"
     else if h == 12 or h == 13
@@ -111,7 +121,7 @@ export f_is_trading_day(int pine_dow) =>
 export f_hour_et(int ts_ms) =>
     // Pine Script's hour() function handles timezone natively when called with timezone arg
     // This helper wraps the pattern for consistency
-    int h = math.floor(math.mod(ts_ms / 3600000.0, 24.0))
+    int h = math.floor((ts_ms / 3600000.0) % 24.0)
     h  // Returns UTC hour; caller must apply timezone offset externally if needed
 
 // Returns a formatted time string "HH:MM" from hour and minute integers
@@ -404,25 +414,6 @@ export f_volatility_state(float adx, float volcomp_ratio) =>
         "NORMAL"
 
 // ============================================================================
-// VERIFICATION OUTPUT
-// Displays a summary table confirming all utility functions are loaded
+// END OF MODULE M-01
+// Verification table removed to maintain pure statelessness per APS v1.0
 // ============================================================================
-
-var table utils_table = table.new(position.top_left, 2, 6,
-     bgcolor      = color.new(color.teal, 85),
-     border_color = color.new(color.teal, 50),
-     border_width = 1)
-
-if barstate.islast
-    table.cell(utils_table, 0, 0, "M-01: Atlas Utils",    text_color=color.yellow, text_size=size.small)
-    table.cell(utils_table, 1, 0, "Status",               text_color=color.yellow, text_size=size.small)
-    table.cell(utils_table, 0, 1, "Session Detection",    text_color=color.white,  text_size=size.tiny)
-    table.cell(utils_table, 1, 1, "8 functions",          text_color=color.green,  text_size=size.tiny)
-    table.cell(utils_table, 0, 2, "Risk Calculations",    text_color=color.white,  text_size=size.tiny)
-    table.cell(utils_table, 1, 2, "7 functions",          text_color=color.green,  text_size=size.tiny)
-    table.cell(utils_table, 0, 3, "Point Calculations",   text_color=color.white,  text_size=size.tiny)
-    table.cell(utils_table, 1, 3, "7 functions",          text_color=color.green,  text_size=size.tiny)
-    table.cell(utils_table, 0, 4, "JSON Helpers",         text_color=color.white,  text_size=size.tiny)
-    table.cell(utils_table, 1, 4, "6 functions",          text_color=color.green,  text_size=size.tiny)
-    table.cell(utils_table, 0, 5, "Math Helpers",         text_color=color.white,  text_size=size.tiny)
-    table.cell(utils_table, 1, 5, "10 functions",         text_color=color.green,  text_size=size.tiny)

@@ -1,0 +1,204 @@
+// ============================================================================
+// ATLAS TRADING SYSTEM v2.1
+// Module: M-05 — Model A3 (Overnight Expansion)
+// Sprint: 067 (Standalone Verification Indicator)
+//
+// Description: Captures overnight volatility breakouts in the direction of the HTF trend.
+// Exploits volatility contraction (compression) followed immediately by expansion.
+// ============================================================================
+//@version=5
+indicator("Atlas Model A3 — M-05", overlay=true)
+
+// ============================================================================
+// SECTION 1: LOCAL TYPE DEFINITIONS
+// ============================================================================
+type MarketState
+    float   open
+    float   high
+    float   low
+    float   close
+    float   ema9
+    float   ema21
+    float   ema50
+    string  ema_structure
+    bool    ema_bull
+    bool    ema_bear
+    float   atr5
+    float   atr14
+    float   adx14
+    bool    adx_trending
+    bool    is_rth
+    bool    is_overnight
+    bool    is_pm_session
+    int     hour_et
+    int     minute_et
+    int     day_of_week
+    float   ov_high
+    float   ov_low
+    float   ov_open
+    float   ov_close
+    int     ov_direction
+    float   ov_range
+    float   ov_range_vs_atr14
+    float   volcomp_ratio
+    bool    is_compressed
+    bool    is_expanding
+    float   rel_volume
+    float   rel_txn
+    float   day_open
+    float   day_high
+    float   day_low
+    float   day_range_vs_atr
+    float   mvc_003
+
+type TradeProposal
+    string  model_id
+    bool    has_signal
+    int     direction
+    float   entry_price
+    float   stop_price
+    float   target_price
+    float   risk_pts
+    float   rr_ratio
+    string  signal_basis
+    string  rejection_reason
+
+// ============================================================================
+// SECTION 2: INPUTS
+// ============================================================================
+bool i_enable_a3 = input.bool(true, "Enable Model A3")
+bool i_debug     = input.bool(false, "Debug Mode")
+
+// ============================================================================
+// SECTION 3: MARKET STATE CONSTRUCTION
+// ============================================================================
+float _ema9  = ta.ema(close, 9)
+float _ema21 = ta.ema(close, 21)
+float _ema50 = ta.ema(close, 50)
+float _atr5  = ta.atr(5)
+float _atr14 = ta.atr(14)
+[_diplus, _diminus, _adx14] = ta.dmi(14, 14)
+
+string _ema_structure = _ema9 > _ema21 and _ema21 > _ema50 ? "BULL" : _ema9 < _ema21 and _ema21 < _ema50 ? "BEAR" : "MIXED"
+
+int _h   = hour(time, "America/New_York")
+int _m   = minute(time, "America/New_York")
+int _dow = dayofweek(time, "America/New_York")
+
+bool _is_overnight = _h >= 18 or _h < 9 or (_h == 9 and _m < 30)
+bool _is_rth       = (_h == 9 and _m >= 30) or (_h >= 10 and _h <= 15) or (_h == 16 and _m == 0)
+bool _is_pm        = _h >= 13 and _h < 16
+
+var float _ov_high  = na
+var float _ov_low   = na
+var float _ov_open  = na
+var float _ov_close = na
+var int   _ov_dir   = 0
+
+if _h == 18 and _m == 0
+    _ov_open  := close
+    _ov_high  := close
+    _ov_low   := close
+    _ov_close := close
+    _ov_dir   := 0
+
+if _is_overnight and not (_h == 18 and _m == 0)
+    if not na(_ov_high)
+        _ov_high  := math.max(_ov_high, high)
+        _ov_low   := math.min(_ov_low, low)
+        _ov_close := close
+
+float _ov_range        = na(_ov_high) or na(_ov_low) ? 0.0 : _ov_high - _ov_low
+float _ov_range_vs_atr = _atr14 > 0 ? _ov_range / _atr14 : 0.0
+float _volcomp         = _atr5 > 0 and not na(_atr5[20]) ? _atr5 / _atr5[20] : 1.0
+float _rel_vol         = volume > 0 and not na(ta.sma(volume, 20)) ? volume / ta.sma(volume, 20) : 1.0
+
+var float _day_open = na
+var float _day_high = na
+var float _day_low  = na
+if _h == 9 and _m == 30
+    _day_open := close
+    _day_high := close
+    _day_low  := close
+if _is_rth and not na(_day_high)
+    _day_high := math.max(_day_high, high)
+    _day_low  := math.min(_day_low, low)
+
+float _day_range     = na(_day_high) or na(_day_low) ? 0.0 : _day_high - _day_low
+float _day_range_atr = _atr14 > 0 ? _day_range / _atr14 : 0.0
+
+MarketState mso = MarketState.new(open=open,high=high,low=low,close=close,ema9=_ema9,ema21=_ema21,ema50=_ema50,ema_structure=_ema_structure,ema_bull=_ema_structure=="BULL",ema_bear=_ema_structure=="BEAR",atr5=_atr5,atr14=_atr14,adx14=_adx14,adx_trending=_adx14 >=25,is_rth=_is_rth,is_overnight=_is_overnight,is_pm_session=_is_pm,hour_et=_h,minute_et=_m,day_of_week=_dow,ov_high=na(_ov_high) ? 0.0 : _ov_high, ov_low = na(_ov_low) ? 0.0 : _ov_low, ov_open = na(_ov_open) ? 0.0 : _ov_open, ov_close = na(_ov_close)? 0.0 : _ov_close, ov_direction = _ov_dir, ov_range = _ov_range, ov_range_vs_atr14 = _ov_range_vs_atr, volcomp_ratio = _volcomp, is_compressed = _volcomp < 0.80, is_expanding = _volcomp > 1.30, rel_volume = _rel_vol, rel_txn = 1.0, day_open = na(_day_open) ? 0.0 : _day_open, day_high = na(_day_high) ? 0.0 : _day_high, day_low = na(_day_low) ? 0.0 : _day_low, day_range_vs_atr = _day_range_atr, mvc_003 = 0.0)
+
+// ============================================================================
+// SECTION 4: MODEL A3 EVALUATION LOGIC
+// ============================================================================
+f_evaluate_a3(MarketState ms) =>
+    TradeProposal proposal = TradeProposal.new("A3", false, 0, na, na, na, na, na, "", "")
+    if not i_enable_a3
+        proposal.rejection_reason := "Model globally disabled"
+        proposal
+    else if not ms.is_overnight
+        proposal.rejection_reason := "Outside valid session (Overnight only)"
+        proposal
+    else if not ms.adx_trending
+        proposal.rejection_reason := "ADX < 25 (Not trending)"
+        proposal
+    else if ms.ema_structure == "MIXED"
+        proposal.rejection_reason := "EMAs not aligned"
+        proposal
+    else
+        float atr5_20          = ms.atr5[20]
+        float volcomp_ratio    = atr5_20 > 0 ? ms.atr5 / atr5_20 : 1.0
+        float volcomp_prior    = atr5_20[1] > 0 ? ms.atr5[1] / atr5_20[1] : 1.0
+        bool prior_compressed  = volcomp_prior < 0.80
+        bool current_expanding = volcomp_ratio > 1.30
+        if not prior_compressed
+            proposal.rejection_reason := "Prior bar was not compressed (VolComp >= 0.80)"
+            proposal
+        else if not current_expanding
+            proposal.rejection_reason := "Current bar is not expanding (VolComp <= 1.30)"
+            proposal
+        else
+            bool bull_close = close > open
+            bool bear_close = close < open
+            if ms.ema_bull and bull_close
+                proposal.direction    := 1
+                proposal.signal_basis := "A3 BULL: OV Expansion"
+            else if ms.ema_bear and bear_close
+                proposal.direction    := -1
+                proposal.signal_basis := "A3 BEAR: OV Expansion"
+            else
+                proposal.rejection_reason := "Close not in trend direction"
+                proposal.rejection_reason
+            if proposal.direction != 0
+                proposal.has_signal  := true
+                proposal.entry_price := ms.close
+                float zone_high = ta.highest(high, 5)
+                float zone_low  = ta.lowest(low, 5)
+                if proposal.direction == 1
+                    proposal.stop_price   := zone_low
+                    proposal.risk_pts     := proposal.entry_price - proposal.stop_price
+                    proposal.target_price := proposal.entry_price + (proposal.risk_pts * 2.5)
+                else
+                    proposal.stop_price   := zone_high
+                    proposal.risk_pts     := proposal.stop_price - proposal.entry_price
+                    proposal.target_price := proposal.entry_price - (proposal.risk_pts * 2.5)
+                proposal.rr_ratio := 2.5
+                proposal.rejection_reason := ""
+            proposal
+
+// ============================================================================
+// SECTION 5: MAIN EXECUTION
+// ============================================================================
+TradeProposal result = f_evaluate_a3(mso)
+
+plotshape(result.has_signal and result.direction == 1,  title="A3 Long",  style=shape.triangleup,   location=location.belowbar, color=color.teal,   size=size.small, text="A3↑")
+plotshape(result.has_signal and result.direction == -1, title="A3 Short", style=shape.triangledown, location=location.abovebar, color=color.maroon, size=size.small, text="A3↓")
+
+plot(_ema9,  title="EMA9",  color=color.new(color.blue,   60), linewidth=1)
+plot(_ema21, title="EMA21", color=color.new(color.orange, 60), linewidth=1)
+plot(_ema50, title="EMA50", color=color.new(color.purple, 60), linewidth=1)
+
+if i_debug and barstate.islast
+    string _status = result.has_signal ? "SIGNAL: " + result.signal_basis : "NO SIGNAL: " + result.rejection_reason
+    label.new(bar_index, high, "M-05 A3\n" + _status, style=label.style_label_down, color=color.new(color.teal, 70), textcolor=color.white, size=size.small)
