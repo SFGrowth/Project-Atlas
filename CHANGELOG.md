@@ -6,6 +6,20 @@ The format is based on clear version history rather than informal memory. Every 
 
 ## [Unreleased]
 
+## [0.14.0] - 2026-07-10 (Sprint 075)
+
+### Added
+- Comprehensive Failure Isolation Test Suite (`test_sprint075.py`) covering 23 edge cases.
+- `slowapi` rate limiting to the Atlas Nexus backend (configurable via `ATLAS_RATE_LIMIT`).
+- Bearer token authentication to the Atlas Nexus webhook endpoint.
+- Connection state machine to the Atlas Nexus frontend (SSE, Backend, Data Freshness).
+- Automatic catch-up mechanism for the frontend to fetch the latest report upon connection.
+
+### Fixed
+- Resolved 14 compilation warnings in M-15 (`atlas_observability_webhook.pine`) caused by shadowed variables and unused parameters.
+- Fixed idempotency race conditions in the backend by performing a DB lookup before insertion, gracefully returning `DUPLICATE_IGNORED`.
+- Fixed SSE memory leaks by implementing bounded queues and aggressive dead-client cleanup.
+
 ### Added
 
 - Permanent Atlas foundation documentation:

@@ -1,346 +1,275 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Atlas Nexus — Pipeline Observatory</title>
-  <style>
-    /* ── Reset & Base ─────────────────────────────────────────── */
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    :root {
-      --bg:        #0d1117;
-      --bg2:       #161b22;
-      --bg3:       #21262d;
-      --border:    #30363d;
-      --text:      #e6edf3;
-      --text-muted:#8b949e;
-      --accent:    #58a6ff;
-      --green:     #3fb950;
-      --red:       #f85149;
-      --yellow:    #d29922;
-      --orange:    #e3b341;
-      --purple:    #bc8cff;
-      --cyan:      #39d353;
-      --font:      'Segoe UI', system-ui, sans-serif;
-      --mono:      'Cascadia Code', 'Fira Code', 'Consolas', monospace;
-    }
-    html, body { height: 100%; background: var(--bg); color: var(--text); font-family: var(--font); font-size: 13px; }
-
-    /* ── Layout ───────────────────────────────────────────────── */
-    #app { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
-
-    header {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 8px 16px; background: var(--bg2); border-bottom: 1px solid var(--border);
-      flex-shrink: 0;
-    }
-    header h1 { font-size: 15px; font-weight: 600; color: var(--accent); letter-spacing: 0.5px; }
-    header h1 span { color: var(--text-muted); font-weight: 400; margin-left: 8px; font-size: 12px; }
-
-    .status-bar { display: flex; gap: 12px; align-items: center; }
-    .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--red); }
-    .status-dot.connected { background: var(--green); animation: pulse 2s infinite; }
-    @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
-    .status-label { font-size: 11px; color: var(--text-muted); }
-
-    .main-grid {
-      display: grid;
-      grid-template-columns: 280px 1fr 280px;
-      grid-template-rows: auto 1fr auto;
-      gap: 8px;
-      padding: 8px;
-      flex: 1;
-      overflow: hidden;
-      min-height: 0;
-    }
-
-    /* ── Cards ────────────────────────────────────────────────── */
-    .card {
-      background: var(--bg2);
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      overflow: hidden;
-      display: flex;
-      flex-direction: column;
-    }
-    .card-header {
-      padding: 6px 10px;
-      background: var(--bg3);
-      border-bottom: 1px solid var(--border);
-      font-size: 11px;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.8px;
-      color: var(--text-muted);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      flex-shrink: 0;
-    }
-    .card-body { padding: 8px 10px; flex: 1; overflow-y: auto; min-height: 0; }
-
-    /* ── Overview strip ───────────────────────────────────────── */
-    .overview-strip {
-      grid-column: 1 / -1;
-      display: grid;
-      grid-template-columns: repeat(6, 1fr);
-      gap: 8px;
-    }
-    .stat-tile {
-      background: var(--bg2);
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      padding: 8px 12px;
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-    }
-    .stat-tile .label { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.6px; }
-    .stat-tile .value { font-size: 18px; font-weight: 700; font-family: var(--mono); }
-    .stat-tile .sub   { font-size: 10px; color: var(--text-muted); }
-
-    /* ── Left column ──────────────────────────────────────────── */
-    .left-col { grid-column: 1; grid-row: 2; display: flex; flex-direction: column; gap: 8px; overflow: hidden; }
-
-    /* ── Center column ────────────────────────────────────────── */
-    .center-col { grid-column: 2; grid-row: 2; display: flex; flex-direction: column; gap: 8px; overflow: hidden; }
-
-    /* ── Right column ─────────────────────────────────────────── */
-    .right-col { grid-column: 3; grid-row: 2; display: flex; flex-direction: column; gap: 8px; overflow: hidden; }
-
-    /* ── Timeline ─────────────────────────────────────────────── */
-    .timeline-col { grid-column: 1 / -1; grid-row: 3; max-height: 180px; }
-
-    /* ── KV rows ──────────────────────────────────────────────── */
-    .kv-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 3px 0;
-      border-bottom: 1px solid var(--border);
-      gap: 8px;
-    }
-    .kv-row:last-child { border-bottom: none; }
-    .kv-key { color: var(--text-muted); font-size: 11px; white-space: nowrap; }
-    .kv-val { font-family: var(--mono); font-size: 11px; text-align: right; word-break: break-all; }
-
-    /* ── Badges ───────────────────────────────────────────────── */
-    .badge {
-      display: inline-block;
-      padding: 1px 6px;
-      border-radius: 10px;
-      font-size: 10px;
-      font-weight: 600;
-      letter-spacing: 0.3px;
-    }
-    .badge-green  { background: rgba(63,185,80,0.15); color: var(--green); }
-    .badge-red    { background: rgba(248,81,73,0.15); color: var(--red); }
-    .badge-yellow { background: rgba(210,153,34,0.15); color: var(--yellow); }
-    .badge-blue   { background: rgba(88,166,255,0.15); color: var(--accent); }
-    .badge-purple { background: rgba(188,140,255,0.15); color: var(--purple); }
-    .badge-gray   { background: rgba(139,148,158,0.15); color: var(--text-muted); }
-    .badge-orange { background: rgba(227,179,65,0.15); color: var(--orange); }
-
-    /* ── Model card ───────────────────────────────────────────── */
-    .model-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; }
-    .model-card {
-      background: var(--bg3);
-      border: 1px solid var(--border);
-      border-radius: 4px;
-      padding: 6px 8px;
-    }
-    .model-card .model-name { font-size: 12px; font-weight: 700; margin-bottom: 4px; }
-    .model-card .model-signal { font-size: 11px; font-family: var(--mono); }
-
-    /* ── Brain view ───────────────────────────────────────────── */
-    .brain-section { margin-bottom: 8px; }
-    .brain-section .brain-label { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 3px; }
-    .brain-section .brain-text { font-size: 12px; line-height: 1.5; color: var(--text); background: var(--bg3); padding: 6px 8px; border-radius: 4px; border-left: 3px solid var(--accent); }
-
-    /* ── Timeline items ───────────────────────────────────────── */
-    .timeline-list { display: flex; flex-direction: column; gap: 4px; }
-    .timeline-item {
-      display: grid;
-      grid-template-columns: 130px 80px 80px 1fr 1fr;
-      gap: 8px;
-      align-items: center;
-      padding: 4px 6px;
-      border-radius: 4px;
-      background: var(--bg3);
-      border: 1px solid var(--border);
-      font-size: 11px;
-    }
-    .timeline-item:hover { border-color: var(--accent); }
-    .timeline-item .t-time { font-family: var(--mono); color: var(--text-muted); }
-    .timeline-item .t-state { }
-    .timeline-item .t-symbol { color: var(--accent); font-weight: 600; }
-    .timeline-item .t-action { color: var(--text); }
-    .timeline-item .t-bar { font-family: var(--mono); color: var(--text-muted); font-size: 10px; }
-
-    /* ── Gauge bars ───────────────────────────────────────────── */
-    .gauge-bar {
-      height: 4px;
-      background: var(--bg3);
-      border-radius: 2px;
-      overflow: hidden;
-      margin-top: 3px;
-    }
-    .gauge-fill { height: 100%; border-radius: 2px; transition: width 0.5s ease; }
-
-    /* ── Empty state ──────────────────────────────────────────── */
-    .empty-state {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      height: 100%;
-      color: var(--text-muted);
-      gap: 8px;
-      padding: 20px;
-      text-align: center;
-    }
-    .empty-state .icon { font-size: 32px; opacity: 0.4; }
-    .empty-state .msg { font-size: 12px; line-height: 1.6; }
-
-    /* ── Scrollbar ────────────────────────────────────────────── */
-    ::-webkit-scrollbar { width: 4px; height: 4px; }
-    ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
-
-    /* ── Color helpers ────────────────────────────────────────── */
-    .c-green  { color: var(--green); }
-    .c-red    { color: var(--red); }
-    .c-yellow { color: var(--yellow); }
-    .c-blue   { color: var(--accent); }
-    .c-purple { color: var(--purple); }
-    .c-muted  { color: var(--text-muted); }
-    .c-orange { color: var(--orange); }
-
-    /* ── Responsive ───────────────────────────────────────────── */
-    @media (max-width: 1200px) {
-      .main-grid { grid-template-columns: 1fr 1fr; }
-      .overview-strip { grid-template-columns: repeat(3, 1fr); }
-      .left-col { grid-column: 1; }
-      .center-col { grid-column: 2; }
-      .right-col { grid-column: 1 / -1; grid-row: 3; }
-      .timeline-col { grid-column: 1 / -1; grid-row: 4; }
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Atlas Nexus — Pipeline Observatory</title>
+<style>
+/* ─── Reset & Base ─────────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg:        #0a0c0f;
+  --bg2:       #0f1217;
+  --bg3:       #141820;
+  --bg4:       #1a2030;
+  --border:    #1e2535;
+  --border2:   #252d40;
+  --text:      #c8d0e0;
+  --text2:     #7a8599;
+  --text3:     #4a5568;
+  --accent:    #3b82f6;
+  --green:     #22c55e;
+  --red:       #ef4444;
+  --yellow:    #eab308;
+  --orange:    #f97316;
+  --purple:    #a855f7;
+  --cyan:      #06b6d4;
+  --mono:      'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+  --sans:      -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --r:         4px;
+}
+html, body { height: 100%; background: var(--bg); color: var(--text); font-family: var(--sans); font-size: 13px; line-height: 1.4; overflow-x: hidden; }
+a { color: var(--accent); text-decoration: none; }
+/* ─── Layout ────────────────────────────────────────────────────────────────── */
+#app { display: flex; flex-direction: column; height: 100vh; }
+#header { display: flex; align-items: center; gap: 12px; padding: 8px 16px; background: var(--bg2); border-bottom: 1px solid var(--border); flex-shrink: 0; }
+#header h1 { font-size: 14px; font-weight: 700; letter-spacing: 0.05em; color: #e2e8f0; }
+#header .sprint { font-size: 11px; color: var(--text2); margin-left: 4px; }
+#status-bar { margin-left: auto; display: flex; align-items: center; gap: 16px; font-size: 11px; }
+#conn-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--text3); flex-shrink: 0; }
+#conn-dot.live { background: var(--green); box-shadow: 0 0 6px var(--green); }
+#conn-dot.degraded { background: var(--yellow); }
+#conn-dot.offline { background: var(--red); }
+#conn-label { font-weight: 600; color: var(--text2); }
+#conn-label.live { color: var(--green); }
+#conn-label.degraded { color: var(--yellow); }
+#conn-label.offline { color: var(--red); }
+#last-update { color: var(--text3); }
+/* ─── Overview strip ────────────────────────────────────────────────────────── */
+#overview { display: grid; grid-template-columns: repeat(7, 1fr); gap: 1px; background: var(--border); border-bottom: 1px solid var(--border); flex-shrink: 0; }
+.ov-cell { background: var(--bg2); padding: 8px 12px; }
+.ov-label { font-size: 9px; font-weight: 700; letter-spacing: 0.1em; color: var(--text3); text-transform: uppercase; margin-bottom: 4px; }
+.ov-value { font-size: 16px; font-weight: 700; color: var(--text); font-family: var(--mono); }
+.ov-sub { font-size: 10px; color: var(--text2); margin-top: 2px; }
+/* ─── Main grid ─────────────────────────────────────────────────────────────── */
+#main { display: grid; grid-template-columns: 200px 1fr 240px; grid-template-rows: auto 1fr; gap: 1px; background: var(--border); flex: 1; overflow: hidden; }
+#col-left { display: flex; flex-direction: column; gap: 1px; background: var(--border); overflow-y: auto; }
+#col-center { display: flex; flex-direction: column; gap: 1px; background: var(--border); overflow-y: auto; }
+#col-right { display: flex; flex-direction: column; gap: 1px; background: var(--border); overflow-y: auto; }
+/* ─── Panels ────────────────────────────────────────────────────────────────── */
+.panel { background: var(--bg2); padding: 10px 12px; }
+.panel-title { font-size: 9px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text3); border-bottom: 1px solid var(--border); padding-bottom: 6px; margin-bottom: 8px; }
+.kv-row { display: flex; justify-content: space-between; align-items: baseline; padding: 2px 0; border-bottom: 1px solid var(--bg3); }
+.kv-key { color: var(--text2); font-size: 11px; }
+.kv-val { font-family: var(--mono); font-size: 11px; color: var(--text); text-align: right; }
+/* ─── Model cards ───────────────────────────────────────────────────────────── */
+#models-header { display: flex; justify-content: space-between; align-items: center; }
+#models-ts { font-size: 10px; color: var(--text3); font-family: var(--mono); }
+#model-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 8px; }
+.model-card { background: var(--bg3); border: 1px solid var(--border); border-radius: var(--r); padding: 8px 10px; }
+.model-card.signal-long { border-color: rgba(34,197,94,0.4); }
+.model-card.signal-short { border-color: rgba(239,68,68,0.4); }
+.model-card.no-signal { border-color: var(--border); opacity: 0.6; }
+.mc-id { font-size: 11px; font-weight: 700; color: var(--text); margin-bottom: 4px; }
+.mc-signal { font-size: 12px; font-weight: 700; margin-bottom: 4px; }
+.mc-prices { font-family: var(--mono); font-size: 10px; color: var(--text2); margin-bottom: 4px; }
+.mc-basis { font-size: 10px; color: var(--text3); font-style: italic; }
+/* ─── Brain view ────────────────────────────────────────────────────────────── */
+#brain-view { flex: 1; overflow-y: auto; }
+.brain-section { margin-bottom: 10px; }
+.brain-label { font-size: 9px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text3); margin-bottom: 4px; }
+.brain-text { font-size: 11px; color: var(--text); background: var(--bg3); border-left: 2px solid var(--accent); padding: 6px 8px; border-radius: 0 var(--r) var(--r) 0; line-height: 1.5; }
+.brain-text.action { border-left-color: var(--green); }
+/* ─── Timeline ──────────────────────────────────────────────────────────────── */
+#timeline-footer { flex-shrink: 0; border-top: 1px solid var(--border); background: var(--bg2); }
+#timeline-header { display: flex; justify-content: space-between; align-items: center; padding: 6px 12px; border-bottom: 1px solid var(--border); }
+#timeline-title { font-size: 9px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text3); }
+#timeline-count { font-size: 10px; color: var(--text2); }
+#timeline-list { max-height: 100px; overflow-y: auto; }
+.tl-row { display: grid; grid-template-columns: 120px 90px 80px 1fr 80px; gap: 8px; padding: 4px 12px; border-bottom: 1px solid var(--bg3); font-family: var(--mono); font-size: 10px; align-items: center; }
+.tl-row:hover { background: var(--bg3); }
+.tl-time { color: var(--text2); }
+.tl-state { }
+.tl-sym { color: var(--accent); font-weight: 700; }
+.tl-ade { }
+.tl-bar { color: var(--text3); }
+/* ─── System health ─────────────────────────────────────────────────────────── */
+#sys-health { font-size: 10px; }
+.sh-row { display: flex; justify-content: space-between; padding: 2px 0; border-bottom: 1px solid var(--bg3); }
+.sh-key { color: var(--text2); }
+.sh-val { font-family: var(--mono); }
+/* ─── Freshness indicator ───────────────────────────────────────────────────── */
+#freshness-bar { display: flex; align-items: center; gap: 8px; padding: 4px 12px; background: var(--bg3); border-bottom: 1px solid var(--border); font-size: 10px; flex-shrink: 0; }
+.fresh-item { display: flex; align-items: center; gap: 4px; }
+.fresh-dot { width: 6px; height: 6px; border-radius: 50%; }
+/* ─── Colors ────────────────────────────────────────────────────────────────── */
+.c-green { color: var(--green); }
+.c-red { color: var(--red); }
+.c-yellow { color: var(--yellow); }
+.c-orange { color: var(--orange); }
+.c-cyan { color: var(--cyan); }
+.c-purple { color: var(--purple); }
+.c-accent { color: var(--accent); }
+.c-dim { color: var(--text3); }
+/* ─── Empty states ──────────────────────────────────────────────────────────── */
+.empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px; color: var(--text3); font-size: 11px; gap: 8px; }
+.empty-icon { font-size: 24px; opacity: 0.4; }
+/* ─── Scrollbars ────────────────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+</style>
 </head>
 <body>
 <div id="app">
-  <header>
-    <h1>⬡ Atlas Nexus <span>Pipeline Observatory — Sprint 074</span></h1>
-    <div class="status-bar">
-      <div class="status-dot" id="sse-dot"></div>
-      <span class="status-label" id="sse-label">Connecting…</span>
-      <span class="status-label c-muted" id="last-update">—</span>
-    </div>
-  </header>
 
-  <div class="main-grid">
-    <!-- Overview strip -->
-    <div class="overview-strip">
-      <div class="stat-tile">
-        <div class="label">Master State</div>
-        <div class="value" id="stat-state" style="font-size:14px;">—</div>
-        <div class="sub" id="stat-session">—</div>
+  <!-- Header -->
+  <div id="header">
+    <span style="font-size:18px">⬡</span>
+    <h1>Atlas Nexus</h1>
+    <span class="sprint">Pipeline Observatory — Sprint 075</span>
+    <div id="status-bar">
+      <div id="freshness-bar" style="padding:0;background:transparent;border:none;">
+        <div class="fresh-item"><div class="fresh-dot" id="fd-sse" style="background:var(--text3)"></div><span id="fl-sse" class="c-dim">SSE</span></div>
+        <div class="fresh-item"><div class="fresh-dot" id="fd-backend" style="background:var(--text3)"></div><span id="fl-backend" class="c-dim">Backend</span></div>
+        <div class="fresh-item"><div class="fresh-dot" id="fd-data" style="background:var(--text3)"></div><span id="fl-data" class="c-dim">Data</span></div>
       </div>
-      <div class="stat-tile">
-        <div class="label">Symbol</div>
-        <div class="value c-blue" id="stat-symbol">—</div>
-        <div class="sub" id="stat-tf">—</div>
-      </div>
-      <div class="stat-tile">
-        <div class="label">ADE Decision</div>
-        <div class="value" id="stat-ade">—</div>
-        <div class="sub" id="stat-ade-model">—</div>
-      </div>
-      <div class="stat-tile">
-        <div class="label">ARI Approved</div>
-        <div class="value" id="stat-ari">—</div>
-        <div class="sub" id="stat-ari-risk">—</div>
-      </div>
-      <div class="stat-tile">
-        <div class="label">TVL Status</div>
-        <div class="value" id="stat-tvl">—</div>
-        <div class="sub" id="stat-tvl-sub">—</div>
-      </div>
-      <div class="stat-tile">
-        <div class="label">Reports (24h)</div>
-        <div class="value c-purple" id="stat-count">0</div>
-        <div class="sub" id="stat-total">0 total</div>
-      </div>
+      <div id="conn-dot"></div>
+      <span id="conn-label">CONNECTING</span>
+      <span id="last-update"></span>
     </div>
+  </div>
+
+  <!-- Overview strip -->
+  <div id="overview">
+    <div class="ov-cell">
+      <div class="ov-label">Master State</div>
+      <div class="ov-value" id="ov-state">—</div>
+      <div class="ov-sub" id="ov-session">—</div>
+    </div>
+    <div class="ov-cell">
+      <div class="ov-label">Symbol</div>
+      <div class="ov-value c-accent" id="ov-symbol">—</div>
+      <div class="ov-sub" id="ov-tf">—</div>
+    </div>
+    <div class="ov-cell">
+      <div class="ov-label">ADE Decision</div>
+      <div class="ov-value" id="ov-ade">—</div>
+      <div class="ov-sub" id="ov-ade-sub">—</div>
+    </div>
+    <div class="ov-cell">
+      <div class="ov-label">ARI Approved</div>
+      <div class="ov-value" id="ov-ari">—</div>
+      <div class="ov-sub" id="ov-ari-sub">—</div>
+    </div>
+    <div class="ov-cell">
+      <div class="ov-label">TVL Status</div>
+      <div class="ov-value" id="ov-tvl">—</div>
+      <div class="ov-sub" id="ov-tvl-sub">—</div>
+    </div>
+    <div class="ov-cell">
+      <div class="ov-label">Latency</div>
+      <div class="ov-value" id="ov-latency">—</div>
+      <div class="ov-sub">ingestion</div>
+    </div>
+    <div class="ov-cell">
+      <div class="ov-label">Reports (24h)</div>
+      <div class="ov-value" id="ov-reports">0</div>
+      <div class="ov-sub" id="ov-reports-sub">0 total</div>
+    </div>
+  </div>
+
+  <!-- Main grid -->
+  <div id="main">
 
     <!-- Left column: Market Structure + Position State -->
-    <div class="left-col">
-      <div class="card" style="flex:1;">
-        <div class="card-header">Market Structure</div>
-        <div class="card-body" id="market-body">
-          <div class="empty-state"><div class="icon">📡</div><div class="msg">Awaiting pipeline data…</div></div>
+    <div id="col-left">
+      <div class="panel" style="flex:1">
+        <div class="panel-title">Market Structure</div>
+        <div id="mkt-content">
+          <div class="empty-state"><div class="empty-icon">📡</div><div>Awaiting pipeline data…</div></div>
         </div>
       </div>
-      <div class="card" style="flex:1;">
-        <div class="card-header">Position State</div>
-        <div class="card-body" id="position-body">
-          <div class="empty-state"><div class="icon">📋</div><div class="msg">No active position</div></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Center column: Brain View + Model Cards -->
-    <div class="center-col">
-      <div class="card" style="flex:0 0 auto;">
-        <div class="card-header">Model Evaluations <span id="model-bar-time" class="c-muted" style="font-size:10px;font-weight:400;"></span></div>
-        <div class="card-body">
-          <div class="model-grid" id="model-grid">
-            <div class="model-card"><div class="model-name c-blue">A1</div><div class="model-signal c-muted">—</div></div>
-            <div class="model-card"><div class="model-name c-purple">A3</div><div class="model-signal c-muted">—</div></div>
-            <div class="model-card"><div class="model-name c-orange">B1</div><div class="model-signal c-muted">—</div></div>
-          </div>
-        </div>
-      </div>
-      <div class="card" style="flex:1;">
-        <div class="card-header">Atlas Brain View — Reasoning</div>
-        <div class="card-body" id="brain-body">
-          <div class="empty-state"><div class="icon">🧠</div><div class="msg">Pipeline reasoning will appear here on each confirmed bar.</div></div>
+      <div class="panel" style="flex:1">
+        <div class="panel-title">Position State</div>
+        <div id="pos-content">
+          <div class="empty-state"><div class="empty-icon">📋</div><div>No active position</div></div>
         </div>
       </div>
     </div>
 
-    <!-- Right column: ADE + ARI + TVL -->
-    <div class="right-col">
-      <div class="card" style="flex:1;">
-        <div class="card-header">ADE — Decision Engine</div>
-        <div class="card-body" id="ade-body">
-          <div class="empty-state"><div class="icon">⚡</div><div class="msg">No decision yet</div></div>
+    <!-- Center column: Model Evaluations + Brain View -->
+    <div id="col-center">
+      <div class="panel">
+        <div id="models-header">
+          <div class="panel-title" style="border:none;margin:0;padding:0">Model Evaluations</div>
+          <div id="models-ts" class="c-dim">—</div>
+        </div>
+        <div id="model-cards">
+          <div class="model-card no-signal" id="mc-a1"><div class="mc-id">A1</div><div class="mc-signal c-dim">—</div></div>
+          <div class="model-card no-signal" id="mc-a3"><div class="mc-id">A3</div><div class="mc-signal c-dim">—</div></div>
+          <div class="model-card no-signal" id="mc-b1"><div class="mc-id">B1</div><div class="mc-signal c-dim">—</div></div>
         </div>
       </div>
-      <div class="card" style="flex:1;">
-        <div class="card-header">ARI — Risk Intelligence</div>
-        <div class="card-body" id="ari-body">
-          <div class="empty-state"><div class="icon">🛡️</div><div class="msg">No risk data yet</div></div>
-        </div>
-      </div>
-      <div class="card" style="flex:1;">
-        <div class="card-header">TVL — Trade Verification</div>
-        <div class="card-body" id="tvl-body">
-          <div class="empty-state"><div class="icon">✅</div><div class="msg">No verification data yet</div></div>
+      <div class="panel" id="brain-view" style="flex:1;overflow-y:auto">
+        <div class="panel-title">Atlas Brain View — Reasoning</div>
+        <div id="brain-content">
+          <div class="empty-state"><div class="empty-icon">🧠</div><div>Pipeline reasoning will appear here on each confirmed bar.</div></div>
         </div>
       </div>
     </div>
 
-    <!-- Timeline -->
-    <div class="card timeline-col">
-      <div class="card-header">Decision Timeline <span id="timeline-count" class="c-muted" style="font-size:10px;font-weight:400;"></span></div>
-      <div class="card-body">
-        <div class="timeline-list" id="timeline-list">
-          <div class="empty-state" style="height:80px;"><div class="msg">Pipeline reports will appear here in real time.</div></div>
+    <!-- Right column: ADE + ARI + TVL + System Health -->
+    <div id="col-right">
+      <div class="panel">
+        <div class="panel-title">ADE — Decision Engine</div>
+        <div id="ade-content">
+          <div class="empty-state"><div class="empty-icon">⚡</div><div>No decision yet</div></div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-title">ARI — Risk Intelligence</div>
+        <div id="ari-content">
+          <div class="empty-state"><div class="empty-icon">🛡️</div><div>No risk data yet</div></div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-title">TVL — Trade Verification</div>
+        <div id="tvl-content">
+          <div class="empty-state"><div class="empty-icon">✅</div><div>No verification data yet</div></div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-title">System Health</div>
+        <div id="sys-health">
+          <div class="sh-row"><span class="sh-key">SSE Status</span><span class="sh-val" id="sh-sse">CONNECTING</span></div>
+          <div class="sh-row"><span class="sh-key">Backend</span><span class="sh-val" id="sh-backend">UNKNOWN</span></div>
+          <div class="sh-row"><span class="sh-key">Data Freshness</span><span class="sh-val" id="sh-freshness">UNKNOWN</span></div>
+          <div class="sh-row"><span class="sh-key">Last Bar Time</span><span class="sh-val" id="sh-bar-time">—</span></div>
+          <div class="sh-row"><span class="sh-key">Last Received</span><span class="sh-val" id="sh-received">—</span></div>
+          <div class="sh-row"><span class="sh-key">Current Delay</span><span class="sh-val" id="sh-delay">—</span></div>
+          <div class="sh-row"><span class="sh-key">Next Expected</span><span class="sh-val" id="sh-next">—</span></div>
+          <div class="sh-row"><span class="sh-key">Missed Reports</span><span class="sh-val" id="sh-missed">0</span></div>
+          <div class="sh-row"><span class="sh-key">SSE Clients</span><span class="sh-val" id="sh-clients">—</span></div>
+          <div class="sh-row"><span class="sh-key">Last Heartbeat</span><span class="sh-val" id="sh-heartbeat">—</span></div>
+          <div class="sh-row"><span class="sh-key">Client ID</span><span class="sh-val" id="sh-client-id">—</span></div>
+          <div class="sh-row"><span class="sh-key">Integrity Violations</span><span class="sh-val" id="sh-violations">—</span></div>
         </div>
       </div>
     </div>
   </div>
+
+  <!-- Timeline footer -->
+  <div id="timeline-footer">
+    <div id="timeline-header">
+      <div id="timeline-title">Decision Timeline</div>
+      <div id="timeline-count">0 events</div>
+    </div>
+    <div id="timeline-list">
+      <div class="empty-state" style="padding:8px"><div>Pipeline reports will appear here in real time.</div></div>
+    </div>
+  </div>
+
 </div>
 
 <script>
@@ -349,384 +278,159 @@
 // ─────────────────────────────────────────────────────────────────────────────
 const API_BASE = window.ATLAS_API_BASE || 'https://8766-iwqxpq31ydf032538o6o1-383f69f4.sg1.manus.computer';
 const MAX_TIMELINE = 50;
+const BAR_INTERVAL_MS = 5 * 60 * 1000; // 5-minute bars
+const STALE_THRESHOLD_MS  = BAR_INTERVAL_MS + 60_000;   // 1 missed bar
+const DEGRADED_THRESHOLD_MS = BAR_INTERVAL_MS * 2 + 60_000; // 2 missed bars
+const OFFLINE_THRESHOLD_MS  = BAR_INTERVAL_MS * 6;      // 30 min
 
 // ─────────────────────────────────────────────────────────────────────────────
 // State
 // ─────────────────────────────────────────────────────────────────────────────
-let latestReport = null;
-let timelineItems = [];
-let stats = { total_reports: 0, reports_last_24h: 0 };
+let state = {
+  connState: 'CONNECTING',   // CONNECTING | LIVE | DEGRADED | OFFLINE
+  sseConnected: false,
+  backendOk: false,
+  heartbeatReceived: false,
+  lastReportTime: null,      // ms timestamp of last received report
+  lastBarTime: null,         // ISO string of last bar_time
+  lastReceivedAt: null,      // ISO string of last received_at
+  missedReports: 0,
+  clientId: null,
+  sseClients: 0,
+  integrityViolations: 0,
+  totalReports: 0,
+  reports24h: 0,
+  timeline: [],
+  latestPayload: null,
+  heartbeatSeq: 0,
+};
+
+let es = null;
+let reconnectTimer = null;
+let freshnessTimer = null;
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Utilities
+// Helpers
 // ─────────────────────────────────────────────────────────────────────────────
-function fmt(v, fallback = '—') {
-  if (v === null || v === undefined || v === '') return fallback;
-  if (typeof v === 'number') return v.toLocaleString('en-US', { maximumFractionDigits: 4 });
-  return String(v);
-}
+const $ = id => document.getElementById(id);
+const fmt = v => (v === null || v === undefined) ? '—' : v;
+const fmtNum = (v, d=0) => (v === null || v === undefined) ? '—' : Number(v).toLocaleString('en-US', {minimumFractionDigits:d, maximumFractionDigits:d});
+const fmtPrice = v => (v === null || v === undefined) ? '—' : Number(v).toLocaleString('en-US', {minimumFractionDigits:1, maximumFractionDigits:1});
+const fmtTs = iso => { if (!iso) return '—'; const d = new Date(iso); return d.toLocaleTimeString('en-US', {hour12:false,hour:'2-digit',minute:'2-digit',second:'2-digit'}); };
+const fmtDate = iso => { if (!iso) return '—'; const d = new Date(iso); return d.toLocaleDateString('en-US', {month:'short',day:'numeric'}) + ', ' + fmtTs(iso); };
+const colorClass = (v, pos='c-green', neg='c-red', zero='c-dim') => !v ? zero : v > 0 ? pos : neg;
+const dirArrow = d => d === 1 ? '▲' : d === -1 ? '▼' : '—';
+const dirClass = d => d === 1 ? 'c-green' : d === -1 ? 'c-red' : 'c-dim';
 
-function fmtTime(iso) {
-  if (!iso) return '—';
-  try {
-    const d = new Date(iso);
-    return d.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
-  } catch { return iso; }
-}
-
-function fmtDateTime(iso) {
-  if (!iso) return '—';
-  try {
-    const d = new Date(iso);
-    return d.toLocaleString('en-US', { month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
-  } catch { return iso; }
-}
-
-function stateBadge(state) {
-  const map = {
-    'ACTIVE': 'badge-green', 'LIVE': 'badge-green',
-    'OVERNIGHT': 'badge-gray', 'CLOSED': 'badge-gray',
-    'HALTED': 'badge-red', 'EMERGENCY': 'badge-red',
-    'PRE_MARKET': 'badge-yellow', 'POST_MARKET': 'badge-yellow',
-    'RESTRICTED': 'badge-orange',
-  };
-  const cls = map[state] || 'badge-blue';
-  return `<span class="badge ${cls}">${fmt(state)}</span>`;
-}
-
-function dirLabel(dir) {
-  if (dir === 1)  return '<span class="c-green">▲ LONG</span>';
-  if (dir === -1) return '<span class="c-red">▼ SHORT</span>';
-  return '<span class="c-muted">— FLAT</span>';
-}
-
-function boolBadge(v, trueLabel = 'YES', falseLabel = 'NO') {
-  return v
-    ? `<span class="badge badge-green">${trueLabel}</span>`
-    : `<span class="badge badge-red">${falseLabel}</span>`;
-}
-
-function kv(key, val, valClass = '') {
+function kv(key, val, valClass='') {
   return `<div class="kv-row"><span class="kv-key">${key}</span><span class="kv-val ${valClass}">${val}</span></div>`;
 }
 
-function gauge(value, max, color = '#58a6ff') {
-  const pct = Math.min(100, Math.max(0, (value / max) * 100));
-  return `<div class="gauge-bar"><div class="gauge-fill" style="width:${pct}%;background:${color};"></div></div>`;
+// ─────────────────────────────────────────────────────────────────────────────
+// Connection state machine
+// ─────────────────────────────────────────────────────────────────────────────
+function setConnState(newState) {
+  if (state.connState === newState) return;
+  state.connState = newState;
+  const dot = $('conn-dot');
+  const label = $('conn-label');
+  dot.className = '';
+  label.className = '';
+  switch (newState) {
+    case 'LIVE':
+      dot.classList.add('live');
+      label.classList.add('live');
+      label.textContent = 'LIVE';
+      break;
+    case 'DEGRADED':
+      dot.classList.add('degraded');
+      label.classList.add('degraded');
+      label.textContent = 'DEGRADED — RECONNECTING';
+      break;
+    case 'OFFLINE':
+      dot.classList.add('offline');
+      label.classList.add('offline');
+      label.textContent = 'OFFLINE';
+      break;
+    default:
+      label.textContent = 'CONNECTING';
+  }
+}
+
+function updateConnState() {
+  const sseOk = state.sseConnected;
+  const backendOk = state.backendOk;
+  const hasData = state.heartbeatReceived || state.latestPayload !== null;
+
+  if (!sseOk || !backendOk) {
+    setConnState('DEGRADED');
+    return;
+  }
+  if (!hasData) {
+    setConnState('CONNECTING');
+    return;
+  }
+  setConnState('LIVE');
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Render functions
+// Data freshness
 // ─────────────────────────────────────────────────────────────────────────────
-function renderOverview(report) {
-  const p = report.payload || report;
-  const ms = p.market_structure || {};
-  const ade = p.ade_decision || {};
-  const ari = p.ari_decision || {};
-  const tvl = p.tvl_decision || {};
-  const sess = p.session || {};
+function updateFreshness() {
+  const now = Date.now();
+  const last = state.lastReportTime;
+  const age = last ? now - last : null;
 
-  // State
-  const stateEl = document.getElementById('stat-state');
-  stateEl.innerHTML = stateBadge(p.master_state);
-  document.getElementById('stat-session').textContent = fmt(sess.name || p.master_state);
+  let freshnessState = 'UNKNOWN';
+  let freshnessClass = 'c-dim';
+  let dotColor = 'var(--text3)';
 
-  // Symbol
-  document.getElementById('stat-symbol').textContent = fmt(p.symbol);
-  document.getElementById('stat-tf').textContent = p.timeframe ? `${p.timeframe}m` : '—';
-
-  // ADE
-  const adeEl = document.getElementById('stat-ade');
-  if (ade.has_candidate) {
-    adeEl.innerHTML = `<span class="c-green">CANDIDATE</span>`;
-    document.getElementById('stat-ade-model').textContent = fmt(ade.candidate_model);
+  if (age === null) {
+    freshnessState = 'UNKNOWN';
+  } else if (age < STALE_THRESHOLD_MS) {
+    freshnessState = 'LIVE';
+    freshnessClass = 'c-green';
+    dotColor = 'var(--green)';
+    state.missedReports = 0;
+  } else if (age < DEGRADED_THRESHOLD_MS) {
+    freshnessState = 'STALE';
+    freshnessClass = 'c-yellow';
+    dotColor = 'var(--yellow)';
+    state.missedReports = 1;
+  } else if (age < OFFLINE_THRESHOLD_MS) {
+    freshnessState = 'DEGRADED';
+    freshnessClass = 'c-orange';
+    dotColor = 'var(--orange)';
+    state.missedReports = Math.floor(age / BAR_INTERVAL_MS);
   } else {
-    adeEl.innerHTML = `<span class="c-muted">NO TRADE</span>`;
-    document.getElementById('stat-ade-model').textContent = fmt(ade.no_trade_rationale, 'No signal');
+    freshnessState = 'OFFLINE';
+    freshnessClass = 'c-red';
+    dotColor = 'var(--red)';
+    state.missedReports = Math.floor(age / BAR_INTERVAL_MS);
   }
 
-  // ARI
-  const ariEl = document.getElementById('stat-ari');
-  if (ari.approved) {
-    ariEl.innerHTML = `<span class="c-green">APPROVED</span>`;
-    document.getElementById('stat-ari-risk').textContent = ari.approved_risk ? `$${fmt(ari.approved_risk)} risk` : '—';
-  } else {
-    ariEl.innerHTML = `<span class="c-red">REJECTED</span>`;
-    document.getElementById('stat-ari-risk').textContent = fmt(ari.rejection_reason, 'Risk rejected');
+  $('sh-freshness').textContent = freshnessState;
+  $('sh-freshness').className = `sh-val ${freshnessClass}`;
+  $('fd-data').style.background = dotColor;
+  $('fl-data').textContent = 'Data';
+  $('fl-data').className = freshnessClass;
+
+  // Update delay
+  if (age !== null) {
+    const secs = Math.floor(age / 1000);
+    const mins = Math.floor(secs / 60);
+    $('sh-delay').textContent = mins > 0 ? `${mins}m ${secs % 60}s` : `${secs}s`;
   }
 
-  // TVL
-  const tvlEl = document.getElementById('stat-tvl');
-  const tvlStatus = tvl.status || '—';
-  const tvlClass = tvlStatus === 'VERIFIED' ? 'c-green' : tvlStatus === 'REJECTED' ? 'c-red' : 'c-yellow';
-  tvlEl.innerHTML = `<span class="${tvlClass}">${tvlStatus}</span>`;
-  document.getElementById('stat-tvl-sub').textContent = tvl.blocking_rule || (tvl.verified ? 'All checks passed' : '—');
+  // Update missed reports
+  $('sh-missed').textContent = state.missedReports;
+  $('sh-missed').className = `sh-val ${state.missedReports > 0 ? 'c-yellow' : 'c-green'}`;
 
-  // Last update
-  document.getElementById('last-update').textContent = `Updated ${fmtTime(report.received_at)}`;
-}
-
-function renderMarketStructure(p) {
-  const ms = p.market_structure || {};
-  if (!Object.keys(ms).length) {
-    document.getElementById('market-body').innerHTML = '<div class="empty-state"><div class="icon">📡</div><div class="msg">No market data</div></div>';
-    return;
-  }
-  let html = '';
-  if (ms.trend_direction !== undefined) html += kv('Trend', dirLabel(ms.trend_direction));
-  if (ms.trend_strength !== undefined) html += kv('Trend Strength', `<span class="c-blue">${fmt(ms.trend_strength)}</span>`);
-  if (ms.volatility_regime) html += kv('Volatility', `<span class="badge badge-blue">${ms.volatility_regime}</span>`);
-  if (ms.session_name) html += kv('Session', `<span class="badge badge-gray">${ms.session_name}</span>`);
-  if (ms.adx !== undefined) html += kv('ADX', fmt(ms.adx));
-  if (ms.atr14 !== undefined) html += kv('ATR(14)', fmt(ms.atr14));
-  if (ms.ema9 !== undefined) html += kv('EMA9', fmt(ms.ema9));
-  if (ms.ema21 !== undefined) html += kv('EMA21', fmt(ms.ema21));
-  if (ms.ema50 !== undefined) html += kv('EMA50', fmt(ms.ema50));
-  if (ms.vwap !== undefined) html += kv('VWAP', fmt(ms.vwap));
-  if (ms.rsi14 !== undefined) {
-    const rsiColor = ms.rsi14 > 70 ? 'c-red' : ms.rsi14 < 30 ? 'c-green' : 'c-blue';
-    html += kv('RSI(14)', `<span class="${rsiColor}">${fmt(ms.rsi14)}</span>`);
-  }
-  if (ms.volume_ratio !== undefined) html += kv('Vol Ratio', fmt(ms.volume_ratio));
-  if (ms.day_high !== undefined) html += kv('Day High', fmt(ms.day_high));
-  if (ms.day_low !== undefined) html += kv('Day Low', fmt(ms.day_low));
-  document.getElementById('market-body').innerHTML = html || '<div class="empty-state"><div class="msg">No market fields</div></div>';
-}
-
-function renderPositionState(p) {
-  const pos = p.position_state || {};
-  if (!pos.trade_id || pos.trade_id === 'NONE') {
-    document.getElementById('position-body').innerHTML = '<div class="empty-state"><div class="icon">📋</div><div class="msg">No active position</div></div>';
-    return;
-  }
-  let html = '';
-  html += kv('Trade ID', `<span class="c-muted" style="font-size:10px;">${pos.trade_id}</span>`);
-  html += kv('Model', `<span class="c-blue">${fmt(pos.model_id)}</span>`);
-  html += kv('Status', stateBadge(pos.status));
-  html += kv('Direction', dirLabel(pos.direction));
-  html += kv('Contracts', fmt(pos.contracts));
-  if (pos.entry_price) html += kv('Entry', fmt(pos.entry_price));
-  if (pos.fill_price) html += kv('Fill', fmt(pos.fill_price));
-  if (pos.stop_price) html += kv('Stop', `<span class="c-red">${fmt(pos.stop_price)}</span>`);
-  if (pos.target_price) html += kv('Target', `<span class="c-green">${fmt(pos.target_price)}</span>`);
-  if (pos.current_pnl !== undefined && pos.current_pnl !== null) {
-    const pnlClass = pos.current_pnl >= 0 ? 'c-green' : 'c-red';
-    html += kv('P&L', `<span class="${pnlClass}">$${fmt(pos.current_pnl)}</span>`);
-  }
-  if (pos.current_r !== undefined && pos.current_r !== null) html += kv('Current R', `${fmt(pos.current_r)}R`);
-  if (pos.mfe !== undefined && pos.mfe !== null) html += kv('MFE', fmt(pos.mfe));
-  if (pos.mae !== undefined && pos.mae !== null) html += kv('MAE', fmt(pos.mae));
-  if (pos.bars_in_trade) html += kv('Bars', fmt(pos.bars_in_trade));
-  if (pos.exit_reason) html += kv('Exit Reason', fmt(pos.exit_reason));
-  document.getElementById('position-body').innerHTML = html;
-}
-
-function renderModelCards(p) {
-  const models = p.model_evaluations || {};
-  const barTime = p.bar_time ? fmtTime(p.bar_time) : '';
-  document.getElementById('model-bar-time').textContent = barTime ? `@ ${barTime}` : '';
-
-  function modelCard(id, color, data) {
-    if (!data) return `<div class="model-card"><div class="model-name" style="color:${color}">${id}</div><div class="model-signal c-muted">Not evaluated</div></div>`;
-    const sig = data.has_signal
-      ? `${dirLabel(data.direction)} <span class="c-muted" style="font-size:10px;">Edge: ${fmt(data.edge_score)}</span>`
-      : `<span class="c-muted">NO SIGNAL</span>`;
-    const enabled = data.enabled ? '' : '<span class="badge badge-gray" style="font-size:9px;">DISABLED</span>';
-    return `
-      <div class="model-card">
-        <div class="model-name" style="color:${color}">${id} ${enabled}</div>
-        <div class="model-signal">${sig}</div>
-        ${data.entry_price ? `<div style="font-size:10px;color:var(--text-muted);margin-top:3px;">E:${fmt(data.entry_price)} S:${fmt(data.stop_price)} T:${fmt(data.target_price)}</div>` : ''}
-        ${data.signal_basis ? `<div style="font-size:10px;color:var(--text-muted);">${data.signal_basis}</div>` : ''}
-        ${data.rejection_reason ? `<div style="font-size:10px;color:var(--red);">${data.rejection_reason}</div>` : ''}
-      </div>`;
-  }
-
-  document.getElementById('model-grid').innerHTML =
-    modelCard('A1', '#58a6ff', models.a1) +
-    modelCard('A3', '#bc8cff', models.a3) +
-    modelCard('B1', '#e3b341', models.b1);
-}
-
-function renderBrainView(p) {
-  const r = p.reasoning || {};
-  if (!Object.keys(r).length) {
-    document.getElementById('brain-body').innerHTML = '<div class="empty-state"><div class="icon">🧠</div><div class="msg">No reasoning data</div></div>';
-    return;
-  }
-  const sections = [
-    ['Market State', r.market_state_summary],
-    ['A1 Rationale', r.a1_rationale],
-    ['A3 Rationale', r.a3_rationale],
-    ['B1 Rationale', r.b1_rationale],
-    ['ADE Rationale', r.ade_rationale],
-    ['ARI Rationale', r.ari_rationale],
-    ['TVL Rationale', r.tvl_rationale],
-    ['Action Summary', r.action_summary],
-  ];
-  let html = '';
-  for (const [label, text] of sections) {
-    if (text) {
-      html += `<div class="brain-section"><div class="brain-label">${label}</div><div class="brain-text">${text}</div></div>`;
-    }
-  }
-  document.getElementById('brain-body').innerHTML = html || '<div class="empty-state"><div class="msg">No reasoning fields</div></div>';
-}
-
-function renderADE(p) {
-  const ade = p.ade_decision || {};
-  if (!Object.keys(ade).length) {
-    document.getElementById('ade-body').innerHTML = '<div class="empty-state"><div class="icon">⚡</div><div class="msg">No decision data</div></div>';
-    return;
-  }
-  let html = '';
-  html += kv('Has Candidate', boolBadge(ade.has_candidate));
-  if (ade.candidate_model) html += kv('Candidate Model', `<span class="c-blue">${ade.candidate_model}</span>`);
-  if (ade.winning_edge_score !== undefined && ade.winning_edge_score !== null) {
-    html += kv('Edge Score', `<span class="c-green">${fmt(ade.winning_edge_score)}</span>`);
-    html += gauge(ade.winning_edge_score, 10, '#3fb950');
-  }
-  if (ade.confidence_level) {
-    const confClass = ade.confidence_level === 'HIGH' ? 'badge-green' : ade.confidence_level === 'MEDIUM' ? 'badge-yellow' : 'badge-red';
-    html += kv('Confidence', `<span class="badge ${confClass}">${ade.confidence_level}</span>`);
-  }
-  if (ade.ranking_order) html += kv('Ranking', `<span class="c-muted" style="font-size:10px;">${ade.ranking_order}</span>`);
-  if (ade.decision_rationale) html += kv('Rationale', `<span style="font-size:10px;">${ade.decision_rationale}</span>`);
-  if (ade.no_trade_rationale) html += kv('No Trade', `<span class="c-muted" style="font-size:10px;">${ade.no_trade_rationale}</span>`);
-  document.getElementById('ade-body').innerHTML = html;
-}
-
-function renderARI(p) {
-  const ari = p.ari_decision || {};
-  if (!Object.keys(ari).length) {
-    document.getElementById('ari-body').innerHTML = '<div class="empty-state"><div class="icon">🛡️</div><div class="msg">No risk data</div></div>';
-    return;
-  }
-  let html = '';
-  html += kv('Approved', boolBadge(ari.approved));
-  if (ari.base_risk !== undefined && ari.base_risk !== null) html += kv('Base Risk', `$${fmt(ari.base_risk)}`);
-  if (ari.risk_multiplier !== undefined && ari.risk_multiplier !== null) html += kv('Multiplier', `${fmt(ari.risk_multiplier)}x`);
-  if (ari.approved_risk !== undefined && ari.approved_risk !== null) {
-    html += kv('Approved Risk', `<span class="c-green">$${fmt(ari.approved_risk)}</span>`);
-  }
-  if (ari.contracts !== undefined) html += kv('Contracts', fmt(ari.contracts));
-  if (ari.daily_pnl !== undefined && ari.daily_pnl !== null) {
-    const pnlClass = ari.daily_pnl >= 0 ? 'c-green' : 'c-red';
-    html += kv('Daily P&L', `<span class="${pnlClass}">$${fmt(ari.daily_pnl)}</span>`);
-  }
-  if (ari.remaining_daily_risk !== undefined && ari.remaining_daily_risk !== null) {
-    html += kv('Remaining Risk', `$${fmt(ari.remaining_daily_risk)}`);
-    html += gauge(Math.abs(ari.remaining_daily_risk), 3000, '#58a6ff');
-  }
-  if (ari.daily_trade_count !== undefined) html += kv('Trades Today', fmt(ari.daily_trade_count));
-  if (ari.consecutive_losses !== undefined) html += kv('Consec. Losses', `<span class="${ari.consecutive_losses > 0 ? 'c-red' : 'c-muted'}">${fmt(ari.consecutive_losses)}</span>`);
-  if (ari.consecutive_wins !== undefined) html += kv('Consec. Wins', `<span class="${ari.consecutive_wins > 0 ? 'c-green' : 'c-muted'}">${fmt(ari.consecutive_wins)}</span>`);
-  if (ari.current_drawdown !== undefined && ari.current_drawdown !== null) {
-    html += kv('Drawdown', `<span class="c-red">$${fmt(ari.current_drawdown)}</span>`);
-  }
-  html += kv('Circuit Breaker', boolBadge(ari.circuit_breaker, 'TRIPPED', 'OK'));
-  html += kv('Active Position', boolBadge(ari.active_position, 'YES', 'NO'));
-  if (ari.triggered_rule) html += kv('Triggered Rule', `<span class="c-red" style="font-size:10px;">${ari.triggered_rule}</span>`);
-  if (ari.rejection_reason) html += kv('Rejection', `<span class="c-red" style="font-size:10px;">${ari.rejection_reason}</span>`);
-  document.getElementById('ari-body').innerHTML = html;
-}
-
-function renderTVL(p) {
-  const tvl = p.tvl_decision || {};
-  if (!Object.keys(tvl).length) {
-    document.getElementById('tvl-body').innerHTML = '<div class="empty-state"><div class="icon">✅</div><div class="msg">No verification data</div></div>';
-    return;
-  }
-  let html = '';
-  const statusClass = tvl.status === 'VERIFIED' ? 'badge-green' : tvl.status === 'REJECTED' ? 'badge-red' : 'badge-yellow';
-  html += kv('Status', `<span class="badge ${statusClass}">${fmt(tvl.status)}</span>`);
-  html += kv('Verified', boolBadge(tvl.verified));
-  html += kv('Session Valid', boolBadge(tvl.session_valid));
-  html += kv('Timestamp Valid', boolBadge(tvl.timestamp_valid));
-  html += kv('Parameters Valid', boolBadge(tvl.trade_parameters_valid));
-  html += kv('Exec Permission', boolBadge(tvl.execution_permission));
-  html += kv('Duplicate', boolBadge(tvl.duplicate_status, 'DUPLICATE', 'CLEAN'));
-  if (tvl.blocking_rule) html += kv('Blocking Rule', `<span class="c-red" style="font-size:10px;">${tvl.blocking_rule}</span>`);
-  if (tvl.rejection_reason) html += kv('Rejection', `<span class="c-red" style="font-size:10px;">${tvl.rejection_reason}</span>`);
-  document.getElementById('tvl-body').innerHTML = html;
-}
-
-function renderTimeline() {
-  const list = document.getElementById('timeline-list');
-  document.getElementById('timeline-count').textContent = `(${timelineItems.length} events)`;
-  if (!timelineItems.length) {
-    list.innerHTML = '<div class="empty-state" style="height:80px;"><div class="msg">Pipeline reports will appear here in real time.</div></div>';
-    return;
-  }
-  list.innerHTML = timelineItems.map(item => {
-    const p = item.payload || item;
-    const ade = p.ade_decision || {};
-    const ari = p.ari_decision || {};
-    const action = ade.has_candidate
-      ? `<span class="c-green">CANDIDATE: ${fmt(ade.candidate_model)}</span>`
-      : `<span class="c-muted">NO TRADE</span>`;
-    const stateClass = p.master_state === 'ACTIVE' ? 'c-green' : p.master_state === 'OVERNIGHT' ? 'c-muted' : 'c-yellow';
-    return `
-      <div class="timeline-item">
-        <span class="t-time">${fmtDateTime(item.received_at)}</span>
-        <span class="t-state"><span class="${stateClass}">${fmt(p.master_state)}</span></span>
-        <span class="t-symbol">${fmt(p.symbol)}</span>
-        <span class="t-action">${action}</span>
-        <span class="t-bar">${fmtTime(p.bar_time)}</span>
-      </div>`;
-  }).join('');
-}
-
-function renderAll(report) {
-  const p = report.payload || report;
-  renderOverview(report);
-  renderMarketStructure(p);
-  renderPositionState(p);
-  renderModelCards(p);
-  renderBrainView(p);
-  renderADE(p);
-  renderARI(p);
-  renderTVL(p);
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Stats fetch
-// ─────────────────────────────────────────────────────────────────────────────
-async function fetchStats() {
-  try {
-    const res = await fetch(`${API_BASE}/stats`);
-    if (!res.ok) return;
-    const data = await res.json();
-    stats = data;
-    document.getElementById('stat-count').textContent = data.reports_last_24h || 0;
-    document.getElementById('stat-total').textContent = `${data.total_reports || 0} total`;
-    if (data.latest && !latestReport) {
-      latestReport = data.latest;
-      renderAll(data.latest);
-    }
-  } catch (e) {
-    console.warn('Stats fetch failed:', e);
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Recent reports fetch
-// ─────────────────────────────────────────────────────────────────────────────
-async function fetchRecentReports() {
-  try {
-    const res = await fetch(`${API_BASE}/reports?limit=20`);
-    if (!res.ok) return;
-    const data = await res.json();
-    if (data.reports && data.reports.length) {
-      timelineItems = data.reports.slice(0, MAX_TIMELINE);
-      renderTimeline();
-      if (!latestReport && timelineItems.length) {
-        latestReport = timelineItems[0];
-        renderAll(latestReport);
-      }
-    }
-  } catch (e) {
-    console.warn('Reports fetch failed:', e);
+  // Next expected bar
+  if (state.lastBarTime) {
+    const lastBar = new Date(state.lastBarTime);
+    const nextBar = new Date(lastBar.getTime() + BAR_INTERVAL_MS);
+    $('sh-next').textContent = fmtTs(nextBar.toISOString());
   }
 }
 
@@ -734,63 +438,451 @@ async function fetchRecentReports() {
 // SSE connection
 // ─────────────────────────────────────────────────────────────────────────────
 function connectSSE() {
-  const dot = document.getElementById('sse-dot');
-  const label = document.getElementById('sse-label');
+  if (es) { es.close(); es = null; }
 
-  let es;
-  function connect() {
-    es = new EventSource(`${API_BASE}/events`);
+  es = new EventSource(`${API_BASE}/api/v1/events`);
 
-    es.onopen = () => {
-      dot.classList.add('connected');
-      label.textContent = 'Live';
-    };
+  es.onopen = () => {
+    state.sseConnected = true;
+    $('sh-sse').textContent = 'CONNECTED';
+    $('sh-sse').className = 'sh-val c-green';
+    $('fd-sse').style.background = 'var(--green)';
+    $('fl-sse').className = 'c-green';
+    updateConnState();
+  };
 
-    es.onmessage = (event) => {
-      try {
-        const msg = JSON.parse(event.data);
-        if (msg.type === 'pipeline_report') {
-          const report = msg.data;
-          latestReport = report;
-          renderAll(report);
+  es.addEventListener('connected', e => {
+    const d = JSON.parse(e.data);
+    state.clientId = d.client_id || null;
+    $('sh-client-id').textContent = state.clientId || '—';
+  });
 
-          // Add to timeline
-          timelineItems.unshift(report);
-          if (timelineItems.length > MAX_TIMELINE) timelineItems.pop();
-          renderTimeline();
+  es.addEventListener('heartbeat', e => {
+    const d = JSON.parse(e.data);
+    state.heartbeatReceived = true;
+    state.heartbeatSeq = d.seq || 0;
+    state.sseClients = d.sse_clients || 0;
+    $('sh-heartbeat').textContent = `seq ${state.heartbeatSeq} @ ${fmtTs(new Date().toISOString())}`;
+    $('sh-clients').textContent = state.sseClients;
+    updateConnState();
+  });
 
-          // Update stats
-          stats.total_reports = (stats.total_reports || 0) + 1;
-          stats.reports_last_24h = (stats.reports_last_24h || 0) + 1;
-          document.getElementById('stat-count').textContent = stats.reports_last_24h;
-          document.getElementById('stat-total').textContent = `${stats.total_reports} total`;
-        }
-      } catch (e) {
-        console.warn('SSE parse error:', e);
+  es.addEventListener('catchup', e => {
+    const outer = JSON.parse(e.data);
+    if (outer.data) {
+      processReport(outer.data, true);
+    }
+  });
+
+  es.onmessage = e => {
+    try {
+      const msg = JSON.parse(e.data);
+      if (msg.type === 'pipeline_report' && msg.data) {
+        processReport(msg.data, false);
+      } else if (msg.type === 'heartbeat') {
+        state.heartbeatReceived = true;
+        state.heartbeatSeq = msg.seq || 0;
+        $('sh-heartbeat').textContent = `seq ${state.heartbeatSeq} @ ${fmtTs(new Date().toISOString())}`;
+        updateConnState();
+      } else if (msg.type === 'connected') {
+        state.clientId = msg.client_id || null;
+        $('sh-client-id').textContent = state.clientId || '—';
       }
-    };
+    } catch (err) {
+      console.warn('SSE parse error:', err);
+    }
+  };
 
-    es.onerror = () => {
-      dot.classList.remove('connected');
-      label.textContent = 'Reconnecting…';
-      es.close();
-      setTimeout(connect, 3000);
-    };
-  }
-
-  connect();
+  es.onerror = () => {
+    state.sseConnected = false;
+    $('sh-sse').textContent = 'DISCONNECTED';
+    $('sh-sse').className = 'sh-val c-red';
+    $('fd-sse').style.background = 'var(--red)';
+    $('fl-sse').className = 'c-red';
+    setConnState('DEGRADED');
+    // Auto-reconnect after 5 seconds
+    if (reconnectTimer) clearTimeout(reconnectTimer);
+    reconnectTimer = setTimeout(connectSSE, 5000);
+  };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Init
+// Backend health polling
 // ─────────────────────────────────────────────────────────────────────────────
-(async function init() {
-  await fetchStats();
-  await fetchRecentReports();
+async function pollHealth() {
+  try {
+    const r = await fetch(`${API_BASE}/api/v1/health`);
+    if (r.ok) {
+      const d = await r.json();
+      state.backendOk = true;
+      state.sseClients = d.sse_clients || 0;
+      state.integrityViolations = d.integrity_violations || 0;
+      $('sh-backend').textContent = 'OK';
+      $('sh-backend').className = 'sh-val c-green';
+      $('fd-backend').style.background = 'var(--green)';
+      $('fl-backend').className = 'c-green';
+      $('sh-clients').textContent = state.sseClients;
+      $('sh-violations').textContent = state.integrityViolations;
+      $('sh-violations').className = `sh-val ${state.integrityViolations > 0 ? 'c-red' : 'c-green'}`;
+      // Update report counts from health
+      if (d.total_reports !== undefined) {
+        state.totalReports = d.total_reports;
+        $('ov-reports-sub').textContent = `${d.total_reports} total`;
+      }
+    } else {
+      throw new Error(`HTTP ${r.status}`);
+    }
+  } catch (err) {
+    state.backendOk = false;
+    $('sh-backend').textContent = 'UNREACHABLE';
+    $('sh-backend').className = 'sh-val c-red';
+    $('fd-backend').style.background = 'var(--red)';
+    $('fl-backend').className = 'c-red';
+  }
+  updateConnState();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Process incoming pipeline report
+// ─────────────────────────────────────────────────────────────────────────────
+function processReport(data, isCatchup) {
+  state.latestPayload = data;
+  state.lastReportTime = Date.now();
+  state.lastBarTime = data.bar_time || null;
+  state.lastReceivedAt = data.received_at || null;
+
+  // Update last-update display
+  $('last-update').textContent = `Updated ${fmtTs(new Date().toISOString())}`;
+  $('sh-bar-time').textContent = fmtTs(data.bar_time);
+  $('sh-received').textContent = fmtTs(data.received_at);
+
+  // Latency
+  if (data.ingestion_latency_ms !== undefined && data.ingestion_latency_ms !== null) {
+    $('ov-latency').textContent = `${data.ingestion_latency_ms}ms`;
+    $('ov-latency').className = `ov-value ${data.ingestion_latency_ms < 5000 ? 'c-green' : data.ingestion_latency_ms < 30000 ? 'c-yellow' : 'c-red'}`;
+  }
+
+  renderOverview(data);
+  renderMarketStructure(data.market_state || data.market_structure);
+  renderPositionState(data.position_state);
+  renderModelEvaluations(data.model_evaluations, data.bar_time);
+  renderBrainView(data.reasoning);
+  renderADE(data.ade_decision);
+  renderARI(data.ari_decision);
+  renderTVL(data.tvl_decision);
+  addTimelineEntry(data, isCatchup);
+
+  updateConnState();
+  updateFreshness();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Render functions — each maps directly from canonical payload fields
+// ─────────────────────────────────────────────────────────────────────────────
+function renderOverview(d) {
+  // Master State
+  const ms = d.master_state || '—';
+  $('ov-state').textContent = ms;
+  $('ov-state').className = `ov-value ${ms === 'ACTIVE' ? 'c-green' : ms === 'OVERNIGHT' ? 'c-cyan' : 'c-dim'}`;
+  const sess = d.session?.name || d.master_state || '—';
+  $('ov-session').textContent = sess;
+
+  // Symbol
+  $('ov-symbol').textContent = d.symbol || '—';
+  $('ov-tf').textContent = d.timeframe ? `${d.timeframe}m` : '—';
+
+  // ADE
+  const ade = d.ade_decision || {};
+  if (ade.has_candidate) {
+    $('ov-ade').textContent = 'CANDIDATE';
+    $('ov-ade').className = 'ov-value c-green';
+    $('ov-ade-sub').textContent = ade.candidate_model || '—';
+  } else {
+    $('ov-ade').textContent = 'NO TRADE';
+    $('ov-ade').className = 'ov-value c-dim';
+    $('ov-ade-sub').textContent = ade.no_trade_rationale ? ade.no_trade_rationale.substring(0,30) : 'No signal';
+  }
+
+  // ARI
+  const ari = d.ari_decision || {};
+  if (ari.approved === true) {
+    $('ov-ari').textContent = 'APPROVED';
+    $('ov-ari').className = 'ov-value c-green';
+    $('ov-ari-sub').textContent = ari.approved_risk ? `$${fmtNum(ari.approved_risk)} risk` : '—';
+  } else if (ari.approved === false) {
+    $('ov-ari').textContent = 'REJECTED';
+    $('ov-ari').className = 'ov-value c-red';
+    $('ov-ari-sub').textContent = ari.rejection_reason ? ari.rejection_reason.substring(0,25) : 'Risk rejected';
+  } else {
+    $('ov-ari').textContent = '—';
+    $('ov-ari').className = 'ov-value c-dim';
+    $('ov-ari-sub').textContent = '—';
+  }
+
+  // TVL
+  const tvl = d.tvl_decision || {};
+  if (tvl.status === 'VERIFIED') {
+    $('ov-tvl').textContent = 'VERIFIED';
+    $('ov-tvl').className = 'ov-value c-green';
+    $('ov-tvl-sub').textContent = 'All checks passed';
+  } else if (tvl.status) {
+    $('ov-tvl').textContent = tvl.status;
+    $('ov-tvl').className = 'ov-value c-red';
+    $('ov-tvl-sub').textContent = tvl.blocking_rule || tvl.rejection_reason || '—';
+  } else {
+    $('ov-tvl').textContent = '—';
+    $('ov-tvl').className = 'ov-value c-dim';
+    $('ov-tvl-sub').textContent = '—';
+  }
+
+  // Reports
+  state.reports24h = (state.reports24h || 0);
+  $('ov-reports').textContent = state.reports24h || '—';
+}
+
+function renderMarketStructure(ms) {
+  if (!ms) {
+    $('mkt-content').innerHTML = '<div class="empty-state"><div class="empty-icon">📡</div><div>No market data</div></div>';
+    return;
+  }
+  const trendDir = ms.trend_direction;
+  const trendClass = dirClass(trendDir);
+  const trendLabel = trendDir === 1 ? 'LONG' : trendDir === -1 ? 'SHORT' : 'FLAT';
+  $('mkt-content').innerHTML = `
+    ${kv('Trend', `<span class="${trendClass}">${dirArrow(trendDir)} ${trendLabel}</span>`)}
+    ${kv('Trend Strength', fmt(ms.trend_strength))}
+    ${kv('Volatility', `<span class="${ms.volatility_regime === 'HIGH' ? 'c-orange' : ms.volatility_regime === 'LOW' ? 'c-cyan' : 'c-text'}">${fmt(ms.volatility_regime)}</span>`)}
+    ${kv('Session', fmt(ms.session_name))}
+    ${kv('ADX', fmt(ms.adx))}
+    ${kv('ATR(14)', fmt(ms.atr14))}
+    ${kv('EMA9', fmtPrice(ms.ema9))}
+    ${kv('EMA21', fmtPrice(ms.ema21))}
+    ${kv('EMA50', fmtPrice(ms.ema50))}
+    ${kv('VWAP', fmtPrice(ms.vwap))}
+    ${kv('RSI(14)', `<span class="${ms.rsi14 > 70 ? 'c-red' : ms.rsi14 < 30 ? 'c-green' : ''}">${fmt(ms.rsi14)}</span>`)}
+    ${kv('Vol Ratio', fmt(ms.volume_ratio))}
+    ${kv('Day High', fmtPrice(ms.day_high))}
+    ${kv('Day Low', fmtPrice(ms.day_low))}
+  `;
+}
+
+function renderPositionState(ps) {
+  if (!ps || !ps.trade_id) {
+    $('pos-content').innerHTML = '<div class="empty-state"><div class="empty-icon">📋</div><div>No active position</div></div>';
+    return;
+  }
+  const pnlClass = colorClass(ps.current_pnl);
+  const dirClass2 = dirClass(ps.direction);
+  $('pos-content').innerHTML = `
+    ${kv('Trade ID', `<span class="c-accent" style="font-size:9px">${fmt(ps.trade_id)}</span>`)}
+    ${kv('Model', fmt(ps.model_id))}
+    ${kv('Status', `<span class="${ps.status === 'ACTIVE' ? 'c-green' : ps.status === 'CLOSED' ? 'c-dim' : 'c-yellow'}">${fmt(ps.status)}</span>`)}
+    ${kv('Direction', `<span class="${dirClass2}">${dirArrow(ps.direction)} ${ps.direction === 1 ? 'LONG' : ps.direction === -1 ? 'SHORT' : '—'}</span>`)}
+    ${kv('Contracts', fmt(ps.contracts))}
+    ${kv('Entry', fmtPrice(ps.entry_price))}
+    ${kv('Stop', `<span class="c-red">${fmtPrice(ps.stop_price)}</span>`)}
+    ${kv('Target', `<span class="c-green">${fmtPrice(ps.target_price)}</span>`)}
+    ${kv('P&L', `<span class="${pnlClass}">$${fmtNum(ps.current_pnl)}</span>`)}
+    ${kv('Current R', `${fmt(ps.current_r)}R`)}
+    ${kv('MFE', fmt(ps.mfe))}
+    ${kv('MAE', fmt(ps.mae))}
+  `;
+}
+
+function renderModelEvaluations(evals, barTime) {
+  if (barTime) {
+    $('models-ts').textContent = `@ ${fmtTs(barTime)}`;
+  }
+  if (!evals) return;
+  ['a1','a3','b1'].forEach(id => {
+    const m = evals[id];
+    const el = $(`mc-${id}`);
+    if (!m) return;
+    el.className = 'model-card';
+    if (m.has_signal && m.direction === 1) el.classList.add('signal-long');
+    else if (m.has_signal && m.direction === -1) el.classList.add('signal-short');
+    else el.classList.add('no-signal');
+
+    const dc = dirClass(m.direction);
+    const signalText = m.has_signal
+      ? `<span class="${dc}">${dirArrow(m.direction)} ${m.direction === 1 ? 'LONG' : 'SHORT'} Edge: ${fmt(m.edge_score)}</span>`
+      : `<span class="c-dim">NO SIGNAL</span>`;
+    const prices = m.has_signal && m.entry_price
+      ? `<div class="mc-prices">E:${fmtPrice(m.entry_price)} S:${fmtPrice(m.stop_price)} T:${fmtPrice(m.target_price)}</div>`
+      : '';
+    const basis = m.signal_basis
+      ? `<div class="mc-basis">${m.signal_basis}</div>`
+      : m.rejection_reason
+      ? `<div class="mc-basis c-dim">${m.rejection_reason}</div>`
+      : '';
+    el.innerHTML = `<div class="mc-id">${id.toUpperCase()}</div><div class="mc-signal">${signalText}</div>${prices}${basis}`;
+  });
+}
+
+function renderBrainView(r) {
+  if (!r) {
+    $('brain-content').innerHTML = '<div class="empty-state"><div class="empty-icon">🧠</div><div>No reasoning data</div></div>';
+    return;
+  }
+  const sections = [
+    ['Market State', r.market_state_summary, false],
+    ['A1 Rationale', r.a1_rationale, false],
+    ['A3 Rationale', r.a3_rationale, false],
+    ['B1 Rationale', r.b1_rationale, false],
+    ['ADE Rationale', r.ade_rationale, false],
+    ['ARI Rationale', r.ari_rationale, false],
+    ['TVL Rationale', r.tvl_rationale, false],
+    ['Action Summary', r.action_summary, true],
+  ];
+  $('brain-content').innerHTML = sections
+    .filter(([,text]) => text)
+    .map(([label, text, isAction]) => `
+      <div class="brain-section">
+        <div class="brain-label">${label}</div>
+        <div class="brain-text ${isAction ? 'action' : ''}">${text}</div>
+      </div>
+    `).join('') || '<div class="empty-state"><div>No reasoning data</div></div>';
+}
+
+function renderADE(ade) {
+  if (!ade) {
+    $('ade-content').innerHTML = '<div class="empty-state"><div class="empty-icon">⚡</div><div>No decision data</div></div>';
+    return;
+  }
+  $('ade-content').innerHTML = `
+    ${kv('Has Candidate', `<span class="${ade.has_candidate ? 'c-green' : 'c-dim'}">${ade.has_candidate ? 'YES' : 'NO'}</span>`)}
+    ${kv('Candidate Model', fmt(ade.candidate_model))}
+    ${kv('Edge Score', ade.winning_edge_score !== null ? `<span class="c-green" style="font-size:14px;font-weight:700">${fmt(ade.winning_edge_score)}</span>` : '—')}
+    ${kv('Confidence', `<span class="${ade.confidence_level === 'HIGH' ? 'c-green' : ade.confidence_level === 'MEDIUM' ? 'c-yellow' : 'c-dim'}">${fmt(ade.confidence_level)}</span>`)}
+    ${kv('Ranking', `<span style="font-size:10px">${fmt(ade.ranking_order)}</span>`)}
+    ${ade.decision_rationale ? `<div style="margin-top:6px;font-size:10px;color:var(--text2);line-height:1.5">${ade.decision_rationale}</div>` : ''}
+  `;
+}
+
+function renderARI(ari) {
+  if (!ari) {
+    $('ari-content').innerHTML = '<div class="empty-state"><div class="empty-icon">🛡️</div><div>No risk data</div></div>';
+    return;
+  }
+  const pnlClass = colorClass(ari.daily_pnl);
+  $('ari-content').innerHTML = `
+    ${kv('Approved', `<span class="${ari.approved ? 'c-green' : 'c-red'}">${ari.approved ? 'YES' : 'NO'}</span>`)}
+    ${kv('Base Risk', `$${fmtNum(ari.base_risk)}`)}
+    ${kv('Multiplier', `${fmt(ari.risk_multiplier)}x`)}
+    ${kv('Approved Risk', `<span class="c-green">$${fmtNum(ari.approved_risk)}</span>`)}
+    ${kv('Contracts', fmt(ari.contracts))}
+    ${kv('Daily P&L', `<span class="${pnlClass}">$${fmtNum(ari.daily_pnl)}</span>`)}
+    ${kv('Remaining Risk', `$${fmtNum(ari.remaining_daily_risk)}`)}
+    ${kv('Trades Today', fmt(ari.daily_trade_count))}
+    ${kv('Consec. Losses', fmt(ari.consecutive_losses))}
+    ${kv('Consec. Wins', fmt(ari.consecutive_wins))}
+    ${kv('Drawdown', `$${fmtNum(ari.current_drawdown)}`)}
+    ${kv('Circuit Breaker', `<span class="${ari.circuit_breaker ? 'c-red' : 'c-green'}">${ari.circuit_breaker ? 'TRIGGERED' : 'OK'}</span>`)}
+    ${kv('Active Position', `<span class="${ari.active_position ? 'c-yellow' : 'c-dim'}">${ari.active_position ? 'YES' : 'NO'}</span>`)}
+  `;
+}
+
+function renderTVL(tvl) {
+  if (!tvl) {
+    $('tvl-content').innerHTML = '<div class="empty-state"><div class="empty-icon">✅</div><div>No verification data</div></div>';
+    return;
+  }
+  const yesNo = v => `<span class="${v ? 'c-green' : 'c-red'}">${v ? 'YES' : 'NO'}</span>`;
+  $('tvl-content').innerHTML = `
+    ${kv('Status', `<span class="${tvl.status === 'VERIFIED' ? 'c-green' : 'c-red'}">${fmt(tvl.status)}</span>`)}
+    ${kv('Verified', yesNo(tvl.verified))}
+    ${kv('Session Valid', yesNo(tvl.session_valid))}
+    ${kv('Timestamp Valid', yesNo(tvl.timestamp_valid))}
+    ${kv('Parameters Valid', yesNo(tvl.trade_parameters_valid))}
+    ${kv('Exec Permission', yesNo(tvl.execution_permission))}
+    ${kv('Duplicate', `<span class="${tvl.duplicate_status ? 'c-red' : 'c-green'}">${tvl.duplicate_status ? 'DUPLICATE' : 'CLEAN'}</span>`)}
+    ${tvl.blocking_rule ? kv('Blocking Rule', `<span class="c-red">${tvl.blocking_rule}</span>`) : ''}
+  `;
+}
+
+function addTimelineEntry(data, isCatchup) {
+  // Don't add duplicate entries for catchup if already in timeline
+  if (isCatchup && state.timeline.length > 0) {
+    const existing = state.timeline.find(t => t.id === data.id);
+    if (existing) return;
+  }
+
+  const ade = data.ade_decision || {};
+  const adeText = ade.has_candidate ? `CANDIDATE: ${ade.candidate_model}` : 'NO TRADE';
+  const entry = {
+    id: data.id,
+    time: data.received_at,
+    state: data.master_state || '—',
+    symbol: data.symbol || '—',
+    ade: adeText,
+    barTime: data.bar_time,
+  };
+
+  // Prepend to timeline
+  state.timeline.unshift(entry);
+  if (state.timeline.length > MAX_TIMELINE) state.timeline.pop();
+
+  // Update count
+  $('timeline-count').textContent = `${state.timeline.length} event${state.timeline.length !== 1 ? 's' : ''}`;
+  $('ov-reports').textContent = state.timeline.length;
+
+  // Render
+  const stateClass = entry.state === 'ACTIVE' ? 'c-green' : entry.state === 'OVERNIGHT' ? 'c-cyan' : 'c-dim';
+  const adeClass = ade.has_candidate ? 'c-green' : 'c-dim';
+  const rows = state.timeline.map(t => {
+    const sc = t.state === 'ACTIVE' ? 'c-green' : t.state === 'OVERNIGHT' ? 'c-cyan' : 'c-dim';
+    const ac = t.ade.startsWith('CANDIDATE') ? 'c-green' : 'c-dim';
+    return `<div class="tl-row">
+      <span class="tl-time">${fmtDate(t.time)}</span>
+      <span class="tl-state ${sc}">${t.state}</span>
+      <span class="tl-sym">${t.symbol}</span>
+      <span class="tl-ade ${ac}">${t.ade}</span>
+      <span class="tl-bar">${fmtTs(t.barTime)}</span>
+    </div>`;
+  }).join('');
+  $('timeline-list').innerHTML = rows;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Fetch stats for report counts
+// ─────────────────────────────────────────────────────────────────────────────
+async function fetchStats() {
+  try {
+    const r = await fetch(`${API_BASE}/api/v1/stats`);
+    if (r.ok) {
+      const d = await r.json();
+      state.reports24h = d.reports_24h || 0;
+      state.totalReports = d.total_reports || 0;
+      $('ov-reports').textContent = state.reports24h;
+      $('ov-reports-sub').textContent = `${state.totalReports} total`;
+    }
+  } catch (e) { /* silent */ }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Bootstrap
+// ─────────────────────────────────────────────────────────────────────────────
+async function init() {
+  // Initial health check
+  await pollHealth();
+
+  // Connect SSE
   connectSSE();
-  // Refresh stats every 30s
-  setInterval(fetchStats, 30000);
-})();
+
+  // Fetch stats
+  await fetchStats();
+
+  // Periodic health poll every 30s
+  setInterval(pollHealth, 30_000);
+
+  // Periodic stats poll every 60s
+  setInterval(fetchStats, 60_000);
+
+  // Freshness check every 10s
+  freshnessTimer = setInterval(updateFreshness, 10_000);
+}
+
+init();
 </script>
 </body>
 </html>

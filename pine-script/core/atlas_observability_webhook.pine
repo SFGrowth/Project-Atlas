@@ -43,18 +43,13 @@ var string TIMEFRAME        = "5"
 var string APS_VERSION      = "0.12.0"
 var string PINE_VERSION     = "5"
 var int    SPRINT_NUMBER    = 74
-var string MODULE_ID        = "M-15"
 var string MODULE_VERSION   = "1.0.0"
 
 // Order state constants (must match M-14)
 var string STATE_NONE       = "NONE"
-var string STATE_PENDING    = "PENDING"
-var string STATE_SUBMITTED  = "SUBMITTED"
 var string STATE_ACKNOWLEDGED = "ACKNOWLEDGED"
 var string STATE_FILLED     = "FILLED"
 var string STATE_ACTIVE     = "ACTIVE"
-var string STATE_PARTIAL    = "PARTIAL_EXIT"
-var string STATE_CLOSED     = "CLOSED"
 var string STATE_ARCHIVED   = "ARCHIVED"
 
 // ============================================================================
@@ -66,7 +61,6 @@ var string GRP_KERN  = "Kernel Reference"
 
 bool   i_enable_webhook    = input.bool(true,  title="Enable Observability Webhook", group=GRP_OBS)
 bool   i_debug_preview     = input.bool(true,  title="Show JSON Preview Table",      group=GRP_DEBUG)
-bool   i_validate_payload  = input.bool(true,  title="Validate Payload Before Send", group=GRP_DEBUG)
 bool   i_show_heartbeat    = input.bool(true,  title="Show Heartbeat Label",          group=GRP_DEBUG)
 // Kernel reference inputs (must match M-14 settings)
 string i_account_type      = input.string("PROP", title="Account Type (match M-14)", options=["PROP","LIVE"], group=GRP_KERN)
@@ -96,9 +90,6 @@ var float  v_risk_multiplier    = 1.0
 var bool   v_circuit_breaker    = false
 var float  v_current_drawdown   = 0.0
 var int    v_pause_until_bar    = 0
-var float  v_total_pnl          = 0.0
-var int    v_total_trades       = 0
-var int    v_total_wins         = 0
 var string v_position_status    = "NONE"
 var string v_last_signal_id     = "NONE"
 var string v_last_trade_id      = "NONE"
@@ -114,7 +105,6 @@ var float  v_last_mfe           = 0.0
 var float  v_last_mae           = 0.0
 var int    v_bars_in_trade      = 0
 var string v_exit_reason        = "NONE"
-var string v_last_error         = "NONE"
 var bool   v_ov_tracked         = false
 var float  v_ov_open            = na
 var float  v_ov_high            = na
@@ -146,8 +136,8 @@ f_bts(bool v) =>
 
 // String to JSON string (escape quotes and backslashes)
 f_str(string v) =>
-    s = na(v) ? "null" : v
-    s == "null" ? "null" : "\"" + str.replace_all(str.replace_all(s, "\\", "\\\\"), "\"", "\\\"") + "\""
+    string safe_str = na(v) ? "null" : v
+    safe_str == "null" ? "null" : "\"" + str.replace_all(str.replace_all(safe_str, "\\", "\\\\"), "\"", "\\\"") + "\""
 
 // Clamp float to prevent Infinity
 f_clamp(float v) =>
@@ -183,7 +173,7 @@ bool ema_bear_val = ema_struct == "BEAR"
 // ATR / ADX
 float atr14_val = ta.atr(14)
 float atr5_val  = ta.atr(5)
-[diplus_val, diminus_val, adx14_val] = ta.dmi(14, 14)
+[_, _, adx14_val] = ta.dmi(14, 14)
 bool adx_trending_val = adx14_val >= 25.0
 string vol_state_val  = adx14_val >= 35 ? "TRENDING_STRONG" : (adx14_val >= 25 ? "TRENDING" : "RANGING")
 

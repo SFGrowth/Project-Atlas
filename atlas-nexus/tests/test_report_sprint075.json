@@ -1,0 +1,127 @@
+{
+  "sprint": "075",
+  "test_suite": "Atlas Nexus Failure Isolation Tests",
+  "run_at": "2026-07-10T07:39:20Z",
+  "total": 23,
+  "passed": 23,
+  "failed": 0,
+  "errors": 0,
+  "result": "PASS",
+  "tests": [
+    {
+      "status": "PASS",
+      "name": "GET /api/v1/health \u2192 200 OK with correct fields",
+      "detail": ""
+    },
+    {
+      "status": "PASS",
+      "name": "GET /api/v1/stats \u2192 200 OK with correct fields",
+      "detail": ""
+    },
+    {
+      "status": "PASS",
+      "name": "GET /api/v1/reports \u2192 200 OK with reports list",
+      "detail": ""
+    },
+    {
+      "status": "PASS",
+      "name": "POST /webhook without auth \u2192 401 Unauthorized",
+      "detail": ""
+    },
+    {
+      "status": "PASS",
+      "name": "POST /webhook with wrong token \u2192 403 Forbidden",
+      "detail": ""
+    },
+    {
+      "status": "PASS",
+      "name": "POST /webhook with wrong Content-Type \u2192 415",
+      "detail": ""
+    },
+    {
+      "status": "PASS",
+      "name": "POST /webhook with empty Bearer \u2192 401",
+      "detail": ""
+    },
+    {
+      "status": "PASS",
+      "name": "POST /webhook with invalid JSON \u2192 400 Bad Request",
+      "detail": ""
+    },
+    {
+      "status": "PASS",
+      "name": "POST /webhook with wrong payload_type \u2192 422 Unprocessable",
+      "detail": ""
+    },
+    {
+      "status": "PASS",
+      "name": "POST /webhook with wrong symbol \u2192 422 Unprocessable",
+      "detail": ""
+    },
+    {
+      "status": "PASS",
+      "name": "POST /webhook with missing required fields \u2192 422 Unprocessable",
+      "detail": ""
+    },
+    {
+      "status": "PASS",
+      "name": "POST /webhook with wrong schema_version \u2192 422 Unprocessable",
+      "detail": ""
+    },
+    {
+      "status": "PASS",
+      "name": "POST /webhook first submission \u2192 201 Created",
+      "detail": ""
+    },
+    {
+      "status": "PASS",
+      "name": "POST /webhook duplicate idempotency_key \u2192 200 DUPLICATE_IGNORED",
+      "detail": ""
+    },
+    {
+      "status": "PASS",
+      "name": "POST /webhook with new idempotency_key \u2192 201 Created",
+      "detail": ""
+    },
+    {
+      "status": "PASS",
+      "name": "GET /api/v1/events \u2192 SSE stream connects and sends 'connected' event",
+      "detail": ""
+    },
+    {
+      "status": "PASS",
+      "name": "POST /webhook \u2192 SSE broadcasts pipeline_report to connected client",
+      "detail": ""
+    },
+    {
+      "status": "PASS",
+      "name": "Submitted payload is retrievable by ID from /api/v1/reports/{id}",
+      "detail": ""
+    },
+    {
+      "status": "PASS",
+      "name": "Full payload with optional fields is stored and retrievable",
+      "detail": ""
+    },
+    {
+      "status": "PASS",
+      "name": "Oversized string field \u2192 accepted or gracefully rejected (not 500)",
+      "detail": ""
+    },
+    {
+      "status": "PASS",
+      "name": "Payload with null optional fields \u2192 201 Created",
+      "detail": ""
+    },
+    {
+      "status": "PASS",
+      "name": "10 concurrent submissions with unique keys \u2192 all 201 Created",
+      "detail": ""
+    },
+    {
+      "status": "PASS",
+      "name": "GET /api/v1/reports/{nonexistent} \u2192 404 Not Found",
+      "detail": ""
+    }
+  ]
+}
