@@ -25,6 +25,7 @@ const HealthPage = lazy(() => import("./pages/Health"));
 const ReportsPage = lazy(() => import("./pages/Reports"));
 const AIPage = lazy(() => import("./pages/AI"));
 const SettingsPage = lazy(() => import("./pages/SettingsPage"));
+const AnalyticsPage = lazy(() => import("./pages/Analytics"));
 
 function PageLoader() {
   return (
@@ -59,6 +60,7 @@ function Router() {
           <Route path="/reports" component={ReportsPage} />
           <Route path="/ai" component={AIPage} />
           <Route path="/settings" component={SettingsPage} />
+          <Route path="/analytics" component={AnalyticsPage} />
           <Route path="/404" component={NotFound} />
           <Route component={NotFound} />
         </Switch>

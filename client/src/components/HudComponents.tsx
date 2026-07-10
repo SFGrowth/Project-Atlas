@@ -11,6 +11,30 @@ export function fmt(v: number | null | undefined, decimals = 2): string {
   return v.toFixed(decimals);
 }
 
+/**
+ * fmtField — returns "DATA UNAVAILABLE" for null/undefined critical fields.
+ * Use for fields that MUST have a value when the pipeline is active.
+ * Falls back to a dash for non-critical display fields (use fmt/fmtTime for those).
+ */
+export function fmtField(v: string | number | null | undefined, critical = false): string {
+  if (v === null || v === undefined || v === "") {
+    return critical ? "DATA UNAVAILABLE" : "—";
+  }
+  return String(v);
+}
+
+/**
+ * fmtCurrency — formats a dollar value, returns "DATA UNAVAILABLE" if null.
+ */
+export function fmtCurrency(v: number | string | null | undefined, critical = false): string {
+  if (v === null || v === undefined || v === "") {
+    return critical ? "DATA UNAVAILABLE" : "—";
+  }
+  const n = typeof v === "string" ? parseFloat(v) : v;
+  if (isNaN(n)) return critical ? "DATA UNAVAILABLE" : "—";
+  return `$${n.toFixed(2)}`;
+}
+
 export function fmtPct(v: number | null | undefined): string {
   if (v === null || v === undefined) return "—";
   return `${v >= 0 ? "+" : ""}${v.toFixed(2)}%`;

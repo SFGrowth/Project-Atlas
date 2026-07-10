@@ -17,6 +17,7 @@ import {
   getRecentHealthEvents,
   getLastWebhookEvent,
   getRecentNotifications,
+  getAnalyticsData,
 } from "./db";
 
 export const appRouter = router({
@@ -228,6 +229,15 @@ export const appRouter = router({
           ...n,
           sentAt: n.sentAt.toISOString(),
         }));
+      }),
+  }),
+
+  // ─── Performance Analytics ──────────────────────────────────────────────────────────────────────────────────
+  analytics: router({
+    summary: publicProcedure
+      .input(z.object({ account: z.string().default("ATLAS_MNQ_PAPER") }))
+      .query(async ({ input }) => {
+        return await getAnalyticsData(input.account);
       }),
   }),
 });

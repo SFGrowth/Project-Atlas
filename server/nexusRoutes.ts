@@ -72,6 +72,8 @@ function validatePayload(body: Record<string, unknown>): string | null {
   if (body.schema_version !== "1.0.0") return `Invalid schema_version: expected "1.0.0", got "${body.schema_version}"`;
   if (body.payload_type !== "OBSERVABILITY") return `Invalid payload_type: expected "OBSERVABILITY", got "${body.payload_type}"`;
   if (body.symbol !== "MNQ1!") return `Invalid symbol: expected "MNQ1!", got "${body.symbol}"`;
+  // Timeframe validation: M-15 Pine Script sends timeframe as "5" (5-minute bars)
+  if (String(body.timeframe) !== "5") return `Invalid timeframe: expected "5" (5-minute), got "${body.timeframe}"`;
   return null;
 }
 
@@ -84,9 +86,46 @@ function safeEqual(a: string, b: string): boolean {
   return diff === 0;
 }
 
+// ─── Notification Deduplication ───────────────────────────────────────────────
+// Prevents the same notification type from firing multiple times in a short window.
+// Each entry stores the last time (ms) that notification type was sent.
+
+const notifLastSent = new Map<string, number>();
+
+// Cooldown windows per notification type (milliseconds)
+const NOTIF_COOLDOWN_MS: Record<string, number> = {
+  ARI_REJECTION:   5 * 60 * 1000,   //  5 minutes
+  CIRCUIT_BREAKER: 30 * 60 * 1000,  // 30 minutes
+  TRADE_OPENED:    0,                // always send (unique per trade)
+  TRADE_CLOSED:    0,                // always send (unique per trade)
+  TARGET_HIT:      0,                // always send
+  STOP_HIT:        0,                // always send
+  WEBHOOK_FAILURE: 60 * 60 * 1000,  // 1 hour
+  TV_DISCONNECTED: 2 * 60 * 60 * 1000, // 2 hours
+  ATLAS_ONLINE:    0,                // always send (startup)
+  SYSTEM_OFFLINE:  0,                // always send (shutdown)
+};
+
+function shouldSendNotification(type: string): boolean {
+  const cooldown = NOTIF_COOLDOWN_MS[type] ?? 10 * 60 * 1000; // default 10 min
+  if (cooldown === 0) return true;
+  const last = notifLastSent.get(type);
+  if (last === undefined) return true;
+  return (Date.now() - last) >= cooldown;
+}
+
+function markNotificationSent(type: string): void {
+  notifLastSent.set(type, Date.now());
+}
+
 // ─── Notification helper ──────────────────────────────────────────────────────
 
 async function sendNotification(type: string, title: string, body: string, metadata?: unknown) {
+  if (!shouldSendNotification(type)) {
+    console.log(`[Nexus] Notification suppressed (cooldown active): ${type}`);
+    return;
+  }
+  markNotificationSent(type);
   try {
     await notifyOwner({ title, content: body });
     await insertNotificationLog({ type, title, body, delivered: true, metadata: metadata as Record<string, unknown> });
@@ -177,7 +216,7 @@ async function processPaperTrading(payload: Record<string, unknown>): Promise<vo
           // Broadcast trade closed
           broadcastSSE("trade_closed", { tradeId: openTrade.id, exitReason, pnl: finalPnl, currentR: finalR });
 
-          // Notifications
+          // Notifications (TARGET_HIT and STOP_HIT always fire — unique per trade)
           if (exitReason === "TARGET_HIT") {
             await sendNotification("TARGET_HIT", "🎯 Target Hit", `${openTrade.model} ${openTrade.direction} trade closed at target. P&L: $${finalPnl.toFixed(2)} (${finalR.toFixed(2)}R)`, { tradeId: openTrade.id });
           } else if (exitReason === "STOP_HIT") {
@@ -243,14 +282,14 @@ async function processPaperTrading(payload: Record<string, unknown>): Promise<vo
       }
     }
 
-    // ── ARI Rejection notification (rate-limited: only when state changes) ────
+    // ── ARI Rejection notification (deduplicated: 5-min cooldown) ─────────────
     if (adeDecision !== "NO_TRADE" && ariApproval === "REJECTED") {
       const ariReason = String(ari?.rejection_reason ?? "Risk limit");
       await insertHealthEvent({ eventType: "ARI_REJECTION", severity: "WARN", message: `ARI rejected ${adeDecision}: ${ariReason}` });
       await sendNotification("ARI_REJECTION", "⚠️ ARI Rejection", `${adeDecision} signal rejected by ARI: ${ariReason}`, { masterState });
     }
 
-    // ── Circuit breaker notification ──────────────────────────────────────────
+    // ── Circuit breaker notification (deduplicated: 30-min cooldown) ──────────
     const circuitBreaker = String(ari?.circuit_breaker ?? "CLOSED");
     if (circuitBreaker === "OPEN") {
       await insertHealthEvent({ eventType: "CIRCUIT_BREAKER", severity: "ERROR", message: "ARI circuit breaker OPEN — trading halted" });
@@ -265,7 +304,12 @@ async function processPaperTrading(payload: Record<string, unknown>): Promise<vo
 // ─── Webhook last-received tracker (for health monitoring) ───────────────────
 
 let lastWebhookAt: number | null = null;
+let serverStartedAt: number = Date.now();
 let webhookFailureNotified = false;
+
+// Grace period: do not fire WEBHOOK_FAILURE in the first 10 minutes after startup
+// (server may be starting fresh before the first TradingView bar close)
+const STARTUP_GRACE_PERIOD_MS = 10 * 60 * 1000;
 
 // Check every 10 minutes if we haven't received a webhook during market hours
 setInterval(async () => {
@@ -273,6 +317,10 @@ setInterval(async () => {
   const hour = now.getUTCHours();
   const day = now.getUTCDay();
   const isMarketHours = day >= 1 && day <= 5 && hour >= 14 && hour < 21; // 14:00-21:00 UTC = 9:30-16:00 ET
+
+  // Apply startup grace period: skip WEBHOOK_FAILURE check for first 10 min
+  const uptimeMs = Date.now() - serverStartedAt;
+  if (uptimeMs < STARTUP_GRACE_PERIOD_MS) return;
 
   if (isMarketHours && lastWebhookAt !== null) {
     const minutesSinceLast = (Date.now() - lastWebhookAt) / 60000;
@@ -318,6 +366,11 @@ setInterval(async () => {
   const hour = now.getUTCHours();
   const day = now.getUTCDay();
   const isMarketHours = day >= 1 && day <= 5 && hour >= 14 && hour < 21;
+
+  // Apply startup grace period: skip TV_DISCONNECTED check for first 10 min
+  const uptimeMs = Date.now() - serverStartedAt;
+  if (uptimeMs < STARTUP_GRACE_PERIOD_MS) return;
+
   if (isMarketHours && lastWebhookAt !== null) {
     const minutesSinceLast = (Date.now() - lastWebhookAt) / 60000;
     if (minutesSinceLast > 45 && !tvDisconnectNotified) {
@@ -409,6 +462,7 @@ export function registerNexusRoutes(router: Router) {
     // Update health tracker
     lastWebhookAt = Date.now();
     webhookFailureNotified = false;
+    tvDisconnectNotified = false; // reset on successful receipt
     await insertHealthEvent({ eventType: "WEBHOOK_RECEIVED", severity: "INFO", message: `${symbol} ${masterState} bar=${barTime}`, metadata: { id, pipelineRunId } });
 
     // Broadcast to SSE clients

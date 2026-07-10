@@ -256,6 +256,109 @@ export async function getRecentNotifications(limit = 50) {
     .limit(limit);
 }
 
+// ─── Analytics aggregation helper ───────────────────────────────────────────────
+// Computes all stats needed for the Performance Analytics page from paper_trades.
+
+export async function getAnalyticsData(account = "ATLAS_MNQ_PAPER") {
+  const db = await getDb();
+  if (!db) return null;
+
+  // Fetch all closed trades ordered by close time
+  const trades = await db
+    .select()
+    .from(paperTrades)
+    .where(and(eq(paperTrades.account, account), eq(paperTrades.status, "CLOSED")))
+    .orderBy(paperTrades.closedAt);
+
+  if (trades.length === 0) return { trades: [], equityCurve: [], dailyPnl: [], stats: null };
+
+  // Build equity curve (cumulative P&L over time)
+  let cumPnl = 0;
+  const equityCurve = trades.map((t) => {
+    cumPnl += Number(t.pnl ?? 0);
+    return {
+      date: t.closedAt ? t.closedAt.toISOString() : "",
+      cumPnl: parseFloat(cumPnl.toFixed(2)),
+      pnl: parseFloat(Number(t.pnl ?? 0).toFixed(2)),
+    };
+  });
+
+  // Build daily P&L buckets
+  const dailyMap = new Map<string, number>();
+  for (const t of trades) {
+    if (!t.closedAt) continue;
+    const day = t.closedAt.toISOString().slice(0, 10);
+    dailyMap.set(day, (dailyMap.get(day) ?? 0) + Number(t.pnl ?? 0));
+  }
+  const dailyPnl = Array.from(dailyMap.entries())
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([date, pnl]) => ({ date, pnl: parseFloat(pnl.toFixed(2)) }));
+
+  // Compute aggregate stats
+  const totalTrades = trades.length;
+  const wins = trades.filter((t) => Number(t.pnl ?? 0) > 0).length;
+  const losses = trades.filter((t) => Number(t.pnl ?? 0) < 0).length;
+  const winRate = totalTrades > 0 ? wins / totalTrades : 0;
+  const totalPnl = trades.reduce((s, t) => s + Number(t.pnl ?? 0), 0);
+  const grossWin = trades.filter((t) => Number(t.pnl ?? 0) > 0).reduce((s, t) => s + Number(t.pnl ?? 0), 0);
+  const grossLoss = Math.abs(trades.filter((t) => Number(t.pnl ?? 0) < 0).reduce((s, t) => s + Number(t.pnl ?? 0), 0));
+  const profitFactor = grossLoss > 0 ? grossWin / grossLoss : wins > 0 ? 999 : 0;
+  const avgR = totalTrades > 0 ? trades.reduce((s, t) => s + Number(t.currentR ?? 0), 0) / totalTrades : 0;
+
+  // Max drawdown from equity curve peak
+  let peak = 0;
+  let maxDrawdown = 0;
+  for (const point of equityCurve) {
+    if (point.cumPnl > peak) peak = point.cumPnl;
+    const dd = peak - point.cumPnl;
+    if (dd > maxDrawdown) maxDrawdown = dd;
+  }
+
+  // Win/loss distribution by model
+  const modelStats: Record<string, { wins: number; losses: number; pnl: number }> = {};
+  for (const t of trades) {
+    const m = t.model ?? "UNKNOWN";
+    if (!modelStats[m]) modelStats[m] = { wins: 0, losses: 0, pnl: 0 };
+    if (Number(t.pnl ?? 0) > 0) modelStats[m].wins++;
+    else modelStats[m].losses++;
+    modelStats[m].pnl += Number(t.pnl ?? 0);
+  }
+  const modelBreakdown = Object.entries(modelStats).map(([model, s]) => ({
+    model,
+    wins: s.wins,
+    losses: s.losses,
+    pnl: parseFloat(s.pnl.toFixed(2)),
+  }));
+
+  return {
+    trades: trades.map((t) => ({
+      id: t.id,
+      model: t.model,
+      direction: t.direction,
+      pnl: t.pnl ? String(t.pnl) : "0",
+      currentR: t.currentR ? String(t.currentR) : "0",
+      exitReason: t.exitReason,
+      openedAt: t.openedAt.toISOString(),
+      closedAt: t.closedAt?.toISOString() ?? null,
+    })),
+    equityCurve,
+    dailyPnl,
+    stats: {
+      totalTrades,
+      wins,
+      losses,
+      winRate: parseFloat(winRate.toFixed(4)),
+      totalPnl: parseFloat(totalPnl.toFixed(2)),
+      grossWin: parseFloat(grossWin.toFixed(2)),
+      grossLoss: parseFloat(grossLoss.toFixed(2)),
+      profitFactor: parseFloat(profitFactor.toFixed(4)),
+      avgR: parseFloat(avgR.toFixed(4)),
+      maxDrawdown: parseFloat(maxDrawdown.toFixed(2)),
+      modelBreakdown,
+    },
+  };
+}
+
 // ─── Journal aggregation helper ───────────────────────────────────────────────
 // Recomputes daily stats from paper_trades for a given date and account.
 

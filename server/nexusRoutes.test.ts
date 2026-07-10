@@ -151,6 +151,17 @@ describe("Schema validation", () => {
     expect(r.status).toBe(422);
     expect(r.body.error).toMatch(/master_state/);
   });
+
+  it("returns 422 when timeframe is not 5", async () => {
+    const r = await post(`/api/webhook/observe/${TEST_TOKEN}`, validPayload({ timeframe: "15" }));
+    expect(r.status).toBe(422);
+    expect(r.body.error).toMatch(/timeframe/);
+  });
+
+  it("returns 201 when timeframe is \"5\" (string)", async () => {
+    const r = await post(`/api/webhook/observe/${TEST_TOKEN}`, validPayload({ timeframe: "5" }));
+    expect(r.status).toBe(201);
+  });
 });
 
 // ─── Happy Path ───────────────────────────────────────────────────────────────

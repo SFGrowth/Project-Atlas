@@ -7,7 +7,7 @@ import { getLoginUrl } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
 import {
   Activity, AlertTriangle, BarChart2, BookOpen, Brain, ChevronLeft, ChevronRight,
-  Clock, Cpu, Database, FlaskConical, Home, LayoutDashboard, Menu,
+  Clock, Cpu, Database, FlaskConical, Home, LayoutDashboard, LineChart, Menu,
   Radio, Settings, Shield, Telescope, TrendingUp, Zap,
 } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
@@ -47,6 +47,7 @@ const NAV_GROUPS = [
     label: "INTELLIGENCE",
     items: [
       { icon: BookOpen, label: "Trading Journal", path: "/journal" },
+      { icon: LineChart, label: "Analytics", path: "/analytics" },
       { icon: Radio, label: "System Health", path: "/health" },
       { icon: Database, label: "Reports", path: "/reports" },
       { icon: Telescope, label: "Atlas AI", path: "/ai" },
