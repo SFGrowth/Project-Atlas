@@ -1,0 +1,13 @@
+# Atlas Permanent Engineering Change Log
+
+This document satisfies **Rule 13: Maintain a permanent Engineering Change Log.** Future developers must be able to understand every modification ever made.
+
+| Version | Date | Sprint | Modules Changed | Reason | APS Reference | Impact Assessment |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| v1.0.0-alpha.1 | 2026-07-10 | 066 | M-00, M-01, M-02 | Initial framework implementation. | APS Section 10 (Phase 1) | Establishes the foundational state management, configuration, and utility layers. No backward compatibility risk as this is the initial commit. |
+| v1.0.0-alpha.2 | 2026-07-10 | 067 | M-03 | Initial Market State Engine implementation. | APS Section 10 (Phase 2) | Establishes the core indicator and session calculation logic. Implements the 40-field MarketState UDT. No backward compatibility risk. |
+| v1.0.0-alpha.3 | 2026-07-10 | 067 (patch) | M-01, M-03 | APS Discrepancy Resolution: fixed session naming (added PRE_MARKET, AM_OPEN) and ratified 43-field MarketState UDT. | APS Section 2 (MSE) | Breaking change to session string outputs. Downstream modules M-04 through M-14 must use the 7-session string set. MarketState field count ratified at 43. |
+| v1.0.0-alpha.4 | 2026-07-10 | 068 | M-04 (new), M-05 (new), M-06 (new) | Sprint 068 — Execution Models A1, A3, B1 initial implementation. | APS Section 3 (Execution Model Library) | No impact on M-00 through M-03. M-05 requires future change to M-03 (add volcomp_ratio_prior field). Four discrepancies documented in sprint-068-engineering-decision-log.md. |
+| v1.0.0-alpha.5 | 2026-07-10 | 069 | M-03 (patched), M-07 (new) | Implementation of the Atlas Decision Engine (ADE) and Edge Score architecture. | APS Section 4 (Decision Engine) | M-07 successfully bridges the Execution Models (M-04, M-05, M-06) with the Risk Intelligence layer (M-08). The Edge Score logic is fully deterministic. M-03 was patched to include `volcomp_ratio_prior` to support Model A3 logic. |
+| v1.0.0-alpha.6 | 2026-07-10 | 070 | M-08 (new) | Implementation of the Atlas Risk Intelligence (ARI) module. | APS Section 5 (ARI Rules) | Introduces strict capital protection rules and deterministic position sizing. Structurally sound; stateless implementation ensures state integrity is maintained by M-02. |
+| v1.0.0-alpha.7 | 2026-07-10 | 071 | M-09 (new) | Implementation of the Trade Verification Layer (TVL). | APS Section 4.2 | M-09 is the final pre-execution gate. It successfully implements all 18 verification rules and compiles without errors. The `VerificationReport` UDT is established. |

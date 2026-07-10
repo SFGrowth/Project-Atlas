@@ -1,0 +1,398 @@
+[
+  {
+    "id": "MP-001",
+    "name": "Regime Dependence",
+    "statement": "Execution models produce statistically significant positive expectancy only when the market is in a compatible volatility regime. Trading outside the compatible regime degrades or eliminates the edge regardless of entry logic quality.",
+    "hypothesis": "H-R001 (Sprint 019): Regime selection dominates entry optimisation.",
+    "supporting_sprints": [
+      "019",
+      "020",
+      "023",
+      "025",
+      "027",
+      "033",
+      "038",
+      "040",
+      "042",
+      "048",
+      "051"
+    ],
+    "failure_modes": [
+      "Regime classification can be wrong during transition periods",
+      "Cross-market transfer failed in Sprint 041 \u2014 principle may be MNQ-specific in current form",
+      "Extreme ADX sub-regimes (>60) showed instability in Sprint 050"
+    ],
+    "known_exceptions": [
+      "ADX > 60 sub-regime showed edge decay in 2025-2026 (Sprint 050)",
+      "RTH morning session shows inverse behaviour for VolComp (Sprint 033)"
+    ],
+    "related_models": [
+      "A1",
+      "A2",
+      "A3"
+    ],
+    "related_guardian_rules": [
+      "C-REG-001 (Volatility Compression)",
+      "ARI Rule D (Regime Boost)"
+    ],
+    "research_gaps": [
+      "Cross-market validation on correlated instruments (ES, NQ) with instrument-specific parameters",
+      "Regime transition detection: how to identify when a regime is changing vs established"
+    ],
+    "cross_market_readiness": "Requires more evidence",
+    "level_candidate": 3,
+    "pcs": 86.2,
+    "pcs_components": {
+      "statistical": 10,
+      "replication": 10.0,
+      "cross_year": 10.0,
+      "cross_model": 10.0,
+      "cross_market": 2.0,
+      "failure_resistance": 10,
+      "simplicity": 8,
+      "explanatory_power": 9
+    }
+  },
+  {
+    "id": "MP-003",
+    "name": "Session Asymmetry",
+    "statement": "The same execution model produces materially different outcomes in different trading sessions (AM RTH, PM RTH, Overnight). Session boundaries represent structural changes in participant composition, liquidity, and auction mechanics that are not captured by price-based indicators alone.",
+    "hypothesis": "H-A1-SESSION (Sprint 025/026): A1 edge concentrated in PM session.",
+    "supporting_sprints": [
+      "019",
+      "025",
+      "026",
+      "027",
+      "033",
+      "042",
+      "052"
+    ],
+    "failure_modes": [
+      "Session boundaries can shift due to macro events (FOMC, CPI)",
+      "Summer/winter daylight saving time changes shift session boundaries"
+    ],
+    "known_exceptions": [
+      "Sprint 052: A3 early-hour failure is not explained by liquidity/range \u2014 it is a model design boundary"
+    ],
+    "related_models": [
+      "A1",
+      "A2",
+      "A3"
+    ],
+    "related_guardian_rules": [
+      "Session filter in all execution models"
+    ],
+    "research_gaps": [
+      "AM session (09:30-12:00) remains unexploited \u2014 Sprint 045 RMCE found 65% of exceptional moves occur here",
+      "European session (03:00-08:00) behaviour not yet characterised"
+    ],
+    "cross_market_readiness": "Ready for cross-market validation",
+    "level_candidate": 3,
+    "pcs": 85.0,
+    "pcs_components": {
+      "statistical": 7,
+      "replication": 10.0,
+      "cross_year": 10.0,
+      "cross_model": 10.0,
+      "cross_market": 3,
+      "failure_resistance": 10,
+      "simplicity": 9,
+      "explanatory_power": 9
+    }
+  },
+  {
+    "id": "MP-004",
+    "name": "Volatility Contraction \u2192 Expansion Asymmetry",
+    "statement": "Following a measurable period of volatility contraction, the subsequent expansion is directionally skewed toward the prevailing higher-timeframe trend. The asymmetry strengthens significantly in high-ADX environments (64.9% with-trend vs 53.4% in low-ADX). Contraction does not resolve randomly.",
+    "hypothesis": "H-B004 (Sprint 033): VolComp breakouts are directionally biased toward the trend.",
+    "supporting_sprints": [
+      "019",
+      "033",
+      "037",
+      "042",
+      "043"
+    ],
+    "failure_modes": [
+      "RTH morning session shows inverse behaviour (39.0% with-trend) \u2014 session context required",
+      "Low-ADX environments reduce asymmetry to near-random (53.4%)"
+    ],
+    "known_exceptions": [
+      "RTH morning session: VolComp breakouts are NOT directionally biased (Sprint 033)"
+    ],
+    "related_models": [
+      "A1",
+      "A2",
+      "A3"
+    ],
+    "related_guardian_rules": [
+      "C-REG-001 (Volatility Compression)"
+    ],
+    "research_gaps": [
+      "Cross-market validation (ES, YM, RTY)",
+      "Higher timeframe VolComp (daily/weekly) interaction with 5-minute signals"
+    ],
+    "cross_market_readiness": "Ready for cross-market validation",
+    "level_candidate": 3,
+    "pcs": 83.8,
+    "pcs_components": {
+      "statistical": 9,
+      "replication": 8.0,
+      "cross_year": 10.0,
+      "cross_model": 10.0,
+      "cross_market": 3,
+      "failure_resistance": 10,
+      "simplicity": 8,
+      "explanatory_power": 9
+    }
+  },
+  {
+    "id": "MP-002",
+    "name": "ADX Absolute Thresholds",
+    "statement": "ADX operates as an absolute threshold classifier, not a continuous predictor. Specific ADX bands (low: <30, medium: 30-45, high: >45) define qualitatively different market regimes with distinct execution model compatibility. The relationship is non-linear: crossing a threshold changes model behaviour categorically.",
+    "hypothesis": "H-A1-ADX (Sprint 027): Model A1 edge is concentrated in ADX < 30 regime.",
+    "supporting_sprints": [
+      "019",
+      "025",
+      "027",
+      "040",
+      "042",
+      "050",
+      "051",
+      "052"
+    ],
+    "failure_modes": [
+      "ADX > 60 sub-regime showed edge decay (Sprint 050) \u2014 thresholds may shift in extreme regimes",
+      "ADX is a lagging indicator; threshold crossings during fast moves may be late"
+    ],
+    "known_exceptions": [
+      "Sprint 019 found ADX alone was insufficient as a regime filter (needed VolComp + VWAP)",
+      "ADX > 60 showed strong aggregate but unstable year-by-year performance (Sprint 050)"
+    ],
+    "related_models": [
+      "A1",
+      "A2",
+      "A3"
+    ],
+    "related_guardian_rules": [
+      "ARI Rule D (ADX Confidence Scaling)",
+      "C-REG-ADX"
+    ],
+    "research_gaps": [
+      "Cross-market ADX threshold calibration (ES, YM may require different thresholds)",
+      "Higher timeframe ADX interaction with 5-minute ADX"
+    ],
+    "cross_market_readiness": "Requires more evidence",
+    "level_candidate": 3,
+    "pcs": 82.9,
+    "pcs_components": {
+      "statistical": 8,
+      "replication": 8.3,
+      "cross_year": 10.0,
+      "cross_model": 10.0,
+      "cross_market": 3,
+      "failure_resistance": 10,
+      "simplicity": 9,
+      "explanatory_power": 8
+    }
+  },
+  {
+    "id": "MP-008",
+    "name": "Theory of Edge",
+    "statement": "A durable trading edge must be rooted in a structural market inefficiency (participant behaviour asymmetry, auction mechanics, or liquidity dynamics) rather than statistical pattern fitting. Structural edges generalise across time periods; statistical edges decay. The Atlas research methodology operationalises this by requiring a causal mechanism before execution model engineering.",
+    "hypothesis": "H-EDGE-001 (Theory of Edge v1): Edge requires structural explanation.",
+    "supporting_sprints": [
+      "019",
+      "025",
+      "031",
+      "033",
+      "052"
+    ],
+    "failure_modes": [
+      "Structural explanations can be post-hoc rationalisations of statistical patterns",
+      "Market structure can change (e.g., algorithmic dominance shifting session dynamics)"
+    ],
+    "known_exceptions": [
+      "Sprint 041 cross-market failure suggests structural explanations may be instrument-specific"
+    ],
+    "related_models": [
+      "A1",
+      "A2",
+      "A3"
+    ],
+    "related_guardian_rules": [
+      "Atlas Research Methodology (Behaviour before Strategy)"
+    ],
+    "research_gaps": [
+      "Formal falsification criteria for structural vs statistical edge",
+      "Cross-market validation to test whether structural explanations generalise"
+    ],
+    "cross_market_readiness": "Requires more evidence",
+    "level_candidate": 3,
+    "pcs": 82.9,
+    "pcs_components": {
+      "statistical": 9,
+      "replication": 8.3,
+      "cross_year": 10.0,
+      "cross_model": 10.0,
+      "cross_market": 3,
+      "failure_resistance": 10,
+      "simplicity": 6,
+      "explanatory_power": 10
+    }
+  },
+  {
+    "id": "MP-005",
+    "name": "Loss Streaks as Regime Transitions",
+    "statement": "In intraday continuation models, a streak of 2 or more consecutive losses is not statistical variance. It is the primary observable footprint of a market regime transition: simultaneous ATR expansion (>100%) and EMA alignment flip. The streak counter is the most efficient detector of this transition.",
+    "hypothesis": "H-ARI-C (Sprint 039/040): Consecutive losses predict future losses via regime change.",
+    "supporting_sprints": [
+      "039",
+      "040",
+      "051",
+      "052"
+    ],
+    "failure_modes": [
+      "Only tested on A2 \u2014 may not generalise to other model types",
+      "Regime transition detection via streak counter is reactive, not predictive"
+    ],
+    "known_exceptions": [
+      "A2 win rate at consec_losses=4 recovers to 28.6% \u2014 regime transitions are not permanent"
+    ],
+    "related_models": [
+      "A2"
+    ],
+    "related_guardian_rules": [
+      "ARI Rule C (Sequence Risk / ARI Caution)"
+    ],
+    "research_gaps": [
+      "Cross-model validation: does the same mechanism apply to A1 and A3?",
+      "Can regime transition be detected earlier (before the first loss)?"
+    ],
+    "cross_market_readiness": "Requires more evidence",
+    "level_candidate": 2,
+    "pcs": 73.8,
+    "pcs_components": {
+      "statistical": 7,
+      "replication": 6.0,
+      "cross_year": 10.0,
+      "cross_model": 10.0,
+      "cross_market": 3,
+      "failure_resistance": 6,
+      "simplicity": 9,
+      "explanatory_power": 8
+    }
+  },
+  {
+    "id": "MP-009",
+    "name": "A3 Temporal Restriction",
+    "statement": "Model A3 (Overnight Expansion) produces positive expectancy only in the pre-midnight window (18:00-23:59 ET). Trades in the 00:00-08:00 window fail structurally due to incompatibility with European session auction mechanics. This is a model-specific design boundary, not a general market principle.",
+    "hypothesis": "FS-A3-02 (Sprint 051/052): Early-hour A3 trades fail structurally.",
+    "supporting_sprints": [
+      "037",
+      "051",
+      "052"
+    ],
+    "failure_modes": [
+      "Daylight saving time shifts session boundaries"
+    ],
+    "known_exceptions": [],
+    "related_models": [
+      "A3"
+    ],
+    "related_guardian_rules": [
+      "A3 session filter"
+    ],
+    "research_gaps": [
+      "Redesign A3 as pre-midnight only model"
+    ],
+    "cross_market_readiness": "Model-specific only",
+    "level_candidate": 1,
+    "pcs": 67.5,
+    "pcs_components": {
+      "statistical": 5,
+      "replication": 4.0,
+      "cross_year": 10.0,
+      "cross_model": 10.0,
+      "cross_market": 3,
+      "failure_resistance": 6,
+      "simplicity": 10,
+      "explanatory_power": 6
+    }
+  },
+  {
+    "id": "MP-006",
+    "name": "Structural Anchoring",
+    "statement": "Execution models require a structural anchor (dynamic support/resistance level) to achieve positive expectancy. Entries made \"in the air\" \u2014 without a structural reference point \u2014 fail systematically due to vulnerability to routine market noise. The anchor converts the stop loss from arbitrary to structural.",
+    "hypothesis": "H-A2-ANCHOR (Sprint 029): Momentum continuation without structural anchor fails.",
+    "supporting_sprints": [
+      "029",
+      "025",
+      "042"
+    ],
+    "failure_modes": [
+      "Dynamic anchors (EMAs) can be violated in fast-moving markets",
+      "Flag structures can be false (liquidity sweeps that look like flags)"
+    ],
+    "known_exceptions": [
+      "A3 uses a compression breakout without a traditional structural anchor \u2014 though the compression zone itself serves as the anchor"
+    ],
+    "related_models": [
+      "A1",
+      "A2"
+    ],
+    "related_guardian_rules": [
+      "Entry validation rules in execution models"
+    ],
+    "research_gaps": [
+      "Formal definition of \"structural anchor\" across different model types",
+      "Testing whether A3 compression zone qualifies as a structural anchor"
+    ],
+    "cross_market_readiness": "Requires more evidence",
+    "level_candidate": 2,
+    "pcs": 61.7,
+    "pcs_components": {
+      "statistical": 6,
+      "replication": 2.7,
+      "cross_year": 6.7,
+      "cross_model": 10.0,
+      "cross_market": 3,
+      "failure_resistance": 6,
+      "simplicity": 7,
+      "explanatory_power": 8
+    }
+  },
+  {
+    "id": "MP-007",
+    "name": "Overnight Inventory Imbalance Resolution",
+    "statement": "Overnight directional inventory does NOT reliably predict RTH opening direction. The correlation between overnight range and RTH morning direction is near-zero and unstable across years and volatility regimes. This hypothesis was rejected.",
+    "hypothesis": "H-B003 (Sprint 032): Overnight inventory predicts RTH direction.",
+    "supporting_sprints": [
+      "031",
+      "032"
+    ],
+    "failure_modes": [
+      "Hypothesis rejected \u2014 not a valid principle"
+    ],
+    "known_exceptions": [
+      "Only works in Q4 (high volatility) regime \u2014 too narrow to be a principle"
+    ],
+    "related_models": [],
+    "related_guardian_rules": [],
+    "research_gaps": [
+      "Possible that overnight inventory matters for specific high-volatility regimes only"
+    ],
+    "cross_market_readiness": "Model-specific only",
+    "level_candidate": 1,
+    "pcs": 19.2,
+    "pcs_components": {
+      "statistical": 3,
+      "replication": 0.0,
+      "cross_year": 3.3,
+      "cross_model": 0,
+      "cross_market": 0,
+      "failure_resistance": 0,
+      "simplicity": 7,
+      "explanatory_power": 2
+    }
+  }
+]

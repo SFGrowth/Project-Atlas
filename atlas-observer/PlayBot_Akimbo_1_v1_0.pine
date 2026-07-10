@@ -1,0 +1,96 @@
+//@version=6
+strategy("PlayBot Akimbo #1 v1.0", shorttitle="Akimbo1", overlay=true, initial_capital=50000, default_qty_type=strategy.cash, default_qty_value=1650, margin_long=100, margin_short=100)
+
+// =============================================================================
+// Project Atlas: PlayBot Auto-Trail
+// Bot: Akimbo #1
+// Version: 1.0.0
+//
+// Strategy: Counter-trend / mean-reversion. Enters against short-term momentum
+// when price is extended.
+// Risk: ATR-based position sizing. Supports Live and Prop profiles.
+// =============================================================================
+
+// -----------------------------------------------------------------------------
+// Inputs
+// -----------------------------------------------------------------------------
+
+groupRisk = "Risk & Account"
+accountType = input.string("Prop", "Account Type", options=["Prop", "Live"], group=groupRisk)
+propRiskUsd = input.float(400.0, "Prop Risk Per Trade (USD)", group=groupRisk)
+liveRiskUsd = input.float(1650.0, "Live Base Risk (USD)", group=groupRisk)
+mnqPointValue = input.float(2.0, "MNQ Dollar Value Per Point", group=groupRisk)
+
+groupMeanReversion = "Mean Reversion Settings"
+rsiLength = input.int(14, "RSI Length", minval=1, group=groupMeanReversion)
+overbought = input.float(70.0, "Overbought Level", group=groupMeanReversion)
+oversold = input.float(30.0, "Oversold Level", group=groupMeanReversion)
+emaLength = input.int(20, "Reversion Target EMA", group=groupMeanReversion)
+
+groupVolatility = "Volatility / Sizing"
+atrLength = input.int(14, "ATR Length", minval=1, group=groupVolatility)
+stopAtrMultiplier = input.float(1.5, "Stop ATR Multiplier", step=0.1, group=groupVolatility)
+
+groupExecution = "TradersPost Webhooks"
+webhookToken = input.string("", "Webhook Token", group=groupExecution)
+ticker = input.string("MNQ1!", "Ticker", group=groupExecution)
+
+// -----------------------------------------------------------------------------
+// Core Calculations
+// -----------------------------------------------------------------------------
+
+rsiValue = ta.rsi(close, rsiLength)
+reversionEma = ta.ema(close, emaLength)
+atrValue = ta.atr(atrLength)
+
+// -----------------------------------------------------------------------------
+// Sizing Logic
+// -----------------------------------------------------------------------------
+
+baseRisk = accountType == "Prop" ? propRiskUsd : liveRiskUsd
+stopDistance = atrValue * stopAtrMultiplier
+positionQty = stopDistance > 0 ? math.floor(baseRisk / (stopDistance * mnqPointValue)) : 0
+
+// -----------------------------------------------------------------------------
+// Entry Logic (Counter Trend)
+// -----------------------------------------------------------------------------
+
+// Enter long when oversold and starting to bounce
+longCondition = ta.crossover(rsiValue, oversold)
+
+// Enter short when overbought and starting to retrace
+shortCondition = ta.crossunder(rsiValue, overbought)
+
+// -----------------------------------------------------------------------------
+// Exit Logic (Reversion to Mean)
+// -----------------------------------------------------------------------------
+
+// Exit when price reaches the moving average
+exitLongCondition = close >= reversionEma
+exitShortCondition = close <= reversionEma
+
+// -----------------------------------------------------------------------------
+// Execution
+// -----------------------------------------------------------------------------
+
+if longCondition and positionQty > 0 and strategy.position_size == 0
+    strategy.entry("Akimbo1_Long", strategy.long, qty=positionQty)
+    alert('{"action": "buy", "ticker": "' + ticker + '", "quantity": ' + str.tostring(positionQty) + ', "token": "' + webhookToken + '"}', alert.freq_once_per_bar_close)
+
+if shortCondition and positionQty > 0 and strategy.position_size == 0
+    strategy.entry("Akimbo1_Short", strategy.short, qty=positionQty)
+    alert('{"action": "sell", "ticker": "' + ticker + '", "quantity": ' + str.tostring(positionQty) + ', "token": "' + webhookToken + '"}', alert.freq_once_per_bar_close)
+
+if exitLongCondition and strategy.position_size > 0
+    strategy.close("Akimbo1_Long")
+    alert('{"action": "exit", "ticker": "' + ticker + '", "token": "' + webhookToken + '"}', alert.freq_once_per_bar_close)
+
+if exitShortCondition and strategy.position_size < 0
+    strategy.close("Akimbo1_Short")
+    alert('{"action": "exit", "ticker": "' + ticker + '", "token": "' + webhookToken + '"}', alert.freq_once_per_bar_close)
+
+// -----------------------------------------------------------------------------
+// Visuals
+// -----------------------------------------------------------------------------
+
+plot(reversionEma, color=color.gray, title="Reversion Target EMA")

@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Atlas Nexus Operating System (ANOS) v1.0</title>
+<style>
+  :root {
+    --bg-canvas: #0A0A0A;
+    --bg-panel: #141414;
+    --bg-panel-hover: #1A1A1A;
+    --border: #2A2A2A;
+    --border-active: #3A3A3A;
+    --text-primary: #F0F0F0;
+    --text-secondary: #64748B;
+    --text-muted: #3A3A3A;
+    --accent-blue: #2563EB;
+    --accent-blue-dim: #1D4ED8;
+    --green: #10B981;
+    --red: #EF4444;
+    --amber: #F59E0B;
+    --crimson: #991B1B;
+    --sidebar-width: 220px;
+    --header-height: 48px;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg-canvas); color: var(--text-primary); font-family: 'Inter', system-ui, -apple-system, sans-serif; font-size: 13px; line-height: 1.5; overflow: hidden; height: 100vh; display: flex; flex-direction: column; }
+
+  /* Header */
+  .header { height: var(--header-height); background: var(--bg-panel); border-bottom: 1px solid var(--border); display: flex; align-items: center; padding: 0 16px; gap: 16px; flex-shrink: 0; z-index: 100; }
+  .logo { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 15px; letter-spacing: 0.05em; color: var(--text-primary); }
+  .logo-mark { width: 28px; height: 28px; background: var(--accent-blue); border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 900; color: white; }
+  .header-status { display: flex; align-items: center; gap: 6px; margin-left: 24px; }
+  .status-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); }
+  .status-dot.amber { background: var(--amber); }
+  .status-dot.red { background: var(--red); animation: pulse 1.5s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+  .status-label { font-size: 11px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.08em; }
+  .header-right { margin-left: auto; display: flex; align-items: center; gap: 12px; }
+  .countdown { font-family: 'Courier New', monospace; font-size: 20px; font-weight: 700; color: var(--amber); letter-spacing: 0.1em; }
+  .countdown-label { font-size: 10px; color: var(--text-secondary); text-transform: uppercase; }
+  .header-btn { padding: 5px 10px; border: 1px solid var(--border); border-radius: 4px; background: transparent; color: var(--text-secondary); cursor: pointer; font-size: 11px; transition: all 0.15s; }
+  .header-btn:hover { border-color: var(--accent-blue); color: var(--accent-blue); }
+  .sprint-badge { background: #1E3A5F; color: #60A5FA; border: 1px solid #2563EB44; border-radius: 4px; padding: 3px 8px; font-size: 11px; font-weight: 600; }
+
+  /* Layout */
+  .app-body { display: flex; flex: 1; overflow: hidden; }
+
+  /* Sidebar */
+  .sidebar { width: var(--sidebar-width); background: var(--bg-panel); border-right: 1px solid var(--border); display: flex; flex-direction: column; flex-shrink: 0; overflow-y: auto; }
+  .sidebar::-webkit-scrollbar { width: 4px; }
+  .sidebar::-webkit-scrollbar-thumb { background: var(--border-active); border-radius: 2px; }
+  .nav-section { padding: 16px 8px 4px; }
+  .nav-section-label { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.12em; padding: 0 8px; margin-bottom: 4px; }
+  .nav-item { display: flex; align-items: center; gap: 8px; padding: 7px 8px; border-radius: 5px; cursor: pointer; color: var(--text-secondary); transition: all 0.15s; font-size: 12.5px; }
+  .nav-item:hover { background: var(--bg-panel-hover); color: var(--text-primary); }
+  .nav-item.active { background: #1E3A5F; color: #60A5FA; }
+  .nav-icon { width: 16px; height: 16px; flex-shrink: 0; opacity: 0.7; }
+  .nav-badge { margin-left: auto; background: var(--red); color: white; border-radius: 10px; padding: 1px 6px; font-size: 10px; font-weight: 700; }
+  .nav-badge.green { background: var(--green); }
+  .nav-badge.amber { background: var(--amber); color: #000; }
+
+  /* Main Content */
+  .main { flex: 1; overflow: hidden; display: flex; flex-direction: column; }
+  .page { display: none; flex: 1; overflow: auto; padding: 16px; }
+  .page.active { display: flex; flex-direction: column; gap: 12px; }
+  .page::-webkit-scrollbar { width: 6px; }
+  .page::-webkit-scrollbar-thumb { background: var(--border-active); border-radius: 3px; }
+
+  /* Page Header */
+  .page-header { display: flex; align-items: center; gap: 12px; padding-bottom: 4px; }
+  .page-title { font-size: 18px; font-weight: 700; letter-spacing: -0.02em; }
+  .page-subtitle { font-size: 12px; color: var(--text-secondary); }
+
+  /* Cards & Panels */
+  .grid { display: grid; gap: 12px; }
+  .grid-3 { grid-template-columns: repeat(3, 1fr); }
+  .grid-4 { grid-template-columns: repeat(4, 1fr); }
+  .grid-2-1 { grid-template-columns: 2fr 1fr; }
+  .grid-1-2 { grid-template-columns: 1fr 2fr; }
+  .card { background: var(--bg-panel); border: 1px solid var(--border); border-radius: 8px; padding: 14px; }
+  .card-header { font-size: 10px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; }
+  .card-value { font-size: 28px; font-weight: 700; font-family: 'Courier New', monospace; letter-spacing: -0.02em; }
+  .card-value.green { color: var(--green); }
+  .card-value.red { color: var(--red); }
+  .card-value.amber { color: var(--amber); }
+  .card-value.blue { color: #60A5FA; }
+  .card-sub { font-size: 11px; color: var(--text-secondary); margin-top: 4px; }
+
+  /* Status Badges */
+  .badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+  .badge.verified { background: #052E16; color: var(--green); border: 1px solid #166534; }
+  .badge.rejected { background: #450A0A; color: var(--red); border: 1px solid #7F1D1D; }
+  .badge.delayed { background: #451A03; color: var(--amber); border: 1px solid #92400E; }
+  .badge.emergency { background: var(--crimson); color: white; border: 1px solid #DC2626; animation: pulse 1.5s infinite; }
+  .badge.live { background: #052E16; color: var(--green); border: 1px solid #166534; }
+  .badge.trending { background: #1E3A5F; color: #60A5FA; border: 1px solid #2563EB44; }
+  .badge.compressed { background: #451A03; color: var(--amber); border: 1px solid #92400E; }
+  .badge.neutral { background: #1A1A1A; color: var(--text-secondary); border: 1px solid var(--border); }
+
+  /* Tables */
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  th { text-align: left; font-size: 10px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.08em; padding: 6px 8px; border-bottom: 1px solid var(--border); font-weight: 500; }
+  td { padding: 7px 8px; border-bottom: 1px solid #1A1A1A; color: var(--text-primary); font-family: 'Courier New', monospace; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: var(--bg-panel-hover); }
+  .num { text-align: right; }
+  .green { color: var(--green); }
+  .red { color: var(--red); }
+  .amber { color: var(--amber); }
+  .blue { color: #60A5FA; }
+  .muted { color: var(--text-secondary); }
+
+  /* Brain View */
+  .brain-block { background: var(--bg-panel); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+  .brain-q { background: #111827; padding: 10px 14px; font-size: 11px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.08em; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 8px; }
+  .brain-q-num { background: var(--accent-blue); color: white; border-radius: 50%; width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; flex-shrink: 0; }
+  .brain-a { padding: 12px 14px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .brain-result { font-size: 13px; font-weight: 600; }
+  .brain-detail { font-size: 11px; color: var(--text-secondary); font-family: 'Courier New', monospace; }
+
+  /* Progress bar */
+  .progress-bar { background: var(--border); border-radius: 4px; height: 6px; overflow: hidden; }
+  .progress-fill { height: 100%; border-radius: 4px; background: var(--accent-blue); transition: width 0.3s; }
+  .progress-fill.green { background: var(--green); }
+  .progress-fill.amber { background: var(--amber); }
+  .progress-fill.red { background: var(--red); }
+
+  /* Timeline */
+  .timeline-item { display: flex; gap: 12px; padding: 8px 0; border-bottom: 1px solid #1A1A1A; align-items: flex-start; }
+  .timeline-time { font-size: 11px; color: var(--text-secondary); font-family: 'Courier New', monospace; flex-shrink: 0; width: 50px; }
+  .timeline-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; margin-top: 4px; }
+  .timeline-content { flex: 1; font-size: 12px; }
+  .timeline-title { font-weight: 600; }
+  .timeline-sub { color: var(--text-secondary); font-size: 11px; }
+
+  /* ARI Rules */
+  .rule-row { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid #1A1A1A; }
+  .rule-id { font-family: 'Courier New', monospace; font-size: 11px; color: var(--text-secondary); width: 30px; flex-shrink: 0; }
+  .rule-name { flex: 1; font-size: 12px; }
+  .rule-status { font-size: 11px; font-weight: 600; }
+
+  /* Separator */
+  .divider { height: 1px; background: var(--border); margin: 4px 0; }
+
+  /* Metric row */
+  .metric-row { display: flex; justify-content: space-between; align-items: center; padding: 5px 0; border-bottom: 1px solid #1A1A1A; }
+  .metric-label { font-size: 11px; color: var(--text-secondary); }
+  .metric-value { font-family: 'Courier New', monospace; font-size: 12px; font-weight: 600; }
+
+  /* AI Chat */
+  .chat-messages { display: flex; flex-direction: column; gap: 10px; padding: 12px; max-height: 320px; overflow-y: auto; }
+  .chat-msg { display: flex; gap: 8px; }
+  .chat-msg.user { flex-direction: row-reverse; }
+  .chat-bubble { padding: 8px 12px; border-radius: 8px; max-width: 75%; font-size: 12px; line-height: 1.5; }
+  .chat-bubble.atlas { background: #1E3A5F; color: #E0EEFF; border: 1px solid #2563EB44; }
+  .chat-bubble.user { background: var(--border); color: var(--text-primary); }
+  .chat-input-row { display: flex; gap: 8px; padding: 10px 12px; border-top: 1px solid var(--border); }
+  .chat-input { flex: 1; background: var(--bg-canvas); border: 1px solid var(--border); border-radius: 6px; padding: 8px 12px; color: var(--text-primary); font-size: 12px; outline: none; }
+  .chat-input:focus { border-color: var(--accent-blue); }
+  .chat-send { background: var(--accent-blue); color: white; border: none; border-radius: 6px; padding: 8px 14px; cursor: pointer; font-size: 12px; font-weight: 600; }
+
+  /* Scrollbar */
+  .chat-messages::-webkit-scrollbar { width: 4px; }
+  .chat-messages::-webkit-scrollbar-thumb { background: var(--border-active); border-radius: 2px; }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="logo">
+    <div class="logo-mark">A</div>
+    <span>ATLAS NEXUS</span>
+  </div>
+  <div class="header-status">
+    <div class="status-dot"></div>
+    <span class="status-label">System Live</span>
+  </div>
+  <div class="header-status" style="margin-left:16px">
+    <div class="status-dot"></div>
+    <span class="status-label">MNQ1! · AM SESSION</span>
+  </div>
+  <div class="sprint-badge" style="margin-left:16px">Sprint 079</div>
+  <div class="header-right">
+    <div style="text-align:right">
+      <div class="countdown" id="countdown">04:23</div>
+      <div class="countdown-label">Next Candle</div>
+    </div>
+    <button class="header-btn">🔔</button>
+    <button class="header-btn">⚙</button>
+    <button class="header-btn" style="background:#1E3A5F;border-color:#2563EB;color:#60A5FA">Admin</button>
+  </div>
+</div>
+
+<!-- APP BODY -->
+<div class="app-body">
+
+<!-- SIDEBAR -->
+<div class="sidebar">
+  <div class="nav-section">
+    <div class="nav-section-label">Overview</div>
+    <div class="nav-item active" onclick="showPage('home')">
+      <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+      Home Dashboard
+    </div>
+    <div class="nav-item" onclick="showPage('markets')">
+      <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"/></svg>
+      Markets
+    </div>
+    <div class="nav-item" onclick="showPage('brain')">
+      <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+      Atlas Brain
+      <span class="nav-badge green">LIVE</span>
+    </div>
+  </div>
+
+  <div class="nav-section">
+    <div class="nav-section-label">Execution Layer</div>
+    <div class="nav-item" onclick="showPage('models')">
+      <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+      Models
+    </div>
+    <div class="nav-item" onclick="showPage('ade')">
+      <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+      Decision Engine
+    </div>
+    <div class="nav-item" onclick="showPage('ari')">
+      <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+      Risk Intelligence
+    </div>
+    <div class="nav-item" onclick="showPage('tvl')">
+      <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+      Trade Verification
+    </div>
+  </div>
+
+  <div class="nav-section">
+    <div class="nav-section-label">Intelligence</div>
+    <div class="nav-item" onclick="showPage('observatory')">
+      <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4"/></svg>
+      Observatory
+    </div>
+    <div class="nav-item" onclick="showPage('replay')">
+      <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+      Replay Engine
+    </div>
+    <div class="nav-item" onclick="showPage('ai')">
+      <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/></svg>
+      Atlas AI
+      <span class="nav-badge amber">NEW</span>
+    </div>
+  </div>
+
+  <div class="nav-section">
+    <div class="nav-section-label">Engineering</div>
+    <div class="nav-item" onclick="showPage('engineering')">
+      <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+      Engineering
+      <span class="nav-badge amber">2</span>
+    </div>
+    <div class="nav-item" onclick="showPage('health')">
+      <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>
+      System Health
+    </div>
+  </div>
+</div>
+
+<!-- MAIN CONTENT -->
+<div class="main">
+
+<!-- HOME PAGE -->
+<div class="page active" id="page-home">
+  <div class="page-header">
+    <div>
+      <div class="page-title">Home Dashboard</div>
+      <div class="page-subtitle">Thursday, 10 July 2026 · 10:45 ET · AM Session</div>
+    </div>
+    <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
+      <span class="badge verified">● System Live</span>
+      <span class="badge trending">ATS v2.1</span>
+    </div>
+  </div>
+
+  <div class="grid grid-4">
+    <div class="card">
+      <div class="card-header">Daily P&L</div>
+      <div class="card-value green">+$1,240</div>
+      <div class="card-sub">1 trade closed · 2 remaining</div>
+    </div>
+    <div class="card">
+      <div class="card-header">Current Regime</div>
+      <div class="card-value blue">TRENDING</div>
+      <div class="card-sub">ADX 32.4 · Bull Aligned</div>
+    </div>
+    <div class="card">
+      <div class="card-header">Active Model</div>
+      <div class="card-value" style="font-size:22px">B1 · 88.5</div>
+      <div class="card-sub">Candidate · MVC-003 Active</div>
+    </div>
+    <div class="card">
+      <div class="card-header">Risk State</div>
+      <div class="card-value amber">1.1×</div>
+      <div class="card-sub">2 Contracts · $880 Risk</div>
+    </div>
+  </div>
+
+  <div class="grid grid-2-1">
+    <div class="card">
+      <div class="card-header">Recent Decisions <span class="badge neutral">Last 5 Candles</span></div>
+      <div class="timeline-item">
+        <div class="timeline-time">10:45</div>
+        <div class="timeline-dot" style="background:var(--green)"></div>
+        <div class="timeline-content">
+          <div class="timeline-title">B1 · Edge 88.5 · <span class="green">VERIFIED</span></div>
+          <div class="timeline-sub">ARI Approved · 2 Contracts · Entry 20150.25</div>
+        </div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-time">10:40</div>
+        <div class="timeline-dot" style="background:var(--text-secondary)"></div>
+        <div class="timeline-content">
+          <div class="timeline-title">NO TRADE</div>
+          <div class="timeline-sub">A1 Edge 42.1 · B1 Edge 58.3 — Below threshold (60)</div>
+        </div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-time">10:35</div>
+        <div class="timeline-dot" style="background:var(--text-secondary)"></div>
+        <div class="timeline-content">
+          <div class="timeline-title">NO TRADE</div>
+          <div class="timeline-sub">All models ineligible — Session constraint</div>
+        </div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-time">10:30</div>
+        <div class="timeline-dot" style="background:var(--amber)"></div>
+        <div class="timeline-content">
+          <div class="timeline-title">B1 · Edge 71.2 · <span class="amber">ARI REJECTED</span></div>
+          <div class="timeline-sub">R4: Consecutive losses ≥ 2 — Caution mode</div>
+        </div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-time">10:25</div>
+        <div class="timeline-dot" style="background:var(--red)"></div>
+        <div class="timeline-content">
+          <div class="timeline-title">B1 · <span class="red">TRADE CLOSED — LOSS</span></div>
+          <div class="timeline-sub">Exit 20098.50 · –$440 · Stop hit</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div class="card">
+        <div class="card-header">System Health</div>
+        <div class="metric-row"><span class="metric-label">TradingView</span><span class="metric-value green">● LIVE</span></div>
+        <div class="metric-row"><span class="metric-label">Webhook Receiver</span><span class="metric-value green">● ACTIVE</span></div>
+        <div class="metric-row"><span class="metric-label">TradersPost</span><span class="metric-value green">● CONNECTED</span></div>
+        <div class="metric-row"><span class="metric-label">Tradovate</span><span class="metric-value green">● CONNECTED</span></div>
+        <div class="metric-row"><span class="metric-label">Last Heartbeat</span><span class="metric-value muted">10:45:03</span></div>
+      </div>
+      <div class="card">
+        <div class="card-header">Active Position</div>
+        <div style="text-align:center;padding:8px 0">
+          <div style="font-size:11px;color:var(--text-secondary);margin-bottom:6px">B1 LONG · 2 Contracts</div>
+          <div style="font-size:22px;font-weight:700;color:var(--green);font-family:'Courier New',monospace">+$320</div>
+          <div style="font-size:11px;color:var(--text-secondary);margin-top:4px">Entry 20150.25 · Current 20166.25</div>
+          <div style="margin-top:10px;display:flex;gap:8px;font-size:11px">
+            <div style="flex:1;text-align:center"><div class="muted">Stop</div><div class="red">20120.00</div></div>
+            <div style="flex:1;text-align:center"><div class="muted">Target</div><div class="green">20240.75</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- BRAIN PAGE -->
+<div class="page" id="page-brain">
+  <div class="page-header">
+    <div>
+      <div class="page-title">Atlas Brain</div>
+      <div class="page-subtitle">10:45 ET · Bar 45210 · MNQ1! 5m</div>
+    </div>
+    <span class="badge verified">● Watching Atlas Think</span>
+  </div>
+
+  <div class="brain-block">
+    <div class="brain-q"><div class="brain-q-num">1</div>What session am I in?</div>
+    <div class="brain-a"><span class="badge trending">AM_SESSION</span><span class="brain-detail">09:30 – 11:59 ET · 10:45 current · RTH Active</span></div>
+  </div>
+  <div class="brain-block">
+    <div class="brain-q"><div class="brain-q-num">2</div>What market regime am I in?</div>
+    <div class="brain-a"><span class="badge trending">TRENDING</span><span class="brain-detail">ADX(14): 32.4 ≥ 25 threshold · Directional bias confirmed</span></div>
+  </div>
+  <div class="brain-block">
+    <div class="brain-q"><div class="brain-q-num">3</div>What is the current trend state?</div>
+    <div class="brain-a"><span class="badge verified">BULL ALIGNED</span><span class="brain-detail">EMA9 (20,165) > EMA21 (20,142) > EMA50 (20,098) · Full stack confirmed</span></div>
+  </div>
+  <div class="brain-block">
+    <div class="brain-q"><div class="brain-q-num">4</div>What is the current volatility state?</div>
+    <div class="brain-a"><span class="badge verified">EXPANDING</span><span class="brain-detail">VolComp Ratio: 1.45 > 1.30 threshold · ATR(14): 12.4 pts</span></div>
+  </div>
+  <div class="brain-block">
+    <div class="brain-q"><div class="brain-q-num">5</div>Which MVCs are active?</div>
+    <div class="brain-a"><span class="badge verified">MVC-003 ACTIVE</span><span class="brain-detail">Rel Txn 1.42 ≥ 1.33 · OV Range 11.2 ATR ≥ 10.85 · OV Direction: BULLISH</span></div>
+  </div>
+  <div class="brain-block">
+    <div class="brain-q"><div class="brain-q-num">6</div>How did Model A1 evaluate this market?</div>
+    <div class="brain-a"><span class="badge rejected">INELIGIBLE</span><span class="brain-detail">Reason: ADX 32.4 > 25 maximum for A1 · Session: PM only (not AM) · Edge Score: 0</span></div>
+  </div>
+  <div class="brain-block">
+    <div class="brain-q"><div class="brain-q-num">7</div>How did Model A3 evaluate this market?</div>
+    <div class="brain-a"><span class="badge rejected">INELIGIBLE</span><span class="brain-detail">Reason: Session AM_SESSION ≠ OVERNIGHT (required) · Edge Score: 0</span></div>
+  </div>
+  <div class="brain-block">
+    <div class="brain-q"><div class="brain-q-num">8</div>How did Model B1 evaluate this market?</div>
+    <div class="brain-a">
+      <span class="badge verified">ELIGIBLE · 88.5</span>
+      <span class="brain-detail">Entry: 20150.25 · Stop: 20120.00 · Target: 20240.75 · R:R 3.0</span>
+    </div>
+  </div>
+  <div class="brain-block">
+    <div class="brain-q"><div class="brain-q-num">9</div>How did ADE rank every model?</div>
+    <div class="brain-a" style="flex-direction:column;align-items:flex-start;gap:6px">
+      <div style="display:flex;gap:8px;align-items:center"><span class="badge verified">#1 B1 · 88.5</span><span class="brain-detail">Candidate Selected — exceeds threshold (60)</span></div>
+      <div style="display:flex;gap:8px;align-items:center"><span class="badge rejected">#2 A1 · 0.0</span><span class="brain-detail">Ineligible</span></div>
+      <div style="display:flex;gap:8px;align-items:center"><span class="badge rejected">#3 A3 · 0.0</span><span class="brain-detail">Ineligible</span></div>
+    </div>
+  </div>
+  <div class="brain-block">
+    <div class="brain-q"><div class="brain-q-num">10</div>Did ARI approve the trade?</div>
+    <div class="brain-a" style="flex-direction:column;align-items:flex-start;gap:4px">
+      <span class="badge verified">APPROVED · 2 Contracts · 1.1× Risk</span>
+      <span class="brain-detail">R1: No active position ✓ · R2: Circuit breaker inactive ✓ · R3: Daily P&L +$800 (limit –$2000) ✓ · R4: Consecutive losses 1 (limit 2) ✓ · R5: Daily trades 1 (limit 3) ✓</span>
+    </div>
+  </div>
+  <div class="brain-block">
+    <div class="brain-q"><div class="brain-q-num">11</div>Did TVL verify the trade?</div>
+    <div class="brain-a"><span class="badge verified">VERIFIED · All 38 Rules Passed</span><span class="brain-detail">C1 ✓ C2 ✓ C3 ✓ C4 ✓ C5 ✓ C6 ✓ · Signal ID: B1-1718029500</span></div>
+  </div>
+  <div class="brain-block" style="border-color:var(--green)">
+    <div class="brain-q" style="background:#052E16"><div class="brain-q-num" style="background:var(--green)">12</div>Final Result</div>
+    <div class="brain-a"><span class="badge verified" style="font-size:13px;padding:6px 12px">✓ TRADE EXECUTED</span><span class="brain-detail">Webhook transmitted · B1 LONG 2 contracts · 20150.25 entry</span></div>
+  </div>
+</div>
+
+<!-- ARI PAGE -->
+<div class="page" id="page-ari">
+  <div class="page-header">
+    <div>
+      <div class="page-title">Risk Intelligence (ARI)</div>
+      <div class="page-subtitle">Capital allocation and safety rules · 10:45 ET</div>
+    </div>
+    <span class="badge verified">● Approved</span>
+  </div>
+
+  <div class="grid grid-4">
+    <div class="card"><div class="card-header">Daily P&L</div><div class="card-value green">+$1,240</div><div class="card-sub">Limit: –$2,000</div></div>
+    <div class="card"><div class="card-header">Risk Multiplier</div><div class="card-value amber">1.1×</div><div class="card-sub">R7 Profit Compounding active</div></div>
+    <div class="card"><div class="card-header">Contracts</div><div class="card-value blue">2</div><div class="card-sub">Base Risk $800 × 1.1 = $880</div></div>
+    <div class="card"><div class="card-header">Daily Trades</div><div class="card-value">1 / 3</div><div class="card-sub">2 remaining today</div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">ARI Rule Engine — Current Evaluation</div>
+    <div class="rule-row"><div class="rule-id">R1</div><div class="rule-name">Active Position Block</div><div class="rule-status green">PASS</div></div>
+    <div class="rule-row"><div class="rule-id">R2</div><div class="rule-name">Circuit Breaker</div><div class="rule-status green">PASS — Inactive</div></div>
+    <div class="rule-row"><div class="rule-id">R3</div><div class="rule-name">Daily Loss Limit (–$2,000)</div><div class="rule-status green">PASS — P&L +$1,240</div></div>
+    <div class="rule-row"><div class="rule-id">R4</div><div class="rule-name">Consecutive Loss Caution (≥2)</div><div class="rule-status green">PASS — 1 consecutive loss</div></div>
+    <div class="rule-row"><div class="rule-id">R5</div><div class="rule-name">Daily Trade Limit (≥3)</div><div class="rule-status green">PASS — 1 trade today</div></div>
+    <div class="rule-row"><div class="rule-id">R6</div><div class="rule-name">Drawdown Reduction (–$5,000 from peak)</div><div class="rule-status green">PASS — Drawdown $0</div></div>
+    <div class="rule-row"><div class="rule-id">R7</div><div class="rule-name">Profit Compounding (+$2,000)</div><div class="rule-status amber">ACTIVE — 1.25× → capped 1.1×</div></div>
+    <div class="rule-row"><div class="rule-id">R8</div><div class="rule-name">Session End Block (15:30 ET)</div><div class="rule-status green">PASS — 10:45 ET</div></div>
+  </div>
+</div>
+
+<!-- ENGINEERING PAGE -->
+<div class="page" id="page-engineering">
+  <div class="page-header">
+    <div>
+      <div class="page-title">Engineering Dashboard</div>
+      <div class="page-subtitle">Sprint tracking, codebase status, and APS compliance</div>
+    </div>
+    <span class="badge amber">2 Open Discrepancies</span>
+  </div>
+
+  <div class="grid grid-3">
+    <div class="card"><div class="card-header">Current Sprint</div><div class="card-value blue" style="font-size:20px">079</div><div class="card-sub">ANOS v1.0 Specification</div></div>
+    <div class="card"><div class="card-header">Completed Sprints</div><div class="card-value">78</div><div class="card-sub">Last: Sprint 078 — Observatory v2.0</div></div>
+    <div class="card"><div class="card-header">APS Version</div><div class="card-value" style="font-size:20px">v1.0</div><div class="card-sub">Pine Spec: v2.1 · Dashboard: v1.1</div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">Module Compilation Status</div>
+    <table>
+      <thead><tr><th>Module</th><th>Name</th><th>Sprint</th><th>Status</th><th>APS Compliance</th></tr></thead>
+      <tbody>
+        <tr><td>M-00</td><td>atlas_config</td><td>066</td><td class="green">✓ COMPILED</td><td class="green">COMPLIANT</td></tr>
+        <tr><td>M-01</td><td>atlas_utils</td><td>066</td><td class="amber">⚠ PENDING</td><td class="amber">DISCREPANCY #2</td></tr>
+        <tr><td>M-02</td><td>atlas_state_manager</td><td>066</td><td class="amber">⚠ PENDING</td><td class="amber">DISCREPANCY #4</td></tr>
+        <tr><td>M-03</td><td>atlas_market_state_engine</td><td>067</td><td class="amber">⚠ PENDING</td><td class="amber">DISCREPANCY #1</td></tr>
+        <tr><td>M-04</td><td>atlas_model_a1</td><td>—</td><td class="muted">NOT STARTED</td><td class="muted">—</td></tr>
+        <tr><td>M-05</td><td>atlas_model_a3</td><td>—</td><td class="muted">NOT STARTED</td><td class="muted">—</td></tr>
+        <tr><td>M-06</td><td>atlas_model_b1</td><td>—</td><td class="muted">NOT STARTED</td><td class="muted">—</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <div class="card-header">Open APS Discrepancies</div>
+    <table>
+      <thead><tr><th>#</th><th>Module</th><th>Issue</th><th>Severity</th><th>Status</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td>M-03</td><td>Field count: 43 implemented vs 56 stated in APS</td><td class="amber">HIGH</td><td class="amber">AWAITING APPROVAL</td></tr>
+        <tr><td>2</td><td>M-01</td><td>Session naming: 5 strings vs 7 APS strings</td><td class="red">CRITICAL</td><td class="red">BLOCKING M-04+</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- OBSERVATORY PAGE -->
+<div class="page" id="page-observatory">
+  <div class="page-header">
+    <div>
+      <div class="page-title">Observatory</div>
+      <div class="page-subtitle">Immutable event database · 1,247 records today</div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-header">Query Engine — Recent Evaluations</div>
+    <table>
+      <thead><tr><th>Time (ET)</th><th>Session</th><th>Candidate</th><th>Edge Score</th><th>ARI</th><th>TVL</th><th>Result</th></tr></thead>
+      <tbody>
+        <tr><td>10:45</td><td>AM_SESSION</td><td>B1</td><td class="green num">88.5</td><td class="green">APPROVED</td><td class="green">VERIFIED</td><td class="green">EXECUTED</td></tr>
+        <tr><td>10:40</td><td>AM_SESSION</td><td>—</td><td class="muted num">—</td><td class="muted">—</td><td class="muted">—</td><td class="muted">NO TRADE</td></tr>
+        <tr><td>10:35</td><td>AM_SESSION</td><td>—</td><td class="muted num">—</td><td class="muted">—</td><td class="muted">—</td><td class="muted">NO TRADE</td></tr>
+        <tr><td>10:30</td><td>AM_SESSION</td><td>B1</td><td class="amber num">71.2</td><td class="amber">REJECTED</td><td class="muted">—</td><td class="amber">ARI BLOCK</td></tr>
+        <tr><td>10:25</td><td>AM_SESSION</td><td>B1</td><td class="green num">82.1</td><td class="green">APPROVED</td><td class="green">VERIFIED</td><td class="red">LOSS –$440</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ATLAS AI PAGE -->
+<div class="page" id="page-ai">
+  <div class="page-header">
+    <div>
+      <div class="page-title">Atlas AI</div>
+      <div class="page-subtitle">Natural language interface to the Observatory · Answers from data only</div>
+    </div>
+    <span class="badge neutral">RAG Mode · No Invention</span>
+  </div>
+  <div class="card" style="flex:1;display:flex;flex-direction:column;min-height:400px">
+    <div class="chat-messages" style="flex:1">
+      <div class="chat-msg">
+        <div class="chat-bubble atlas">
+          <strong>Atlas AI</strong><br>
+          I have access to the Observatory database. Ask me anything about Atlas's decisions, performance, or system state. I will only answer from recorded data.
+        </div>
+      </div>
+      <div class="chat-msg user">
+        <div class="chat-bubble user">Why did ARI reject the 10:30 trade?</div>
+      </div>
+      <div class="chat-msg">
+        <div class="chat-bubble atlas">
+          <strong>Observatory Query Result:</strong><br>
+          At 10:30 ET (Bar 45208), Model B1 generated a signal with Edge Score 71.2. The ADE selected B1 as Candidate. ARI evaluated the trade and rejected it under <strong>Rule R4: Consecutive Loss Caution</strong>. At that moment, the system had recorded 2 consecutive losses (trades at 10:10 and 10:25 both closed at stop). R4 blocks new entries when consecutive losses ≥ 2 to protect against regime transitions. The circuit breaker was not triggered; this was a precautionary caution block only.
+        </div>
+      </div>
+    </div>
+    <div class="chat-input-row">
+      <input class="chat-input" placeholder="Ask Atlas AI... e.g. 'Show every B1 trade above Edge Score 90'" />
+      <button class="chat-send">Send</button>
+    </div>
+  </div>
+</div>
+
+<!-- HEALTH PAGE -->
+<div class="page" id="page-health">
+  <div class="page-header">
+    <div><div class="page-title">System Health</div><div class="page-subtitle">Infrastructure monitoring · Updated every 30 seconds</div></div>
+    <span class="badge verified">● All Systems Operational</span>
+  </div>
+  <div class="grid grid-3">
+    <div class="card"><div class="card-header">TradingView</div><div class="card-value green" style="font-size:18px">● LIVE</div><div class="card-sub">Last Pine log: 10:45:03 · Latency 12ms</div></div>
+    <div class="card"><div class="card-header">Webhook Receiver</div><div class="card-value green" style="font-size:18px">● ACTIVE</div><div class="card-sub">Uptime 99.98% · Queue: 0</div></div>
+    <div class="card"><div class="card-header">TradersPost</div><div class="card-value green" style="font-size:18px">● CONNECTED</div><div class="card-sub">API response: 45ms</div></div>
+    <div class="card"><div class="card-header">Tradovate</div><div class="card-value green" style="font-size:18px">● CONNECTED</div><div class="card-sub">Session active · Margin OK</div></div>
+    <div class="card"><div class="card-header">Database</div><div class="card-value green" style="font-size:18px">● HEALTHY</div><div class="card-sub">1,247 records · 42MB used</div></div>
+    <div class="card"><div class="card-header">ANOS Backend</div><div class="card-value green" style="font-size:18px">● RUNNING</div><div class="card-sub">FastAPI · 3 SSE clients</div></div>
+  </div>
+</div>
+
+<!-- PLACEHOLDER PAGES -->
+<div class="page" id="page-markets"><div class="page-header"><div class="page-title">Markets</div></div><div class="card" style="text-align:center;padding:48px"><div style="font-size:14px;color:var(--text-secondary)">Live market data panel — TradingView Lightweight Charts integration</div></div></div>
+<div class="page" id="page-models"><div class="page-header"><div class="page-title">Models</div></div><div class="card" style="text-align:center;padding:48px"><div style="font-size:14px;color:var(--text-secondary)">Model A1, A3, B1 performance and eligibility panels</div></div></div>
+<div class="page" id="page-ade"><div class="page-header"><div class="page-title">Decision Engine (ADE)</div></div><div class="card" style="text-align:center;padding:48px"><div style="font-size:14px;color:var(--text-secondary)">Real-time ADE ranking and candidate selection</div></div></div>
+<div class="page" id="page-tvl"><div class="page-header"><div class="page-title">Trade Verification (TVL)</div></div><div class="card" style="text-align:center;padding:48px"><div style="font-size:14px;color:var(--text-secondary)">38-rule verification pipeline status</div></div></div>
+<div class="page" id="page-replay"><div class="page-header"><div class="page-title">Replay Engine</div></div><div class="card" style="text-align:center;padding:48px"><div style="font-size:14px;color:var(--text-secondary)">Historical candle-by-candle replay — select a date to begin</div></div></div>
+
+</div><!-- /main -->
+</div><!-- /app-body -->
+
+<script>
+  function showPage(id) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    const page = document.getElementById('page-' + id);
+    if (page) page.classList.add('active');
+    event.currentTarget.classList.add('active');
+  }
+
+  // Countdown timer
+  function updateCountdown() {
+    const now = new Date();
+    const secs = now.getSeconds();
+    const mins = now.getMinutes() % 5;
+    const remaining = (4 - mins) * 60 + (59 - secs);
+    const m = Math.floor(remaining / 60).toString().padStart(2, '0');
+    const s = (remaining % 60).toString().padStart(2, '0');
+    document.getElementById('countdown').textContent = m + ':' + s;
+  }
+  updateCountdown();
+  setInterval(updateCountdown, 1000);
+</script>
+</body>
+</html>

@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Atlas Nexus — Pipeline Observatory</title>
+  <style>
+    /* ── Reset & Base ─────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg:        #0d1117;
+      --bg2:       #161b22;
+      --bg3:       #21262d;
+      --border:    #30363d;
+      --text:      #e6edf3;
+      --text-muted:#8b949e;
+      --accent:    #58a6ff;
+      --green:     #3fb950;
+      --red:       #f85149;
+      --yellow:    #d29922;
+      --orange:    #e3b341;
+      --purple:    #bc8cff;
+      --cyan:      #39d353;
+      --font:      'Segoe UI', system-ui, sans-serif;
+      --mono:      'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+    }
+    html, body { height: 100%; background: var(--bg); color: var(--text); font-family: var(--font); font-size: 13px; }
+
+    /* ── Layout ───────────────────────────────────────────────── */
+    #app { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+
+    header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 8px 16px; background: var(--bg2); border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    header h1 { font-size: 15px; font-weight: 600; color: var(--accent); letter-spacing: 0.5px; }
+    header h1 span { color: var(--text-muted); font-weight: 400; margin-left: 8px; font-size: 12px; }
+
+    .status-bar { display: flex; gap: 12px; align-items: center; }
+    .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--red); }
+    .status-dot.connected { background: var(--green); animation: pulse 2s infinite; }
+    @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+    .status-label { font-size: 11px; color: var(--text-muted); }
+
+    .main-grid {
+      display: grid;
+      grid-template-columns: 280px 1fr 280px;
+      grid-template-rows: auto 1fr auto;
+      gap: 8px;
+      padding: 8px;
+      flex: 1;
+      overflow: hidden;
+      min-height: 0;
+    }
+
+    /* ── Cards ────────────────────────────────────────────────── */
+    .card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    .card-header {
+      padding: 6px 10px;
+      background: var(--bg3);
+      border-bottom: 1px solid var(--border);
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+    }
+    .card-body { padding: 8px 10px; flex: 1; overflow-y: auto; min-height: 0; }
+
+    /* ── Overview strip ───────────────────────────────────────── */
+    .overview-strip {
+      grid-column: 1 / -1;
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 8px;
+    }
+    .stat-tile {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 8px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .stat-tile .label { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.6px; }
+    .stat-tile .value { font-size: 18px; font-weight: 700; font-family: var(--mono); }
+    .stat-tile .sub   { font-size: 10px; color: var(--text-muted); }
+
+    /* ── Left column ──────────────────────────────────────────── */
+    .left-col { grid-column: 1; grid-row: 2; display: flex; flex-direction: column; gap: 8px; overflow: hidden; }
+
+    /* ── Center column ────────────────────────────────────────── */
+    .center-col { grid-column: 2; grid-row: 2; display: flex; flex-direction: column; gap: 8px; overflow: hidden; }
+
+    /* ── Right column ─────────────────────────────────────────── */
+    .right-col { grid-column: 3; grid-row: 2; display: flex; flex-direction: column; gap: 8px; overflow: hidden; }
+
+    /* ── Timeline ─────────────────────────────────────────────── */
+    .timeline-col { grid-column: 1 / -1; grid-row: 3; max-height: 180px; }
+
+    /* ── KV rows ──────────────────────────────────────────────── */
+    .kv-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 3px 0;
+      border-bottom: 1px solid var(--border);
+      gap: 8px;
+    }
+    .kv-row:last-child { border-bottom: none; }
+    .kv-key { color: var(--text-muted); font-size: 11px; white-space: nowrap; }
+    .kv-val { font-family: var(--mono); font-size: 11px; text-align: right; word-break: break-all; }
+
+    /* ── Badges ───────────────────────────────────────────────── */
+    .badge {
+      display: inline-block;
+      padding: 1px 6px;
+      border-radius: 10px;
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.3px;
+    }
+    .badge-green  { background: rgba(63,185,80,0.15); color: var(--green); }
+    .badge-red    { background: rgba(248,81,73,0.15); color: var(--red); }
+    .badge-yellow { background: rgba(210,153,34,0.15); color: var(--yellow); }
+    .badge-blue   { background: rgba(88,166,255,0.15); color: var(--accent); }
+    .badge-purple { background: rgba(188,140,255,0.15); color: var(--purple); }
+    .badge-gray   { background: rgba(139,148,158,0.15); color: var(--text-muted); }
+    .badge-orange { background: rgba(227,179,65,0.15); color: var(--orange); }
+
+    /* ── Model card ───────────────────────────────────────────── */
+    .model-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; }
+    .model-card {
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 6px 8px;
+    }
+    .model-card .model-name { font-size: 12px; font-weight: 700; margin-bottom: 4px; }
+    .model-card .model-signal { font-size: 11px; font-family: var(--mono); }
+
+    /* ── Brain view ───────────────────────────────────────────── */
+    .brain-section { margin-bottom: 8px; }
+    .brain-section .brain-label { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 3px; }
+    .brain-section .brain-text { font-size: 12px; line-height: 1.5; color: var(--text); background: var(--bg3); padding: 6px 8px; border-radius: 4px; border-left: 3px solid var(--accent); }
+
+    /* ── Timeline items ───────────────────────────────────────── */
+    .timeline-list { display: flex; flex-direction: column; gap: 4px; }
+    .timeline-item {
+      display: grid;
+      grid-template-columns: 130px 80px 80px 1fr 1fr;
+      gap: 8px;
+      align-items: center;
+      padding: 4px 6px;
+      border-radius: 4px;
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      font-size: 11px;
+    }
+    .timeline-item:hover { border-color: var(--accent); }
+    .timeline-item .t-time { font-family: var(--mono); color: var(--text-muted); }
+    .timeline-item .t-state { }
+    .timeline-item .t-symbol { color: var(--accent); font-weight: 600; }
+    .timeline-item .t-action { color: var(--text); }
+    .timeline-item .t-bar { font-family: var(--mono); color: var(--text-muted); font-size: 10px; }
+
+    /* ── Gauge bars ───────────────────────────────────────────── */
+    .gauge-bar {
+      height: 4px;
+      background: var(--bg3);
+      border-radius: 2px;
+      overflow: hidden;
+      margin-top: 3px;
+    }
+    .gauge-fill { height: 100%; border-radius: 2px; transition: width 0.5s ease; }
+
+    /* ── Empty state ──────────────────────────────────────────── */
+    .empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      color: var(--text-muted);
+      gap: 8px;
+      padding: 20px;
+      text-align: center;
+    }
+    .empty-state .icon { font-size: 32px; opacity: 0.4; }
+    .empty-state .msg { font-size: 12px; line-height: 1.6; }
+
+    /* ── Scrollbar ────────────────────────────────────────────── */
+    ::-webkit-scrollbar { width: 4px; height: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+    /* ── Color helpers ────────────────────────────────────────── */
+    .c-green  { color: var(--green); }
+    .c-red    { color: var(--red); }
+    .c-yellow { color: var(--yellow); }
+    .c-blue   { color: var(--accent); }
+    .c-purple { color: var(--purple); }
+    .c-muted  { color: var(--text-muted); }
+    .c-orange { color: var(--orange); }
+
+    /* ── Responsive ───────────────────────────────────────────── */
+    @media (max-width: 1200px) {
+      .main-grid { grid-template-columns: 1fr 1fr; }
+      .overview-strip { grid-template-columns: repeat(3, 1fr); }
+      .left-col { grid-column: 1; }
+      .center-col { grid-column: 2; }
+      .right-col { grid-column: 1 / -1; grid-row: 3; }
+      .timeline-col { grid-column: 1 / -1; grid-row: 4; }
+    }
+  </style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <h1>⬡ Atlas Nexus <span>Pipeline Observatory — Sprint 074</span></h1>
+    <div class="status-bar">
+      <div class="status-dot" id="sse-dot"></div>
+      <span class="status-label" id="sse-label">Connecting…</span>
+      <span class="status-label c-muted" id="last-update">—</span>
+    </div>
+  </header>
+
+  <div class="main-grid">
+    <!-- Overview strip -->
+    <div class="overview-strip">
+      <div class="stat-tile">
+        <div class="label">Master State</div>
+        <div class="value" id="stat-state" style="font-size:14px;">—</div>
+        <div class="sub" id="stat-session">—</div>
+      </div>
+      <div class="stat-tile">
+        <div class="label">Symbol</div>
+        <div class="value c-blue" id="stat-symbol">—</div>
+        <div class="sub" id="stat-tf">—</div>
+      </div>
+      <div class="stat-tile">
+        <div class="label">ADE Decision</div>
+        <div class="value" id="stat-ade">—</div>
+        <div class="sub" id="stat-ade-model">—</div>
+      </div>
+      <div class="stat-tile">
+        <div class="label">ARI Approved</div>
+        <div class="value" id="stat-ari">—</div>
+        <div class="sub" id="stat-ari-risk">—</div>
+      </div>
+      <div class="stat-tile">
+        <div class="label">TVL Status</div>
+        <div class="value" id="stat-tvl">—</div>
+        <div class="sub" id="stat-tvl-sub">—</div>
+      </div>
+      <div class="stat-tile">
+        <div class="label">Reports (24h)</div>
+        <div class="value c-purple" id="stat-count">0</div>
+        <div class="sub" id="stat-total">0 total</div>
+      </div>
+    </div>
+
+    <!-- Left column: Market Structure + Position State -->
+    <div class="left-col">
+      <div class="card" style="flex:1;">
+        <div class="card-header">Market Structure</div>
+        <div class="card-body" id="market-body">
+          <div class="empty-state"><div class="icon">📡</div><div class="msg">Awaiting pipeline data…</div></div>
+        </div>
+      </div>
+      <div class="card" style="flex:1;">
+        <div class="card-header">Position State</div>
+        <div class="card-body" id="position-body">
+          <div class="empty-state"><div class="icon">📋</div><div class="msg">No active position</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Center column: Brain View + Model Cards -->
+    <div class="center-col">
+      <div class="card" style="flex:0 0 auto;">
+        <div class="card-header">Model Evaluations <span id="model-bar-time" class="c-muted" style="font-size:10px;font-weight:400;"></span></div>
+        <div class="card-body">
+          <div class="model-grid" id="model-grid">
+            <div class="model-card"><div class="model-name c-blue">A1</div><div class="model-signal c-muted">—</div></div>
+            <div class="model-card"><div class="model-name c-purple">A3</div><div class="model-signal c-muted">—</div></div>
+            <div class="model-card"><div class="model-name c-orange">B1</div><div class="model-signal c-muted">—</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="card" style="flex:1;">
+        <div class="card-header">Atlas Brain View — Reasoning</div>
+        <div class="card-body" id="brain-body">
+          <div class="empty-state"><div class="icon">🧠</div><div class="msg">Pipeline reasoning will appear here on each confirmed bar.</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right column: ADE + ARI + TVL -->
+    <div class="right-col">
+      <div class="card" style="flex:1;">
+        <div class="card-header">ADE — Decision Engine</div>
+        <div class="card-body" id="ade-body">
+          <div class="empty-state"><div class="icon">⚡</div><div class="msg">No decision yet</div></div>
+        </div>
+      </div>
+      <div class="card" style="flex:1;">
+        <div class="card-header">ARI — Risk Intelligence</div>
+        <div class="card-body" id="ari-body">
+          <div class="empty-state"><div class="icon">🛡️</div><div class="msg">No risk data yet</div></div>
+        </div>
+      </div>
+      <div class="card" style="flex:1;">
+        <div class="card-header">TVL — Trade Verification</div>
+        <div class="card-body" id="tvl-body">
+          <div class="empty-state"><div class="icon">✅</div><div class="msg">No verification data yet</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Timeline -->
+    <div class="card timeline-col">
+      <div class="card-header">Decision Timeline <span id="timeline-count" class="c-muted" style="font-size:10px;font-weight:400;"></span></div>
+      <div class="card-body">
+        <div class="timeline-list" id="timeline-list">
+          <div class="empty-state" style="height:80px;"><div class="msg">Pipeline reports will appear here in real time.</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─────────────────────────────────────────────────────────────────────────────
+// Configuration
+// ─────────────────────────────────────────────────────────────────────────────
+const API_BASE = window.ATLAS_API_BASE || 'https://8766-iwqxpq31ydf032538o6o1-383f69f4.sg1.manus.computer';
+const MAX_TIMELINE = 50;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// State
+// ─────────────────────────────────────────────────────────────────────────────
+let latestReport = null;
+let timelineItems = [];
+let stats = { total_reports: 0, reports_last_24h: 0 };
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Utilities
+// ─────────────────────────────────────────────────────────────────────────────
+function fmt(v, fallback = '—') {
+  if (v === null || v === undefined || v === '') return fallback;
+  if (typeof v === 'number') return v.toLocaleString('en-US', { maximumFractionDigits: 4 });
+  return String(v);
+}
+
+function fmtTime(iso) {
+  if (!iso) return '—';
+  try {
+    const d = new Date(iso);
+    return d.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  } catch { return iso; }
+}
+
+function fmtDateTime(iso) {
+  if (!iso) return '—';
+  try {
+    const d = new Date(iso);
+    return d.toLocaleString('en-US', { month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+  } catch { return iso; }
+}
+
+function stateBadge(state) {
+  const map = {
+    'ACTIVE': 'badge-green', 'LIVE': 'badge-green',
+    'OVERNIGHT': 'badge-gray', 'CLOSED': 'badge-gray',
+    'HALTED': 'badge-red', 'EMERGENCY': 'badge-red',
+    'PRE_MARKET': 'badge-yellow', 'POST_MARKET': 'badge-yellow',
+    'RESTRICTED': 'badge-orange',
+  };
+  const cls = map[state] || 'badge-blue';
+  return `<span class="badge ${cls}">${fmt(state)}</span>`;
+}
+
+function dirLabel(dir) {
+  if (dir === 1)  return '<span class="c-green">▲ LONG</span>';
+  if (dir === -1) return '<span class="c-red">▼ SHORT</span>';
+  return '<span class="c-muted">— FLAT</span>';
+}
+
+function boolBadge(v, trueLabel = 'YES', falseLabel = 'NO') {
+  return v
+    ? `<span class="badge badge-green">${trueLabel}</span>`
+    : `<span class="badge badge-red">${falseLabel}</span>`;
+}
+
+function kv(key, val, valClass = '') {
+  return `<div class="kv-row"><span class="kv-key">${key}</span><span class="kv-val ${valClass}">${val}</span></div>`;
+}
+
+function gauge(value, max, color = '#58a6ff') {
+  const pct = Math.min(100, Math.max(0, (value / max) * 100));
+  return `<div class="gauge-bar"><div class="gauge-fill" style="width:${pct}%;background:${color};"></div></div>`;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Render functions
+// ─────────────────────────────────────────────────────────────────────────────
+function renderOverview(report) {
+  const p = report.payload || report;
+  const ms = p.market_structure || {};
+  const ade = p.ade_decision || {};
+  const ari = p.ari_decision || {};
+  const tvl = p.tvl_decision || {};
+  const sess = p.session || {};
+
+  // State
+  const stateEl = document.getElementById('stat-state');
+  stateEl.innerHTML = stateBadge(p.master_state);
+  document.getElementById('stat-session').textContent = fmt(sess.name || p.master_state);
+
+  // Symbol
+  document.getElementById('stat-symbol').textContent = fmt(p.symbol);
+  document.getElementById('stat-tf').textContent = p.timeframe ? `${p.timeframe}m` : '—';
+
+  // ADE
+  const adeEl = document.getElementById('stat-ade');
+  if (ade.has_candidate) {
+    adeEl.innerHTML = `<span class="c-green">CANDIDATE</span>`;
+    document.getElementById('stat-ade-model').textContent = fmt(ade.candidate_model);
+  } else {
+    adeEl.innerHTML = `<span class="c-muted">NO TRADE</span>`;
+    document.getElementById('stat-ade-model').textContent = fmt(ade.no_trade_rationale, 'No signal');
+  }
+
+  // ARI
+  const ariEl = document.getElementById('stat-ari');
+  if (ari.approved) {
+    ariEl.innerHTML = `<span class="c-green">APPROVED</span>`;
+    document.getElementById('stat-ari-risk').textContent = ari.approved_risk ? `$${fmt(ari.approved_risk)} risk` : '—';
+  } else {
+    ariEl.innerHTML = `<span class="c-red">REJECTED</span>`;
+    document.getElementById('stat-ari-risk').textContent = fmt(ari.rejection_reason, 'Risk rejected');
+  }
+
+  // TVL
+  const tvlEl = document.getElementById('stat-tvl');
+  const tvlStatus = tvl.status || '—';
+  const tvlClass = tvlStatus === 'VERIFIED' ? 'c-green' : tvlStatus === 'REJECTED' ? 'c-red' : 'c-yellow';
+  tvlEl.innerHTML = `<span class="${tvlClass}">${tvlStatus}</span>`;
+  document.getElementById('stat-tvl-sub').textContent = tvl.blocking_rule || (tvl.verified ? 'All checks passed' : '—');
+
+  // Last update
+  document.getElementById('last-update').textContent = `Updated ${fmtTime(report.received_at)}`;
+}
+
+function renderMarketStructure(p) {
+  const ms = p.market_structure || {};
+  if (!Object.keys(ms).length) {
+    document.getElementById('market-body').innerHTML = '<div class="empty-state"><div class="icon">📡</div><div class="msg">No market data</div></div>';
+    return;
+  }
+  let html = '';
+  if (ms.trend_direction !== undefined) html += kv('Trend', dirLabel(ms.trend_direction));
+  if (ms.trend_strength !== undefined) html += kv('Trend Strength', `<span class="c-blue">${fmt(ms.trend_strength)}</span>`);
+  if (ms.volatility_regime) html += kv('Volatility', `<span class="badge badge-blue">${ms.volatility_regime}</span>`);
+  if (ms.session_name) html += kv('Session', `<span class="badge badge-gray">${ms.session_name}</span>`);
+  if (ms.adx !== undefined) html += kv('ADX', fmt(ms.adx));
+  if (ms.atr14 !== undefined) html += kv('ATR(14)', fmt(ms.atr14));
+  if (ms.ema9 !== undefined) html += kv('EMA9', fmt(ms.ema9));
+  if (ms.ema21 !== undefined) html += kv('EMA21', fmt(ms.ema21));
+  if (ms.ema50 !== undefined) html += kv('EMA50', fmt(ms.ema50));
+  if (ms.vwap !== undefined) html += kv('VWAP', fmt(ms.vwap));
+  if (ms.rsi14 !== undefined) {
+    const rsiColor = ms.rsi14 > 70 ? 'c-red' : ms.rsi14 < 30 ? 'c-green' : 'c-blue';
+    html += kv('RSI(14)', `<span class="${rsiColor}">${fmt(ms.rsi14)}</span>`);
+  }
+  if (ms.volume_ratio !== undefined) html += kv('Vol Ratio', fmt(ms.volume_ratio));
+  if (ms.day_high !== undefined) html += kv('Day High', fmt(ms.day_high));
+  if (ms.day_low !== undefined) html += kv('Day Low', fmt(ms.day_low));
+  document.getElementById('market-body').innerHTML = html || '<div class="empty-state"><div class="msg">No market fields</div></div>';
+}
+
+function renderPositionState(p) {
+  const pos = p.position_state || {};
+  if (!pos.trade_id || pos.trade_id === 'NONE') {
+    document.getElementById('position-body').innerHTML = '<div class="empty-state"><div class="icon">📋</div><div class="msg">No active position</div></div>';
+    return;
+  }
+  let html = '';
+  html += kv('Trade ID', `<span class="c-muted" style="font-size:10px;">${pos.trade_id}</span>`);
+  html += kv('Model', `<span class="c-blue">${fmt(pos.model_id)}</span>`);
+  html += kv('Status', stateBadge(pos.status));
+  html += kv('Direction', dirLabel(pos.direction));
+  html += kv('Contracts', fmt(pos.contracts));
+  if (pos.entry_price) html += kv('Entry', fmt(pos.entry_price));
+  if (pos.fill_price) html += kv('Fill', fmt(pos.fill_price));
+  if (pos.stop_price) html += kv('Stop', `<span class="c-red">${fmt(pos.stop_price)}</span>`);
+  if (pos.target_price) html += kv('Target', `<span class="c-green">${fmt(pos.target_price)}</span>`);
+  if (pos.current_pnl !== undefined && pos.current_pnl !== null) {
+    const pnlClass = pos.current_pnl >= 0 ? 'c-green' : 'c-red';
+    html += kv('P&L', `<span class="${pnlClass}">$${fmt(pos.current_pnl)}</span>`);
+  }
+  if (pos.current_r !== undefined && pos.current_r !== null) html += kv('Current R', `${fmt(pos.current_r)}R`);
+  if (pos.mfe !== undefined && pos.mfe !== null) html += kv('MFE', fmt(pos.mfe));
+  if (pos.mae !== undefined && pos.mae !== null) html += kv('MAE', fmt(pos.mae));
+  if (pos.bars_in_trade) html += kv('Bars', fmt(pos.bars_in_trade));
+  if (pos.exit_reason) html += kv('Exit Reason', fmt(pos.exit_reason));
+  document.getElementById('position-body').innerHTML = html;
+}
+
+function renderModelCards(p) {
+  const models = p.model_evaluations || {};
+  const barTime = p.bar_time ? fmtTime(p.bar_time) : '';
+  document.getElementById('model-bar-time').textContent = barTime ? `@ ${barTime}` : '';
+
+  function modelCard(id, color, data) {
+    if (!data) return `<div class="model-card"><div class="model-name" style="color:${color}">${id}</div><div class="model-signal c-muted">Not evaluated</div></div>`;
+    const sig = data.has_signal
+      ? `${dirLabel(data.direction)} <span class="c-muted" style="font-size:10px;">Edge: ${fmt(data.edge_score)}</span>`
+      : `<span class="c-muted">NO SIGNAL</span>`;
+    const enabled = data.enabled ? '' : '<span class="badge badge-gray" style="font-size:9px;">DISABLED</span>';
+    return `
+      <div class="model-card">
+        <div class="model-name" style="color:${color}">${id} ${enabled}</div>
+        <div class="model-signal">${sig}</div>
+        ${data.entry_price ? `<div style="font-size:10px;color:var(--text-muted);margin-top:3px;">E:${fmt(data.entry_price)} S:${fmt(data.stop_price)} T:${fmt(data.target_price)}</div>` : ''}
+        ${data.signal_basis ? `<div style="font-size:10px;color:var(--text-muted);">${data.signal_basis}</div>` : ''}
+        ${data.rejection_reason ? `<div style="font-size:10px;color:var(--red);">${data.rejection_reason}</div>` : ''}
+      </div>`;
+  }
+
+  document.getElementById('model-grid').innerHTML =
+    modelCard('A1', '#58a6ff', models.a1) +
+    modelCard('A3', '#bc8cff', models.a3) +
+    modelCard('B1', '#e3b341', models.b1);
+}
+
+function renderBrainView(p) {
+  const r = p.reasoning || {};
+  if (!Object.keys(r).length) {
+    document.getElementById('brain-body').innerHTML = '<div class="empty-state"><div class="icon">🧠</div><div class="msg">No reasoning data</div></div>';
+    return;
+  }
+  const sections = [
+    ['Market State', r.market_state_summary],
+    ['A1 Rationale', r.a1_rationale],
+    ['A3 Rationale', r.a3_rationale],
+    ['B1 Rationale', r.b1_rationale],
+    ['ADE Rationale', r.ade_rationale],
+    ['ARI Rationale', r.ari_rationale],
+    ['TVL Rationale', r.tvl_rationale],
+    ['Action Summary', r.action_summary],
+  ];
+  let html = '';
+  for (const [label, text] of sections) {
+    if (text) {
+      html += `<div class="brain-section"><div class="brain-label">${label}</div><div class="brain-text">${text}</div></div>`;
+    }
+  }
+  document.getElementById('brain-body').innerHTML = html || '<div class="empty-state"><div class="msg">No reasoning fields</div></div>';
+}
+
+function renderADE(p) {
+  const ade = p.ade_decision || {};
+  if (!Object.keys(ade).length) {
+    document.getElementById('ade-body').innerHTML = '<div class="empty-state"><div class="icon">⚡</div><div class="msg">No decision data</div></div>';
+    return;
+  }
+  let html = '';
+  html += kv('Has Candidate', boolBadge(ade.has_candidate));
+  if (ade.candidate_model) html += kv('Candidate Model', `<span class="c-blue">${ade.candidate_model}</span>`);
+  if (ade.winning_edge_score !== undefined && ade.winning_edge_score !== null) {
+    html += kv('Edge Score', `<span class="c-green">${fmt(ade.winning_edge_score)}</span>`);
+    html += gauge(ade.winning_edge_score, 10, '#3fb950');
+  }
+  if (ade.confidence_level) {
+    const confClass = ade.confidence_level === 'HIGH' ? 'badge-green' : ade.confidence_level === 'MEDIUM' ? 'badge-yellow' : 'badge-red';
+    html += kv('Confidence', `<span class="badge ${confClass}">${ade.confidence_level}</span>`);
+  }
+  if (ade.ranking_order) html += kv('Ranking', `<span class="c-muted" style="font-size:10px;">${ade.ranking_order}</span>`);
+  if (ade.decision_rationale) html += kv('Rationale', `<span style="font-size:10px;">${ade.decision_rationale}</span>`);
+  if (ade.no_trade_rationale) html += kv('No Trade', `<span class="c-muted" style="font-size:10px;">${ade.no_trade_rationale}</span>`);
+  document.getElementById('ade-body').innerHTML = html;
+}
+
+function renderARI(p) {
+  const ari = p.ari_decision || {};
+  if (!Object.keys(ari).length) {
+    document.getElementById('ari-body').innerHTML = '<div class="empty-state"><div class="icon">🛡️</div><div class="msg">No risk data</div></div>';
+    return;
+  }
+  let html = '';
+  html += kv('Approved', boolBadge(ari.approved));
+  if (ari.base_risk !== undefined && ari.base_risk !== null) html += kv('Base Risk', `$${fmt(ari.base_risk)}`);
+  if (ari.risk_multiplier !== undefined && ari.risk_multiplier !== null) html += kv('Multiplier', `${fmt(ari.risk_multiplier)}x`);
+  if (ari.approved_risk !== undefined && ari.approved_risk !== null) {
+    html += kv('Approved Risk', `<span class="c-green">$${fmt(ari.approved_risk)}</span>`);
+  }
+  if (ari.contracts !== undefined) html += kv('Contracts', fmt(ari.contracts));
+  if (ari.daily_pnl !== undefined && ari.daily_pnl !== null) {
+    const pnlClass = ari.daily_pnl >= 0 ? 'c-green' : 'c-red';
+    html += kv('Daily P&L', `<span class="${pnlClass}">$${fmt(ari.daily_pnl)}</span>`);
+  }
+  if (ari.remaining_daily_risk !== undefined && ari.remaining_daily_risk !== null) {
+    html += kv('Remaining Risk', `$${fmt(ari.remaining_daily_risk)}`);
+    html += gauge(Math.abs(ari.remaining_daily_risk), 3000, '#58a6ff');
+  }
+  if (ari.daily_trade_count !== undefined) html += kv('Trades Today', fmt(ari.daily_trade_count));
+  if (ari.consecutive_losses !== undefined) html += kv('Consec. Losses', `<span class="${ari.consecutive_losses > 0 ? 'c-red' : 'c-muted'}">${fmt(ari.consecutive_losses)}</span>`);
+  if (ari.consecutive_wins !== undefined) html += kv('Consec. Wins', `<span class="${ari.consecutive_wins > 0 ? 'c-green' : 'c-muted'}">${fmt(ari.consecutive_wins)}</span>`);
+  if (ari.current_drawdown !== undefined && ari.current_drawdown !== null) {
+    html += kv('Drawdown', `<span class="c-red">$${fmt(ari.current_drawdown)}</span>`);
+  }
+  html += kv('Circuit Breaker', boolBadge(ari.circuit_breaker, 'TRIPPED', 'OK'));
+  html += kv('Active Position', boolBadge(ari.active_position, 'YES', 'NO'));
+  if (ari.triggered_rule) html += kv('Triggered Rule', `<span class="c-red" style="font-size:10px;">${ari.triggered_rule}</span>`);
+  if (ari.rejection_reason) html += kv('Rejection', `<span class="c-red" style="font-size:10px;">${ari.rejection_reason}</span>`);
+  document.getElementById('ari-body').innerHTML = html;
+}
+
+function renderTVL(p) {
+  const tvl = p.tvl_decision || {};
+  if (!Object.keys(tvl).length) {
+    document.getElementById('tvl-body').innerHTML = '<div class="empty-state"><div class="icon">✅</div><div class="msg">No verification data</div></div>';
+    return;
+  }
+  let html = '';
+  const statusClass = tvl.status === 'VERIFIED' ? 'badge-green' : tvl.status === 'REJECTED' ? 'badge-red' : 'badge-yellow';
+  html += kv('Status', `<span class="badge ${statusClass}">${fmt(tvl.status)}</span>`);
+  html += kv('Verified', boolBadge(tvl.verified));
+  html += kv('Session Valid', boolBadge(tvl.session_valid));
+  html += kv('Timestamp Valid', boolBadge(tvl.timestamp_valid));
+  html += kv('Parameters Valid', boolBadge(tvl.trade_parameters_valid));
+  html += kv('Exec Permission', boolBadge(tvl.execution_permission));
+  html += kv('Duplicate', boolBadge(tvl.duplicate_status, 'DUPLICATE', 'CLEAN'));
+  if (tvl.blocking_rule) html += kv('Blocking Rule', `<span class="c-red" style="font-size:10px;">${tvl.blocking_rule}</span>`);
+  if (tvl.rejection_reason) html += kv('Rejection', `<span class="c-red" style="font-size:10px;">${tvl.rejection_reason}</span>`);
+  document.getElementById('tvl-body').innerHTML = html;
+}
+
+function renderTimeline() {
+  const list = document.getElementById('timeline-list');
+  document.getElementById('timeline-count').textContent = `(${timelineItems.length} events)`;
+  if (!timelineItems.length) {
+    list.innerHTML = '<div class="empty-state" style="height:80px;"><div class="msg">Pipeline reports will appear here in real time.</div></div>';
+    return;
+  }
+  list.innerHTML = timelineItems.map(item => {
+    const p = item.payload || item;
+    const ade = p.ade_decision || {};
+    const ari = p.ari_decision || {};
+    const action = ade.has_candidate
+      ? `<span class="c-green">CANDIDATE: ${fmt(ade.candidate_model)}</span>`
+      : `<span class="c-muted">NO TRADE</span>`;
+    const stateClass = p.master_state === 'ACTIVE' ? 'c-green' : p.master_state === 'OVERNIGHT' ? 'c-muted' : 'c-yellow';
+    return `
+      <div class="timeline-item">
+        <span class="t-time">${fmtDateTime(item.received_at)}</span>
+        <span class="t-state"><span class="${stateClass}">${fmt(p.master_state)}</span></span>
+        <span class="t-symbol">${fmt(p.symbol)}</span>
+        <span class="t-action">${action}</span>
+        <span class="t-bar">${fmtTime(p.bar_time)}</span>
+      </div>`;
+  }).join('');
+}
+
+function renderAll(report) {
+  const p = report.payload || report;
+  renderOverview(report);
+  renderMarketStructure(p);
+  renderPositionState(p);
+  renderModelCards(p);
+  renderBrainView(p);
+  renderADE(p);
+  renderARI(p);
+  renderTVL(p);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Stats fetch
+// ─────────────────────────────────────────────────────────────────────────────
+async function fetchStats() {
+  try {
+    const res = await fetch(`${API_BASE}/stats`);
+    if (!res.ok) return;
+    const data = await res.json();
+    stats = data;
+    document.getElementById('stat-count').textContent = data.reports_last_24h || 0;
+    document.getElementById('stat-total').textContent = `${data.total_reports || 0} total`;
+    if (data.latest && !latestReport) {
+      latestReport = data.latest;
+      renderAll(data.latest);
+    }
+  } catch (e) {
+    console.warn('Stats fetch failed:', e);
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Recent reports fetch
+// ─────────────────────────────────────────────────────────────────────────────
+async function fetchRecentReports() {
+  try {
+    const res = await fetch(`${API_BASE}/reports?limit=20`);
+    if (!res.ok) return;
+    const data = await res.json();
+    if (data.reports && data.reports.length) {
+      timelineItems = data.reports.slice(0, MAX_TIMELINE);
+      renderTimeline();
+      if (!latestReport && timelineItems.length) {
+        latestReport = timelineItems[0];
+        renderAll(latestReport);
+      }
+    }
+  } catch (e) {
+    console.warn('Reports fetch failed:', e);
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SSE connection
+// ─────────────────────────────────────────────────────────────────────────────
+function connectSSE() {
+  const dot = document.getElementById('sse-dot');
+  const label = document.getElementById('sse-label');
+
+  let es;
+  function connect() {
+    es = new EventSource(`${API_BASE}/events`);
+
+    es.onopen = () => {
+      dot.classList.add('connected');
+      label.textContent = 'Live';
+    };
+
+    es.onmessage = (event) => {
+      try {
+        const msg = JSON.parse(event.data);
+        if (msg.type === 'pipeline_report') {
+          const report = msg.data;
+          latestReport = report;
+          renderAll(report);
+
+          // Add to timeline
+          timelineItems.unshift(report);
+          if (timelineItems.length > MAX_TIMELINE) timelineItems.pop();
+          renderTimeline();
+
+          // Update stats
+          stats.total_reports = (stats.total_reports || 0) + 1;
+          stats.reports_last_24h = (stats.reports_last_24h || 0) + 1;
+          document.getElementById('stat-count').textContent = stats.reports_last_24h;
+          document.getElementById('stat-total').textContent = `${stats.total_reports} total`;
+        }
+      } catch (e) {
+        console.warn('SSE parse error:', e);
+      }
+    };
+
+    es.onerror = () => {
+      dot.classList.remove('connected');
+      label.textContent = 'Reconnecting…';
+      es.close();
+      setTimeout(connect, 3000);
+    };
+  }
+
+  connect();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Init
+// ─────────────────────────────────────────────────────────────────────────────
+(async function init() {
+  await fetchStats();
+  await fetchRecentReports();
+  connectSSE();
+  // Refresh stats every 30s
+  setInterval(fetchStats, 30000);
+})();
+</script>
+</body>
+</html>

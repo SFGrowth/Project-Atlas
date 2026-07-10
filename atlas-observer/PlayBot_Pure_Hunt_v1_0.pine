@@ -1,0 +1,96 @@
+//@version=6
+strategy("PlayBot Pure Hunt v1.0", shorttitle="PureHunt", overlay=true, initial_capital=50000, default_qty_type=strategy.cash, default_qty_value=1650, margin_long=100, margin_short=100)
+
+// =============================================================================
+// Project Atlas: PlayBot Auto-Trail
+// Bot: Pure Hunt
+// Version: 1.0.0
+//
+// Strategy: Trend-following momentum. Enters on confirmed trend (EMA + VWAP).
+// Risk: ATR-based position sizing. Supports Live and Prop profiles.
+// =============================================================================
+
+// -----------------------------------------------------------------------------
+// Inputs
+// -----------------------------------------------------------------------------
+
+groupRisk = "Risk & Account"
+accountType = input.string("Prop", "Account Type", options=["Prop", "Live"], group=groupRisk)
+propRiskUsd = input.float(400.0, "Prop Risk Per Trade (USD)", group=groupRisk)
+liveRiskUsd = input.float(1650.0, "Live Base Risk (USD)", group=groupRisk)
+mnqPointValue = input.float(2.0, "MNQ Dollar Value Per Point", group=groupRisk)
+
+groupTrend = "Trend / Moving Averages"
+fastEmaLength = input.int(15, "Fast EMA Length", minval=1, group=groupTrend)
+slowEmaLength = input.int(50, "Slow EMA Length", minval=1, group=groupTrend)
+
+groupVolatility = "Volatility / Sizing"
+atrLength = input.int(14, "ATR Length", minval=1, group=groupVolatility)
+stopAtrMultiplier = input.float(1.5, "Stop ATR Multiplier", step=0.1, group=groupVolatility)
+
+groupExecution = "TradersPost Webhooks"
+webhookToken = input.string("", "Webhook Token", group=groupExecution)
+ticker = input.string("MNQ1!", "Ticker", group=groupExecution)
+
+// -----------------------------------------------------------------------------
+// Core Calculations
+// -----------------------------------------------------------------------------
+
+fastEma = ta.ema(close, fastEmaLength)
+slowEma = ta.ema(close, slowEmaLength)
+vwapValue = ta.vwap(hlc3)
+atrValue = ta.atr(atrLength)
+
+// -----------------------------------------------------------------------------
+// Sizing Logic
+// -----------------------------------------------------------------------------
+
+baseRisk = accountType == "Prop" ? propRiskUsd : liveRiskUsd
+stopDistance = atrValue * stopAtrMultiplier
+// qty = floor(risk_usd / (ATR * point_value))
+positionQty = stopDistance > 0 ? math.floor(baseRisk / (stopDistance * mnqPointValue)) : 0
+
+// -----------------------------------------------------------------------------
+// Entry Logic (Trend Following)
+// -----------------------------------------------------------------------------
+
+bullishTrend = fastEma > slowEma and close > vwapValue
+bearishTrend = fastEma < slowEma and close < vwapValue
+
+longCondition = bullishTrend and ta.crossover(close, fastEma)
+shortCondition = bearishTrend and ta.crossunder(close, fastEma)
+
+// -----------------------------------------------------------------------------
+// Exit Logic (EMA Break)
+// -----------------------------------------------------------------------------
+
+exitLongCondition = ta.crossunder(close, slowEma)
+exitShortCondition = ta.crossover(close, slowEma)
+
+// -----------------------------------------------------------------------------
+// Execution
+// -----------------------------------------------------------------------------
+
+if longCondition and positionQty > 0 and strategy.position_size == 0
+    strategy.entry("Hunt_Long", strategy.long, qty=positionQty)
+    alert('{"action": "buy", "ticker": "' + ticker + '", "quantity": ' + str.tostring(positionQty) + ', "token": "' + webhookToken + '"}', alert.freq_once_per_bar_close)
+
+if shortCondition and positionQty > 0 and strategy.position_size == 0
+    strategy.entry("Hunt_Short", strategy.short, qty=positionQty)
+    alert('{"action": "sell", "ticker": "' + ticker + '", "quantity": ' + str.tostring(positionQty) + ', "token": "' + webhookToken + '"}', alert.freq_once_per_bar_close)
+
+if exitLongCondition and strategy.position_size > 0
+    strategy.close("Hunt_Long")
+    alert('{"action": "exit", "ticker": "' + ticker + '", "token": "' + webhookToken + '"}', alert.freq_once_per_bar_close)
+
+if exitShortCondition and strategy.position_size < 0
+    strategy.close("Hunt_Short")
+    alert('{"action": "exit", "ticker": "' + ticker + '", "token": "' + webhookToken + '"}', alert.freq_once_per_bar_close)
+
+// -----------------------------------------------------------------------------
+// Visuals
+// -----------------------------------------------------------------------------
+
+plot(fastEma, color=color.blue, title="Fast EMA")
+plot(slowEma, color=color.orange, title="Slow EMA")
+plot(vwapValue, color=color.purple, title="VWAP")

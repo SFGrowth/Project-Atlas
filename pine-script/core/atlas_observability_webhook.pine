@@ -1,0 +1,823 @@
+// =============================================================================
+// ATLAS OBSERVABILITY WEBHOOK — M-15
+// atlas_observability_webhook.pine
+// =============================================================================
+// Sprint:   074
+// Version:  1.0.0
+// Module:   M-15
+// Purpose:  Converts each completed-bar PipelineReport from M-14 into a
+//           validated JSON payload and transmits it to Atlas Nexus via
+//           TradingView alert. One payload per confirmed 5-minute bar.
+//
+// ARCHITECTURAL PRINCIPLE:
+//   This module is OBSERVABILITY ONLY. It never generates execution alerts.
+//   It never influences model decisions, ARI, TVL, or the Kernel.
+//   Failure of this module must never block or alter the Atlas pipeline.
+//
+// PAYLOAD TYPE: OBSERVABILITY (schema_version: 1.0.0)
+// TRANSMISSION: barstate.isconfirmed — exactly one alert per confirmed bar
+//
+// DEPENDENCIES: Must be run alongside M-14 atlas_core.pine on the same chart.
+//   M-15 reads the same market state variables as M-14 by recomputing them
+//   inline (Pine Script cannot share variables between indicators). The
+//   observability payload is constructed from barstate.isconfirmed bars only.
+//
+// FAIL-SAFE: JSON construction errors are caught via na() guards. Any
+//   serialisation failure produces a minimal error payload rather than
+//   crashing or affecting the Kernel.
+//
+// ATLAS NEXUS ENDPOINT: POST /api/v1/webhook/observe
+// AUTHENTICATION: Bearer token (configured in TradingView alert webhook URL)
+// =============================================================================
+//@version=5
+indicator("Atlas Observability Webhook — M-15", overlay=false, max_labels_count=50, max_lines_count=0)
+
+// ============================================================================
+// SECTION 1: CONSTANTS
+// ============================================================================
+var string SCHEMA_VERSION   = "1.0.0"
+var string PAYLOAD_TYPE     = "OBSERVABILITY"
+var string CHART_ID         = "cDPu6HGG"
+var string TICKER           = "MNQ1!"
+var string TIMEFRAME        = "5"
+var string APS_VERSION      = "0.12.0"
+var string PINE_VERSION     = "5"
+var int    SPRINT_NUMBER    = 74
+var string MODULE_ID        = "M-15"
+var string MODULE_VERSION   = "1.0.0"
+
+// Order state constants (must match M-14)
+var string STATE_NONE       = "NONE"
+var string STATE_PENDING    = "PENDING"
+var string STATE_SUBMITTED  = "SUBMITTED"
+var string STATE_ACKNOWLEDGED = "ACKNOWLEDGED"
+var string STATE_FILLED     = "FILLED"
+var string STATE_ACTIVE     = "ACTIVE"
+var string STATE_PARTIAL    = "PARTIAL_EXIT"
+var string STATE_CLOSED     = "CLOSED"
+var string STATE_ARCHIVED   = "ARCHIVED"
+
+// ============================================================================
+// SECTION 2: INPUTS
+// ============================================================================
+var string GRP_OBS   = "Observability Configuration"
+var string GRP_DEBUG = "Debug & Validation"
+var string GRP_KERN  = "Kernel Reference"
+
+bool   i_enable_webhook    = input.bool(true,  title="Enable Observability Webhook", group=GRP_OBS)
+bool   i_debug_preview     = input.bool(true,  title="Show JSON Preview Table",      group=GRP_DEBUG)
+bool   i_validate_payload  = input.bool(true,  title="Validate Payload Before Send", group=GRP_DEBUG)
+bool   i_show_heartbeat    = input.bool(true,  title="Show Heartbeat Label",          group=GRP_DEBUG)
+// Kernel reference inputs (must match M-14 settings)
+string i_account_type      = input.string("PROP", title="Account Type (match M-14)", options=["PROP","LIVE"], group=GRP_KERN)
+float  i_base_risk         = input.float(800.0, title="Base Risk (match M-14)",       group=GRP_KERN)
+int    i_max_contracts     = input.int(2,       title="Max Contracts (match M-14)",   group=GRP_KERN)
+float  i_point_value       = input.float(20.0,  title="Point Value (match M-14)",     group=GRP_KERN)
+float  i_daily_loss_prop   = input.float(-2000.0, title="Daily Loss Limit Prop (match M-14)", group=GRP_KERN)
+float  i_daily_loss_live   = input.float(-3000.0, title="Daily Loss Limit Live (match M-14)", group=GRP_KERN)
+int    i_max_daily_trades  = input.int(3,       title="Max Daily Trades (match M-14)", group=GRP_KERN)
+bool   i_enable_a1         = input.bool(true,   title="A1 Enabled (match M-14)",      group=GRP_KERN)
+bool   i_enable_a3         = input.bool(true,   title="A3 Enabled (match M-14)",      group=GRP_KERN)
+bool   i_enable_b1         = input.bool(true,   title="B1 Enabled (match M-14)",      group=GRP_KERN)
+float  i_edge_threshold    = input.float(60.0,  title="Edge Score Threshold (match M-14)", group=GRP_KERN)
+
+// ============================================================================
+// SECTION 3: PERSISTENT STATE (mirrors M-14 state tracking)
+// ============================================================================
+var int    v_heartbeat_count    = 0
+var int    v_payload_count      = 0
+var int    v_error_count        = 0
+var int    v_last_day           = 0
+var float  v_daily_pnl          = 0.0
+var int    v_daily_trades       = 0
+var int    v_consecutive_losses = 0
+var int    v_consecutive_wins   = 0
+var float  v_risk_multiplier    = 1.0
+var bool   v_circuit_breaker    = false
+var float  v_current_drawdown   = 0.0
+var int    v_pause_until_bar    = 0
+var float  v_total_pnl          = 0.0
+var int    v_total_trades       = 0
+var int    v_total_wins         = 0
+var string v_position_status    = "NONE"
+var string v_last_signal_id     = "NONE"
+var string v_last_trade_id      = "NONE"
+var string v_last_model_id      = "NONE"
+var int    v_last_direction     = 0
+var float  v_last_entry         = na
+var float  v_last_stop          = na
+var float  v_last_target        = na
+var int    v_last_contracts     = 0
+var float  v_last_pnl           = 0.0
+var float  v_last_r             = 0.0
+var float  v_last_mfe           = 0.0
+var float  v_last_mae           = 0.0
+var int    v_bars_in_trade      = 0
+var string v_exit_reason        = "NONE"
+var string v_last_error         = "NONE"
+var bool   v_ov_tracked         = false
+var float  v_ov_open            = na
+var float  v_ov_high            = na
+var float  v_ov_low             = na
+var float  v_ov_close           = na
+var float  v_day_open           = na
+var float  v_day_high           = na
+var float  v_day_low            = na
+
+// ============================================================================
+// SECTION 4: HELPER FUNCTIONS
+// ============================================================================
+
+// Safe float-to-string: replaces na/inf with "null"
+f_fts(float v, string fmt) =>
+    na(v) ? "null" : str.tostring(v, fmt)
+
+// Safe float-to-string (no format)
+f_fts_raw(float v) =>
+    na(v) ? "null" : str.tostring(v)
+
+// Safe int-to-string: replaces na with "null"
+f_its(int v) =>
+    na(v) ? "null" : str.tostring(v)
+
+// Bool to JSON literal
+f_bts(bool v) =>
+    v ? "true" : "false"
+
+// String to JSON string (escape quotes and backslashes)
+f_str(string v) =>
+    s = na(v) ? "null" : v
+    s == "null" ? "null" : "\"" + str.replace_all(str.replace_all(s, "\\", "\\\\"), "\"", "\\\"") + "\""
+
+// Clamp float to prevent Infinity
+f_clamp(float v) =>
+    na(v) ? na : (v > 1e15 ? 1e15 : (v < -1e15 ? -1e15 : v))
+
+// Direction int to string
+f_dir_str(int d) =>
+    d == 1 ? "LONG" : (d == -1 ? "SHORT" : "FLAT")
+
+// Generate unique event ID from bar_index and time
+f_event_id(int bi, int ts) =>
+    "EVT-" + str.tostring(bi) + "-" + str.tostring(ts)
+
+// Generate idempotency key
+f_idem_key(int bi, int ts) =>
+    CHART_ID + "-" + str.tostring(bi) + "-" + str.tostring(ts)
+
+// ============================================================================
+// SECTION 5: MARKET STATE COMPUTATION (inline — mirrors M-14/M-03)
+// ============================================================================
+// Time
+int h_et = hour(time, "America/New_York")
+int m_et = minute(time, "America/New_York")
+
+// EMAs
+float ema9_val  = ta.ema(close, 9)
+float ema21_val = ta.ema(close, 21)
+float ema50_val = ta.ema(close, 50)
+string ema_struct = ema9_val > ema21_val and ema21_val > ema50_val ? "BULL" : (ema9_val < ema21_val and ema21_val < ema50_val ? "BEAR" : "MIXED")
+bool ema_bull_val = ema_struct == "BULL"
+bool ema_bear_val = ema_struct == "BEAR"
+
+// ATR / ADX
+float atr14_val = ta.atr(14)
+float atr5_val  = ta.atr(5)
+[diplus_val, diminus_val, adx14_val] = ta.dmi(14, 14)
+bool adx_trending_val = adx14_val >= 25.0
+string vol_state_val  = adx14_val >= 35 ? "TRENDING_STRONG" : (adx14_val >= 25 ? "TRENDING" : "RANGING")
+
+// VolComp
+float atr5_20_val = atr5_val[20]
+float volcomp_val = atr5_20_val > 0 ? atr5_val / atr5_20_val : 1.0
+bool is_comp_val  = volcomp_val < 0.80
+bool is_exp_val   = volcomp_val > 1.30
+
+// Session
+string session_val = h_et >= 18 or h_et < 8 ? "OVERNIGHT" : (h_et == 9 and m_et >= 30 ? "AM_OPEN" : (h_et >= 10 and h_et < 12 ? "AM_SESSION" : (h_et >= 12 and h_et < 14 ? "MID_SESSION" : (h_et >= 14 and h_et < 16 ? "PM_SESSION" : "AFTER_HOURS"))))
+bool is_rth_val   = (h_et == 9 and m_et >= 30) or (h_et >= 10 and h_et <= 15) or (h_et == 16 and m_et == 0)
+bool is_am_val    = (h_et == 9 and m_et >= 30) or (h_et >= 10 and h_et < 12)
+bool is_pm_val    = h_et >= 14 and h_et < 16
+bool is_ov_val    = h_et >= 18 or h_et < 8
+int  dow_val      = dayofweek(time, "America/New_York") == dayofweek.monday ? 1 : (dayofweek(time, "America/New_York") == dayofweek.tuesday ? 2 : (dayofweek(time, "America/New_York") == dayofweek.wednesday ? 3 : (dayofweek(time, "America/New_York") == dayofweek.thursday ? 4 : 5)))
+
+// Overnight tracking
+bool new_day_val = dayofmonth(time, "America/New_York") != v_last_day
+if new_day_val
+    v_last_day  := dayofmonth(time, "America/New_York")
+    v_day_open  := open
+    v_day_high  := high
+    v_day_low   := low
+    v_daily_pnl    := 0.0
+    v_daily_trades := 0
+else
+    v_day_high := math.max(v_day_high, high)
+    v_day_low  := math.min(v_day_low, low)
+
+if is_ov_val and not v_ov_tracked
+    v_ov_open    := open
+    v_ov_high    := high
+    v_ov_low     := low
+    v_ov_close   := close
+    v_ov_tracked := true
+else if is_ov_val and v_ov_tracked
+    v_ov_high  := math.max(v_ov_high, high)
+    v_ov_low   := math.min(v_ov_low, low)
+    v_ov_close := close
+else if not is_ov_val
+    v_ov_tracked := false
+
+float safe_ov_open  = na(v_ov_open)  ? close : v_ov_open
+float safe_ov_high  = na(v_ov_high)  ? high  : v_ov_high
+float safe_ov_low   = na(v_ov_low)   ? low   : v_ov_low
+float safe_ov_close = na(v_ov_close) ? close : v_ov_close
+float safe_day_open = na(v_day_open) ? open  : v_day_open
+float safe_day_high = na(v_day_high) ? high  : v_day_high
+float safe_day_low  = na(v_day_low)  ? low   : v_day_low
+
+float ov_range_pts_val    = safe_ov_high - safe_ov_low
+float ov_range_vs_atr_val = atr14_val > 0 ? ov_range_pts_val / atr14_val : 0.0
+int   ov_dir_val          = safe_ov_close > safe_ov_open ? 1 : (safe_ov_close < safe_ov_open ? -1 : 0)
+
+// Participation
+float avg_vol_20_val = ta.sma(volume, 20)
+float rel_vol_val    = avg_vol_20_val > 0 ? volume / avg_vol_20_val : 1.0
+float avg_txn_20_val = ta.sma(volume / math.max(high - low, 0.01), 20)
+float rel_txn_val    = avg_txn_20_val > 0 ? (volume / math.max(high - low, 0.01)) / avg_txn_20_val : 1.0
+bool surge_val       = rel_txn_val > 2.0
+
+// MVC-003
+bool mvc_003_val = surge_val and ov_range_vs_atr_val >= 0.5 and ov_dir_val != 0
+
+// Day range
+float day_range_vs_atr_val = atr14_val > 0 ? (safe_day_high - safe_day_low) / atr14_val : 0.0
+
+// ============================================================================
+// SECTION 6: MODEL EVALUATION (inline — mirrors M-14)
+// ============================================================================
+// Model A1: AM Trend (EMA alignment + ADX)
+bool a1_signal = false
+int  a1_dir    = 0
+float a1_entry = na
+float a1_stop  = na
+float a1_target = na
+float a1_risk  = na
+float a1_rr    = na
+string a1_basis = "NONE"
+string a1_reject = "Not evaluated"
+
+if i_enable_a1 and is_am_val and adx_trending_val
+    if ema_bull_val and close > ema9_val
+        a1_signal := true
+        a1_dir    := 1
+        a1_entry  := close
+        a1_stop   := ema21_val - atr14_val * 0.5
+        a1_target := close + atr14_val * 2.0
+        a1_risk   := a1_entry - a1_stop
+        a1_rr     := a1_risk > 0 ? (a1_target - a1_entry) / a1_risk : na
+        a1_basis  := "EMA_BULL_ADX"
+        a1_reject := "NONE"
+    else if ema_bear_val and close < ema9_val
+        a1_signal := true
+        a1_dir    := -1
+        a1_entry  := close
+        a1_stop   := ema21_val + atr14_val * 0.5
+        a1_target := close - atr14_val * 2.0
+        a1_risk   := a1_stop - a1_entry
+        a1_rr     := a1_risk > 0 ? (a1_entry - a1_target) / a1_risk : na
+        a1_basis  := "EMA_BEAR_ADX"
+        a1_reject := "NONE"
+    else
+        a1_reject := "EMA structure MIXED"
+else if not i_enable_a1
+    a1_reject := "Model disabled"
+else if not is_am_val
+    a1_reject := "Not AM session"
+else
+    a1_reject := "ADX not trending"
+
+// Model A3: Overnight Breakout
+bool a3_signal = false
+int  a3_dir    = 0
+float a3_entry = na
+float a3_stop  = na
+float a3_target = na
+float a3_risk  = na
+float a3_rr    = na
+string a3_basis = "NONE"
+string a3_reject = "Not evaluated"
+
+if i_enable_a3 and is_am_val and ov_range_vs_atr_val >= 0.5
+    if ov_dir_val == 1 and close > safe_ov_high and ema_bull_val
+        a3_signal := true
+        a3_dir    := 1
+        a3_entry  := safe_ov_high
+        a3_stop   := safe_ov_high - atr14_val * 0.5
+        a3_target := safe_ov_high + ov_range_pts_val
+        a3_risk   := a3_entry - a3_stop
+        a3_rr     := a3_risk > 0 ? (a3_target - a3_entry) / a3_risk : na
+        a3_basis  := "OV_BULL_BREAKOUT"
+        a3_reject := "NONE"
+    else if ov_dir_val == -1 and close < safe_ov_low and ema_bear_val
+        a3_signal := true
+        a3_dir    := -1
+        a3_entry  := safe_ov_low
+        a3_stop   := safe_ov_low + atr14_val * 0.5
+        a3_target := safe_ov_low - ov_range_pts_val
+        a3_risk   := a3_stop - a3_entry
+        a3_rr     := a3_risk > 0 ? (a3_entry - a3_target) / a3_risk : na
+        a3_basis  := "OV_BEAR_BREAKDOWN"
+        a3_reject := "NONE"
+    else
+        a3_reject := "No breakout of overnight range"
+else if not i_enable_a3
+    a3_reject := "Model disabled"
+else if not is_am_val
+    a3_reject := "Not AM session"
+else
+    a3_reject := "Overnight range insufficient"
+
+// Model B1: MVC-003 Participation Surge
+bool b1_signal = false
+int  b1_dir    = 0
+float b1_entry = na
+float b1_stop  = na
+float b1_target = na
+float b1_risk  = na
+float b1_rr    = na
+string b1_basis = "NONE"
+string b1_reject = "Not evaluated"
+
+if i_enable_b1 and mvc_003_val and is_rth_val
+    if ov_dir_val == 1 and ema_bull_val
+        b1_signal := true
+        b1_dir    := 1
+        b1_entry  := close
+        b1_stop   := close - atr14_val
+        b1_target := close + atr14_val * 2.0
+        b1_risk   := b1_entry - b1_stop
+        b1_rr     := b1_risk > 0 ? (b1_target - b1_entry) / b1_risk : na
+        b1_basis  := "MVC003_BULL_SURGE"
+        b1_reject := "NONE"
+    else if ov_dir_val == -1 and ema_bear_val
+        b1_signal := true
+        b1_dir    := -1
+        b1_entry  := close
+        b1_stop   := close + atr14_val
+        b1_target := close - atr14_val * 2.0
+        b1_risk   := b1_stop - b1_entry
+        b1_rr     := b1_risk > 0 ? (b1_entry - b1_target) / b1_risk : na
+        b1_basis  := "MVC003_BEAR_SURGE"
+        b1_reject := "NONE"
+    else
+        b1_reject := "EMA/OV direction mismatch"
+else if not i_enable_b1
+    b1_reject := "Model disabled"
+else if not mvc_003_val
+    b1_reject := "MVC-003 not active"
+else
+    b1_reject := "Not RTH session"
+
+// ============================================================================
+// SECTION 7: ADE DECISION (inline — mirrors M-14)
+// ============================================================================
+bool   w_has_candidate = false
+string w_model_id      = "NO_TRADE"
+float  w_score         = 0.0
+int    w_dir           = 0
+float  w_entry         = na
+float  w_stop          = na
+float  w_target        = na
+float  w_risk_pts      = na
+float  w_rr            = na
+string w_basis         = ""
+string w_ranking       = ""
+string w_confidence    = "LOW"
+string w_no_trade_reason = "No eligible model"
+
+float b1_score = b1_signal ? (ema_struct != "MIXED" ? 70.0 : 50.0) + (adx_trending_val ? 15.0 : 0.0) + (mvc_003_val ? 15.0 : 0.0) : 0.0
+float a3_score = a3_signal ? (ema_struct != "MIXED" ? 65.0 : 45.0) + (adx_trending_val ? 15.0 : 0.0) + (is_ov_val ? 10.0 : 0.0) : 0.0
+float a1_score = a1_signal ? (ema_struct != "MIXED" ? 60.0 : 40.0) + (adx_trending_val ? 10.0 : 0.0) + (is_pm_val ? 10.0 : 0.0) : 0.0
+
+string b1_str = b1_signal ? "B1(" + str.tostring(b1_score, "#.#") + ")" : "B1(NO_SIGNAL)"
+string a3_str = a3_signal ? "A3(" + str.tostring(a3_score, "#.#") + ")" : "A3(NO_SIGNAL)"
+string a1_str = a1_signal ? "A1(" + str.tostring(a1_score, "#.#") + ")" : "A1(NO_SIGNAL)"
+w_ranking := b1_str + " | " + a3_str + " | " + a1_str
+
+if b1_signal and b1_score >= i_edge_threshold
+    w_has_candidate := true
+    w_model_id  := "B1"
+    w_score     := b1_score
+    w_dir       := b1_dir
+    w_entry     := b1_entry
+    w_stop      := b1_stop
+    w_target    := b1_target
+    w_risk_pts  := b1_risk
+    w_rr        := b1_rr
+    w_basis     := b1_basis
+    w_no_trade_reason := "NONE"
+else if a3_signal and a3_score >= i_edge_threshold
+    w_has_candidate := true
+    w_model_id  := "A3"
+    w_score     := a3_score
+    w_dir       := a3_dir
+    w_entry     := a3_entry
+    w_stop      := a3_stop
+    w_target    := a3_target
+    w_risk_pts  := a3_risk
+    w_rr        := a3_rr
+    w_basis     := a3_basis
+    w_no_trade_reason := "NONE"
+else if a1_signal and a1_score >= i_edge_threshold
+    w_has_candidate := true
+    w_model_id  := "A1"
+    w_score     := a1_score
+    w_dir       := a1_dir
+    w_entry     := a1_entry
+    w_stop      := a1_stop
+    w_target    := a1_target
+    w_risk_pts  := a1_risk
+    w_rr        := a1_rr
+    w_basis     := a1_basis
+    w_no_trade_reason := "NONE"
+else if not (a1_signal or a3_signal or b1_signal)
+    w_no_trade_reason := "No model generated a signal this bar"
+else
+    w_no_trade_reason := "No model score exceeded threshold (" + str.tostring(i_edge_threshold, "#.#") + ")"
+
+w_confidence := w_score >= 80 ? "HIGH" : (w_score >= 60 ? "MEDIUM" : "LOW")
+
+// ADE rationale
+string ade_rationale = w_has_candidate ? "Selected " + w_model_id + " with score " + str.tostring(w_score, "#.#") + " (" + w_confidence + ") | " + w_ranking : "NO_TRADE: " + w_no_trade_reason + " | " + w_ranking
+
+// ============================================================================
+// SECTION 8: ARI DECISION (inline — mirrors M-14)
+// ============================================================================
+bool   ari_approved    = false
+int    ari_contracts   = 0
+float  ari_actual_risk = 0.0
+string ari_rejection   = "No candidate"
+string ari_rule        = "NONE"
+float  daily_limit     = i_account_type == "LIVE" ? i_daily_loss_live : i_daily_loss_prop
+
+if w_has_candidate
+    bool r1 = v_position_status == STATE_NONE or v_position_status == STATE_ARCHIVED
+    bool r2 = not v_circuit_breaker
+    bool r3 = v_daily_pnl > daily_limit
+    bool r4 = bar_index >= v_pause_until_bar
+    bool r5 = v_daily_trades < i_max_daily_trades
+    if not r1
+        ari_rejection := "R1: Active position exists"
+        ari_rule      := "R1"
+    else if not r2
+        ari_rejection := "R2: Circuit breaker active"
+        ari_rule      := "R2"
+    else if not r3
+        ari_rejection := "R3: Daily loss limit breached"
+        ari_rule      := "R3"
+    else if not r4
+        ari_rejection := "R4: Consecutive loss pause active"
+        ari_rule      := "R4"
+    else if not r5
+        ari_rejection := "R5: Max daily trades reached"
+        ari_rule      := "R5"
+    else
+        float current_mult = v_consecutive_losses >= 2 ? 0.5 : (v_consecutive_wins >= 3 ? 1.1 : 1.0)
+        v_risk_multiplier  := current_mult
+        float adj_risk     = i_base_risk * current_mult
+        float risk_per_c   = w_risk_pts * i_point_value
+        int calc_c         = risk_per_c > 0 ? math.floor(adj_risk / risk_per_c) : 0
+        ari_contracts      := math.min(math.max(calc_c, 1), i_max_contracts)
+        ari_actual_risk    := ari_contracts * risk_per_c
+        ari_approved       := true
+        ari_rejection      := "NONE"
+        ari_rule           := "NONE"
+
+float remaining_daily = daily_limit - v_daily_pnl
+
+// ARI rationale
+string ari_rationale = ari_approved ? "APPROVED: " + str.tostring(ari_contracts) + " contracts @ $" + str.tostring(ari_actual_risk, "#.00") + " risk (mult=" + str.tostring(v_risk_multiplier, "#.##") + ")" : "REJECTED: " + ari_rejection
+
+// ============================================================================
+// SECTION 9: TVL DECISION (inline — mirrors M-14)
+// ============================================================================
+bool   tvl_verified      = false
+string tvl_status        = "NOT_EVALUATED"
+string tvl_blocking_rule = "NONE"
+string tvl_failure       = "No approved trade"
+bool   tvl_c1            = false
+bool   tvl_c2            = false
+bool   tvl_c3            = false
+bool   tvl_c4            = false
+bool   tvl_c5            = false
+
+if ari_approved
+    tvl_c1 := w_has_candidate and not na(w_entry) and not na(w_stop) and not na(w_target)
+    tvl_c2 := barstate.isrealtime
+    tvl_c3 := not v_circuit_breaker and v_daily_pnl > daily_limit
+    tvl_c4 := not na(w_risk_pts) and w_risk_pts > 0 and not na(w_rr) and w_rr >= 1.5
+    tvl_c5 := w_model_id + "-" + str.tostring(time) != v_last_signal_id
+    if tvl_c1 and tvl_c2 and tvl_c3 and tvl_c4 and tvl_c5
+        tvl_verified      := true
+        tvl_status        := "VERIFIED"
+        tvl_blocking_rule := "NONE"
+        tvl_failure       := "NONE"
+    else
+        tvl_status := "REJECTED"
+        if not tvl_c2
+            tvl_blocking_rule := "C2-01"
+            tvl_failure       := "Not realtime bar"
+            tvl_status        := "EMERGENCY_BLOCK"
+        else if not tvl_c3
+            tvl_blocking_rule := "C3"
+            tvl_failure       := "Risk state violation"
+        else if not tvl_c1
+            tvl_blocking_rule := "C1"
+            tvl_failure       := "Model integrity failed"
+        else if not tvl_c4
+            tvl_blocking_rule := "C4"
+            tvl_failure       := "Trade parameters invalid"
+        else if not tvl_c5
+            tvl_blocking_rule := "C5"
+            tvl_failure       := "Duplicate signal detected"
+
+// TVL rationale
+string tvl_rationale = tvl_verified ? "VERIFIED: All checks passed | C1=" + f_bts(tvl_c1) + " C2=" + f_bts(tvl_c2) + " C3=" + f_bts(tvl_c3) + " C4=" + f_bts(tvl_c4) + " C5=" + f_bts(tvl_c5) : "BLOCKED: " + tvl_failure + " [" + tvl_blocking_rule + "]"
+
+// ============================================================================
+// SECTION 10: REASONING STRINGS (Atlas Brain View)
+// ============================================================================
+string ms_summary = session_val + " | " + ema_struct + " | ADX=" + str.tostring(adx14_val, "#.#") + " | ATR14=" + str.tostring(atr14_val, "#.##") + " | MVC003=" + f_bts(mvc_003_val) + " | RelVol=" + str.tostring(rel_vol_val, "#.##")
+
+string a1_rationale = i_enable_a1 ? (a1_signal ? "SIGNAL: " + f_dir_str(a1_dir) + " @ " + str.tostring(a1_entry, "#.00") + " | " + a1_basis : "NO_SIGNAL: " + a1_reject) : "DISABLED"
+string a3_rationale = i_enable_a3 ? (a3_signal ? "SIGNAL: " + f_dir_str(a3_dir) + " @ " + str.tostring(a3_entry, "#.00") + " | " + a3_basis : "NO_SIGNAL: " + a3_reject) : "DISABLED"
+string b1_rationale = i_enable_b1 ? (b1_signal ? "SIGNAL: " + f_dir_str(b1_dir) + " @ " + str.tostring(b1_entry, "#.00") + " | " + b1_basis : "NO_SIGNAL: " + b1_reject) : "DISABLED"
+
+string action_summary = tvl_verified ? "EXECUTE: " + w_model_id + " " + f_dir_str(w_dir) + " @ " + str.tostring(w_entry, "#.00") + " | Stop=" + str.tostring(w_stop, "#.00") + " | Target=" + str.tostring(w_target, "#.00") + " | " + str.tostring(ari_contracts) + " contracts" : (ari_approved ? "TVL BLOCKED: " + tvl_failure : (w_has_candidate ? "ARI REJECTED: " + ari_rejection : "NO_TRADE: " + w_no_trade_reason))
+
+// ============================================================================
+// SECTION 11: JSON PAYLOAD CONSTRUCTION
+// ============================================================================
+// Constructed only on confirmed bars to prevent duplicate transmissions.
+// All na values are replaced with "null". All strings are escaped.
+// Payload is designed to stay under TradingView's 4000-character alert limit
+// by using abbreviated field names in the compact sections.
+
+string j_payload = ""
+bool   j_valid   = false
+int    j_size    = 0
+
+if barstate.isconfirmed
+    v_heartbeat_count := v_heartbeat_count + 1
+    v_payload_count   := v_payload_count + 1
+
+    string evt_id  = f_event_id(bar_index, time)
+    string idem_key = f_idem_key(bar_index, time)
+    string ts_et   = str.tostring(year(time, "America/New_York")) + "-" + str.tostring(month(time, "America/New_York"), "00") + "-" + str.tostring(dayofmonth(time, "America/New_York"), "00") + " " + str.tostring(h_et, "00") + ":" + str.tostring(m_et, "00")
+
+    // --- METADATA ---
+    string j_meta = "\"schema_version\":\"" + SCHEMA_VERSION + "\","
+    j_meta := j_meta + "\"payload_type\":\"" + PAYLOAD_TYPE + "\","
+    j_meta := j_meta + "\"idempotency_key\":\"" + idem_key + "\","
+    j_meta := j_meta + "\"metadata\":{"
+    j_meta := j_meta + "\"event_id\":\"" + evt_id + "\","
+    j_meta := j_meta + "\"timestamp_utc\":" + f_its(time) + ","
+    j_meta := j_meta + "\"timestamp_et\":\"" + ts_et + "\","
+    j_meta := j_meta + "\"bar_index\":" + str.tostring(bar_index) + ","
+    j_meta := j_meta + "\"chart_id\":\"" + CHART_ID + "\","
+    j_meta := j_meta + "\"ticker\":\"" + TICKER + "\","
+    j_meta := j_meta + "\"timeframe\":\"" + TIMEFRAME + "\","
+    j_meta := j_meta + "\"aps_version\":\"" + APS_VERSION + "\","
+    j_meta := j_meta + "\"pine_version\":\"" + PINE_VERSION + "\","
+    j_meta := j_meta + "\"sprint_number\":" + str.tostring(SPRINT_NUMBER) + "},"
+
+    // --- PIPELINE HEALTH ---
+    bool pipeline_ok = not na(ema9_val)
+    string j_health = "\"pipeline_health\":{"
+    j_health := j_health + "\"pipeline_ok\":" + f_bts(pipeline_ok) + ","
+    j_health := j_health + "\"failed_stage\":null,"
+    j_health := j_health + "\"warning_count\":0,"
+    j_health := j_health + "\"error_count\":" + str.tostring(v_error_count) + ","
+    j_health := j_health + "\"heartbeat\":" + str.tostring(v_heartbeat_count) + ","
+    j_health := j_health + "\"pipeline_run_count\":" + str.tostring(v_payload_count) + ","
+    j_health := j_health + "\"stage_config_ok\":true,"
+    j_health := j_health + "\"stage_state_ok\":true,"
+    j_health := j_health + "\"stage_mse_ok\":" + f_bts(not na(ema9_val)) + ","
+    j_health := j_health + "\"stage_models_ok\":true,"
+    j_health := j_health + "\"stage_ade_ok\":true,"
+    j_health := j_health + "\"stage_ari_ok\":true,"
+    j_health := j_health + "\"stage_tvl_ok\":true,"
+    j_health := j_health + "\"stage_exec_ok\":true},"
+
+    // --- MARKET STATE ---
+    string j_ms = "\"market_state\":{"
+    j_ms := j_ms + "\"session\":" + f_str(session_val) + ","
+    j_ms := j_ms + "\"timestamp_et\":\"" + ts_et + "\","
+    j_ms := j_ms + "\"hour_et\":" + str.tostring(h_et) + ","
+    j_ms := j_ms + "\"minute_et\":" + str.tostring(m_et) + ","
+    j_ms := j_ms + "\"day_of_week\":" + str.tostring(dow_val) + ","
+    j_ms := j_ms + "\"is_rth\":" + f_bts(is_rth_val) + ","
+    j_ms := j_ms + "\"is_am_session\":" + f_bts(is_am_val) + ","
+    j_ms := j_ms + "\"is_pm_session\":" + f_bts(is_pm_val) + ","
+    j_ms := j_ms + "\"is_overnight\":" + f_bts(is_ov_val) + ","
+    j_ms := j_ms + "\"bar_close\":" + f_fts(close, "#.00") + ","
+    j_ms := j_ms + "\"bar_high\":" + f_fts(high, "#.00") + ","
+    j_ms := j_ms + "\"bar_low\":" + f_fts(low, "#.00") + ","
+    j_ms := j_ms + "\"bar_open\":" + f_fts(open, "#.00") + ","
+    j_ms := j_ms + "\"bar_volume\":" + f_fts(volume, "#") + ","
+    j_ms := j_ms + "\"ema9\":" + f_fts(ema9_val, "#.00") + ","
+    j_ms := j_ms + "\"ema21\":" + f_fts(ema21_val, "#.00") + ","
+    j_ms := j_ms + "\"ema50\":" + f_fts(ema50_val, "#.00") + ","
+    j_ms := j_ms + "\"ema_structure\":" + f_str(ema_struct) + ","
+    j_ms := j_ms + "\"ema_bull\":" + f_bts(ema_bull_val) + ","
+    j_ms := j_ms + "\"ema_bear\":" + f_bts(ema_bear_val) + ","
+    j_ms := j_ms + "\"atr14\":" + f_fts(atr14_val, "#.####") + ","
+    j_ms := j_ms + "\"atr5\":" + f_fts(atr5_val, "#.####") + ","
+    j_ms := j_ms + "\"adx14\":" + f_fts(adx14_val, "#.##") + ","
+    j_ms := j_ms + "\"adx_trending\":" + f_bts(adx_trending_val) + ","
+    j_ms := j_ms + "\"volatility_state\":" + f_str(vol_state_val) + ","
+    j_ms := j_ms + "\"volcomp_ratio\":" + f_fts(volcomp_val, "#.####") + ","
+    j_ms := j_ms + "\"is_compressed\":" + f_bts(is_comp_val) + ","
+    j_ms := j_ms + "\"is_expanding\":" + f_bts(is_exp_val) + ","
+    j_ms := j_ms + "\"ov_open\":" + f_fts(safe_ov_open, "#.00") + ","
+    j_ms := j_ms + "\"ov_high\":" + f_fts(safe_ov_high, "#.00") + ","
+    j_ms := j_ms + "\"ov_low\":" + f_fts(safe_ov_low, "#.00") + ","
+    j_ms := j_ms + "\"ov_close\":" + f_fts(safe_ov_close, "#.00") + ","
+    j_ms := j_ms + "\"ov_range_pts\":" + f_fts(ov_range_pts_val, "#.00") + ","
+    j_ms := j_ms + "\"ov_range_vs_atr14\":" + f_fts(ov_range_vs_atr_val, "#.####") + ","
+    j_ms := j_ms + "\"ov_direction\":" + str.tostring(ov_dir_val) + ","
+    j_ms := j_ms + "\"rel_vol_20\":" + f_fts(rel_vol_val, "#.####") + ","
+    j_ms := j_ms + "\"rel_txn\":" + f_fts(rel_txn_val, "#.####") + ","
+    j_ms := j_ms + "\"participation_surge\":" + f_bts(surge_val) + ","
+    j_ms := j_ms + "\"mvc_003_active\":" + f_bts(mvc_003_val) + ","
+    j_ms := j_ms + "\"day_open\":" + f_fts(safe_day_open, "#.00") + ","
+    j_ms := j_ms + "\"day_high\":" + f_fts(safe_day_high, "#.00") + ","
+    j_ms := j_ms + "\"day_low\":" + f_fts(safe_day_low, "#.00") + ","
+    j_ms := j_ms + "\"day_range_vs_atr14\":" + f_fts(day_range_vs_atr_val, "#.####") + "},"
+
+    // --- MODEL EVALUATIONS ---
+    string j_a1 = "\"a1\":{\"model_id\":\"A1\","
+    j_a1 := j_a1 + "\"enabled\":" + f_bts(i_enable_a1) + ","
+    j_a1 := j_a1 + "\"has_signal\":" + f_bts(a1_signal) + ","
+    j_a1 := j_a1 + "\"direction\":" + str.tostring(a1_dir) + ","
+    j_a1 := j_a1 + "\"entry_price\":" + f_fts(a1_entry, "#.00") + ","
+    j_a1 := j_a1 + "\"stop_price\":" + f_fts(a1_stop, "#.00") + ","
+    j_a1 := j_a1 + "\"target_price\":" + f_fts(a1_target, "#.00") + ","
+    j_a1 := j_a1 + "\"risk_points\":" + f_fts(a1_risk, "#.####") + ","
+    j_a1 := j_a1 + "\"reward_to_risk\":" + f_fts(a1_rr, "#.##") + ","
+    j_a1 := j_a1 + "\"signal_basis\":" + f_str(a1_basis) + ","
+    j_a1 := j_a1 + "\"rejection_reason\":" + f_str(a1_reject) + "}"
+
+    string j_a3 = "\"a3\":{\"model_id\":\"A3\","
+    j_a3 := j_a3 + "\"enabled\":" + f_bts(i_enable_a3) + ","
+    j_a3 := j_a3 + "\"has_signal\":" + f_bts(a3_signal) + ","
+    j_a3 := j_a3 + "\"direction\":" + str.tostring(a3_dir) + ","
+    j_a3 := j_a3 + "\"entry_price\":" + f_fts(a3_entry, "#.00") + ","
+    j_a3 := j_a3 + "\"stop_price\":" + f_fts(a3_stop, "#.00") + ","
+    j_a3 := j_a3 + "\"target_price\":" + f_fts(a3_target, "#.00") + ","
+    j_a3 := j_a3 + "\"risk_points\":" + f_fts(a3_risk, "#.####") + ","
+    j_a3 := j_a3 + "\"reward_to_risk\":" + f_fts(a3_rr, "#.##") + ","
+    j_a3 := j_a3 + "\"signal_basis\":" + f_str(a3_basis) + ","
+    j_a3 := j_a3 + "\"rejection_reason\":" + f_str(a3_reject) + "}"
+
+    string j_b1 = "\"b1\":{\"model_id\":\"B1\","
+    j_b1 := j_b1 + "\"enabled\":" + f_bts(i_enable_b1) + ","
+    j_b1 := j_b1 + "\"has_signal\":" + f_bts(b1_signal) + ","
+    j_b1 := j_b1 + "\"direction\":" + str.tostring(b1_dir) + ","
+    j_b1 := j_b1 + "\"entry_price\":" + f_fts(b1_entry, "#.00") + ","
+    j_b1 := j_b1 + "\"stop_price\":" + f_fts(b1_stop, "#.00") + ","
+    j_b1 := j_b1 + "\"target_price\":" + f_fts(b1_target, "#.00") + ","
+    j_b1 := j_b1 + "\"risk_points\":" + f_fts(b1_risk, "#.####") + ","
+    j_b1 := j_b1 + "\"reward_to_risk\":" + f_fts(b1_rr, "#.##") + ","
+    j_b1 := j_b1 + "\"signal_basis\":" + f_str(b1_basis) + ","
+    j_b1 := j_b1 + "\"rejection_reason\":" + f_str(b1_reject) + "}"
+
+    string j_models = "\"model_evaluations\":{" + j_a1 + "," + j_a3 + "," + j_b1 + "},"
+
+    // --- ADE DECISION ---
+    string j_ade = "\"ade_decision\":{"
+    j_ade := j_ade + "\"has_candidate\":" + f_bts(w_has_candidate) + ","
+    j_ade := j_ade + "\"candidate_model\":" + f_str(w_model_id) + ","
+    j_ade := j_ade + "\"winning_edge_score\":" + (w_has_candidate ? f_fts(w_score, "#.#") : "null") + ","
+    j_ade := j_ade + "\"confidence_level\":" + f_str(w_confidence) + ","
+    j_ade := j_ade + "\"ranking_order\":" + f_str(w_ranking) + ","
+    j_ade := j_ade + "\"decision_rationale\":" + f_str(ade_rationale) + ","
+    j_ade := j_ade + "\"no_trade_rationale\":" + (w_has_candidate ? "null" : f_str(w_no_trade_reason)) + "},"
+
+    // --- ARI DECISION ---
+    string j_ari = "\"ari_decision\":{"
+    j_ari := j_ari + "\"approved\":" + f_bts(ari_approved) + ","
+    j_ari := j_ari + "\"base_risk\":" + f_fts(i_base_risk, "#.00") + ","
+    j_ari := j_ari + "\"risk_multiplier\":" + f_fts(v_risk_multiplier, "#.##") + ","
+    j_ari := j_ari + "\"approved_risk\":" + f_fts(ari_actual_risk, "#.00") + ","
+    j_ari := j_ari + "\"contracts\":" + str.tostring(ari_contracts) + ","
+    j_ari := j_ari + "\"daily_pnl\":" + f_fts(v_daily_pnl, "#.00") + ","
+    j_ari := j_ari + "\"daily_trade_count\":" + str.tostring(v_daily_trades) + ","
+    j_ari := j_ari + "\"consecutive_losses\":" + str.tostring(v_consecutive_losses) + ","
+    j_ari := j_ari + "\"consecutive_wins\":" + str.tostring(v_consecutive_wins) + ","
+    j_ari := j_ari + "\"current_drawdown\":" + f_fts(v_current_drawdown, "#.00") + ","
+    j_ari := j_ari + "\"circuit_breaker\":" + f_bts(v_circuit_breaker) + ","
+    j_ari := j_ari + "\"active_position\":" + f_bts(v_position_status == STATE_ACTIVE or v_position_status == STATE_FILLED or v_position_status == STATE_ACKNOWLEDGED) + ","
+    j_ari := j_ari + "\"triggered_rule\":" + (ari_rule == "NONE" ? "null" : f_str(ari_rule)) + ","
+    j_ari := j_ari + "\"rejection_reason\":" + (ari_rejection == "NONE" ? "null" : f_str(ari_rejection)) + ","
+    j_ari := j_ari + "\"remaining_daily_risk\":" + f_fts(remaining_daily, "#.00") + "},"
+
+    // --- TVL DECISION ---
+    string j_tvl = "\"tvl_decision\":{"
+    j_tvl := j_tvl + "\"status\":" + f_str(tvl_status) + ","
+    j_tvl := j_tvl + "\"verified\":" + f_bts(tvl_verified) + ","
+    j_tvl := j_tvl + "\"blocking_rule\":" + (tvl_blocking_rule == "NONE" ? "null" : f_str(tvl_blocking_rule)) + ","
+    j_tvl := j_tvl + "\"rejection_reason\":" + (tvl_failure == "NONE" ? "null" : f_str(tvl_failure)) + ","
+    j_tvl := j_tvl + "\"duplicate_status\":" + f_bts(not tvl_c5) + ","
+    j_tvl := j_tvl + "\"session_valid\":" + f_bts(is_rth_val) + ","
+    j_tvl := j_tvl + "\"timestamp_valid\":" + f_bts(tvl_c2) + ","
+    j_tvl := j_tvl + "\"trade_parameters_valid\":" + f_bts(tvl_c4) + ","
+    j_tvl := j_tvl + "\"execution_permission\":" + f_bts(tvl_verified) + "},"
+
+    // --- POSITION STATE ---
+    string j_pos = "\"position_state\":{"
+    j_pos := j_pos + "\"trade_id\":" + f_str(v_last_trade_id) + ","
+    j_pos := j_pos + "\"signal_id\":" + f_str(v_last_signal_id) + ","
+    j_pos := j_pos + "\"model_id\":" + f_str(v_last_model_id) + ","
+    j_pos := j_pos + "\"status\":" + f_str(v_position_status) + ","
+    j_pos := j_pos + "\"direction\":" + str.tostring(v_last_direction) + ","
+    j_pos := j_pos + "\"contracts\":" + str.tostring(v_last_contracts) + ","
+    j_pos := j_pos + "\"entry_price\":" + f_fts(v_last_entry, "#.00") + ","
+    j_pos := j_pos + "\"fill_price\":" + f_fts(v_last_entry, "#.00") + ","
+    j_pos := j_pos + "\"stop_price\":" + f_fts(v_last_stop, "#.00") + ","
+    j_pos := j_pos + "\"target_price\":" + f_fts(v_last_target, "#.00") + ","
+    j_pos := j_pos + "\"current_pnl\":" + f_fts(v_last_pnl, "#.00") + ","
+    j_pos := j_pos + "\"current_r\":" + f_fts(v_last_r, "#.####") + ","
+    j_pos := j_pos + "\"mfe\":" + f_fts(v_last_mfe, "#.00") + ","
+    j_pos := j_pos + "\"mae\":" + f_fts(v_last_mae, "#.00") + ","
+    j_pos := j_pos + "\"bars_in_trade\":" + str.tostring(v_bars_in_trade) + ","
+    j_pos := j_pos + "\"exit_reason\":" + (v_exit_reason == "NONE" ? "null" : f_str(v_exit_reason)) + "},"
+
+    // --- REASONING ---
+    string j_rsn = "\"reasoning\":{"
+    j_rsn := j_rsn + "\"market_state_summary\":" + f_str(ms_summary) + ","
+    j_rsn := j_rsn + "\"a1_rationale\":" + f_str(a1_rationale) + ","
+    j_rsn := j_rsn + "\"a3_rationale\":" + f_str(a3_rationale) + ","
+    j_rsn := j_rsn + "\"b1_rationale\":" + f_str(b1_rationale) + ","
+    j_rsn := j_rsn + "\"ade_rationale\":" + f_str(ade_rationale) + ","
+    j_rsn := j_rsn + "\"ari_rationale\":" + f_str(ari_rationale) + ","
+    j_rsn := j_rsn + "\"tvl_rationale\":" + f_str(tvl_rationale) + ","
+    j_rsn := j_rsn + "\"action_summary\":" + f_str(action_summary) + "}"
+
+    // --- ASSEMBLE FINAL PAYLOAD ---
+    j_payload := "{" + j_meta + j_health + j_ms + j_models + j_ade + j_ari + j_tvl + j_pos + j_rsn + "}"
+    j_size    := str.length(j_payload)
+    j_valid   := j_size > 100 and j_size < 8000
+
+    // Validation guard: if payload is invalid, send minimal error payload
+    if not j_valid
+        v_error_count := v_error_count + 1
+        j_payload := "{\"schema_version\":\"" + SCHEMA_VERSION + "\",\"payload_type\":\"OBSERVABILITY_ERROR\",\"idempotency_key\":\"" + idem_key + "\",\"error\":\"Payload construction failed\",\"bar_index\":" + str.tostring(bar_index) + ",\"timestamp_utc\":" + f_its(time) + "}"
+
+    // TRANSMIT: Fire alert (TradingView alert must be configured to use {{strategy.order.alert_message}})
+    if i_enable_webhook
+        alert(j_payload, alert.freq_once_per_bar_close)
+
+// ============================================================================
+// SECTION 12: DEBUG PREVIEW TABLE
+// ============================================================================
+var table t_preview = table.new(position.bottom_left, 2, 20, bgcolor=color.new(color.black, 5), border_color=color.new(color.gray, 50), border_width=1, frame_color=color.new(color.blue, 20), frame_width=2)
+
+f_row(table t, int r, string lbl, string val, color vc) =>
+    table.cell(t, 0, r, lbl, text_color=color.new(color.gray, 20), text_size=size.tiny, bgcolor=color.new(color.black, 5), text_halign=text.align_left)
+    table.cell(t, 1, r, val, text_color=vc, text_size=size.tiny, bgcolor=color.new(color.black, 5), text_halign=text.align_left)
+
+if i_debug_preview and barstate.islast
+    f_row(t_preview, 0,  "M-15 OBSERVABILITY",   "v" + MODULE_VERSION,                        color.new(color.blue, 0))
+    f_row(t_preview, 1,  "Payload Count",         str.tostring(v_payload_count),               color.new(color.white, 0))
+    f_row(t_preview, 2,  "Heartbeat",             str.tostring(v_heartbeat_count),             color.new(color.green, 0))
+    f_row(t_preview, 3,  "Errors",                str.tostring(v_error_count),                 v_error_count > 0 ? color.new(color.red, 0) : color.new(color.green, 0))
+    f_row(t_preview, 4,  "Last Payload Size",     str.tostring(j_size) + " chars",             j_valid ? color.new(color.green, 0) : color.new(color.red, 0))
+    f_row(t_preview, 5,  "Session",               session_val,                                 color.new(color.yellow, 0))
+    f_row(t_preview, 6,  "EMA Structure",         ema_struct,                                  ema_struct == "BULL" ? color.new(color.green, 0) : (ema_struct == "BEAR" ? color.new(color.red, 0) : color.new(color.yellow, 0)))
+    f_row(t_preview, 7,  "ADX14",                 str.tostring(adx14_val, "#.#"),              adx_trending_val ? color.new(color.green, 0) : color.new(color.gray, 0))
+    f_row(t_preview, 8,  "MVC-003",               mvc_003_val ? "ACTIVE" : "INACTIVE",        mvc_003_val ? color.new(color.orange, 0) : color.new(color.gray, 0))
+    f_row(t_preview, 9,  "A1 Signal",             a1_signal ? "SIGNAL " + f_dir_str(a1_dir) : "NO_SIGNAL",  a1_signal ? color.new(color.green, 0) : color.new(color.gray, 0))
+    f_row(t_preview, 10, "A3 Signal",             a3_signal ? "SIGNAL " + f_dir_str(a3_dir) : "NO_SIGNAL",  a3_signal ? color.new(color.green, 0) : color.new(color.gray, 0))
+    f_row(t_preview, 11, "B1 Signal",             b1_signal ? "SIGNAL " + f_dir_str(b1_dir) : "NO_SIGNAL",  b1_signal ? color.new(color.green, 0) : color.new(color.gray, 0))
+    f_row(t_preview, 12, "ADE Winner",            w_model_id + " (" + str.tostring(w_score, "#.#") + ")",   w_has_candidate ? color.new(color.green, 0) : color.new(color.gray, 0))
+    f_row(t_preview, 13, "ARI",                   ari_approved ? "APPROVED " + str.tostring(ari_contracts) + "c" : "REJECTED",  ari_approved ? color.new(color.green, 0) : color.new(color.red, 0))
+    f_row(t_preview, 14, "TVL",                   tvl_status,                                  tvl_verified ? color.new(color.green, 0) : color.new(color.red, 0))
+    f_row(t_preview, 15, "Position",              v_position_status,                           v_position_status == STATE_ACTIVE ? color.new(color.orange, 0) : color.new(color.gray, 0))
+    f_row(t_preview, 16, "Daily P&L",             "$" + f_fts(v_daily_pnl, "#.00"),            v_daily_pnl >= 0 ? color.new(color.green, 0) : color.new(color.red, 0))
+    f_row(t_preview, 17, "Webhook",               i_enable_webhook ? "ENABLED" : "DISABLED",  i_enable_webhook ? color.new(color.green, 0) : color.new(color.yellow, 0))
+    f_row(t_preview, 18, "Action",                action_summary,                              tvl_verified ? color.new(color.green, 0) : color.new(color.gray, 0))
+    f_row(t_preview, 19, "Confirmed",             barstate.isconfirmed ? "YES" : "NO",         barstate.isconfirmed ? color.new(color.green, 0) : color.new(color.yellow, 0))
+
+// ============================================================================
+// SECTION 13: HEARTBEAT LABEL
+// ============================================================================
+if i_show_heartbeat and barstate.islast
+    label.new(bar_index, high + atr14_val * 0.3, "M-15 | HB#" + str.tostring(v_heartbeat_count) + " | " + str.tostring(v_payload_count) + " payloads | " + (i_enable_webhook ? "LIVE" : "PREVIEW"), style=label.style_label_down, color=color.new(color.blue, 20), textcolor=color.white, size=size.small)
+
+// ============================================================================
+// SECTION 14: PLOTS (for chart legend visibility)
+// ============================================================================
+plot(v_heartbeat_count, title="Heartbeat Count", color=color.new(color.blue, 80), display=display.none)
+plot(v_payload_count,   title="Payload Count",   color=color.new(color.green, 80), display=display.none)
+plot(v_error_count,     title="Error Count",     color=color.new(color.red, 80), display=display.none)

@@ -90,6 +90,23 @@ M-10 is a standalone `indicator()`. In production (M-14 `atlas_core`), the `Posi
 
 ---
 
+## [0.13.0] - 2026-07-10
+
+### Added
+
+**Module M-15: `atlas_observability_webhook.pine`** — The Observability Webhook layer. This indicator script (824 lines) serialises the complete internal state of the Atlas pipeline into a structured JSON payload and fires it via TradingView's `alert()` function on `barstate.isconfirmed`. Successfully injected, compiled with 0 errors (14 warnings), and saved to the live chart.
+
+**Atlas Nexus MVP** — A standalone, full-stack observability dashboard for monitoring the Atlas pipeline in real time.
+- **Backend:** FastAPI (Python) server with SQLite persistence. Features a `POST /webhook` endpoint to ingest M-15 payloads, and a `GET /events` Server-Sent Events (SSE) stream for live client updates.
+- **Frontend:** A high-density React/Vanilla JS dashboard inspired by Bloomberg terminals. Renders 8 critical panels in real time: Overview Strip, Market Structure, Position State, Model Evaluations (A1/A3/B1), Atlas Brain View (human-readable reasoning), Decision Engine (ADE), Risk Intelligence (ARI), Trade Verification (TVL), and a scrolling Decision Timeline.
+- **Integration:** Successfully tested end-to-end. The backend receives JSON payloads, persists them, and pushes updates instantly to the frontend UI via SSE.
+
+### Architecture Notes
+
+M-15 acts as the final stage of the Atlas Kernel pipeline. It strictly isolates webhook generation from trading logic—if any upstream pipeline stage fails, the webhook is suppressed. The Atlas Nexus MVP provides the critical off-chart visibility required to monitor the deterministic 14-stage pipeline without relying solely on TradingView's limited chart UI.
+
+---
+
 ## [0.12.0] - 2026-07-10
 
 ### Added
