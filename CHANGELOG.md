@@ -6,6 +6,27 @@ The format is based on clear version history rather than informal memory. Every 
 
 ## [Unreleased]
 
+## [0.15.0] - 2026-07-10 (Sprint 077)
+
+### Added
+- **Performance Analytics page** (`/analytics`) — data-driven from `paper_trades` DB only. Equity curve (cumulative P&L line chart), daily P&L bar chart, model breakdown (win rate, W/L, net P&L per model), trade log (last 20 closed trades). No mock data.
+- **`analytics.summary` tRPC procedure** — server-side aggregation of all analytics stats (total trades, win rate, avg R, profit factor, max drawdown, gross win/loss, equity curve, daily P&L, model breakdown).
+- **`getAnalyticsData()` DB helper** — computes all analytics from `paper_trades` table in a single server-side pass.
+- **`fmtField()` and `fmtCurrency()` helpers** in `HudComponents.tsx` — return "DATA UNAVAILABLE" for null/undefined critical fields.
+- **TradingView alert configuration document** (`Docs/tradingview-alert-configuration.md`) — complete setup guide with exact webhook URL, M-15 settings, backend rejection rules, and security checklist.
+- **Sprint 077 Engineering Log** (`Docs/sprint-077-engineering-log.md`).
+
+### Changed
+- **M-15 Pine Script** (`atlas_observability_webhook.pine`) — added `i_webhook_secret` input, `webhook_secret` field (Layer 2 auth), and `pipeline_run_id` field to the JSON payload. Updated endpoint comment to reflect the correct webhook URL format.
+- **Backend timeframe validation** — `nexusRoutes.ts` now validates `metadata.timeframe === "5"` (5-minute bars). Payloads with any other timeframe are rejected with HTTP 422.
+- **Notification deduplication** — `nexusRoutes.ts` now tracks last notification time per type with per-type cooldown windows (ARI_REJECTION: 5 min, CIRCUIT_BREAKER: 30 min, WEBHOOK_FAILURE: 1 hr, TV_DISCONNECTED: 2 hr). Trade notifications always fire.
+- **Startup grace period** — `WEBHOOK_FAILURE` and `TV_DISCONNECTED` monitoring intervals skip checks for the first 10 minutes after server startup to prevent false-positive alerts.
+- **Analytics nav item** added to INTELLIGENCE group in sidebar (LineChart icon, `/analytics` route).
+
+### Tests
+- Added 2 new timeframe validation tests to `nexusRoutes.test.ts`.
+- **Total: 17/17 tests pass.** TypeScript: 0 errors.
+
 ## [0.14.0] - 2026-07-10 (Sprint 075)
 
 ### Added

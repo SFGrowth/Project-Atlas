@@ -26,8 +26,9 @@
 //   serialisation failure produces a minimal error payload rather than
 //   crashing or affecting the Kernel.
 //
-// ATLAS NEXUS ENDPOINT: POST /api/v1/webhook/observe
-// AUTHENTICATION: Bearer token (configured in TradingView alert webhook URL)
+// ATLAS NEXUS ENDPOINT: POST /api/webhook/observe/<ATLAS_WEBHOOK_TOKEN>
+// AUTHENTICATION: Dual-layer — secret path segment in URL + webhook_secret field in JSON payload
+// Both layers must match ATLAS_WEBHOOK_TOKEN. Never commit or display the real token.
 // =============================================================================
 //@version=5
 indicator("Atlas Observability Webhook — M-15", overlay=false, max_labels_count=50, max_lines_count=0)
@@ -60,6 +61,7 @@ var string GRP_DEBUG = "Debug & Validation"
 var string GRP_KERN  = "Kernel Reference"
 
 bool   i_enable_webhook    = input.bool(true,  title="Enable Observability Webhook", group=GRP_OBS)
+string i_webhook_secret    = input.string("",   title="Webhook Secret (ATLAS_WEBHOOK_TOKEN)", group=GRP_OBS, tooltip="Paste the ATLAS_WEBHOOK_TOKEN here. This is embedded in the JSON payload as webhook_secret for Layer 2 authentication. Keep this private.")
 bool   i_debug_preview     = input.bool(true,  title="Show JSON Preview Table",      group=GRP_DEBUG)
 bool   i_show_heartbeat    = input.bool(true,  title="Show Heartbeat Label",          group=GRP_DEBUG)
 // Kernel reference inputs (must match M-14 settings)
@@ -569,7 +571,9 @@ if barstate.isconfirmed
     string j_meta = "\"schema_version\":\"" + SCHEMA_VERSION + "\","
     j_meta := j_meta + "\"payload_type\":\"" + PAYLOAD_TYPE + "\","
     j_meta := j_meta + "\"idempotency_key\":\"" + idem_key + "\","
-    j_meta := j_meta + "\"metadata\":{"
+    j_meta := j_meta + "\"webhook_secret\":\"" + i_webhook_secret + "\","
+    j_meta := j_meta + "\"pipeline_run_id\":\"" + idem_key + "\","
+    j_meta := j_meta + "\"metadata":{"
     j_meta := j_meta + "\"event_id\":\"" + evt_id + "\","
     j_meta := j_meta + "\"timestamp_utc\":" + f_its(time) + ","
     j_meta := j_meta + "\"timestamp_et\":\"" + ts_et + "\","
