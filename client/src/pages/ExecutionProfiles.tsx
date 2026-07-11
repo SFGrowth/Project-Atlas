@@ -23,7 +23,7 @@ const PROFILE_DEFINITIONS = [
     id:           "ATLAS_PAPER_MNQ",
     name:         "ATLAS PAPER — MNQ",
     mode:         "PAPER",
-    defaultRisk:  100,
+    defaultRisk:  800,
     maxContracts: 5,
     dailyLimit:   -500,
     pointValue:   2.0,
@@ -250,7 +250,7 @@ function ProfileCard({ profile, livePayload, receivedAt }: ProfileCardProps) {
               )}
             </div>
             <div className="text-xs text-muted-foreground/60 font-mono leading-relaxed">
-              To activate: duplicate TradingView layout → set Dollar Risk to ${profile.defaultRisk} → create new alert with dedicated webhook URL → document in Version Governance.
+              To activate: duplicate TradingView layout → set Dollar Risk to ${profile.defaultRisk} in Settings → create new alert with dedicated webhook URL → document in Version Governance.
             </div>
           </div>
         )}
@@ -320,7 +320,7 @@ export default function ExecutionProfilesPage() {
         <Shield size={16} className="text-teal-400 mt-0.5 shrink-0" />
         <div className="text-sm text-teal-200/80 leading-relaxed">
           <span className="font-semibold text-teal-300">Current Deployment Rule (Sprint 083):</span>{" "}
-          Only <span className="font-mono font-semibold">ATLAS PAPER — $100 RISK — SIMULATION ONLY</span> is authorised.
+          Only <span className="font-mono font-semibold">ATLAS PAPER — $800 RISK — SIMULATION ONLY</span> is authorised.
           The $900 evaluation, $450 funded, and $1,650 live profiles are prepared but remain{" "}
           <span className="font-semibold text-yellow-300">DISARMED</span> until their deployment sprint is formally approved.
         </div>
