@@ -7,7 +7,7 @@ import { getLoginUrl } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
 import {
   Activity, AlertTriangle, BadgeCheck, BarChart2, BookOpen, Brain, ChevronLeft, ChevronRight,
-  Clock, Cpu, Database, FlaskConical, Home, LayoutDashboard, LineChart, Menu,
+  Clock, Cpu, Database, FlaskConical, Home, LayoutDashboard, Layers, LineChart, Menu,
   Radio, Settings, Shield, Telescope, TrendingUp, Zap,
 } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
@@ -39,6 +39,7 @@ const NAV_GROUPS = [
     label: "EXECUTION",
     items: [
       { icon: Activity, label: "Execution", path: "/execution" },
+      { icon: Layers, label: "Exec Profiles", path: "/execution-profiles" },
       { icon: BarChart2, label: "Position State", path: "/position" },
       { icon: Clock, label: "Decision Timeline", path: "/timeline" },
       { icon: FlaskConical, label: "Replay Engine", path: "/replay" },

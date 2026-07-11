@@ -151,12 +151,26 @@ function normalisePayload(body: Record<string, unknown>): Record<string, unknown
 
   // Flatten ARI fields
   const ari_approved       = ari?.approved === true ? "APPROVED" : "REJECTED";
-  const ari_approved_risk  = Number(ari?.approved_risk ?? 0);
+  const ari_approved_risk  = Number(ari?.approved_risk ?? ari?.estimated_risk_dollars ?? 0);
   const ari_daily_pnl      = Number(ari?.daily_pnl ?? 0);
   const ari_drawdown       = Number(ari?.current_drawdown ?? 0);
   const ari_consecutive_losses = Number(ari?.consecutive_losses ?? 0);
   const ari_consecutive_wins   = Number(ari?.consecutive_wins ?? 0);
   const ari_circuit_breaker    = ari?.circuit_breaker === true ? "OPEN" : "CLOSED";
+  // Sprint 083: Profile and dollar-risk fields from ari_decision
+  const ari_profile_id             = String(ari?.profile_id ?? body.profile_id ?? "ATLAS_PAPER_MNQ");
+  const ari_profile_name           = String(ari?.profile_name ?? body.profile_name ?? "ATLAS PAPER — MNQ");
+  const ari_execution_mode         = String(ari?.execution_mode ?? body.execution_mode ?? "PAPER");
+  const ari_account_type           = String(ari?.account_type ?? body.account_type ?? "PAPER");
+  const ari_execution_armed        = ari?.execution_armed === true || body.execution_armed === true;
+  const ari_configured_risk        = Number(ari?.configured_risk_dollars ?? body.configured_risk_dollars ?? 100);
+  const ari_estimated_risk         = Number(ari?.estimated_risk_dollars ?? ari?.approved_risk ?? 0);
+  const ari_risk_difference        = Number(ari?.risk_difference_dollars ?? (ari_configured_risk - ari_estimated_risk));
+  const ari_stop_distance_points   = Number(ari?.stop_distance_points ?? 0);
+  const ari_risk_per_contract      = Number(ari?.risk_per_contract ?? 0);
+  const ari_point_value            = Number(ari?.point_value ?? 2.0);
+  const ari_maximum_contracts      = Number(ari?.maximum_contracts ?? 5);
+  const ari_contracts              = Number(ari?.contracts ?? 0);
 
   // Flatten TVL fields
   const tvl_status             = String(tvl?.status ?? "FAIL");
@@ -251,6 +265,20 @@ function normalisePayload(body: Record<string, unknown>): Record<string, unknown
     ari_consecutive_losses,
     ari_consecutive_wins,
     ari_circuit_breaker,
+    // Sprint 083: Profile and dollar-risk fields
+    ari_profile_id,
+    ari_profile_name,
+    ari_execution_mode,
+    ari_account_type,
+    ari_execution_armed,
+    ari_configured_risk,
+    ari_estimated_risk,
+    ari_risk_difference,
+    ari_stop_distance_points,
+    ari_risk_per_contract,
+    ari_point_value,
+    ari_maximum_contracts,
+    ari_contracts,
     tvl_status,
     tvl_execution_permitted,
     tvl_blocking_rule,

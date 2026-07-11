@@ -198,3 +198,35 @@
 - [x] Critical Self Review
 - [x] EDL update
 - [x] Permanent Change Log update
+
+## Sprint 083 — Dollar-Risk Position Sizing
+
+### Pine Script (M-14 + M-15)
+- [x] Replace legacy multiplier sizing with dollar-risk formula: floor(dollar_risk / (stop_pts × point_value))
+- [x] Add ATLAS EXECUTION PROFILE Settings group to M-14 (atlas_core.pine)
+- [x] Add ATLAS EXECUTION PROFILE Settings group to M-15 (atlas_observability_webhook.pine)
+- [x] Add chart safety banner to M-14 (permanent label, teal=PAPER, red=ARMED, yellow=DISARMED)
+- [x] Add arming safety gate (i_execution_armed) for non-PAPER modes
+- [x] Add RISK_TOO_SMALL_FOR_ONE_CONTRACT rejection path
+- [x] Add profile fields to M-15 ARI JSON payload (13 new fields)
+- [x] Fix double-rejection-increment bug in M-14 ARI block
+- [x] Fix duplicate t_preview var declaration in M-15
+- [x] Generate four profile reference builds in /pine-script/profiles/
+
+### Atlas Nexus
+- [x] Add 13 profile/sizing fields to normalisePayload() in nexusRoutes.ts
+- [x] Build Execution Profiles page (/execution-profiles)
+- [x] Add "Exec Profiles" nav item to EXECUTION group in OrionLayout
+- [x] Register /execution-profiles route in App.tsx
+
+### Documentation
+- [x] Sprint 083 engineering doc with contract-sizing test matrix (sprint-083-dollar-risk-position-sizing.md)
+- [x] Dry-run validation plan for Sunday market open
+
+### Validation
+- [ ] Live dry-run: formula fires on first signal (Sunday 6PM ET)
+- [ ] Verify stop_distance_points in webhook matches chart stop ±0.25 pts
+- [ ] Verify estimated_risk ≤ configured_risk on every bar
+- [ ] Verify profile_id = "ATLAS_PAPER_MNQ" in payload
+- [ ] Verify chart banner visible with correct values
+- [ ] Verify Nexus Exec Profiles page shows live sizing data
