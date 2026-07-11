@@ -1,7 +1,85 @@
 import { useNexusSSE } from "@/hooks/useNexusSSE";
 import { trpc } from "@/lib/trpc";
 import { OverviewStrip, HudPanel, DataRow, StateBadge, SignalBadge, ApprovalBadge, PassFailBadge, PageWrapper, fmt, fmtDateTime, fmtTime } from "@/components/HudComponents";
+import PipelineOrb from "@/components/PipelineOrb";
 import { useEffect, useState } from "react";
+
+// ─── Pipeline Orb Live Wrapper ───────────────────────────────────────────────
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function PipelineOrbLive({ payload }: { payload: any }) {
+  // Derive stagesPassed from pipeline payload fields.
+  // Strategy: walk forward through stages using presence of key fields.
+  // Only mark a stage as FAILED when the pipeline explicitly reports a rejection
+  // (e.g. ari_rejection, tvl_status=FAIL, ade_decision=NO_TRADE).
+  // Missing fields from old/partial payloads are treated as "not yet reached" (idle).
+  const p = payload;
+  let stages = 0;
+  let failed: number | null = null;
+
+  if (p) {
+    // Stage 1: Config — payload received at all
+    stages = 1;
+
+    // Stage 2: State — master_state present
+    if (p.master_state) stages = 2;
+
+    // Stage 3: Market — session or market_regime present
+    if (stages >= 2 && (p.market_regime || p.session)) stages = 3;
+
+    // Stage 4-6: Model evaluations — any model signal present
+    if (stages >= 3 && p.a1_signal !== undefined) stages = 4;
+    if (stages >= 4 && p.a3_signal !== undefined) stages = 5;
+    if (stages >= 5 && p.b1_signal !== undefined) stages = 6;
+
+    // Stage 7: ADE — ade_decision present
+    if (stages >= 6 && p.ade_decision) stages = 7;
+
+    // Stage 8: ARI — ari_approved present (even if false = ARI ran and rejected)
+    if (stages >= 7 && p.ari_approved !== undefined) stages = 8;
+
+    // Stage 9: TVL — tvl_status present
+    if (stages >= 8 && p.tvl_status) stages = 9;
+
+    // Stage 10: Execution — ari_contracts present
+    if (stages >= 9 && p.ari_contracts !== undefined) stages = 10;
+
+    // Stage 11: Observatory — pipeline_run_id present
+    if (stages >= 10 && p.pipeline_run_id) stages = 11;
+
+    // Stage 12: Brain — brain_view present (even empty string counts)
+    if (stages >= 11 && p.brain_view !== undefined) stages = 12;
+
+    // Stage 13: Mission Control — bar_time present
+    if (stages >= 12 && p.bar_time) stages = 13;
+
+    // Stage 14: Heartbeat — always passes if we got this far
+    if (stages >= 13) stages = 14;
+
+    // Detect explicit failures
+    // ARI rejection: stage 8 ran but rejected
+    if (stages >= 8 && p.ari_approved === false && p.ari_rejection) failed = 8;
+    // TVL failure: stage 9 ran but failed
+    if (failed === null && stages >= 9 && p.tvl_status === "FAIL") failed = 9;
+    // ADE no-trade: stage 7 ran but no candidate
+    if (failed === null && stages >= 7 && p.ade_decision === "NO_TRADE") failed = 7;
+  }
+
+  const tradeApproved =
+    p?.ari_approved === true &&
+    p?.tvl_status === "PASS" &&
+    (p?.ade_decision === "LONG" || p?.ade_decision === "SHORT");
+
+  return (
+    <PipelineOrb
+      stagesPassed={stages}
+      failedStage={failed}
+      running={stages > 0 && stages < 14 && failed === null}
+      tradeApproved={tradeApproved}
+      lastRun={p?.pipeline_run_id ?? null}
+      size={480}
+    />
+  );
+}
 
 function ArcReactor({ size = 80 }: { size?: number }) {
   return (
@@ -122,6 +200,13 @@ export default function Home() {
                 <div><span className="text-[var(--arc-blue)]">VWAP</span> {fmt(p.vwap)}</div>
               </div>
             )}
+          </div>
+        </div>
+        {/* Pipeline Orb — full width */}
+        <div className="hud-panel hud-panel-br flex flex-col" style={{ gridColumn: "1 / 4" }}>
+          <div className="hud-header"><span className="hud-header-dot" />ORION Pipeline — 14-Stage Execution Sequence</div>
+          <div className="flex flex-col items-center py-6 gap-2">
+            <PipelineOrbLive payload={p} />
           </div>
         </div>
         {/* Paper Trading Summary */}
