@@ -119,24 +119,31 @@ function EdgeAttributionPanel({ ear }: { ear: AdeV2EAR }) {
 }
 
 function ModelRankingPanel({ p }: { p: any }) {
+  // Prefer ADE v2 model ranking data (norm_score 0-100) over legacy v1 data
   const models = [
-    { id: "A1", data: p.model_a1 },
-    { id: "A3", data: p.model_a3 },
-    { id: "B1", data: p.model_b1 },
+    { id: "A1", data: p.model_a1_v2 ?? p.model_a1 },
+    { id: "A3", data: p.model_a3_v2 ?? p.model_a3 },
+    { id: "B1", data: p.model_b1_v2 ?? p.model_b1 },
   ].filter(m => m.data);
 
-  // Sort by edge_score descending
-  const ranked = [...models].sort((a, b) => (b.data?.edge_score ?? 0) - (a.data?.edge_score ?? 0));
+  // Sort by norm_score (v2) or edge_score*100 (v1) descending
+  const ranked = [...models].sort((a, b) => {
+    const scoreA = a.data?.norm_score ?? (a.data?.edge_score ?? 0) * 100;
+    const scoreB = b.data?.norm_score ?? (b.data?.edge_score ?? 0) * 100;
+    return scoreB - scoreA;
+  });
   const winner = p.ade_candidate_model;
+  const threshold = p.ade_v2 ? 60 : 60; // ADE v2 threshold is 60
 
   return (
     <div className="space-y-2">
       {ranked.map(({ id, data }, idx) => {
         const isWinner = id === winner;
-        const score = data?.edge_score ?? 0;
-        const normScore = Math.min(100, score * 100);
-        const confidence = score >= 0.8 ? "HIGH" : score >= 0.6 ? "MEDIUM" : "LOW";
+        // Use norm_score (0-100) if available, else fall back to edge_score*100
+        const normScore = data?.norm_score ?? (data?.edge_score ?? 0) * 100;
+        const confidence = data?.confidence ?? (normScore >= 80 ? "HIGH" : normScore >= 65 ? "MEDIUM" : "LOW");
         const confColor = confidence === "HIGH" ? "var(--arc-cyan)" : confidence === "MEDIUM" ? "oklch(0.8 0.18 80)" : "oklch(0.65 0.18 30)";
+        const aboveThreshold = normScore >= threshold;
         return (
           <div key={id} className="p-3 rounded" style={{
             background: isWinner ? "oklch(0.12 0.06 220)" : "oklch(0.09 0.03 220)",
@@ -147,17 +154,23 @@ function ModelRankingPanel({ p }: { p: any }) {
               <div className="text-xs font-bold font-['Orbitron'] w-5 text-center" style={{ color: "var(--color-muted-foreground)" }}>#{idx + 1}</div>
               <div className="text-sm font-bold font-['Orbitron']" style={{ color: isWinner ? "var(--arc-cyan)" : "var(--arc-blue)" }}>{id}</div>
               {isWinner && <span className="text-[8px] tracking-widest px-1.5 py-0.5 rounded" style={{ background: "oklch(0.65 0.22 220 / 0.2)", color: "var(--arc-cyan)", border: "1px solid var(--arc-cyan)" }}>SELECTED</span>}
+              {!isWinner && !aboveThreshold && <span className="text-[8px] tracking-widest px-1.5 py-0.5 rounded" style={{ background: "oklch(0.15 0.05 30 / 0.3)", color: "oklch(0.65 0.18 30)", border: "1px solid oklch(0.65 0.18 30 / 0.4)" }}>BELOW THRESHOLD</span>}
               <div className="flex-1" />
               <div className="text-xs font-bold font-['Orbitron']" style={{ color: confColor }}>{confidence}</div>
-              <div className="text-sm font-bold font-['Orbitron']" style={{ color: "var(--arc-cyan)" }}>{(score * 100).toFixed(1)}</div>
+              <div className="text-sm font-bold font-['Orbitron']" style={{ color: isWinner ? "var(--arc-cyan)" : "var(--color-foreground)" }}>{normScore.toFixed(1)}</div>
             </div>
             <div className="w-full h-1.5 rounded-full bg-[oklch(0.15_0.05_220)]">
-              <div className="h-full rounded-full transition-all duration-700"
-                style={{ width: `${normScore}%`, background: isWinner ? "linear-gradient(90deg, var(--arc-blue), var(--arc-cyan))" : "oklch(0.45 0.1 220)", boxShadow: isWinner ? "0 0 6px var(--arc-cyan)" : "none" }} />
+              {/* Threshold marker at 60% */}
+              <div className="relative w-full h-full">
+                <div className="h-full rounded-full transition-all duration-700"
+                  style={{ width: `${Math.min(100, normScore)}%`, background: isWinner ? "linear-gradient(90deg, var(--arc-blue), var(--arc-cyan))" : "oklch(0.45 0.1 220)", boxShadow: isWinner ? "0 0 6px var(--arc-cyan)" : "none" }} />
+              </div>
             </div>
             <div className="flex items-center gap-4 mt-2">
               <span className="text-[9px]" style={{ color: "var(--color-muted-foreground)" }}>Signal: <span style={{ color: "var(--arc-blue)" }}>{data?.signal_direction ?? "—"}</span></span>
-              <span className="text-[9px]" style={{ color: "var(--color-muted-foreground)" }}>Rank: <span style={{ color: "var(--arc-blue)" }}>R{data?.rank ?? "—"}</span></span>
+              {data?.raw_score !== undefined && (
+                <span className="text-[9px]" style={{ color: "var(--color-muted-foreground)" }}>Raw: <span style={{ color: "var(--arc-blue)" }}>{data.raw_score.toFixed(0)}/{data.raw_max?.toFixed(0) ?? "—"}</span></span>
+              )}
             </div>
           </div>
         );

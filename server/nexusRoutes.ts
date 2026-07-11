@@ -87,12 +87,67 @@ function normalisePayload(body: Record<string, unknown>): Record<string, unknown
   // master_state: use market_state.session (the Pine Script's session name)
   const master_state = String(ms?.session ?? body.master_state ?? "UNKNOWN");
 
-  // Flatten ADE fields
-  const ade_decision       = ade?.has_candidate ? String(ade?.candidate_model ?? "NO_TRADE") : "NO_TRADE";
+  // Flatten ADE fields (supports ADE v1 and v2 payload structures)
+  const ade_decision        = ade?.has_candidate ? String(ade?.candidate_model ?? "NO_TRADE") : "NO_TRADE";
   const ade_candidate_model = String(ade?.candidate_model ?? null);
-  const ade_edge_score     = Number(ade?.winning_edge_score ?? 0);
-  const ade_confidence     = String(ade?.confidence_level ?? null);
-  const ade_rank_order     = String(ade?.ranking_order ?? null);
+  const ade_version         = String(ade?.ade_version ?? "1.0.0");
+  // ADE v2 uses norm_score (0-100); v1 used winning_edge_score (0-1)
+  const ade_norm_score      = Number(ade?.norm_score ?? (Number(ade?.winning_edge_score ?? 0) * 100));
+  const ade_raw_score       = Number(ade?.raw_score ?? 0);
+  const ade_raw_max         = Number(ade?.raw_max ?? 0);
+  const ade_edge_score      = ade_norm_score / 100; // keep legacy 0-1 scale for backward compat
+  const ade_confidence      = String(ade?.confidence_level ?? null);
+  const ade_rank_order      = String(ade?.ranking_order ?? ade?.tie_break_result ?? null);
+  const ade_candidate_status    = String(ade?.candidate_status ?? (ade?.has_candidate ? "SELECTED" : "NO_TRADE"));
+  const ade_candidate_direction = Number(ade?.candidate_direction ?? 0);
+  const ade_tie_break_result    = String(ade?.tie_break_result ?? "NONE");
+  // Extract model_ranking EAR data from ade_decision.model_ranking (ADE v2)
+  const ade_model_ranking = ade?.model_ranking as Record<string, unknown> | undefined;
+  // Build ade_v2 EAR for the winning model
+  const winnerKey = ade_candidate_model?.toLowerCase() as string | undefined;
+  const winnerEAR = (winnerKey && ade_model_ranking) ? ade_model_ranking[winnerKey] as Record<string, unknown> | undefined : undefined;
+  const ade_v2 = winnerEAR ? {
+    version:         ade_version,
+    model:           ade_candidate_model,
+    direction:       ade_candidate_direction === 1 ? "LONG" : ade_candidate_direction === -1 ? "SHORT" : "FLAT",
+    raw_score:       Number(winnerEAR.raw ?? ade_raw_score),
+    raw_max:         Number(winnerEAR.max ?? ade_raw_max),
+    norm_score:      Number(winnerEAR.norm ?? ade_norm_score),
+    confidence_tier: ade_confidence,
+    d_ms01: Number(winnerEAR.ms01 ?? 0),
+    d_ms02: Number(winnerEAR.ms02 ?? 0),
+    d_ms03: Number(winnerEAR.ms03 ?? 0),
+    d_ms04: Number(winnerEAR.ms04 ?? 0),
+    d_ms05: Number(winnerEAR.ms05 ?? 0),
+    d_eq01: Number(winnerEAR.eq01 ?? 0),
+    d_eq02: Number(winnerEAR.eq02 ?? 0),
+    d_eq03: Number(winnerEAR.eq03 ?? 0),
+    d_tc01: Number(winnerEAR.tc01 ?? 0),
+    d_tc02: Number(winnerEAR.tc02 ?? 0),
+    d_si01: Number(winnerEAR.si01 ?? 0),
+    d_si02: typeof winnerEAR.si02 === "number" ? winnerEAR.si02 : 0,
+    d_si03: Number(winnerEAR.si03 ?? 0),
+    d_cr01: Number(winnerEAR.cr01 ?? 0),
+    d_cr02: Number(winnerEAR.cr02 ?? 0),
+  } : null;
+  // Build per-model v2 ranking from model_ranking EAR
+  const buildModelRankV2 = (key: string, rank: number) => {
+    const m = ade_model_ranking?.[key] as Record<string, unknown> | undefined;
+    if (!m) return null;
+    const norm = Number(m.norm ?? 0);
+    return {
+      rank,
+      signal_direction: Number(m.dir ?? 0) === 1 ? "LONG" : Number(m.dir ?? 0) === -1 ? "SHORT" : "NEUTRAL",
+      edge_score: norm / 100,
+      norm_score: norm,
+      raw_score: Number(m.raw ?? 0),
+      raw_max: Number(m.max ?? 0),
+      confidence: norm >= 80 ? "HIGH" : norm >= 65 ? "MEDIUM" : "LOW",
+    };
+  };
+  const model_a1_v2 = buildModelRankV2("a1", 1);
+  const model_a3_v2 = buildModelRankV2("a3", 2);
+  const model_b1_v2 = buildModelRankV2("b1", 3);
 
   // Flatten ARI fields
   const ari_approved       = ari?.approved === true ? "APPROVED" : "REJECTED";
@@ -176,8 +231,19 @@ function normalisePayload(body: Record<string, unknown>): Record<string, unknown
     ade_decision,
     ade_candidate_model,
     ade_edge_score,
+    ade_norm_score,
+    ade_raw_score,
+    ade_raw_max,
     ade_confidence,
     ade_rank_order,
+    ade_candidate_status,
+    ade_candidate_direction,
+    ade_tie_break_result,
+    ade_version,
+    ade_v2,
+    model_a1_v2,
+    model_a3_v2,
+    model_b1_v2,
     ari_approved,
     ari_approved_risk,
     ari_daily_pnl,
@@ -317,27 +383,55 @@ async function processPaperTrading(payload: Record<string, unknown>): Promise<vo
         const mfe = Math.max(Number(openTrade.mfe ?? 0), pnl);
         const mae = Math.min(Number(openTrade.mae ?? 0), pnl);
 
-        // Check for stop hit
-        const stop = openTrade.stop ? Number(openTrade.stop) : null;
-        const target = openTrade.target ? Number(openTrade.target) : null;
+        // ── Primary close detection: M-15 Pine Script sends status="ARCHIVED" on close
+        // This is the authoritative close signal from TradingView.
+        const posStatus = String(pos?.status ?? "");
+        const posExitReason = String(pos?.exit_reason ?? "");
+        const posCurrentPnl = Number(pos?.current_pnl ?? null);
+        const posCurrentR = Number(pos?.current_r ?? null);
 
         let shouldClose = false;
         let exitReason = "";
         let exitPrice = currentPrice;
+        let finalPnlOverride: number | null = null;
+        let finalROverride: number | null = null;
 
-        if (stop !== null) {
-          if (direction === "LONG" && currentPrice <= stop) { shouldClose = true; exitReason = "STOP_HIT"; exitPrice = stop; }
-          if (direction === "SHORT" && currentPrice >= stop) { shouldClose = true; exitReason = "STOP_HIT"; exitPrice = stop; }
+        // Primary: Pine Script reports position as ARCHIVED with an exit reason
+        if (posStatus === "ARCHIVED" && posExitReason && posExitReason !== "NONE" && posExitReason !== "null") {
+          shouldClose = true;
+          exitReason = posExitReason; // "TARGET_HIT" or "STOP_HIT"
+          // Use Pine Script's authoritative P&L if available
+          if (!isNaN(posCurrentPnl) && posCurrentPnl !== 0) finalPnlOverride = posCurrentPnl;
+          if (!isNaN(posCurrentR) && posCurrentR !== 0) finalROverride = posCurrentR;
+          // Estimate exit price from stop/target
+          const stop = openTrade.stop ? Number(openTrade.stop) : null;
+          const target = openTrade.target ? Number(openTrade.target) : null;
+          if (exitReason === "TARGET_HIT" && target !== null) exitPrice = target;
+          else if (exitReason === "STOP_HIT" && stop !== null) exitPrice = stop;
         }
-        if (target !== null && !shouldClose) {
-          if (direction === "LONG" && currentPrice >= target) { shouldClose = true; exitReason = "TARGET_HIT"; exitPrice = target; }
-          if (direction === "SHORT" && currentPrice <= target) { shouldClose = true; exitReason = "TARGET_HIT"; exitPrice = target; }
+
+        // Fallback: price-based detection (for test webhooks and edge cases)
+        if (!shouldClose) {
+          const stop = openTrade.stop ? Number(openTrade.stop) : null;
+          const target = openTrade.target ? Number(openTrade.target) : null;
+
+          if (stop !== null) {
+            if (direction === "LONG" && currentPrice <= stop) { shouldClose = true; exitReason = "STOP_HIT"; exitPrice = stop; }
+            if (direction === "SHORT" && currentPrice >= stop) { shouldClose = true; exitReason = "STOP_HIT"; exitPrice = stop; }
+          }
+          if (target !== null && !shouldClose) {
+            if (direction === "LONG" && currentPrice >= target) { shouldClose = true; exitReason = "TARGET_HIT"; exitPrice = target; }
+            if (direction === "SHORT" && currentPrice <= target) { shouldClose = true; exitReason = "TARGET_HIT"; exitPrice = target; }
+          }
         }
 
         if (shouldClose) {
           const finalPriceDiff = direction === "LONG" ? exitPrice - entry : entry - exitPrice;
-          const finalPnl = finalPriceDiff * 4 * tickValue * contracts;
-          const finalR = riskDollars > 0 ? finalPnl / riskDollars : 0;
+          const calcPnl = finalPriceDiff * 4 * tickValue * contracts;
+          // Use Pine Script's authoritative P&L if available, otherwise use calculated
+          const finalPnl = finalPnlOverride !== null ? finalPnlOverride : calcPnl;
+          const calcR = riskDollars > 0 ? calcPnl / riskDollars : 0;
+          const finalR = finalROverride !== null ? finalROverride : calcR;
           const closedAt = new Date();
           const durationMs = closedAt.getTime() - openTrade.openedAt.getTime();
 
@@ -428,14 +522,17 @@ async function processPaperTrading(payload: Record<string, unknown>): Promise<vo
     // ── Open new trade if pipeline approves ───────────────────────────────────
     if (adeDecision !== "NO_TRADE" && ariApproval === "APPROVED" && tvlStatus === "PASS") {
       const candidateModel = String(ade?.candidate_model ?? "A1");
-      const direction = adeDecision as "LONG" | "SHORT";
+      // Direction: from ade_candidate_direction (integer 1=LONG/-1=SHORT) or position_state.direction
+      const dirInt = Number(payload.ade_candidate_direction ?? pos?.direction ?? 0);
+      const direction: "LONG" | "SHORT" = dirInt === -1 ? "SHORT" : "LONG";
       const edgeScore = Number(ade?.edge_score ?? 0);
       const approvedRisk = Number(ari?.approved_risk ?? 100);
 
-      // Extract entry/stop/target from position_state or ARI
-      const entry = Number(pos?.entry ?? mkt?.vwap ?? 0);
-      const stop = Number(pos?.stop ?? ari?.stop_price ?? 0);
-      const target = Number(pos?.target ?? ari?.target_price ?? 0);
+      // Extract entry/stop/target from position_state (M-15 uses entry_price/stop_price/target_price)
+      // Fall back to VWAP for entry if position_state fields are not yet populated
+      const entry = Number(pos?.entry_price ?? pos?.entry ?? mkt?.vwap ?? 0);
+      const stop = Number(pos?.stop_price ?? pos?.stop ?? ari?.stop_price ?? 0);
+      const target = Number(pos?.target_price ?? pos?.target ?? ari?.target_price ?? 0);
 
       if (entry > 0) {
         const tradeId = nanoid();

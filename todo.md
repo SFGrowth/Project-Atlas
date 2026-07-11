@@ -143,3 +143,58 @@
 - [x] Python validation: all 6 checks pass (raw maxima, normalisation, confidence tiers, ARI/TVL compat, ranking, certification)
 - [x] Run full test suite — 17/17 tests pass
 - [x] TypeScript compilation clean (0 errors)
+
+## Sprint 082 — ADE v2 Live Data Activation & Validation
+
+### Phase 1 — TradingView M-15 Update
+- [x] Deliver updated M-15 script file to user for TradingView paste
+- [x] Verify M-15 alert is active on ATLAS chart (MNQ1! 5m, cDPu6HGG)
+- [x] Confirm webhook URL and secret are preserved
+
+### Phase 2 — ADE v2 Payload Verification
+- [x] Verify all 17 dimensions present in ade_v2 object (NOT_APPLICABLE / RESEARCH_REQUIRED for uncalibrated dims)
+- [x] Verify schema_version, ade_version, candidate_model, direction, raw_score, raw_max, norm_score, threshold, candidate_status, ranking, tie_break, rationale all present
+- [x] Send test webhook with full ade_v2 payload and confirm DB storage
+
+### Phase 3 — Live Data Wiring (ADE page)
+- [x] Remove all placeholder/mock data from ADE.tsx
+- [x] Wire Edge Attribution Panel to trpc.nexus.latestReport
+- [x] Wire Model Ranking to trpc.nexus.latestReport
+- [x] Wire candidate status, norm score, raw score, dimension bars, contributors, rationale, ARI, TVL, timestamp, direction
+
+### Phase 4 — Model Ranking Validation
+- [x] Display all evaluated models per bar with full fields
+- [x] Verify ranking logic: eligible only, highest norm wins, threshold enforced, tie-break deterministic, exactly one candidate
+
+### Phase 5 — Edge Attribution Validation (50-bar reconciliation)
+- [ ] Reconcile Pine vs webhook vs DB vs frontend for all 17 dimensions across 50+ bars (PENDING — awaiting Sunday market open)
+- [ ] 100% agreement required
+
+### Phase 6 — Certification Page Wiring
+- [x] Wire Certification page to live governance data
+- [x] Set ADE v2 status to PAPER VALIDATION (not Production Certified)
+- [x] Display all required version/build/validation fields
+
+### Phase 7 — Self-Learning Record Validation
+- [x] Confirm ade_trade_records insertion on paper trade close (one record per closed trade) — FIXED 3 bugs
+- [x] Verify deduplication, all required fields, no contamination from replayed events
+
+### Phase 8 — Data Freshness States
+- [x] ADE page shows LIVE / STALE / DEGRADED / OFFLINE / DATA INVALID states
+- [x] No placeholder data — show DATA UNAVAILABLE when data absent
+
+### Phase 9 — Validation Window
+- [ ] 50 consecutive confirmed 5-min bars reconciled (after Sunday market open)
+
+### Phase 10 — Engineering Documentation
+- [x] ADE v2 live activation report (sprint-082-ade-v2-live-data-activation.md)
+- [x] TradingView M-15 deployment record
+- [x] Webhook schema verification report
+- [ ] 50-bar Edge Attribution reconciliation table (PENDING — awaiting Sunday market open)
+- [x] Model Ranking verification report
+- [x] Certification status report
+- [x] Self-Learning Record integrity report
+- [x] Frontend field mapping report
+- [x] Critical Self Review
+- [x] EDL update
+- [x] Permanent Change Log update

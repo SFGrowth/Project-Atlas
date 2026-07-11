@@ -41,12 +41,22 @@ interface TradeRecord {
 
 // ─── Certification Status Card ────────────────────────────────────────────────
 
-function CertCard({ model, threshold, description, rawMax }: {
+function CertCard({ model, threshold, description, rawMax, tradeCount }: {
   model: string;
   threshold: number;
   description: string;
   rawMax: number;
+  tradeCount: number;
 }) {
+  // Dynamic certification status based on trade accumulation
+  const certStatus = tradeCount >= 50
+    ? { label: "SLF REPORT READY", cls: "status-live" }
+    : tradeCount >= 25
+    ? { label: "PAPER VALIDATION — 50%", cls: "status-warn" }
+    : tradeCount > 0
+    ? { label: "PAPER VALIDATION — ACTIVE", cls: "status-warn" }
+    : { label: "PAPER VALIDATION — AWAITING", cls: "status-inactive" };
+
   return (
     <div className="hud-panel hud-panel-br p-4">
       <div className="flex items-center justify-between mb-3">
@@ -58,7 +68,8 @@ function CertCard({ model, threshold, description, rawMax }: {
         <DataRow label="Promotion Threshold" value={<span className="data-value text-[var(--stark-gold)]">{threshold} / 100 norm pts</span>} />
         <DataRow label="Raw Score Max" value={<span className="data-value">{rawMax} pts</span>} />
         <DataRow label="SLF Trigger" value={<span className="data-value text-[10px]">50 closed trades</span>} />
-        <DataRow label="Certification Status" value={<span className="status-badge status-live">ACTIVE — PAPER</span>} />
+        <DataRow label="Paper Trades" value={<span className="data-value text-[var(--arc-cyan)]">{tradeCount}</span>} />
+        <DataRow label="Certification Status" value={<span className={`status-badge ${certStatus.cls}`}>{certStatus.label}</span>} />
       </div>
     </div>
   );
@@ -143,18 +154,21 @@ export default function CertificationPage() {
             threshold={60}
             description="Depth-constrained pullback. ADX < 30, NY AM session 09:30–11:00 ET. 1:2 RR. Raw max 144 pts. Validated PF 1.387 (N=286)."
             rawMax={144}
+            tradeCount={a1Count}
           />
           <CertCard
             model="MODEL A3"
             threshold={60}
             description="Overnight compression breakout. 20:00–06:00 ET. 1:2.5 RR. Compression quality dimension active (MS-05). Raw max 141 pts. Validated PF 1.633 (N=60)."
             rawMax={141}
+            tradeCount={a3Count}
           />
           <CertCard
             model="MODEL B1"
             threshold={60}
             description="Flag continuation. ADX > 45, Late PM 14:00–16:00 ET. 1:2 RR. Raw max 129 pts. Validated PF 1.354 (N=252)."
             rawMax={129}
+            tradeCount={b1Count}
           />
         </div>
 

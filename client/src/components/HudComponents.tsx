@@ -163,7 +163,12 @@ export function OverviewStrip({ payload, sseStatus, backendStatus, dataFreshness
 }) {
   const sseClass = sseStatus === "CONNECTED" ? "status-live" : sseStatus === "ERROR" ? "status-error" : "status-warn";
   const beClass = backendStatus === "OK" ? "status-ok" : backendStatus === "DEGRADED" ? "status-warn" : "status-error";
-  const dfClass = dataFreshness === "LIVE" ? "status-live" : dataFreshness === "STALE" ? "status-stale" : "status-inactive";
+  const dfClass = dataFreshness === "LIVE" ? "status-live"
+    : dataFreshness === "STALE" ? "status-stale"
+    : dataFreshness === "DEGRADED" ? "status-warn"
+    : dataFreshness === "OFFLINE" ? "status-error"
+    : dataFreshness === "DATA_INVALID" ? "status-error"
+    : "status-inactive";
 
   return (
     <div className="hud-panel hex-bg" style={{ borderBottom: "2px solid var(--arc-blue)", boxShadow: "0 4px 24px oklch(0.72 0.22 210 / 0.2)", borderRadius: 0 }}>
