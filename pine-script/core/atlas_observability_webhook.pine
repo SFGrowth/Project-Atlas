@@ -69,7 +69,7 @@ string i_profile_name      = input.string("ATLAS PAPER — MNQ",  title="Profile
 string i_profile_id        = input.string("ATLAS_PAPER_MNQ",     title="Profile ID (match M-14)",          group=GRP_KERN)
 string i_execution_mode    = input.string("PAPER",               title="Execution Mode (match M-14)",      group=GRP_KERN, options=["PAPER","EVALUATION","FUNDED","LIVE"])
 string i_account_type      = input.string("PAPER",               title="Account Classification (match M-14)", group=GRP_KERN, options=["PAPER","PROP","LIVE"])
-float  i_dollar_risk       = input.float(100.0,                  title="Dollar Risk Per Trade (match M-14)",group=GRP_KERN, minval=10.0, step=50.0)
+float  i_dollar_risk       = input.float(800.0,                  title="Dollar Risk Per Trade (match M-14)",group=GRP_KERN, minval=10.0, step=50.0)
 float  i_point_value       = input.float(2.0,                    title="Point Value (match M-14)",          group=GRP_KERN, minval=0.5, step=0.5)
 int    i_max_contracts     = input.int(5,                        title="Max Contracts (match M-14)",        group=GRP_KERN, minval=1, maxval=20)
 float  i_daily_loss_limit  = input.float(-500.0,                 title="Daily Loss Limit (match M-14)",     group=GRP_KERN, maxval=-10.0)
