@@ -108,28 +108,40 @@ export default function PipelineOrb({
   // Each orb tries to escape outward on a unique path but is pulled back.
   // The "escape" is a large-amplitude slow drift; the tether creates a
   // visible stretch effect by keeping the arc curved toward the orb.
-  const time = tick * 0.007;
+  const time = tick * 0.022; // faster tick so motion is always visible
   const nodes = STAGES.map((stage, i) => {
     const baseAngle = (i / STAGES.length) * Math.PI * 2 - Math.PI / 2;
 
-    // Each orb has its own slow escape trajectory — large amplitude, slow frequency
-    // so the motion reads clearly as "trying to pull away"
-    const escapeFreqR = 0.055 + sr(i * 5) * 0.045;   // very slow radial breath
-    const escapePhR   = sr(i * 7) * Math.PI * 2;
-    const escapeFreqA = 0.040 + sr(i * 9) * 0.035;   // very slow angular wander
-    const escapePhA   = sr(i * 11) * Math.PI * 2;
+    // Each orb moves continuously on its own path — never pauses
+    // Multiple overlapping sine waves so motion never looks periodic/frozen
+    const freqR1 = 0.28 + sr(i * 5) * 0.22;
+    const freqR2 = 0.41 + sr(i * 6) * 0.19;
+    const phR1   = sr(i * 7) * Math.PI * 2;
+    const phR2   = sr(i * 8) * Math.PI * 2;
 
-    // Radial: swings between 0.72× and 1.28× orbit radius — a big visible pull
-    const rBase = orbitR * (0.88 + sr(i * 3) * 0.24);
-    const r = rBase + Math.sin(time * escapeFreqR + escapePhR) * orbitR * 0.28;
+    const freqA1 = 0.19 + sr(i * 9) * 0.17;
+    const freqA2 = 0.33 + sr(i * 10) * 0.14;
+    const phA1   = sr(i * 11) * Math.PI * 2;
+    const phA2   = sr(i * 12) * Math.PI * 2;
 
-    // Angular: wanders ±22° around base angle
-    const a = baseAngle + Math.sin(time * escapeFreqA + escapePhA) * 0.38;
+    // Radial: two overlapping waves — always in motion, never settles
+    const rBase = orbitR * (0.82 + sr(i * 3) * 0.26);
+    const r = rBase
+      + Math.sin(time * freqR1 + phR1) * orbitR * 0.20
+      + Math.sin(time * freqR2 + phR2) * orbitR * 0.10;
 
-    // Bob: slow, large vertical float — adds to the "drifting in space" feel
-    const bobFreq  = 0.060 + sr(i * 13) * 0.040;
-    const bobPhase = sr(i * 17) * Math.PI * 2;
-    const bob = Math.sin(time * bobFreq + bobPhase) * nodeR * 0.55;
+    // Angular: two overlapping waves — orb wanders continuously
+    const a = baseAngle
+      + Math.sin(time * freqA1 + phA1) * 0.30
+      + Math.sin(time * freqA2 + phA2) * 0.15;
+
+    // Bob: two overlapping vertical waves
+    const bobFreq1 = 0.22 + sr(i * 13) * 0.18;
+    const bobFreq2 = 0.37 + sr(i * 14) * 0.15;
+    const bobPh1   = sr(i * 17) * Math.PI * 2;
+    const bobPh2   = sr(i * 18) * Math.PI * 2;
+    const bob = Math.sin(time * bobFreq1 + bobPh1) * nodeR * 0.50
+              + Math.sin(time * bobFreq2 + bobPh2) * nodeR * 0.25;
 
     return {
       ...stage,
