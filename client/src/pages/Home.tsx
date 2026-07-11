@@ -24,6 +24,9 @@ export default function Home() {
   const { sseStatus, backendStatus, dataFreshness, latestReport } = useNexusSSE();
   const { data: stats } = trpc.nexus.stats.useQuery(undefined, { refetchInterval: 30000 });
   const { data: recentTrades } = trpc.paper.recentTrades.useQuery({ limit: 5 });
+  // Fetch latest report via tRPC on mount so the dashboard shows data immediately
+  // (SSE catchup is async and may arrive after first render)
+  const { data: initialReport } = trpc.nexus.latestReport.useQuery(undefined, { refetchInterval: 30000 });
   const [tick, setTick] = useState(0);
 
   useEffect(() => {
@@ -36,7 +39,9 @@ export default function Home() {
   const timeStr = now.toLocaleTimeString("en-US", { hour12: false, hour: "2-digit", minute: "2-digit", second: "2-digit", timeZone: NY_TZ });
   const dateStr = now.toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "2-digit", timeZone: NY_TZ });
 
-  const p = latestReport?.payload ?? null;
+  // SSE latestReport takes priority (live updates); fall back to tRPC-fetched initial report
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const p = latestReport?.payload ?? (initialReport?.payload as any) ?? null;
   const reportCount = stats?.totalReports ?? 0;
 
   const closedTrades = recentTrades?.filter((t) => t.status === "CLOSED") ?? [];

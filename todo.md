@@ -86,3 +86,10 @@
 - [x] Fix all dashboard clocks and timestamps to display in New York (ET) timezone
 - [x] Vitest: 17/17 tests pass
 - [ ] Add trade entry/exit labels to M-15 Pine Script (W/L labels, no reprints, bar-close confirmed)
+
+## Sprint 079 — Pipeline Fix & Dashboard Hydration
+- [x] Root cause identified: nexusRoutes.ts validatePayload() expected flat JSON but M-15 sends nested JSON (metadata.ticker, market_state.session etc.)
+- [x] Fix: Added normalisePayload() function to nexusRoutes.ts — extracts flat fields from nested M-15 structure before validation
+- [x] Fix: Home.tsx now fetches trpc.nexus.latestReport on mount so dashboard shows data immediately (not waiting for SSE catchup)
+- [x] End-to-end test: nested Pine Script payload accepted with 201, sse_clients_reached=14, all fields normalised correctly
+- [x] All 17 vitest tests still passing after fixes

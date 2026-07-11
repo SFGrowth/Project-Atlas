@@ -55,6 +55,148 @@ function broadcastSSE(eventType: string, data: unknown): number {
   return reached;
 }
 
+// ─── Payload Normalisation ───────────────────────────────────────────────────
+// The M-15 Pine Script sends a NESTED JSON structure. This function normalises
+// it into a flat structure that the rest of the system expects.
+// It handles both the nested Pine Script format AND legacy flat test payloads.
+
+function normalisePayload(body: Record<string, unknown>): Record<string, unknown> {
+  const meta = body.metadata as Record<string, unknown> | undefined;
+  const ms   = body.market_state as Record<string, unknown> | undefined;
+  const ade  = body.ade_decision as Record<string, unknown> | undefined;
+  const ari  = body.ari_decision as Record<string, unknown> | undefined;
+  const tvl  = body.tvl_decision as Record<string, unknown> | undefined;
+  const pos  = body.position_state as Record<string, unknown> | undefined;
+  const rsn  = body.reasoning as Record<string, unknown> | undefined;
+  const models = body.model_evaluations as Record<string, unknown> | undefined;
+
+  // If the payload is already flat (legacy test payloads), return as-is
+  const isNested = !!(meta || ms || ade || ari || tvl);
+  if (!isNested) return body;
+
+  // Derive flat required fields from nested structure
+  const symbol       = String(meta?.ticker ?? body.symbol ?? "MNQ1!");
+  const timeframe    = String(meta?.timeframe ?? body.timeframe ?? "5");
+  const event_id     = String(meta?.event_id ?? body.event_id ?? "");
+  const timestamp_utc = String(meta?.timestamp_utc ?? body.timestamp_utc ?? "");
+  const bar_time     = String(meta?.timestamp_utc ?? body.bar_time ?? timestamp_utc);
+  const bar_index    = Number(meta?.bar_index ?? body.bar_index ?? 0);
+  const chart_id     = String(meta?.chart_id ?? body.chart_id ?? "");
+  // master_state: use market_state.session (the Pine Script's session name)
+  const master_state = String(ms?.session ?? body.master_state ?? "UNKNOWN");
+
+  // Flatten ADE fields
+  const ade_decision       = ade?.has_candidate ? String(ade?.candidate_model ?? "NO_TRADE") : "NO_TRADE";
+  const ade_candidate_model = String(ade?.candidate_model ?? null);
+  const ade_edge_score     = Number(ade?.winning_edge_score ?? 0);
+  const ade_confidence     = String(ade?.confidence_level ?? null);
+  const ade_rank_order     = String(ade?.ranking_order ?? null);
+
+  // Flatten ARI fields
+  const ari_approved       = ari?.approved === true ? "APPROVED" : "REJECTED";
+  const ari_approved_risk  = Number(ari?.approved_risk ?? 0);
+  const ari_daily_pnl      = Number(ari?.daily_pnl ?? 0);
+  const ari_drawdown       = Number(ari?.current_drawdown ?? 0);
+  const ari_consecutive_losses = Number(ari?.consecutive_losses ?? 0);
+  const ari_consecutive_wins   = Number(ari?.consecutive_wins ?? 0);
+  const ari_circuit_breaker    = ari?.circuit_breaker === true ? "OPEN" : "CLOSED";
+
+  // Flatten TVL fields
+  const tvl_status             = String(tvl?.status ?? "FAIL");
+  const tvl_execution_permitted = tvl?.execution_permission === true || tvl?.verified === true;
+  const tvl_blocking_rule      = tvl?.blocking_rule ?? null;
+
+  // Flatten market structure fields
+  const adx   = Number(ms?.adx14 ?? 0) || null;
+  const atr   = Number(ms?.atr14 ?? ms?.atr5 ?? 0) || null;
+  const ema9  = Number(ms?.ema9 ?? 0) || null;
+  const ema21 = Number(ms?.ema21 ?? 0) || null;
+  const ema50 = Number(ms?.ema50 ?? 0) || null;
+  const vwap  = Number(ms?.vwap ?? ms?.bar_close ?? 0) || null;
+  const rsi   = Number(ms?.rsi14 ?? ms?.rsi ?? 0) || null;
+  const volume_ratio = Number(ms?.rel_vol ?? ms?.volume_ratio ?? 0) || null;
+  const trend = String(ms?.ema_structure ?? ms?.trend ?? "NEUTRAL");
+
+  // Flatten position state
+  const trade_id      = String(pos?.trade_id ?? null);
+  const entry_price   = Number(pos?.entry_price ?? 0) || null;
+  const stop_price    = Number(pos?.stop_price ?? 0) || null;
+  const target_price  = Number(pos?.target_price ?? 0) || null;
+  const unrealized_pnl = Number(pos?.current_pnl ?? 0) || null;
+  const bars_in_trade = Number(pos?.bars_in_trade ?? 0) || null;
+
+  // Flatten model evaluations
+  const a1 = models?.a1 as Record<string, unknown> | undefined;
+  const a3 = models?.a3 as Record<string, unknown> | undefined;
+  const b1 = models?.b1 as Record<string, unknown> | undefined;
+  const model_a1 = a1 ? { signal_direction: a1.direction === 1 ? "LONG" : a1.direction === -1 ? "SHORT" : "NEUTRAL", edge_score: Number(a1.reward_to_risk ?? 0), signal_basis: String(a1.signal_basis ?? ""), confidence: null } : null;
+  const model_a3 = a3 ? { signal_direction: a3.direction === 1 ? "LONG" : a3.direction === -1 ? "SHORT" : "NEUTRAL", edge_score: Number(a3.reward_to_risk ?? 0), signal_basis: String(a3.signal_basis ?? ""), confidence: null } : null;
+  const model_b1 = b1 ? { signal_direction: b1.direction === 1 ? "LONG" : b1.direction === -1 ? "SHORT" : "NEUTRAL", edge_score: Number(b1.reward_to_risk ?? 0), signal_basis: String(b1.signal_basis ?? ""), confidence: null } : null;
+
+  // Brain view from reasoning.action_summary
+  const brain_view = String(rsn?.action_summary ?? rsn?.market_state_summary ?? "");
+
+  return {
+    // Preserve original nested payload for storage
+    ...body,
+    // Flat required fields (override any existing)
+    schema_version:  String(body.schema_version ?? "1.0.0"),
+    payload_type:    String(body.payload_type ?? "OBSERVABILITY"),
+    idempotency_key: String(body.idempotency_key ?? ""),
+    pipeline_run_id: String(body.pipeline_run_id ?? ""),
+    event_id,
+    timestamp_utc,
+    bar_time,
+    bar_index,
+    chart_id,
+    symbol,
+    timeframe,
+    master_state,
+    // Flat display fields
+    trend,
+    adx,
+    atr,
+    ema9,
+    ema21,
+    ema50,
+    vwap,
+    rsi,
+    volume_ratio,
+    trade_id,
+    entry_price,
+    stop_price,
+    target_price,
+    unrealized_pnl,
+    bars_in_trade,
+    model_a1,
+    model_a3,
+    model_b1,
+    ade_decision,
+    ade_candidate_model,
+    ade_edge_score,
+    ade_confidence,
+    ade_rank_order,
+    ari_approved,
+    ari_approved_risk,
+    ari_daily_pnl,
+    ari_drawdown,
+    ari_consecutive_losses,
+    ari_consecutive_wins,
+    ari_circuit_breaker,
+    tvl_status,
+    tvl_execution_permitted,
+    tvl_blocking_rule,
+    brain_view,
+    // Nested originals kept for paper trading engine
+    ade: { decision: ade_decision, candidate_model: ade_candidate_model, edge_score: ade_edge_score },
+    ari: { approval: ari_approved, approved_risk: ari_approved_risk, circuit_breaker: ari_circuit_breaker, rejection_reason: String(ari?.rejection_reason ?? null) },
+    tvl: { status: tvl_status },
+    market_structure: { vwap, ema9, ema21, ema50, adx, atr, rsi },
+    position_state: pos,
+    atlas_brain_view: brain_view,
+  };
+}
+
 // ─── Schema Validation ────────────────────────────────────────────────────────
 
 const REQUIRED_FIELDS = [
@@ -65,7 +207,7 @@ const REQUIRED_FIELDS = [
 
 function validatePayload(body: Record<string, unknown>): string | null {
   for (const field of REQUIRED_FIELDS) {
-    if (body[field] === undefined || body[field] === null) {
+    if (body[field] === undefined || body[field] === null || body[field] === "") {
       return `Missing required field: ${field}`;
     }
   }
@@ -409,16 +551,20 @@ export function registerNexusRoutes(router: Router) {
       return;
     }
 
-    const body = req.body as Record<string, unknown>;
+    const rawBody = req.body as Record<string, unknown>;
 
-    const payloadSecret = (body.webhook_secret as string) ?? "";
+    const payloadSecret = (rawBody.webhook_secret as string) ?? "";
     if (!safeEqual(payloadSecret, expectedToken)) {
       res.status(403).json({ error: "Invalid or missing webhook_secret in payload" });
       return;
     }
 
+    // Normalise nested Pine Script payload to flat structure
+    const body = normalisePayload(rawBody);
+
     const validationError = validatePayload(body);
     if (validationError) {
+      console.warn(`[Nexus] Payload validation failed: ${validationError}`, JSON.stringify(rawBody).slice(0, 200));
       res.status(422).json({ error: validationError });
       return;
     }
