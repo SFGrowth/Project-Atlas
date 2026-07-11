@@ -112,22 +112,24 @@ export default function PipelineOrb({
   const nodes = STAGES.map((stage, i) => {
     const baseAngle = (i / STAGES.length) * Math.PI * 2 - Math.PI / 2;
 
-    // Escape attempt: orb tries to drift outward radially and angularly
-    const escapeR     = orbitR * (0.85 + sr(i * 3) * 0.30); // how far it tries to go
-    const escapeFreqR = 0.13 + sr(i * 5) * 0.16;
+    // Each orb has its own slow escape trajectory — large amplitude, slow frequency
+    // so the motion reads clearly as "trying to pull away"
+    const escapeFreqR = 0.055 + sr(i * 5) * 0.045;   // very slow radial breath
     const escapePhR   = sr(i * 7) * Math.PI * 2;
-    const escapeFreqA = 0.09 + sr(i * 9) * 0.13;
+    const escapeFreqA = 0.040 + sr(i * 9) * 0.035;   // very slow angular wander
     const escapePhA   = sr(i * 11) * Math.PI * 2;
 
-    // Radial: breathes in and out, trying to escape
-    const r = escapeR + Math.sin(time * escapeFreqR + escapePhR) * orbitR * 0.12;
-    // Angular: wanders left and right
-    const a = baseAngle + Math.sin(time * escapeFreqA + escapePhA) * 0.14;
+    // Radial: swings between 0.72× and 1.28× orbit radius — a big visible pull
+    const rBase = orbitR * (0.88 + sr(i * 3) * 0.24);
+    const r = rBase + Math.sin(time * escapeFreqR + escapePhR) * orbitR * 0.28;
 
-    // Bob: gentle vertical float
-    const bobFreq  = 0.18 + sr(i * 13) * 0.14;
+    // Angular: wanders ±22° around base angle
+    const a = baseAngle + Math.sin(time * escapeFreqA + escapePhA) * 0.38;
+
+    // Bob: slow, large vertical float — adds to the "drifting in space" feel
+    const bobFreq  = 0.060 + sr(i * 13) * 0.040;
     const bobPhase = sr(i * 17) * Math.PI * 2;
-    const bob = Math.sin(time * bobFreq + bobPhase) * nodeR * 0.20;
+    const bob = Math.sin(time * bobFreq + bobPhase) * nodeR * 0.55;
 
     return {
       ...stage,
@@ -143,17 +145,17 @@ export default function PipelineOrb({
     const dx = nx - cx, dy = ny - cy;
     const len = Math.sqrt(dx * dx + dy * dy);
     const px = -dy / len, py = dx / len; // perpendicular
-    // Jitter changes every few frames for crackling electricity effect
-    const j1 = Math.sin(tick * 0.09 + i * 2.1 + 0.0) * 12;
-    const j2 = Math.sin(tick * 0.11 + i * 3.3 + 1.0) * 9;
-    const j3 = Math.sin(tick * 0.07 + i * 1.7 + 2.0) * 7;
-    // Three control points for a more jagged lightning look
-    const c1x = cx + dx * 0.25 + px * j1;
-    const c1y = cy + dy * 0.25 + py * j1;
-    const c2x = cx + dx * 0.55 + px * j2;
-    const c2y = cy + dy * 0.55 + py * j2;
-    const c3x = cx + dx * 0.80 + px * j3;
-    const c3y = cy + dy * 0.80 + py * j3;
+    // Jitter: higher amplitude so the arc visibly bends and crackles
+    const j1 = Math.sin(tick * 0.10 + i * 2.1 + 0.0) * 18;
+    const j2 = Math.sin(tick * 0.13 + i * 3.3 + 1.0) * 14;
+    const j3 = Math.sin(tick * 0.08 + i * 1.7 + 2.0) * 10;
+    // Stretch bias: arc bows outward in the direction the orb is pulling
+    // This makes the tether look like it's under tension
+    const stretchBias = (len - orbitR) * 0.18; // positive = orb is far, arc bows more
+    const c1x = cx + dx * 0.28 + px * (j1 + stretchBias * 0.4);
+    const c1y = cy + dy * 0.28 + py * (j1 + stretchBias * 0.4);
+    const c2x = cx + dx * 0.60 + px * (j2 + stretchBias * 0.6);
+    const c2y = cy + dy * 0.60 + py * (j2 + stretchBias * 0.6);
     return `M ${cx} ${cy} C ${c1x} ${c1y}, ${c2x} ${c2y}, ${nx} ${ny}`;
   };
 
