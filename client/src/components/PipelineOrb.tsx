@@ -1,70 +1,75 @@
 /**
- * ORION PIPELINE ORB
- * 14 pipeline stages orbit the central ORION core.
+ * ORION PIPELINE ORB — v2
+ * 14 nodes float in slow orbital drift around the ORION core.
  * Electric pulse arcs connect each node to the core.
- * Nodes light up sequentially as each pipeline stage passes.
+ * Nodes light up green sequentially as pipeline stages pass.
+ * When all 14 go green: the core EXPLODES with arc-reactor energy.
  */
 import { useEffect, useRef, useState } from "react";
 
-// ─── Pipeline Stage Definitions ───────────────────────────────────────────────
+// ─── Stage Definitions ────────────────────────────────────────────────────────
 
 const STAGES = [
-  { id: 1,  label: "CONFIG",    module: "M-00", short: "CFG",  color: "#22d3ee" },
-  { id: 2,  label: "STATE",     module: "M-00", short: "STA",  color: "#22d3ee" },
-  { id: 3,  label: "MARKET",    module: "M-03", short: "MKT",  color: "#38bdf8" },
-  { id: 4,  label: "MODEL A1",  module: "M-04", short: "A1",   color: "#818cf8" },
-  { id: 5,  label: "MODEL A3",  module: "M-05", short: "A3",   color: "#818cf8" },
-  { id: 6,  label: "MODEL B1",  module: "M-06", short: "B1",   color: "#818cf8" },
-  { id: 7,  label: "ADE",       module: "M-07", short: "ADE",  color: "#f472b6" },
-  { id: 8,  label: "ARI",       module: "M-08", short: "ARI",  color: "#fb923c" },
-  { id: 9,  label: "TVL",       module: "M-09", short: "TVL",  color: "#facc15" },
-  { id: 10, label: "EXECUTION", module: "M-10", short: "EXE",  color: "#4ade80" },
-  { id: 11, label: "OBSERVE",   module: "M-11", short: "OBS",  color: "#34d399" },
-  { id: 12, label: "BRAIN",     module: "M-12", short: "BRN",  color: "#a78bfa" },
-  { id: 13, label: "MISSION",   module: "M-13", short: "MIS",  color: "#60a5fa" },
-  { id: 14, label: "HEARTBEAT", module: "M-14", short: "HBT",  color: "#22d3ee" },
+  { id: 1,  short: "CFG",  label: "CONFIG",    color: "#22d3ee" },
+  { id: 2,  short: "STA",  label: "STATE",     color: "#22d3ee" },
+  { id: 3,  short: "MKT",  label: "MARKET",    color: "#38bdf8" },
+  { id: 4,  short: "A1",   label: "MODEL A1",  color: "#818cf8" },
+  { id: 5,  short: "A3",   label: "MODEL A3",  color: "#818cf8" },
+  { id: 6,  short: "B1",   label: "MODEL B1",  color: "#818cf8" },
+  { id: 7,  short: "ADE",  label: "ADE",       color: "#f472b6" },
+  { id: 8,  short: "ARI",  label: "ARI",       color: "#fb923c" },
+  { id: 9,  short: "TVL",  label: "TVL",       color: "#facc15" },
+  { id: 10, short: "EXE",  label: "EXECUTION", color: "#4ade80" },
+  { id: 11, short: "OBS",  label: "OBSERVE",   color: "#34d399" },
+  { id: 12, short: "BRN",  label: "BRAIN",     color: "#a78bfa" },
+  { id: 13, short: "MIS",  label: "MISSION",   color: "#60a5fa" },
+  { id: 14, short: "HBT",  label: "HEARTBEAT", color: "#22d3ee" },
 ];
-
-// ─── Types ────────────────────────────────────────────────────────────────────
 
 type NodeState = "idle" | "active" | "pass" | "fail" | "blocked";
 
 interface PipelineOrbProps {
-  // How many stages have passed (0–14). Drives the green activation.
   stagesPassed?: number;
-  // Which stage index (1-based) failed, if any
   failedStage?: number | null;
-  // Whether the pipeline is currently running (triggers animation)
   running?: boolean;
-  // Whether a trade was approved at the end
   tradeApproved?: boolean;
-  // Last pipeline run timestamp
   lastRun?: string | null;
-  // Size of the component
   size?: number;
 }
 
-// ─── Electric Arc Helper ──────────────────────────────────────────────────────
+// ─── Seeded pseudo-random ─────────────────────────────────────────────────────
+function seededRand(seed: number) {
+  const x = Math.sin(seed + 1) * 43758.5453123;
+  return x - Math.floor(x);
+}
 
+// ─── Build a jittery lightning arc path ──────────────────────────────────────
 function buildArcPath(
   cx: number, cy: number,
   nx: number, ny: number,
-  seed: number
+  jitterSeed: number
 ): string {
-  const dx = nx - cx;
-  const dy = ny - cy;
-  const mx = cx + dx * 0.5;
-  const my = cy + dy * 0.5;
+  const dx = nx - cx, dy = ny - cy;
   const len = Math.sqrt(dx * dx + dy * dy);
-  const perp = { x: -dy / len, y: dx / len };
-  // Jitter control points for lightning-bolt feel
-  const j1 = (Math.sin(seed * 7.3) * 0.5 + 0.5) * 18 - 9;
-  const j2 = (Math.sin(seed * 13.7) * 0.5 + 0.5) * 14 - 7;
-  const c1x = mx + perp.x * j1 + dx * -0.15;
-  const c1y = my + perp.y * j1 + dy * -0.15;
-  const c2x = mx + perp.x * j2 + dx * 0.15;
-  const c2y = my + perp.y * j2 + dy * 0.15;
+  const px = -dy / len, py = dx / len;
+  const j1 = (seededRand(jitterSeed * 3.7) - 0.5) * 22;
+  const j2 = (seededRand(jitterSeed * 7.1) - 0.5) * 16;
+  const t1 = 0.35, t2 = 0.65;
+  const c1x = cx + dx * t1 + px * j1;
+  const c1y = cy + dy * t1 + py * j1;
+  const c2x = cx + dx * t2 + px * j2;
+  const c2y = cy + dy * t2 + py * j2;
   return `M ${cx} ${cy} C ${c1x} ${c1y}, ${c2x} ${c2y}, ${nx} ${ny}`;
+}
+
+// ─── Explosion particle ───────────────────────────────────────────────────────
+interface Particle {
+  id: number;
+  angle: number;
+  speed: number;
+  size: number;
+  color: string;
+  life: number; // 0→1
 }
 
 // ─── Main Component ───────────────────────────────────────────────────────────
@@ -77,107 +82,129 @@ export default function PipelineOrb({
   lastRun = null,
   size = 520,
 }: PipelineOrbProps) {
-  const [tick, setTick] = useState(0);
-  const [activeArc, setActiveArc] = useState<number | null>(null);
-  const [pulseRing, setPulseRing] = useState(false);
-  const animRef = useRef<number | null>(null);
-  const lastTickRef = useRef(0);
+  const cx = size / 2, cy = size / 2;
+  const orbitR   = size * 0.375;
+  const coreR    = size * 0.10;
+  const nodeR    = size * 0.054;
 
-  // Animate arcs and pulse ring
+  // ── Animation tick ──
+  const [tick, setTick] = useState(0);
+  const rafRef = useRef<number | null>(null);
+  const lastRef = useRef(0);
   useEffect(() => {
-    let frame: number;
-    const animate = (ts: number) => {
-      if (ts - lastTickRef.current > 60) {
+    const loop = (ts: number) => {
+      if (ts - lastRef.current > 16) { // ~60fps
         setTick(t => t + 1);
-        lastTickRef.current = ts;
+        lastRef.current = ts;
       }
-      frame = requestAnimationFrame(animate);
+      rafRef.current = requestAnimationFrame(loop);
     };
-    frame = requestAnimationFrame(animate);
-    return () => cancelAnimationFrame(frame);
+    rafRef.current = requestAnimationFrame(loop);
+    return () => { if (rafRef.current) cancelAnimationFrame(rafRef.current); };
   }, []);
 
-  // When running, cycle the active arc through passed stages
+  // ── Explosion state ──
+  const [exploding, setExploding] = useState(false);
+  const [particles, setParticles] = useState<Particle[]>([]);
+  const [explodeTick, setExplodeTick] = useState(0);
+  const explodeRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const prevRunRef = useRef<string | null>(null);
+  const allPassed = stagesPassed === 14;
+
   useEffect(() => {
-    if (!running || stagesPassed === 0) {
-      setActiveArc(null);
-      return;
+    if (allPassed && lastRun !== prevRunRef.current) {
+      prevRunRef.current = lastRun;
+      // Generate particles
+      const colors = ["#22c55e","#4ade80","#86efac","#22d3ee","#7dd3fc","#facc15","#a78bfa","#f472b6"];
+      const ps: Particle[] = Array.from({ length: 48 }, (_, i) => ({
+        id: i,
+        angle: (i / 48) * Math.PI * 2 + seededRand(i) * 0.4,
+        speed: 0.8 + seededRand(i * 7) * 1.4,
+        size: 2 + seededRand(i * 13) * 5,
+        color: colors[i % colors.length],
+        life: 0,
+      }));
+      setParticles(ps);
+      setExploding(true);
+      setExplodeTick(0);
+      let t = 0;
+      explodeRef.current = setInterval(() => {
+        t += 1;
+        setExplodeTick(t);
+        if (t > 80) {
+          setExploding(false);
+          setParticles([]);
+          if (explodeRef.current) clearInterval(explodeRef.current);
+        }
+      }, 20);
     }
-    const interval = setInterval(() => {
-      setActiveArc(prev => {
-        if (prev === null) return 0;
-        return (prev + 1) % stagesPassed;
-      });
-    }, 120);
-    return () => clearInterval(interval);
-  }, [running, stagesPassed]);
+    return () => { if (explodeRef.current) clearInterval(explodeRef.current); };
+  }, [allPassed, lastRun]);
 
-  // Pulse ring on trade approved
-  useEffect(() => {
-    if (tradeApproved) {
-      setPulseRing(true);
-      const t = setTimeout(() => setPulseRing(false), 2000);
-      return () => clearTimeout(t);
-    }
-  }, [tradeApproved, lastRun]);
-
-  const cx = size / 2;
-  const cy = size / 2;
-  const orbitR = size * 0.38;
-  const coreR = size * 0.10;
-  const nodeR = size * 0.055;
-
-  // Compute node positions evenly around the orbit
+  // ── Node positions: base orbit + slow floating drift ──
+  const time = tick * 0.008; // slow global time
   const nodes = STAGES.map((stage, i) => {
-    const angle = (i / STAGES.length) * 2 * Math.PI - Math.PI / 2;
+    const baseAngle = (i / STAGES.length) * 2 * Math.PI - Math.PI / 2;
+    // Each node drifts slightly: unique frequency and phase
+    const driftAmp   = orbitR * 0.045;
+    const driftFreqR = 0.18 + seededRand(i * 5) * 0.14; // radial drift freq
+    const driftFreqT = 0.12 + seededRand(i * 9) * 0.10; // tangential drift freq
+    const driftPhR   = seededRand(i * 3) * Math.PI * 2;
+    const driftPhT   = seededRand(i * 7) * Math.PI * 2;
+    const r = orbitR + Math.sin(time * driftFreqR + driftPhR) * driftAmp;
+    const a = baseAngle + Math.sin(time * driftFreqT + driftPhT) * 0.06;
     return {
       ...stage,
-      x: cx + orbitR * Math.cos(angle),
-      y: cy + orbitR * Math.sin(angle),
-      angle,
+      x: cx + r * Math.cos(a),
+      y: cy + r * Math.sin(a),
+      baseAngle,
+      jitter: i + tick * 0.04, // arc jitter seed
     };
   });
 
-  // Determine node state
-  const getState = (stageId: number): NodeState => {
-    if (failedStage === stageId) return "fail";
-    if (failedStage !== null && stageId > failedStage) return "blocked";
-    if (stageId <= stagesPassed) return "pass";
-    if (running && stageId === stagesPassed + 1) return "active";
+  // ── State helpers ──
+  const getState = (id: number): NodeState => {
+    if (failedStage === id) return "fail";
+    if (failedStage !== null && id > failedStage) return "blocked";
+    if (id <= stagesPassed) return "pass";
+    if (running && id === stagesPassed + 1) return "active";
     return "idle";
   };
 
-  const stateColor = (state: NodeState, baseColor: string) => {
+  const nodeFill = (state: NodeState, base: string) => {
     switch (state) {
       case "pass":    return "#22c55e";
       case "active":  return "#facc15";
       case "fail":    return "#ef4444";
-      case "blocked": return "#374151";
-      default:        return baseColor + "55";
+      case "blocked": return "#1e293b";
+      default:        return base + "33";
     }
   };
 
-  const stateGlow = (state: NodeState) => {
+  const arcStroke = (state: NodeState, base: string) => {
     switch (state) {
-      case "pass":    return "0 0 12px #22c55e, 0 0 24px #22c55e55";
-      case "active":  return "0 0 16px #facc15, 0 0 32px #facc1555";
-      case "fail":    return "0 0 12px #ef4444, 0 0 24px #ef444455";
-      default:        return "none";
+      case "pass":    return "#22c55e";
+      case "active":  return "#facc15";
+      case "fail":    return "#ef4444";
+      default:        return base + "18";
     }
   };
 
-  // Arc color for a given node state
-  const arcColor = (state: NodeState, baseColor: string) => {
-    if (state === "pass") return "#22c55e";
-    if (state === "active") return "#facc15";
-    if (state === "fail") return "#ef4444";
-    return baseColor + "22";
-  };
+  const dashOffset = (tick * 1.8) % 40;
 
-  // Animated dash offset for electric pulse
-  const dashOffset = (tick * 2) % 40;
+  // ── Core pulse: breathe when running, explode when all pass ──
+  const corePulse = allPassed
+    ? 1 + Math.sin(tick * 0.15) * 0.08
+    : running
+    ? 1 + Math.sin(tick * 0.08) * 0.04
+    : 1;
 
-  const allPassed = stagesPassed === 14;
+  const coreColor = allPassed ? "#22c55e" : running ? "#0ea5e9" : "#0369a1";
+  const coreGlow  = allPassed
+    ? `0 0 ${32 * corePulse}px #22c55e, 0 0 ${64 * corePulse}px #22c55e55`
+    : running
+    ? `0 0 ${20 * corePulse}px #0ea5e9, 0 0 ${40 * corePulse}px #0ea5e922`
+    : "none";
 
   return (
     <div className="relative flex flex-col items-center select-none">
@@ -188,245 +215,255 @@ export default function PipelineOrb({
         style={{ overflow: "visible" }}
       >
         <defs>
-          {/* Radial gradient for core */}
-          <radialGradient id="coreGrad" cx="50%" cy="50%" r="50%">
-            <stop offset="0%"   stopColor={allPassed ? "#22c55e" : tradeApproved ? "#22c55e" : "#0ea5e9"} stopOpacity="0.9" />
-            <stop offset="60%"  stopColor={allPassed ? "#15803d" : "#0369a1"} stopOpacity="0.6" />
-            <stop offset="100%" stopColor="#020617" stopOpacity="0.0" />
+          <radialGradient id="coreGradOrb" cx="50%" cy="50%" r="50%">
+            <stop offset="0%"   stopColor={coreColor} stopOpacity="0.85" />
+            <stop offset="55%"  stopColor={coreColor} stopOpacity="0.25" />
+            <stop offset="100%" stopColor="#020617"   stopOpacity="0.0"  />
           </radialGradient>
-          {/* Orbit ring gradient */}
-          <radialGradient id="orbitGrad" cx="50%" cy="50%" r="50%">
-            <stop offset="0%"   stopColor="#0ea5e9" stopOpacity="0.0" />
-            <stop offset="85%"  stopColor="#0ea5e9" stopOpacity="0.08" />
-            <stop offset="100%" stopColor="#0ea5e9" stopOpacity="0.0" />
-          </radialGradient>
-          {/* Glow filter */}
-          <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
-            <feGaussianBlur stdDeviation="3" result="blur" />
-            <feMerge>
-              <feMergeNode in="blur" />
-              <feMergeNode in="SourceGraphic" />
-            </feMerge>
+          <filter id="glowOrb" x="-60%" y="-60%" width="220%" height="220%">
+            <feGaussianBlur stdDeviation="3.5" result="b" />
+            <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
           </filter>
-          <filter id="strongGlow" x="-100%" y="-100%" width="300%" height="300%">
-            <feGaussianBlur stdDeviation="6" result="blur" />
-            <feMerge>
-              <feMergeNode in="blur" />
-              <feMergeNode in="SourceGraphic" />
-            </feMerge>
+          <filter id="strongGlowOrb" x="-100%" y="-100%" width="300%" height="300%">
+            <feGaussianBlur stdDeviation="8" result="b" />
+            <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+          <filter id="particleGlow" x="-200%" y="-200%" width="500%" height="500%">
+            <feGaussianBlur stdDeviation="4" result="b" />
+            <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
           </filter>
         </defs>
 
-        {/* ── Outer decorative rings ── */}
-        <circle cx={cx} cy={cy} r={orbitR + nodeR + 8}
-          fill="none" stroke="#0ea5e9" strokeWidth="0.5" strokeOpacity="0.12"
-          strokeDasharray="4 8" />
-        <circle cx={cx} cy={cy} r={orbitR - nodeR - 8}
-          fill="none" stroke="#0ea5e9" strokeWidth="0.5" strokeOpacity="0.08"
-          strokeDasharray="2 12" />
-
-        {/* ── Orbit ring fill ── */}
+        {/* ── Orbit guide ring ── */}
         <circle cx={cx} cy={cy} r={orbitR}
-          fill="url(#orbitGrad)" stroke="#0ea5e9" strokeWidth="0.5" strokeOpacity="0.15" />
+          fill="none" stroke="#0ea5e9" strokeWidth="0.5" strokeOpacity="0.10"
+          strokeDasharray="3 9" />
+        <circle cx={cx} cy={cy} r={orbitR * 1.12}
+          fill="none" stroke="#0ea5e9" strokeWidth="0.3" strokeOpacity="0.05" />
 
-        {/* ── Trade approved pulse ring ── */}
-        {pulseRing && (
-          <>
-            <circle cx={cx} cy={cy} r={orbitR + 20}
-              fill="none" stroke="#22c55e" strokeWidth="2" strokeOpacity="0.6"
-              style={{ animation: "ping 1s ease-out forwards" }} />
-            <circle cx={cx} cy={cy} r={orbitR + 40}
-              fill="none" stroke="#22c55e" strokeWidth="1" strokeOpacity="0.3"
-              style={{ animation: "ping 1.4s ease-out forwards" }} />
-          </>
-        )}
+        {/* ── Explosion rings ── */}
+        {exploding && [0, 1, 2, 3].map(i => {
+          const progress = Math.max(0, (explodeTick - i * 8) / 60);
+          if (progress <= 0) return null;
+          const r = coreR * (1 + progress * (5 + i * 2));
+          const opacity = Math.max(0, 1 - progress * 1.2);
+          return (
+            <circle key={`ring-${i}`}
+              cx={cx} cy={cy} r={r}
+              fill="none"
+              stroke={i % 2 === 0 ? "#22c55e" : "#4ade80"}
+              strokeWidth={3 - i * 0.5}
+              strokeOpacity={opacity}
+              filter="url(#glowOrb)"
+            />
+          );
+        })}
 
-        {/* ── Electric arcs from core to each node ── */}
+        {/* ── Explosion particles ── */}
+        {exploding && particles.map(p => {
+          const progress = Math.min(1, explodeTick / 70);
+          const dist = p.speed * progress * orbitR * 1.1;
+          const fade = progress > 0.5 ? 1 - (progress - 0.5) * 2 : 1;
+          const px2 = cx + Math.cos(p.angle) * dist;
+          const py2 = cy + Math.sin(p.angle) * dist;
+          return (
+            <circle key={p.id}
+              cx={px2} cy={py2}
+              r={p.size * (1 - progress * 0.5)}
+              fill={p.color}
+              fillOpacity={fade * 0.9}
+              filter="url(#particleGlow)"
+            />
+          );
+        })}
+
+        {/* ── Electric arcs ── */}
         {nodes.map((node, i) => {
           const state = getState(node.id);
-          const isActiveArc = activeArc === i;
-          const color = arcColor(state, node.color);
-          const path = buildArcPath(cx, cy, node.x, node.y, i + tick * 0.03);
-          const opacity = state === "idle" || state === "blocked" ? 0.12 : isActiveArc ? 1.0 : 0.55;
+          const color = arcStroke(state, node.color);
+          const isPass = state === "pass";
+          const isActive = state === "active";
+          const path = buildArcPath(cx, cy, node.x, node.y, node.jitter);
+          const baseOpacity = isPass ? 0.55 : isActive ? 0.8 : 0.10;
 
           return (
             <g key={`arc-${node.id}`}>
-              {/* Base arc */}
-              <path
-                d={path}
-                fill="none"
-                stroke={color}
-                strokeWidth={state === "pass" ? 1.5 : 1}
-                strokeOpacity={opacity}
-                strokeLinecap="round"
-              />
-              {/* Animated pulse dash */}
-              {(state === "pass" || state === "active") && (
-                <path
-                  d={path}
-                  fill="none"
-                  stroke={state === "active" ? "#facc15" : "#22c55e"}
-                  strokeWidth={isActiveArc ? 2.5 : 1.5}
-                  strokeOpacity={isActiveArc ? 0.9 : 0.4}
-                  strokeDasharray="6 14"
-                  strokeDashoffset={-dashOffset + i * 5}
-                  strokeLinecap="round"
-                />
+              <path d={path} fill="none" stroke={color}
+                strokeWidth={isPass ? 1.5 : 1}
+                strokeOpacity={baseOpacity}
+                strokeLinecap="round" />
+              {(isPass || isActive) && (
+                <path d={path} fill="none"
+                  stroke={isActive ? "#facc15" : "#22c55e"}
+                  strokeWidth={isActive ? 2.5 : 1.5}
+                  strokeOpacity={isActive ? 0.95 : 0.45}
+                  strokeDasharray="5 15"
+                  strokeDashoffset={-(dashOffset + i * 4)}
+                  strokeLinecap="round" />
               )}
             </g>
           );
         })}
 
-        {/* ── Central core ── */}
-        {/* Core glow halo */}
-        <circle cx={cx} cy={cy} r={coreR * 1.8}
-          fill="url(#coreGrad)" />
-        {/* Core outer ring */}
-        <circle cx={cx} cy={cy} r={coreR}
+        {/* ── Core glow halo ── */}
+        <circle cx={cx} cy={cy}
+          r={coreR * 2.2 * corePulse}
+          fill="url(#coreGradOrb)"
+          style={{ filter: allPassed ? "url(#strongGlowOrb)" : undefined }}
+        />
+
+        {/* ── Core outer ring ── */}
+        <circle cx={cx} cy={cy}
+          r={coreR * corePulse}
           fill="none"
-          stroke={allPassed ? "#22c55e" : "#0ea5e9"}
-          strokeWidth="1.5"
-          strokeOpacity="0.7"
-          strokeDasharray={running ? "4 4" : "none"}
-          strokeDashoffset={-dashOffset * 2}
-          filter="url(#glow)"
-        />
-        {/* Core inner fill */}
-        <circle cx={cx} cy={cy} r={coreR * 0.75}
-          fill={allPassed ? "#052e16" : "#0c1a2e"}
-          stroke={allPassed ? "#22c55e" : "#38bdf8"}
-          strokeWidth="1"
+          stroke={coreColor}
+          strokeWidth="1.8"
           strokeOpacity="0.8"
+          strokeDasharray={running || allPassed ? "5 5" : "none"}
+          strokeDashoffset={allPassed ? dashOffset * 3 : -dashOffset * 2}
+          filter="url(#glowOrb)"
         />
-        {/* Core rotating inner ring */}
-        <circle cx={cx} cy={cy} r={coreR * 0.55}
+
+        {/* ── Core inner rings ── */}
+        <circle cx={cx} cy={cy} r={coreR * 0.72 * corePulse}
+          fill={allPassed ? "#052e16" : "#061828"}
+          stroke={coreColor} strokeWidth="1" strokeOpacity="0.7"
+        />
+        <circle cx={cx} cy={cy} r={coreR * 0.50 * corePulse}
           fill="none"
           stroke={allPassed ? "#4ade80" : "#7dd3fc"}
-          strokeWidth="0.8"
-          strokeOpacity="0.5"
-          strokeDasharray="3 6"
-          strokeDashoffset={dashOffset * 3}
+          strokeWidth="0.8" strokeOpacity="0.5"
+          strokeDasharray="3 5"
+          strokeDashoffset={dashOffset * (allPassed ? 4 : 3)}
         />
-        {/* Core label */}
-        <text x={cx} y={cy - 6} textAnchor="middle" dominantBaseline="middle"
+        {/* Extra inner ring when all pass */}
+        {allPassed && (
+          <circle cx={cx} cy={cy} r={coreR * 0.30 * corePulse}
+            fill="none" stroke="#86efac" strokeWidth="1" strokeOpacity="0.7"
+            strokeDasharray="2 4" strokeDashoffset={-dashOffset * 5}
+          />
+        )}
+
+        {/* ── Core label ── */}
+        <text x={cx} y={cy - 7} textAnchor="middle" dominantBaseline="middle"
           fill={allPassed ? "#4ade80" : "#7dd3fc"}
           fontSize={size * 0.028}
           fontFamily="'JetBrains Mono', monospace"
-          fontWeight="700"
-          letterSpacing="2"
+          fontWeight="700" letterSpacing="2"
         >
           ORION
         </text>
-        <text x={cx} y={cy + 9} textAnchor="middle" dominantBaseline="middle"
-          fill={allPassed ? "#22c55e" : "#38bdf8"}
-          fontSize={size * 0.018}
+        <text x={cx} y={cy + 8} textAnchor="middle" dominantBaseline="middle"
+          fill={allPassed ? "#22c55e" : running ? "#38bdf8" : "#334155"}
+          fontSize={size * 0.017}
           fontFamily="'JetBrains Mono', monospace"
-          letterSpacing="1"
-          opacity="0.7"
+          letterSpacing="1" opacity="0.85"
         >
-          {allPassed ? "TRADE OK" : running ? "RUNNING" : `${stagesPassed}/14`}
+          {allPassed ? "TRADE OK" : running ? `${stagesPassed}/14` : stagesPassed > 0 ? `${stagesPassed}/14` : "STANDBY"}
         </text>
 
         {/* ── Stage nodes ── */}
         {nodes.map((node) => {
           const state = getState(node.id);
-          const fill = stateColor(state, node.color);
-          const isPass = state === "pass";
+          const fill  = nodeFill(state, node.color);
+          const isPass   = state === "pass";
           const isActive = state === "active";
-          const isFail = state === "fail";
+          const isFail   = state === "fail";
+          const isIdle   = state === "idle" || state === "blocked";
+
+          // Subtle per-node float bob on top of position
+          const bobAmp = nodeR * 0.12;
+          const bobFreq = 0.22 + seededRand(node.id * 11) * 0.15;
+          const bobPhase = seededRand(node.id * 17) * Math.PI * 2;
+          const bobY = Math.sin(time * bobFreq + bobPhase) * bobAmp;
+
+          const nx = node.x;
+          const ny = node.y + bobY;
 
           return (
-            <g key={`node-${node.id}`} filter={isPass || isActive || isFail ? "url(#glow)" : undefined}>
-              {/* Node outer glow ring for pass/active */}
+            <g key={`node-${node.id}`}
+              filter={(isPass || isActive || isFail) ? "url(#glowOrb)" : undefined}
+            >
+              {/* Outer glow ring for pass/active */}
               {(isPass || isActive) && (
-                <circle
-                  cx={node.x} cy={node.y}
-                  r={nodeR * 1.45}
+                <circle cx={nx} cy={ny} r={nodeR * 1.5}
                   fill="none"
                   stroke={isActive ? "#facc15" : "#22c55e"}
                   strokeWidth="1"
-                  strokeOpacity={isActive ? 0.7 : 0.35}
+                  strokeOpacity={isActive ? 0.75 : 0.30}
                   strokeDasharray={isActive ? "3 3" : "none"}
                   strokeDashoffset={-dashOffset}
                 />
               )}
               {/* Node body */}
-              <circle
-                cx={node.x} cy={node.y}
-                r={nodeR}
+              <circle cx={nx} cy={ny} r={nodeR}
                 fill={fill}
-                fillOpacity={state === "idle" || state === "blocked" ? 0.15 : 0.9}
+                fillOpacity={isIdle ? 0.12 : 0.88}
                 stroke={fill}
                 strokeWidth={isActive ? 2 : 1}
-                strokeOpacity={state === "idle" || state === "blocked" ? 0.2 : 0.9}
+                strokeOpacity={isIdle ? 0.18 : 0.85}
               />
-              {/* Node inner dot */}
-              <circle
-                cx={node.x} cy={node.y}
-                r={nodeR * 0.35}
-                fill={state === "idle" || state === "blocked" ? "#1e293b" : fill}
-                fillOpacity={state === "idle" || state === "blocked" ? 0.4 : 1}
+              {/* Inner dot */}
+              <circle cx={nx} cy={ny} r={nodeR * 0.32}
+                fill={isIdle ? "#1e293b" : fill}
+                fillOpacity={isIdle ? 0.35 : 1}
               />
-              {/* Stage short label */}
-              <text
-                x={node.x} y={node.y - 1}
+              {/* Label */}
+              <text x={nx} y={ny - 0.5}
                 textAnchor="middle" dominantBaseline="middle"
-                fill={state === "idle" || state === "blocked" ? "#475569" : "#fff"}
-                fontSize={size * 0.022}
+                fill={isIdle ? "#475569" : "#fff"}
+                fontSize={size * 0.021}
                 fontFamily="'JetBrains Mono', monospace"
                 fontWeight="600"
               >
                 {node.short}
               </text>
-              {/* Stage number badge */}
-              <text
-                x={node.x} y={node.y + nodeR + 10}
+              {/* Stage number */}
+              <text x={nx} y={ny + nodeR + 11}
                 textAnchor="middle" dominantBaseline="middle"
-                fill={state === "idle" || state === "blocked" ? "#334155" : fill}
-                fontSize={size * 0.016}
+                fill={isIdle ? "#1e3a5f" : fill}
+                fontSize={size * 0.015}
                 fontFamily="'JetBrains Mono', monospace"
-                opacity="0.8"
+                opacity="0.75"
               >
-                {node.id.toString().padStart(2, "0")}
+                {String(node.id).padStart(2, "0")}
               </text>
             </g>
           );
         })}
 
-        {/* ── Tick marks on orbit ── */}
-        {nodes.map((node, i) => {
-          const angle = node.angle;
-          const r1 = orbitR - nodeR - 14;
-          const r2 = orbitR - nodeR - 8;
+        {/* ── All-pass celebration: spinning outer star burst ── */}
+        {allPassed && [0, 1, 2, 3, 4, 5, 6, 7].map(i => {
+          const a = (i / 8) * Math.PI * 2 + tick * 0.015;
+          const r1 = coreR * 1.15 * corePulse;
+          const r2 = coreR * 1.55 * corePulse;
           return (
-            <line key={`tick-${i}`}
-              x1={cx + r1 * Math.cos(angle)} y1={cy + r1 * Math.sin(angle)}
-              x2={cx + r2 * Math.cos(angle)} y2={cy + r2 * Math.sin(angle)}
-              stroke="#0ea5e9" strokeWidth="0.5" strokeOpacity="0.2"
+            <line key={`ray-${i}`}
+              x1={cx + r1 * Math.cos(a)} y1={cy + r1 * Math.sin(a)}
+              x2={cx + r2 * Math.cos(a)} y2={cy + r2 * Math.sin(a)}
+              stroke="#4ade80" strokeWidth="1.5" strokeOpacity="0.6"
+              filter="url(#glowOrb)"
             />
           );
         })}
       </svg>
 
-      {/* ── Stage legend strip ── */}
-      <div className="mt-2 grid grid-cols-7 gap-x-3 gap-y-1 w-full max-w-[480px] px-2">
+      {/* ── Legend strip ── */}
+      <div className="mt-1 grid grid-cols-7 gap-x-3 gap-y-1 w-full max-w-[480px] px-2">
         {STAGES.map((stage) => {
           const state = getState(stage.id);
-          const isPass = state === "pass";
-          const isFail = state === "fail";
-          const isActive = state === "active";
           return (
             <div key={stage.id} className="flex items-center gap-1">
               <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${
-                isPass ? "bg-green-400" :
-                isActive ? "bg-yellow-400" :
-                isFail ? "bg-red-400" :
+                state === "pass"    ? "bg-green-400" :
+                state === "active"  ? "bg-yellow-400" :
+                state === "fail"    ? "bg-red-400" :
                 "bg-slate-700"
               }`} />
               <span className={`text-[9px] font-mono tracking-wide truncate ${
-                isPass ? "text-green-400" :
-                isActive ? "text-yellow-400" :
-                isFail ? "text-red-400" :
+                state === "pass"    ? "text-green-400" :
+                state === "active"  ? "text-yellow-400" :
+                state === "fail"    ? "text-red-400" :
                 "text-slate-600"
               }`}>
                 {stage.label}
@@ -435,13 +472,6 @@ export default function PipelineOrb({
           );
         })}
       </div>
-
-      <style>{`
-        @keyframes ping {
-          0%   { transform-origin: ${size/2}px ${size/2}px; transform: scale(1); opacity: 0.8; }
-          100% { transform-origin: ${size/2}px ${size/2}px; transform: scale(1.3); opacity: 0; }
-        }
-      `}</style>
     </div>
   );
 }
