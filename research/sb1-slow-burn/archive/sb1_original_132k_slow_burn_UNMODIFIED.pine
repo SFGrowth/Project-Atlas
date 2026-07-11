@@ -1,0 +1,751 @@
+//@version=5
+strategy("$132k CHOP Filter — Trend Momentum Rider v4 [Manus]", overlay=true, initial_capital=50000, default_qty_type=strategy.fixed, default_qty_value=1, commission_type=strategy.commission.cash_per_contract, commission_value=0.62, slippage=1)
+
+// ─────────────────────────────────────────────────────────────────────────────
+// STRATEGY 3: TREND MOMENTUM RIDER v4 (5-min MNQ)
+//
+// CONCEPT:
+//   Builds entirely around a single Fast EMA (default 15).
+//   Enters when N consecutive bars close on one side of the EMA.
+//   Exits when price breaks the EMA and M consecutive bars close on the other side.
+//   Also includes a tiered trailing stop as a hard backup.
+//
+// ENTRY CONDITIONS:
+//   Long:  N consecutive bars closing ABOVE the Fast EMA
+//   Short: N consecutive bars closing BELOW the Fast EMA
+//
+// EXIT CONDITIONS:
+//   Long:  M consecutive bars closing BELOW the Fast EMA
+//   Short: M consecutive bars closing ABOVE the Fast EMA
+// ─────────────────────────────────────────────────────────────────────────────
+
+// ── INPUTS ───────────────────────────────────────────────────────────────────
+grp1 = "Trend Detection"
+fast_ema_len    = input.int(15,    "Fast EMA Length",             group=grp1, tooltip="The single EMA line used for all entry and exit logic.")
+entry_bars      = input.int(4,     "Bars on side for ENTRY",      group=grp1, tooltip="Number of consecutive bars that must close above/below the EMA to trigger an entry. Raised to 5 (25 min) — slow grind runners consistently show 5+ bars grinding before entry. Whipsaw losses often trigger on exactly 4 bars.")
+exit_bars       = input.int(2,     "Bars on side for EXIT",       group=grp1, tooltip="Number of consecutive bars that must close on the opposite side of the EMA to trigger an exit.")
+min_hold_bars   = input.int(0,     "Min Hold Bars Before EMA Exit", group=grp1, tooltip="EMA Break Exit cannot fire until the trade has been open for at least this many bars (default 6 = 30 min). Prevents the 0–30 min whipsaw exits that are 0% win rate. Winners run 2–4 hrs and are unaffected. Set to 0 to disable.")
+cross_lookback  = input.int(8,     "EMA Cross Recency (Bars)",    group=grp1, tooltip="Entry only fires if the EMA crossover happened within this many bars. Prevents late entries into exhausted trends.")
+atr_len         = input.int(29,    "ATR Length (for stop loss)",  group=grp1)
+use_vwap_filter = input.bool(true, "VWAP Direction Filter",       group=grp1, tooltip="Only take longs when price is above VWAP, only take shorts when price is below VWAP.")
+use_vol_filter  = input.bool(false, "Volume Filter",              group=grp1, tooltip="Current bar volume must be above its 20-bar average to confirm institutional participation.")
+vol_ma_len      = input.int(20,    "Volume MA Length",            group=grp1)
+
+grp2 = "Advanced Filters (all OFF = original behaviour)"
+use_adx_filter     = input.bool(false, "ADX Chop Filter",             group=grp2, tooltip="Block entries when ADX is below the threshold — market is ranging/choppy. Turn ON to test.")
+adx_threshold      = input.int(20,    "ADX Threshold",               group=grp2, tooltip="ADX below this value = choppy. Typical range: 18–25.")
+use_whipsaw_filter = input.bool(false, "EMA Whipsaw Filter",          group=grp2, tooltip="Block entries if price has crossed the EMA too many times recently. Turn ON to test.")
+whipsaw_crosses    = input.int(3,      "Max EMA Crosses Allowed",     group=grp2, tooltip="Block entry if EMA has been crossed this many times in the lookback window.")
+whipsaw_lookback   = input.int(20,     "Whipsaw Lookback Bars",       group=grp2, tooltip="How many bars back to count EMA crossings.")
+use_ext_filter     = input.bool(false, "Overextended Move Filter",    group=grp2, tooltip="Block entries when price has moved too far and too fast from the EMA — likely near S&R. Turn ON to test.")
+ext_atr_mult       = input.float(2.0,  "Extended ATR Multiplier",     group=grp2, tooltip="Distance from EMA in ATRs to be considered overextended.")
+ext_bars_req       = input.int(8,      "Extended Bars Threshold",     group=grp2, tooltip="Number of consecutive bars in one direction to be considered overextended.")
+ext_hard_stop      = input.float(850.0, "Ext Move Hard Stop ($)",     group=grp2, tooltip="If already in a trade when overextended condition triggers, cap the loss at this dollar amount.")
+
+use_close_range    = input.bool(false, "Close Range Confirmation",       group=grp2, tooltip="Require that the closes of the entry bars are all within a tight range of each other. If closes are spread far apart, price is pausing between big volatile moves — not genuinely grinding. Only enter when closes are clustered tightly, confirming a real slow grind.")
+close_range_atr    = input.float(1.0,  "Max Close Range (ATR mult)",      group=grp2, tooltip="The highest close minus the lowest close across the entry bars must be less than this multiple of ATR. Default 1.0 = all closes must fit within 1 ATR range. Tight range = genuine grind. Wide range = volatile pause.")
+
+use_chop_filter    = input.bool(true,  "CHOP Index Filter (Always-On)",    group=grp2, tooltip="Blocks entries when the Choppiness Index is above the threshold — the market is ranging/yoyoing rather than trending. CHOP > 61.8 = choppy, CHOP < 38.2 = strong trend. This is the most reliable chop detector available — it measures how efficiently price is moving, not just EMA crossings. Works in all months, all market conditions.")
+chop_length        = input.int(14,    "CHOP Length",                      group=grp2, tooltip="Number of bars for the Choppiness Index calculation. Default 14 = 70 minutes on 5-min chart. Higher = smoother but slower to react. Lower = faster but noisier.")
+chop_threshold     = input.float(61.8, "CHOP Threshold",                  group=grp2, tooltip="Block entries when CHOP is above this level. 61.8 = Fibonacci level used by most traders as the chop/trend boundary. Try 55 for earlier detection, 65 for stricter filtering.")
+use_chop_adx_confirm = input.bool(true, "Require ADX Confirmation",       group=grp2, tooltip="When ON, both CHOP > threshold AND ADX < 20 must agree before blocking an entry. Dual confirmation reduces false positives — prevents blocking good trades in strong months where CHOP briefly spikes.")
+chop_adx_threshold = input.float(20.0, "ADX Confirmation Threshold",      group=grp2, tooltip="ADX must be below this level to confirm the chop signal. Default 20 = no directional trend. Only used when Require ADX Confirmation is ON.")
+
+use_slow_burn      = input.bool(true,  "Slow-Burn Grind Filter",          group=grp2, tooltip="Only enter when price is grinding slowly along the EMA — not sprinting away from it. The trend direction can already be established with big moves earlier. We just want to catch the quiet grind phase where small candles keep closing on the right side of EMA and VWAP.")
+slow_burn_atr      = input.float(5.0,  "Max Candle Body (ATR mult)",      group=grp2, tooltip="Block entry if any candle body in the lookback is larger than this multiple of ATR. 0.5 = body must be less than half an ATR. Candles can be bullish or bearish — only body SIZE matters, not direction.")
+slow_burn_lookback = input.int(4,      "Grind Lookback Bars",             group=grp2, tooltip="How many bars back to check for small grinding candles. All bars in this window must have small bodies. Default 3 = last 3 bars (15 minutes) must all be grinding.")
+slow_burn_prox_atr = input.float(3.0,  "Max EMA Distance (ATR mult)",     group=grp2, tooltip="Block entry if close is more than this many ATRs away from the EMA. Ensures we are entering during the grinding phase close to the EMA, not after a big sprint away. Default 1.0 ATR.")
+
+grp3 = "Time & Day Filters"
+use_day_filter  = input.bool(true,  "Use Day of Week Filter",     group=grp3)
+trade_mon       = input.bool(true,  "Trade Monday",               group=grp3)
+trade_tue       = input.bool(true,  "Trade Tuesday",              group=grp3)
+trade_wed       = input.bool(true,  "Trade Wednesday",            group=grp3)
+trade_thu       = input.bool(true,  "Trade Thursday",             group=grp3)
+trade_fri       = input.bool(true,  "Trade Friday",               group=grp3)
+trade_sun       = input.bool(false, "Trade Sunday (Globex)",      group=grp3)
+skip_open_mins  = input.int(30,     "Skip Open Minutes",          group=grp3, tooltip="Skip this many minutes after NY open (9:30am EST) before taking trades. Default 30 = no trades before 10am.")
+skip_mon_mins   = input.int(60,     "Monday Extra Skip (Minutes)", group=grp3, tooltip="Extra minutes to skip after Monday open on top of the standard Skip Open Minutes. Monday opens after a weekend gap are notoriously volatile. Default 60 = no entries before 10:30am on Mondays. Set to 0 to disable.")
+block_11xx      = input.bool(false, "Block 11:xx Entries (all months)",  group=grp3, tooltip="Block all new entries during the 11:00 hour (EST) every month. Turn OFF to use the seasonal chop month filter instead, which only blocks 11:xx in July and December.")
+block_12xx      = input.bool(false, "Block 12:xx Entries (all months)",  group=grp3, tooltip="Block all new entries during the 12:00 hour (EST) every month. Turn OFF to use the seasonal chop month filter instead, which only blocks 12:xx in July and December.")
+block_14xx      = input.bool(true,  "Block 14:xx Entries",               group=grp3, tooltip="Block all new entries during the 14:00 hour (EST). Data shows 14:xx has only 23% win rate and is net -$7,368 over 365 days.")
+block_16xx      = input.bool(true,  "Block 16:xx Entries",               group=grp3, tooltip="Block all new entries during the 16:00 hour (EST). Data shows 16:xx has only 26% win rate and is net -$5,552 over 365 days.")
+use_seasonal_chop = input.bool(true, "Seasonal Chop Month Filter",       group=grp3, tooltip="Only block 11:xx and 12:xx entries during known chop months (July and December). Data shows these two months lose $7,922 and $10,075 in the 11:xx hour alone at near-zero win rate, while other months are fine or profitable in those hours. This gives the best of both worlds — free trading in good months, protected in chop months.")
+
+grp6 = "Seasonal Chop Protection (July & December Only)"
+use_seasonal_vix      = input.bool(true,  "VIX Regime Filter (Jul/Dec)",        group=grp6, tooltip="Only active in July and December. Blocks all new entries when the VIX (fear gauge) is above the threshold. High VIX = news-driven choppy market. In July 2025 (tariff whipsaw) and December 2025 (Fed pivot), VIX was elevated during the worst losing periods. All other months are completely unaffected.")
+seasonal_vix_thresh   = input.float(20.0, "Max VIX Threshold",                  group=grp6, tooltip="Block entries when VIX is above this level during July and December. Default 20 = moderate fear. Try 18 for stricter filtering. VIX above 25 = extreme fear/chop.")
+use_seasonal_whipsaw  = input.bool(true,  "Whipsaw Counter (Jul/Dec)",           group=grp6, tooltip="Only active in July and December. Blocks entries if the EMA has been crossed too many times recently — the yoyo pattern. In July 2025, the 13-trade losing streak had price crossing the EMA every 1-2 bars. This directly targets that pattern without affecting other months.")
+seasonal_ws_crosses   = input.int(3,      "Max EMA Crosses (Jul/Dec)",           group=grp6, tooltip="Block entry if EMA has been crossed this many times in the lookback window during July/December. Default 3 = if price has crossed 3+ times in 20 bars (100 minutes), the market is yoyoing — skip the entry.")
+seasonal_ws_lookback  = input.int(20,     "Whipsaw Lookback Bars (Jul/Dec)",     group=grp6, tooltip="How many bars back to count EMA crossings for the seasonal whipsaw filter. Default 20 = 100 minutes on 5-min chart.")
+
+grp4 = "Risk Management"
+risk_usd           = input.float(850.0, "Risk Per Trade (USD)",           group=grp4)
+max_qty            = input.int(99,        "Max Contracts Cap",              group=grp4, tooltip="Hard cap on maximum contracts per trade regardless of ATR sizing. Default 99 = disabled (full dynamic ATR sizing). Set lower (e.g. 3) to cap risk on smaller accounts.")
+max_daily_loss     = input.int(2,       "Max Daily Losses",               group=grp4, tooltip="Stop new entries after this many losses in a day. 0 = disabled.")
+use_first_bar_stop = input.bool(true,   "First-Bar Stop ($850)",          group=grp4, tooltip="If the very first bar after entry immediately moves $850 against us, exit immediately. Targets overextended entries that hard-reverse on bar 1.")
+first_bar_stop_usd = input.float(850.0, "First-Bar Stop Threshold ($)",   group=grp4, tooltip="Max loss allowed on bar 1 of a trade before immediate exit.")
+
+use_trail_stop    = input.bool(true,  "Profit Lock Trailing Stop",      group=grp4, tooltip="Once trade reaches the MFE trigger amount in profit, lock in the minimum profit amount. Prevents winners from turning into losers. Turn ON to test.")
+trail_mfe_trigger = input.float(1500.0, "Trail Trigger (MFE $)",           group=grp4, tooltip="Once open profit reaches this amount, activate the trailing stop. Default 1500 = only activates on trades that have moved significantly in our favour.")
+trail_lock_profit = input.float(800.0, "Trail Lock-In Profit ($)",         group=grp4, tooltip="Once triggered, the stop moves to lock in at least this much profit.")
+trail_min_bars    = input.int(12,      "Trail Min Bars in Trade",          group=grp4, tooltip="Trail stop will not activate until this many bars have passed since entry. Default 12 = 60 minutes on 5-min chart. Prevents cutting big runners early.")
+
+use_time_stop     = input.bool(true, "Time-Based Loss Exit",             group=grp4, tooltip="If the trade is still in a net loss after N bars, exit immediately. Data shows zero winning trades are affected — only fast losers that never moved in our favour. Turn ON to test.")
+time_stop_bars    = input.int(12,     "Time Stop Bars (12 = 60 min)",     group=grp4, tooltip="Number of bars to wait before checking if trade is in a loss. Default 12 = 60 minutes on 5-min chart. Try 6 (30 min) for more aggressive filtering.")
+
+use_early_loss    = input.bool(true,  "Early Loss Threshold Stop",        group=grp4, tooltip="Exit immediately if open loss exceeds threshold within the first N bars. Big winners have avg MAE of only $558 — if a trade moves $500+ against you in the first 30 min, it is almost certainly a loser. Turn ON to test.")
+early_loss_thresh  = input.float(900.0, "Early Loss Threshold ($)",          group=grp4, tooltip="Max loss allowed within the early window before immediate exit. Default $500. Try $600 or $700 for less aggressive filtering.")
+early_loss_bars   = input.int(1,       "Early Loss Window (bars)",          group=grp4, tooltip="Number of bars to monitor for early loss. Default 6 = 30 minutes on 5-min chart.")
+
+grp_exhaust = "Exhaustion Exit (Snap-Back Protection)"
+use_exhaust_exit    = input.bool(true,   "Exhaustion Exit",                   group=grp_exhaust, tooltip="When price has run far in our favour AND shows exhaustion signals (overextension + volume spike), exit immediately before the snap-back to the EMA. Data analysis across 469 trades shows net +$104,197 impact. Optimal settings: earliest hour 11, min profit $500.")
+exhaust_atr_mult    = input.float(2.5,  "ATR Extension Threshold",           group=grp_exhaust, tooltip="Price must be at least this many ATRs away from the EMA to be considered overextended. Default 2.5.")
+exhaust_vol_mult    = input.float(1.5,  "Volume Spike Multiplier",           group=grp_exhaust, tooltip="Current bar volume must be at least this multiple of the 20-bar average to confirm exhaustion. Default 1.5 = 50% above average.")
+exhaust_vol_len     = input.int(20,     "Volume MA Length (Exhaustion)",     group=grp_exhaust, tooltip="Number of bars for the volume moving average used in the exhaustion check.")
+exhaust_earliest_hour = input.int(11,   "Earliest Hour to Fire (EST)",       group=grp_exhaust, tooltip="Block exhaustion exit before this hour. Data shows the 10am hour has opening momentum moves that look like exhaustion but continue strongly. Setting to 11 blocks the 10am window and adds +$29k net vs allowing it from 10am. Default 11 = no exhaustion exits before 11:00am EST.")
+exhaust_use_candle  = input.bool(false,  "Require Reversal Candle",           group=grp_exhaust, tooltip="When ON, also requires a reversal candle (opposite body >= previous body) before firing. OFF = fires on overextension + volume spike alone. Recommended OFF.")
+exhaust_engulf_mult = input.float(1.0,  "Reversal Candle Body Multiplier",   group=grp_exhaust, tooltip="Only used when Require Reversal Candle is ON.")
+exhaust_min_profit  = input.float(500.0, "Min Open Profit to Activate ($)",  group=grp_exhaust, tooltip="Exhaustion exit only fires when the trade is already in at least this much profit. Data shows $500 threshold adds +$12k vs $300 by blocking premature exits on small moves. Default $500.")
+
+grp7 = "Consecutive Loss Circuit Breaker"
+use_consec_breaker   = input.bool(true,  "Consecutive Loss Circuit Breaker",  group=grp7, tooltip="After N losses in a row, pause all new entries for the rest of the day. The strategy resumes the next trading day. Prevents the 12-trade losing streaks seen in choppy months. Data shows the 13-trade losing streak in July 2025 cost -$16,345 — this breaker would have capped it at 6 losses (-$5,400) and stopped trading for the day.")
+max_consec_losses    = input.int(6,      "Max Consecutive Losses Before Break", group=grp7, tooltip="Number of consecutive losses before the strategy pauses for the rest of the day. Default 6. At $900 risk, 6 losses = -$5,400 max daily drawdown from a streak. Resets to 0 each morning.")
+
+grp5 = "End of Day Close"
+use_eod_close   = input.bool(true, "Force Close at EOD",          group=grp5)
+eod_hour        = input.int(16,    "EOD Close Hour (EST)",        group=grp5, minval=12, maxval=23)
+eod_minute      = input.int(45,    "EOD Close Minute (EST)",      group=grp5, minval=0,  maxval=59)
+fri_close_hour  = input.int(15,    "Friday Hard Close Hour",      group=grp5, minval=12, maxval=23, tooltip="Hour to force-close all positions on Friday. Default 15 = 3pm EST. Prevents holding positions over the weekend.")
+fri_close_min   = input.int(55,    "Friday Hard Close Minute",    group=grp5, minval=0,  maxval=59, tooltip="Minute to force-close all positions on Friday. Default 55 = 3:55pm EST, giving 5 minutes before the 4pm close.")
+
+// ── DAILY LOSS CIRCUIT BREAKER ───────────────────────────────────────────────
+var int  daily_losses       = 0
+var int  current_day        = -1
+var bool eod_closed_today   = false
+var int  last_loss_count    = 0
+var int  consec_losses      = 0   // consecutive loss counter
+var int  last_trade_count   = 0   // tracks total closed trades
+var bool consec_break_today = false  // true = paused due to streak today
+
+new_day = dayofmonth(time, "America/New_York") != current_day
+if new_day
+    daily_losses        := 0
+    eod_closed_today    := false
+    consec_break_today  := false
+    current_day         := dayofmonth(time, "America/New_York")
+    last_loss_count     := strategy.losstrades
+    last_trade_count    := strategy.closedtrades
+
+current_losses = strategy.losstrades
+if current_losses > last_loss_count and not eod_closed_today
+    daily_losses    += (current_losses - last_loss_count)
+    last_loss_count := current_losses
+
+// Track consecutive losses: reset on any win, increment on any loss
+current_closed = strategy.closedtrades
+if current_closed > last_trade_count
+    last_pnl = strategy.closedtrades.profit(current_closed - 1)
+    if last_pnl > 0
+        consec_losses := 0
+    else
+        consec_losses += 1
+        if use_consec_breaker and consec_losses >= max_consec_losses
+            consec_break_today := true
+    last_trade_count := current_closed
+
+// ── TIME & DAY LOGIC ─────────────────────────────────────────────────────────
+cur_hour   = hour(time,   "America/New_York")
+cur_minute = minute(time, "America/New_York")
+cur_dow    = dayofweek(time, "America/New_York")
+
+is_sunday    = cur_dow == dayofweek.sunday
+is_monday    = cur_dow == dayofweek.monday
+is_tuesday   = cur_dow == dayofweek.tuesday
+is_wednesday = cur_dow == dayofweek.wednesday
+is_thursday  = cur_dow == dayofweek.thursday
+is_friday    = cur_dow == dayofweek.friday
+
+mins_since_open  = (cur_hour - 9) * 60 + (cur_minute - 30)
+// Monday gets extra skip time on top of the standard skip
+effective_skip   = is_monday ? skip_open_mins + skip_mon_mins : skip_open_mins
+is_past_skip     = mins_since_open >= effective_skip
+
+// Strict NY session: 9:30am to 4:44pm NY time only
+in_ny_session    = (cur_hour > 9 or (cur_hour == 9 and cur_minute >= 30)) and (cur_hour < 16 or (cur_hour == 16 and cur_minute <= 44))
+is_in_session    = in_ny_session and is_past_skip
+is_valid_day    = not is_sunday and
+                  (not use_day_filter or
+                   (trade_mon and is_monday) or
+                   (trade_tue and is_tuesday) or
+                   (trade_wed and is_wednesday) or
+                   (trade_thu and is_thursday) or
+                   (trade_fri and is_friday))
+
+circuit_ok  = (max_daily_loss == 0 or daily_losses < max_daily_loss) and
+              (not use_consec_breaker or not consec_break_today)
+
+// Seasonal chop month detection: July (month 7) and December (month 12)
+cur_month   = month(time, "America/New_York")
+is_chop_month = use_seasonal_chop and (cur_month == 7 or cur_month == 12)
+
+hour_ok     = (not block_11xx or cur_hour != 11) and
+              (not block_12xx or cur_hour != 12) and
+              (not is_chop_month or cur_hour != 11) and
+              (not is_chop_month or cur_hour != 12) and
+              (not block_14xx or cur_hour != 14) and
+              (not block_16xx or cur_hour != 16)
+can_trade   = is_in_session and is_valid_day and circuit_ok and not eod_closed_today and hour_ok
+
+// ── EOD / FRIDAY CLOSE ───────────────────────────────────────────────────────
+is_eod_bar   = use_eod_close and cur_hour == eod_hour   and cur_minute >= eod_minute
+is_fri_close = is_friday      and cur_hour == fri_close_hour and cur_minute >= fri_close_min
+
+// Friday close is SEPARATE from eod_closed_today flag.
+// Bug fix: previously eod_closed_today could be set true earlier in the day (by a prior trade's EOD close),
+// preventing the Friday 3:55pm close from firing for trades entered later that afternoon.
+// Fix: Friday close bypasses the eod_closed_today guard entirely — it ALWAYS fires at 3:55pm Friday.
+var bool fri_closed_today = false
+var int last_fri_close_week = -1
+cur_week = weekofyear(time, "America/New_York")
+
+if is_friday and cur_week != last_fri_close_week
+    fri_closed_today := false  // reset once per calendar week on Friday
+
+if is_fri_close and not fri_closed_today
+    if strategy.position_size != 0
+        strategy.close_all(comment = "Friday Close")
+    fri_closed_today := true
+    last_fri_close_week := cur_week
+    eod_closed_today := true
+
+if is_eod_bar and not eod_closed_today and not is_fri_close
+    if strategy.position_size != 0
+        strategy.close_all(comment = "EOD Close")
+    eod_closed_today := true
+
+// ── INDICATORS ───────────────────────────────────────────────────────────────
+fast_ema = ta.ema(close, fast_ema_len)
+atr_val  = ta.atr(atr_len)
+vwap_val = ta.vwap(hlc3)
+
+// ADX for chop filtering
+[di_plus, di_minus, adx_val] = ta.dmi(14, 14)
+is_choppy = use_adx_filter and adx_val < adx_threshold
+
+// Consecutive bars closing above/below the Fast EMA
+entry_bars_above = true
+entry_bars_below = true
+for i = 0 to entry_bars - 1
+    if close[i] <= fast_ema[i]
+        entry_bars_above := false
+    if close[i] >= fast_ema[i]
+        entry_bars_below := false
+
+exit_bars_above = true
+exit_bars_below = true
+for i = 0 to exit_bars - 1
+    if close[i] <= fast_ema[i]
+        exit_bars_above := false
+    if close[i] >= fast_ema[i]
+        exit_bars_below := false
+
+// Live count for info table display
+bars_above_ema = 0
+bars_below_ema = 0
+for i = 0 to math.max(entry_bars, exit_bars)
+    if close[i] > fast_ema[i]
+        bars_above_ema += 1
+    if close[i] < fast_ema[i]
+        bars_below_ema += 1
+
+// EMA crossover recency
+recent_cross_above = false
+recent_cross_below = false
+for i = 0 to cross_lookback - 1
+    if close[i] > fast_ema[i] and close[i + 1] <= fast_ema[i + 1]
+        recent_cross_above := true
+    if close[i] < fast_ema[i] and close[i + 1] >= fast_ema[i + 1]
+        recent_cross_below := true
+
+// VWAP direction filter
+vwap_above = not use_vwap_filter or close > vwap_val
+vwap_below = not use_vwap_filter or close < vwap_val
+
+// Volume filter
+vol_ma = ta.sma(volume, vol_ma_len)
+vol_ok = not use_vol_filter or volume > vol_ma
+
+// ── ADVANCED FILTERS ─────────────────────────────────────────────────────────
+// 1. Whipsaw Filter: count EMA crossings in lookback window
+cross_count = 0
+for i = 0 to whipsaw_lookback - 1
+    if (close[i] > fast_ema[i] and close[i + 1] <= fast_ema[i + 1]) or
+       (close[i] < fast_ema[i] and close[i + 1] >= fast_ema[i + 1])
+        cross_count += 1
+whipsaw_ok = not use_whipsaw_filter or cross_count < whipsaw_crosses
+
+// 2. Overextended Move Filter
+dist_from_ema   = math.abs(close - fast_ema)
+is_overextended = use_ext_filter and
+                  (dist_from_ema > (atr_val * ext_atr_mult)) and
+                  (bars_above_ema >= ext_bars_req or bars_below_ema >= ext_bars_req)
+ext_entry_ok    = not is_overextended
+
+// 3. Close Range Confirmation: all entry bar closes must be tightly clustered
+// Genuine slow grind = closes huddled together in a tight band
+// Volatile pause = closes spread far apart even if candle bodies are small
+close_range_ok = true
+if use_close_range
+    highest_close = close
+    lowest_close  = close
+    for i = 1 to entry_bars - 1
+        highest_close := math.max(highest_close, close[i])
+        lowest_close  := math.min(lowest_close,  close[i])
+    if (highest_close - lowest_close) > (atr_val * close_range_atr)
+        close_range_ok := false
+
+// 4. CHOP Index Filter (Always-On)
+// Choppiness Index measures how efficiently price is moving
+// High CHOP (>61.8) = price is ranging/yoyoing = do not trend-follow
+// Low CHOP (<38.2) = price is trending strongly = ideal conditions
+// Dual confirmation with ADX prevents false positives in strong months
+// CHOP Index formula: 100 * LOG10(SUM(ATR(1), n) / (highest_high(n) - lowest_low(n))) / LOG10(n)
+// Values: >61.8 = choppy/ranging, <38.2 = strongly trending
+chop_atr_sum = math.sum(ta.atr(1), chop_length)
+chop_hh      = ta.highest(high, chop_length)
+chop_ll      = ta.lowest(low, chop_length)
+chop_range   = chop_hh - chop_ll
+chop_val     = chop_range > 0 ? 100.0 * math.log10(chop_atr_sum / chop_range) / math.log10(chop_length) : 50.0
+is_chop_market = use_chop_filter and chop_val > chop_threshold and
+                 (not use_chop_adx_confirm or adx_val < chop_adx_threshold)
+chop_ok      = not is_chop_market
+
+// 5. Seasonal VIX Regime Filter (July & December only)
+// Fetches live VIX data from TradingView — no external tools needed
+vix_val      = request.security("VIX", timeframe.period, close)
+seasonal_vix_ok = true
+if use_seasonal_vix and is_chop_month
+    if vix_val > seasonal_vix_thresh
+        seasonal_vix_ok := false
+
+// 5. Seasonal Whipsaw Counter (July & December only)
+// Counts EMA crossings in the lookback window — the yoyo detector
+// Only activates in July and December, leaving all other months untouched
+seasonal_cross_count = 0
+for i = 0 to seasonal_ws_lookback - 1
+    if (close[i] > fast_ema[i] and close[i + 1] <= fast_ema[i + 1]) or
+       (close[i] < fast_ema[i] and close[i + 1] >= fast_ema[i + 1])
+        seasonal_cross_count += 1
+seasonal_whipsaw_ok = true
+if use_seasonal_whipsaw and is_chop_month
+    if seasonal_cross_count >= seasonal_ws_crosses
+        seasonal_whipsaw_ok := false
+
+// 6. Slow-Burn Grind Filter
+// The trend can already be established — big moves may have happened earlier.
+// We only want to enter during the GRINDING phase:
+//   a) All candles in the lookback window have small bodies (grinding, not sprinting)
+//   b) Close is still near the EMA — price hasn't sprinted far away from it
+// Candle direction (bull/bear) doesn't matter — only body SIZE and EMA proximity matter.
+// Both longs and shorts are valid as long as close is on the right side of EMA and VWAP.
+slow_burn_ok = true
+if use_slow_burn
+    // Check 1: all candles in lookback must have small bodies
+    max_body = atr_val * slow_burn_atr
+    for i = 0 to slow_burn_lookback - 1
+        candle_body = math.abs(close[i] - open[i])
+        if candle_body > max_body
+            slow_burn_ok := false
+    // Check 2: close must be within N ATRs of the EMA (not sprinted away)
+    if math.abs(close - fast_ema) > (atr_val * slow_burn_prox_atr)
+        slow_burn_ok := false
+
+// ── TREND CONDITIONS ─────────────────────────────────────────────────────────
+bull_trend = entry_bars_above and recent_cross_above and vwap_above and vol_ok and not is_choppy and whipsaw_ok and ext_entry_ok and close_range_ok and slow_burn_ok and chop_ok and seasonal_vix_ok and seasonal_whipsaw_ok
+bear_trend = entry_bars_below and recent_cross_below and vwap_below and vol_ok and not is_choppy and whipsaw_ok and ext_entry_ok and close_range_ok and slow_burn_ok and chop_ok and seasonal_vix_ok and seasonal_whipsaw_ok
+
+// ── ENTRY SIGNALS ────────────────────────────────────────────────────────────
+long_signal  = bull_trend and can_trade and strategy.position_size == 0
+short_signal = bear_trend and can_trade and strategy.position_size == 0
+
+// ── POSITION SIZING ──────────────────────────────────────────────────────────
+initial_sl_dist = math.max(atr_val, 15.0)  // ATR floor: prevents extreme sizing when ATR is compressed at open
+qty = math.min(math.max(math.floor(risk_usd / (initial_sl_dist * 2.0)), 1), max_qty)
+
+if long_signal
+    strategy.entry("Long", strategy.long, qty=qty, comment="Trend Long",
+     alert_message='{"ticker": "MNQ1!", "action": "buy", "orderType": "market", "sentiment": "long"}')
+
+if short_signal
+    strategy.entry("Short", strategy.short, qty=qty, comment="Trend Short",
+     alert_message='{"ticker": "MNQ1!", "action": "sell", "orderType": "market", "sentiment": "short"}')
+
+// ── EXIT LOGIC ───────────────────────────────────────────────────────────────
+var float ep              = na
+var int   bars_in_trade   = 0
+var bool  trail_triggered = false
+var float trail_stop_long = na
+var float trail_stop_short = na
+
+if strategy.position_size[1] == 0 and strategy.position_size != 0
+    ep                := strategy.opentrades.entry_price(0)
+    bars_in_trade     := 1
+    trail_triggered   := false
+    trail_stop_long   := na
+    trail_stop_short  := na
+else if strategy.position_size != 0
+    bars_in_trade += 1
+else
+    bars_in_trade     := 0
+    ep                := na
+    trail_triggered   := false
+    trail_stop_long   := na
+    trail_stop_short  := na
+
+// Open profit/loss measured intra-bar
+open_qty         = math.abs(strategy.position_size)
+open_loss_long   = strategy.position_size > 0 and not na(ep) ? (ep - low)  * open_qty * 2.0 : 0.0
+open_loss_short  = strategy.position_size < 0 and not na(ep) ? (high - ep) * open_qty * 2.0 : 0.0
+open_profit_long  = strategy.position_size > 0 and not na(ep) ? (high - ep) * open_qty * 2.0 : 0.0
+open_profit_short = strategy.position_size < 0 and not na(ep) ? (ep - low)  * open_qty * 2.0 : 0.0
+
+// Profit Lock Trailing Stop logic
+// Once MFE hits trigger amount, set a floor stop to lock in minimum profit
+if use_trail_stop and strategy.position_size > 0 and not na(ep) and bars_in_trade >= trail_min_bars
+    if open_profit_long >= trail_mfe_trigger
+        trail_triggered   := true
+        // Lock-in price = entry + lock_profit_per_point
+        lock_pts           = trail_lock_profit / (open_qty * 2.0)
+        trail_stop_long   := math.max(nz(trail_stop_long, ep + lock_pts), ep + lock_pts)
+
+if use_trail_stop and strategy.position_size < 0 and not na(ep) and bars_in_trade >= trail_min_bars
+    if open_profit_short >= trail_mfe_trigger
+        trail_triggered   := true
+        lock_pts           = trail_lock_profit / (open_qty * 2.0)
+        trail_stop_short  := math.min(nz(trail_stop_short, ep - lock_pts), ep - lock_pts)
+
+// Fire the trailing stop if price moves back through the lock-in level
+long_trail_stop  = use_trail_stop and trail_triggered and strategy.position_size > 0  and not na(trail_stop_long)  and low  <= trail_stop_long
+short_trail_stop = use_trail_stop and trail_triggered and strategy.position_size < 0  and not na(trail_stop_short) and high >= trail_stop_short
+
+if long_trail_stop
+    strategy.close("Long",  comment="Trail Lock Exit",
+     alert_message='{"ticker": "MNQ1!", "action": "sell", "orderType": "market", "sentiment": "flat"}')
+    ep               := na
+    bars_in_trade    := 0
+    trail_triggered  := false
+    trail_stop_long  := na
+
+if short_trail_stop
+    strategy.close("Short", comment="Trail Lock Exit",
+     alert_message='{"ticker": "MNQ1!", "action": "buy", "orderType": "market", "sentiment": "flat"}')
+    ep               := na
+    bars_in_trade    := 0
+    trail_triggered  := false
+    trail_stop_short := na
+
+// Price is on the wrong side of the EMA
+price_below_ema  = close < fast_ema
+price_above_ema  = close > fast_ema
+
+// First-Bar Stop: fires on bar 1 or bar 2 when price has crossed EMA AND loss >= threshold
+long_cross_stop  = use_first_bar_stop and (bars_in_trade <= 2) and price_below_ema and (open_loss_long  >= first_bar_stop_usd) and (strategy.position_size > 0)
+short_cross_stop = use_first_bar_stop and (bars_in_trade <= 2) and price_above_ema and (open_loss_short >= first_bar_stop_usd) and (strategy.position_size < 0)
+
+if long_cross_stop
+    strategy.close("Long",  comment="EMA Cross Stop",
+     alert_message='{"ticker": "MNQ1!", "action": "sell", "orderType": "market", "sentiment": "flat"}')
+    ep            := na
+    bars_in_trade := 0
+
+if short_cross_stop
+    strategy.close("Short", comment="EMA Cross Stop",
+     alert_message='{"ticker": "MNQ1!", "action": "buy", "orderType": "market", "sentiment": "flat"}')
+    ep            := na
+    bars_in_trade := 0
+
+// Overextended hard stop: only fires when overextended filter is ON and condition is met mid-trade
+long_ext_stop  = use_ext_filter and strategy.position_size > 0 and is_overextended and open_loss_long  >= ext_hard_stop
+short_ext_stop = use_ext_filter and strategy.position_size < 0 and is_overextended and open_loss_short >= ext_hard_stop
+
+if long_ext_stop
+    strategy.close("Long",  comment="Ext Move Stop",
+     alert_message='{"ticker": "MNQ1!", "action": "sell", "orderType": "market", "sentiment": "flat"}')
+    ep            := na
+    bars_in_trade := 0
+
+if short_ext_stop
+    strategy.close("Short", comment="Ext Move Stop",
+     alert_message='{"ticker": "MNQ1!", "action": "buy", "orderType": "market", "sentiment": "flat"}')
+    ep            := na
+    bars_in_trade := 0
+
+// Time-Based Loss Exit: if trade is still in a net loss after N bars, exit
+// Data shows zero winning trades are caught by this — only fast losers that never moved in our favour
+long_time_stop  = use_time_stop and strategy.position_size > 0 and bars_in_trade == time_stop_bars and strategy.openprofit < 0
+short_time_stop = use_time_stop and strategy.position_size < 0 and bars_in_trade == time_stop_bars and strategy.openprofit < 0
+
+if long_time_stop
+    strategy.close("Long",  comment="Time Stop",
+     alert_message='{"ticker": "MNQ1!", "action": "sell", "orderType": "market", "sentiment": "flat"}')
+    ep            := na
+    bars_in_trade := 0
+
+if short_time_stop
+    strategy.close("Short", comment="Time Stop",
+     alert_message='{"ticker": "MNQ1!", "action": "buy", "orderType": "market", "sentiment": "flat"}')
+    ep            := na
+    bars_in_trade := 0
+
+// Early Loss Threshold Stop: exit immediately if open loss exceeds threshold within first N bars
+// Big winners have avg MAE of only $558 — trades that move $500+ against you early are almost always losers
+long_early_loss  = use_early_loss and strategy.position_size > 0 and bars_in_trade <= early_loss_bars and open_loss_long  >= early_loss_thresh
+short_early_loss = use_early_loss and strategy.position_size < 0 and bars_in_trade <= early_loss_bars and open_loss_short >= early_loss_thresh
+
+if long_early_loss
+    strategy.close("Long",  comment="Early Loss Stop",
+     alert_message='{"ticker": "MNQ1!", "action": "sell", "orderType": "market", "sentiment": "flat"}')
+    ep            := na
+    bars_in_trade := 0
+
+if short_early_loss
+    strategy.close("Short", comment="Early Loss Stop",
+     alert_message='{"ticker": "MNQ1!", "action": "buy", "orderType": "market", "sentiment": "flat"}')
+    ep            := na
+    bars_in_trade := 0
+
+// ── EXHAUSTION EXIT ─────────────────────────────────────────────────────────
+// Fires when ALL three conditions are true simultaneously:
+//   1. Price is overextended (>= N ATRs from EMA) — far from mean
+//   2. Volume spike (>= multiplier × 20-bar avg) — institutional exhaustion
+//   3. Reversal candle (body >= multiplier × previous body, opposite direction)
+// Only activates when already in minimum profit — protects big runners from snapping back.
+vol_ma_exhaust     = ta.sma(volume, exhaust_vol_len)
+bool exhaust_vol_spike = volume >= exhaust_vol_mult * vol_ma_exhaust
+
+// Overextension: price is far from EMA in the trade's favour
+bool long_overextended  = strategy.position_size > 0 and (high - fast_ema) >= exhaust_atr_mult * atr_val
+bool short_overextended = strategy.position_size < 0 and (fast_ema - low)  >= exhaust_atr_mult * atr_val
+
+// Reversal candle: current bar body is opposite direction and large enough
+cur_body   = math.abs(close - open)
+prev_body  = math.abs(close[1] - open[1])
+bool long_reversal_candle  = close < open and cur_body >= exhaust_engulf_mult * prev_body  // bearish reversal bar while long
+bool short_reversal_candle = close > open and cur_body >= exhaust_engulf_mult * prev_body  // bullish reversal bar while short
+
+// Minimum profit gate — only protect trades that have already run well
+bool long_min_profit_ok  = strategy.position_size > 0 and strategy.openprofit >= exhaust_min_profit
+bool short_min_profit_ok = strategy.position_size < 0 and strategy.openprofit >= exhaust_min_profit
+
+// Reversal candle check is optional — controlled by exhaust_use_candle toggle
+bool long_candle_ok  = not exhaust_use_candle or long_reversal_candle
+bool short_candle_ok = not exhaust_use_candle or short_reversal_candle
+
+// Earliest hour gate: block exhaustion exit before this hour (default 11am)
+// Data analysis shows 10am opening momentum moves look like exhaustion but continue strongly.
+// Blocking before 11am adds +$29k net over 469 trades vs allowing from 10am.
+bool exhaust_hour_ok = cur_hour >= exhaust_earliest_hour
+
+bool long_exhaust_exit  = use_exhaust_exit and long_overextended  and exhaust_vol_spike and long_candle_ok  and long_min_profit_ok and exhaust_hour_ok
+bool short_exhaust_exit = use_exhaust_exit and short_overextended and exhaust_vol_spike and short_candle_ok and short_min_profit_ok and exhaust_hour_ok
+
+if long_exhaust_exit
+    strategy.close("Long",  comment="Exhaustion Exit",
+     alert_message='{"ticker": "MNQ1!", "action": "sell", "orderType": "market", "sentiment": "flat"}')
+    ep            := na
+    bars_in_trade := 0
+    trail_triggered  := false
+    trail_stop_long  := na
+
+if short_exhaust_exit
+    strategy.close("Short", comment="Exhaustion Exit",
+     alert_message='{"ticker": "MNQ1!", "action": "buy", "orderType": "market", "sentiment": "flat"}')
+    ep            := na
+    bars_in_trade := 0
+    trail_triggered  := false
+    trail_stop_short := na
+
+// EMA Break Exit: M consecutive bars closing on the wrong side (primary exit)
+// min_hold_bars prevents the 0-30 min whipsaw exits (0% win rate) — EMA exit blocked until trade is old enough
+long_ema_break  = strategy.position_size > 0 and exit_bars_below  and bars_in_trade >= min_hold_bars
+short_ema_break = strategy.position_size < 0 and exit_bars_above  and bars_in_trade >= min_hold_bars
+
+if long_ema_break
+    strategy.close("Long",  comment="EMA Break Exit",
+     alert_message='{"ticker": "MNQ1!", "action": "sell", "orderType": "market", "sentiment": "flat"}')
+    ep            := na
+    bars_in_trade := 0
+
+if short_ema_break
+    strategy.close("Short", comment="EMA Break Exit",
+     alert_message='{"ticker": "MNQ1!", "action": "buy", "orderType": "market", "sentiment": "flat"}')
+    ep            := na
+    bars_in_trade := 0
+
+// ── VISUALS ──────────────────────────────────────────────────────────────────
+// EMA and VWAP plots removed — add EMA (length 15) and VWAP as separate indicators in TradingView
+
+plotshape(long_signal,  title="Long Entry",  location=location.belowbar, style=shape.triangleup,   color=color.green, size=size.small)
+plotshape(short_signal, title="Short Entry", location=location.abovebar, style=shape.triangledown, color=color.red,   size=size.small)
+
+// ── TP / SL VISUAL BOXES ─────────────────────────────────────────────────────
+// Draws a filled green box (TP zone) above entry and filled red box (SL zone)
+// below entry when a trade opens. Both extend right until the trade closes.
+var box tp_box = na
+var box sl_box = na
+
+// Calculate TP and SL price levels from entry (2:1 R:R)
+tp_dist_pts = not na(ep) ? (risk_usd * 2.0) / math.max(math.abs(strategy.position_size), 1) / 2.0 : na
+sl_dist_pts = not na(ep) ? risk_usd         / math.max(math.abs(strategy.position_size), 1) / 2.0 : na
+
+tp_price = strategy.position_size > 0 and not na(ep) ? ep + tp_dist_pts :
+           strategy.position_size < 0 and not na(ep) ? ep - tp_dist_pts : na
+sl_price = strategy.position_size > 0 and not na(ep) ? ep - sl_dist_pts :
+           strategy.position_size < 0 and not na(ep) ? ep + sl_dist_pts : na
+
+bool trade_just_opened = strategy.position_size[1] == 0 and strategy.position_size != 0
+bool trade_just_closed = strategy.position_size[1] != 0 and strategy.position_size == 0
+
+if trade_just_opened and not na(ep) and not na(tp_price) and not na(sl_price)
+    box.delete(tp_box)
+    box.delete(sl_box)
+    // Green TP box: from entry price up to TP level
+    tp_box := box.new(bar_index, tp_price, bar_index + 1, ep,
+                 extend=extend.right,
+                 bgcolor=color.new(color.teal, 70),
+                 border_color=color.new(color.teal, 20),
+                 border_width=1)
+    // Red SL box: from SL level up to entry price
+    sl_box := box.new(bar_index, ep, bar_index + 1, sl_price,
+                 extend=extend.right,
+                 bgcolor=color.new(color.red, 75),
+                 border_color=color.new(color.red, 20),
+                 border_width=1)
+    // Labels at the TP and SL price levels
+    label.new(bar_index + 2, tp_price, "TP " + str.tostring(math.round(tp_price, 0)),
+              color=color.new(color.teal, 20), textcolor=color.white,
+              style=label.style_label_left, size=size.small)
+    label.new(bar_index + 2, sl_price, "SL " + str.tostring(math.round(sl_price, 0)),
+              color=color.new(color.red, 20),  textcolor=color.white,
+              style=label.style_label_left, size=size.small)
+
+if trade_just_closed
+    box.delete(tp_box)
+    box.delete(sl_box)
+    tp_box := na
+    sl_box := na
+
+// ── INFO TABLE ───────────────────────────────────────────────────────────────
+// Live performance counters
+var int   tv_total_trades  = 0
+var int   tv_wins          = 0
+var int   tv_losses        = 0
+var float tv_gross_win     = 0.0
+var float tv_gross_loss    = 0.0
+
+// Monthly P&L tracking
+var float tv_month_pnl     = 0.0
+var int   tv_profit_months = 0
+var int   tv_loss_months   = 0
+var int   tv_last_month    = 0
+
+if tv_last_month != 0 and cur_month != tv_last_month
+    if tv_month_pnl > 0
+        tv_profit_months += 1
+    else if tv_month_pnl < 0
+        tv_loss_months += 1
+    tv_month_pnl := 0.0
+tv_last_month := cur_month
+
+if strategy.closedtrades > strategy.closedtrades[1]
+    last_pnl = strategy.closedtrades.profit(strategy.closedtrades - 1)
+    tv_total_trades += 1
+    tv_month_pnl    += last_pnl
+    if last_pnl > 0
+        tv_wins      += 1
+        tv_gross_win += last_pnl
+    else
+        tv_losses      += 1
+        tv_gross_loss  += last_pnl
+
+if barstate.islast
+    if tv_month_pnl > 0
+        tv_profit_months += 1
+    else if tv_month_pnl < 0
+        tv_loss_months += 1
+
+// Derived stats
+tv_win_rate     = tv_total_trades > 0 ? (tv_wins / tv_total_trades) * 100 : 0.0
+tv_avg_win      = tv_wins   > 0 ? tv_gross_win  / tv_wins   : 0.0
+tv_avg_loss     = tv_losses > 0 ? tv_gross_loss / tv_losses : 0.0
+tv_rr           = tv_avg_loss != 0 ? math.abs(tv_avg_win / tv_avg_loss) : 0.0
+tv_wl_ratio     = tv_losses  > 0 ? tv_wins / tv_losses : float(tv_wins)
+tv_net_pnl      = tv_gross_win + tv_gross_loss
+tv_total_months = tv_profit_months + tv_loss_months
+
+var table t = table.new(position.top_right, 2, 13, bgcolor=color.new(color.black, 20), border_color=color.new(color.white, 50), border_width=1)
+if barstate.islast
+    // Header
+    table.cell(t, 0, 0,  "Trend Momentum v4",  text_color=color.white,  text_size=size.small, bgcolor=color.new(color.purple, 40))
+    table.cell(t, 1, 0,  "Strat 3",            text_color=color.white,  text_size=size.small, bgcolor=color.new(color.purple, 40))
+    // Fast EMA value
+    table.cell(t, 0, 1,  "Fast EMA",           text_color=color.white, text_size=size.small)
+    table.cell(t, 1, 1,  str.tostring(math.round(fast_ema, 1)), text_color=color.aqua, text_size=size.small)
+    // Current trend signal
+    table.cell(t, 0, 2,  "Trend",              text_color=color.white, text_size=size.small)
+    trend_txt   = bull_trend ? "BULL" : bear_trend ? "BEAR" : "NONE"
+    trend_color = bull_trend ? color.lime : bear_trend ? color.red : color.gray
+    table.cell(t, 1, 2,  trend_txt,            text_color=trend_color,  text_size=size.small)
+    // Bars above EMA
+    table.cell(t, 0, 3,  "Bars Above EMA",     text_color=color.white, text_size=size.small)
+    table.cell(t, 1, 3,  str.tostring(bars_above_ema), text_color=color.white, text_size=size.small)
+    // Filter status (only shows active filters)
+    table.cell(t, 0, 4,  "Filters",            text_color=color.white, text_size=size.small)
+    filter_txt  = not whipsaw_ok ? "WHIP" : is_overextended ? "EXT" : is_choppy ? "CHOP" : "OK"
+    filter_col  = filter_txt == "OK" ? color.lime : color.orange
+    table.cell(t, 1, 4,  filter_txt,           text_color=filter_col,   text_size=size.small)
+    // Daily losses
+    table.cell(t, 0, 5,  "Daily Losses",       text_color=color.white, text_size=size.small)
+    circ_color  = daily_losses >= max_daily_loss and max_daily_loss > 0 ? color.red : color.lime
+    circ_text   = daily_losses >= max_daily_loss and max_daily_loss > 0 ? "MAX HIT" : str.tostring(daily_losses) + "/" + str.tostring(max_daily_loss)
+    table.cell(t, 1, 5,  circ_text,            text_color=circ_color,   text_size=size.small)
+    // Position
+    table.cell(t, 0, 6,  "Position",           text_color=color.white, text_size=size.small)
+    pos_text    = strategy.position_size > 0 ? "LONG" : strategy.position_size < 0 ? "SHORT" : "FLAT"
+    pos_color   = strategy.position_size > 0 ? color.lime : strategy.position_size < 0 ? color.red : color.gray
+    table.cell(t, 1, 6,  pos_text,             text_color=pos_color,    text_size=size.small)
+    // ── LIVE PERFORMANCE STATS ──────────────────────────────────────────────
+    table.cell(t, 0, 7,  "── Performance ──",  text_color=color.white,  text_size=size.tiny, bgcolor=color.new(color.navy, 20))
+    table.cell(t, 1, 7,  str.tostring(tv_total_trades) + " trades", text_color=color.white, text_size=size.tiny, bgcolor=color.new(color.navy, 20))
+    // Win Rate
+    table.cell(t, 0, 8,  "Win Rate",           text_color=color.white, text_size=size.small)
+    wr_color = tv_win_rate >= 45 ? color.lime : tv_win_rate >= 38 ? color.yellow : color.red
+    table.cell(t, 1, 8,  str.tostring(math.round(tv_win_rate, 1)) + "%", text_color=wr_color, text_size=size.small)
+    // W/L Ratio
+    table.cell(t, 0, 9,  "W/L Ratio",          text_color=color.white, text_size=size.small)
+    wl_color = tv_wl_ratio >= 0.75 ? color.lime : tv_wl_ratio >= 0.60 ? color.yellow : color.red
+    table.cell(t, 1, 9,  str.tostring(math.round(tv_wl_ratio, 2)) + "x", text_color=wl_color, text_size=size.small)
+    // Risk:Reward
+    table.cell(t, 0, 10, "Risk:Reward",        text_color=color.white, text_size=size.small)
+    rr_color = tv_rr >= 1.70 ? color.lime : tv_rr >= 1.40 ? color.yellow : color.red
+    table.cell(t, 1, 10, str.tostring(math.round(tv_rr, 2)) + ":1",  text_color=rr_color,  text_size=size.small)
+    // Net P&L
+    table.cell(t, 0, 11, "Net P&L",            text_color=color.white, text_size=size.small)
+    pnl_color = tv_net_pnl >= 0 ? color.lime : color.red
+    pnl_sign  = tv_net_pnl >= 0 ? "+" : ""
+    table.cell(t, 1, 11, pnl_sign + "$" + str.tostring(math.round(tv_net_pnl, 0)), text_color=pnl_color, text_size=size.small)
+    // Profitable Months
+    table.cell(t, 0, 12, "Profit Months",      text_color=color.white, text_size=size.small)
+    pm_color = tv_total_months > 0 and tv_profit_months / tv_total_months >= 0.70 ? color.lime
+               : tv_total_months > 0 and tv_profit_months / tv_total_months >= 0.55 ? color.yellow
+               : color.red
+    pm_text  = str.tostring(tv_profit_months) + "/" + str.tostring(tv_total_months)
+    table.cell(t, 1, 12, pm_text,              text_color=pm_color,     text_size=size.small)
+
+// ── WEBHOOK ALERTS ───────────────────────────────────────────────────────────
+// All entry and exit calls above include alert_message= parameters.
+// In TradingView: create ONE alert on this strategy, set message to:
+//   {{strategy.order.alert_message}}
+// That single alert fires the correct JSON payload for every entry and exit automatically.
+// Webhook URL: paste your TradersPost strategy webhook URL in the alert settings.
