@@ -32,7 +32,7 @@ export default function ObservatoryPage() {
               <DataRow label="Decision" value={<SignalBadge value={p.ade_decision} />} />
               <DataRow label="Candidate Model" value={p.ade_candidate_model ?? "—"} />
               <DataRow label="Edge Score" value={fmt(p.ade_edge_score)} />
-              <DataRow label="Confidence" value={fmt(p.ade_confidence)} />
+              <DataRow label="Confidence" value={p.ade_confidence ?? "—"} />
               <DataRow label="Rank Order" value={p.ade_rank_order ?? "—"} />
             </HudPanel>
             <HudPanel title="ARI — Atlas Risk Intelligence">

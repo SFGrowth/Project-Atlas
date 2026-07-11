@@ -154,3 +154,77 @@ export const notificationLog = mysqlTable("notification_log", {
 
 export type NotificationLog = typeof notificationLog.$inferSelect;
 export type InsertNotificationLog = typeof notificationLog.$inferInsert;
+
+/**
+ * ADE v2 Trade Records — Self-Learning Framework (SLF)
+ * One row per closed paper trade with full Edge Attribution Record.
+ * Used by the Dimension Correlation Report (every 50 trades per model).
+ */
+export const adeTradeRecords = mysqlTable("ade_trade_records", {
+  id: int("id").autoincrement().primaryKey(),
+  tradeId: varchar("trade_id", { length: 64 }).notNull().unique(),
+  model: varchar("model", { length: 16 }).notNull(), // A1, A3, B1
+  adeVersion: varchar("ade_version", { length: 16 }).notNull().default("2.0.0"),
+  // Outcome
+  outcome: mysqlEnum("outcome", ["WIN", "LOSS", "BREAKEVEN"]).notNull(),
+  rMultiple: decimal("r_multiple", { precision: 8, scale: 4 }),
+  pnl: decimal("pnl", { precision: 10, scale: 2 }),
+  // ADE v2 normalised score
+  normScore: decimal("norm_score", { precision: 6, scale: 2 }),
+  confidence: varchar("confidence", { length: 16 }), // HIGH, MEDIUM, LOW
+  // Dimension scores (raw pts)
+  dMs01: decimal("d_ms01", { precision: 6, scale: 2 }),
+  dMs02: decimal("d_ms02", { precision: 6, scale: 2 }),
+  dMs03: decimal("d_ms03", { precision: 6, scale: 2 }),
+  dMs04: decimal("d_ms04", { precision: 6, scale: 2 }),
+  dMs05: decimal("d_ms05", { precision: 6, scale: 2 }),
+  dEq01: decimal("d_eq01", { precision: 6, scale: 2 }),
+  dEq02: decimal("d_eq02", { precision: 6, scale: 2 }),
+  dEq03: decimal("d_eq03", { precision: 6, scale: 2 }),
+  dTc01: decimal("d_tc01", { precision: 6, scale: 2 }),
+  dTc02: decimal("d_tc02", { precision: 6, scale: 2 }),
+  dSi01: decimal("d_si01", { precision: 6, scale: 2 }),
+  dSi02: decimal("d_si02", { precision: 6, scale: 2 }),
+  dSi03: decimal("d_si03", { precision: 6, scale: 2 }),
+  dCr01: decimal("d_cr01", { precision: 6, scale: 2 }),
+  dCr02: decimal("d_cr02", { precision: 6, scale: 2 }),
+  rawScore: decimal("raw_score", { precision: 8, scale: 2 }),
+  rawMax: decimal("raw_max", { precision: 8, scale: 2 }),
+  // Context
+  session: varchar("session", { length: 32 }),
+  dow: int("dow"),
+  adx14: decimal("adx14", { precision: 8, scale: 4 }),
+  atr14: decimal("atr14", { precision: 12, scale: 4 }),
+  volcomp: decimal("volcomp", { precision: 8, scale: 4 }),
+  // Timing
+  openedAt: timestamp("opened_at").notNull(),
+  closedAt: timestamp("closed_at").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export type AdeTradeRecord = typeof adeTradeRecords.$inferSelect;
+export type InsertAdeTradeRecord = typeof adeTradeRecords.$inferInsert;
+
+/**
+ * ADE Version Governance — immutable audit log of every ADE version change.
+ * Every weight or threshold change must be recorded here with full justification.
+ */
+export const adeVersionGovernance = mysqlTable("ade_version_governance", {
+  id: int("id").autoincrement().primaryKey(),
+  version: varchar("version", { length: 16 }).notNull(), // e.g. "2.0.0"
+  sprintNumber: int("sprint_number").notNull(),
+  changeType: mysqlEnum("change_type", ["INITIAL", "WEIGHT_CHANGE", "DIMENSION_ADD", "DIMENSION_REMOVE", "THRESHOLD_CHANGE", "BUGFIX"]).notNull(),
+  description: text("description").notNull(),
+  // Validation evidence
+  tradesAnalysed: int("trades_analysed"),
+  pfBefore: decimal("pf_before", { precision: 8, scale: 4 }),
+  pfAfter: decimal("pf_after", { precision: 8, scale: 4 }),
+  mcPassRateBefore: decimal("mc_pass_rate_before", { precision: 6, scale: 4 }),
+  mcPassRateAfter: decimal("mc_pass_rate_after", { precision: 6, scale: 4 }),
+  approvedBy: varchar("approved_by", { length: 64 }).notNull().default("OWNER"),
+  // Immutable — no updatedAt
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export type AdeVersionGovernance = typeof adeVersionGovernance.$inferSelect;
+export type InsertAdeVersionGovernance = typeof adeVersionGovernance.$inferInsert;

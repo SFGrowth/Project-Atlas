@@ -245,16 +245,76 @@ function ModelEvaluationsPanel({ p }: { p: PipelineReportPayload | null }) {
   );
 }
 
-// ─── ADE Panel ────────────────────────────────────────────────────────────────
+// ─── ADE Panel v2 ────────────────────────────────────────────────────────────
+
+function DimBar({ label, score, max }: { label: string; score: number; max: number }) {
+  const pct = max > 0 ? Math.min(100, (score / max) * 100) : 0;
+  const color = pct >= 70 ? "var(--arc-blue)" : pct >= 40 ? "var(--stark-gold)" : "var(--danger-red)";
+  return (
+    <div className="flex items-center gap-2 py-0.5">
+      <span className="data-label w-28 shrink-0">{label}</span>
+      <div className="flex-1 h-1.5 rounded-full" style={{ background: "oklch(0.18 0.04 220)" }}>
+        <div className="h-1.5 rounded-full transition-all duration-500" style={{ width: `${pct}%`, background: color, boxShadow: `0 0 6px ${color}` }} />
+      </div>
+      <span className="data-value text-[10px] w-8 text-right">{score.toFixed(1)}</span>
+    </div>
+  );
+}
 
 function ADEPanel({ p }: { p: PipelineReportPayload | null }) {
+  const ear = p?.ade_edge_attribution;
+  const confClass = p?.ade_confidence === "HIGH" ? "status-live" : p?.ade_confidence === "MEDIUM" ? "status-warn" : "status-inactive";
   return (
-    <HudPanel title="ADE — Atlas Decision Engine">
-      <DataRow label="Decision" value={<SignalBadge value={p?.ade_decision} />} />
-      <DataRow label="Candidate Model" value={<span className="data-value text-[var(--stark-gold)] glow-gold">{p?.ade_candidate_model ?? "—"}</span>} />
-      <DataRow label="Edge Score" value={fmt(p?.ade_edge_score)} />
-      <DataRow label="Confidence" value={fmtPct(p?.ade_confidence)} />
-      <DataRow label="Rank Order" value={p?.ade_rank_order ?? "—"} />
+    <HudPanel title="ADE v2 — Atlas Decision Engine">
+      <div className="space-y-1 mb-3">
+        <DataRow label="Decision" value={<SignalBadge value={p?.ade_decision} />} />
+        <DataRow label="Candidate Model" value={<span className="data-value text-[var(--stark-gold)] glow-gold">{p?.ade_candidate_model ?? "—"}</span>} />
+        <DataRow label="Edge Score" value={
+          <span className="data-value font-['Orbitron'] text-[var(--arc-blue)] glow-blue">
+            {p?.ade_edge_score != null ? p.ade_edge_score.toFixed(1) : "—"}
+          </span>
+        } />
+        <DataRow label="Confidence" value={
+          p?.ade_confidence
+            ? <span className={`status-badge ${confClass}`}>{p.ade_confidence}</span>
+            : <span className="text-[var(--color-muted-foreground)]">—</span>
+        } />
+        <DataRow label="Rank Order" value={<span className="data-value text-[9px]">{p?.ade_rank_order ?? "—"}</span>} />
+        <DataRow label="ADE Version" value={<span className="data-value text-[9px] text-[var(--color-muted-foreground)]">{p?.ade_version ?? "—"}</span>} />
+      </div>
+      {ear && (
+        <>
+          <div className="text-[9px] tracking-widest text-[var(--arc-blue)] mb-2 font-['Orbitron'] opacity-70">EDGE ATTRIBUTION RECORD</div>
+          <div className="space-y-0.5">
+            <DimBar label="MS-01 Trend" score={ear.ms01} max={20} />
+            <DimBar label="MS-02 ADX" score={ear.ms02} max={18} />
+            <DimBar label="MS-03 VolExp" score={ear.ms03} max={14} />
+            <DimBar label="MS-04 Struct" score={ear.ms04} max={12} />
+            {ear.ms05 > 0 && <DimBar label="MS-05 Comp" score={ear.ms05} max={12} />}
+            {ear.eq01 > 0 && <DimBar label="EQ-01 Depth" score={ear.eq01} max={15} />}
+            <DimBar label="EQ-02 Liq" score={ear.eq02} max={15} />
+            <DimBar label="EQ-03 Risk" score={ear.eq03} max={12} />
+            <DimBar label="TC-01 Session" score={ear.tc01} max={10} />
+            <DimBar label="TC-02 DoW" score={ear.tc02} max={6} />
+            <DimBar label="SI-01 Hist" score={ear.si01} max={10} />
+            <DimBar label="SI-02 Live" score={ear.si02} max={7} />
+            <DimBar label="SI-03 Obs" score={ear.si03} max={5} />
+          </div>
+          <div className="flex items-center justify-between mt-2 pt-2 border-t border-[oklch(0.22_0.06_220/0.3)]">
+            <span className="data-label">Raw / Max</span>
+            <span className="data-value text-[10px]">{ear.raw.toFixed(1)} / {ear.max.toFixed(0)}</span>
+          </div>
+          {(ear.cr01 < 0 || ear.cr02 < 0) && (
+            <div className="flex items-center justify-between">
+              <span className="data-label text-[var(--danger-red)]">Penalties</span>
+              <span className="pnl-negative text-[10px]">{(ear.cr01 + ear.cr02).toFixed(1)} pts</span>
+            </div>
+          )}
+        </>
+      )}
+      {!ear && p?.ade_no_trade_reason && (
+        <div className="text-[9px] text-[var(--color-muted-foreground)] mt-2 italic">{p.ade_no_trade_reason}</div>
+      )}
     </HudPanel>
   );
 }

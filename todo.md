@@ -85,7 +85,7 @@
 - [x] Performance Analytics page (/analytics): equity curve, daily P&L, model breakdown, trade log
 - [x] Fix all dashboard clocks and timestamps to display in New York (ET) timezone
 - [x] Vitest: 17/17 tests pass
-- [ ] Add trade entry/exit labels to M-15 Pine Script (W/L labels, no reprints, bar-close confirmed)
+- [x] Add trade entry/exit labels to M-15 Pine Script (W/L labels, no reprints, bar-close confirmed) — implemented in atlas_core.pine Sprint 078 commit
 
 ## Sprint 079 — Pipeline Fix & Dashboard Hydration
 - [x] Root cause identified: nexusRoutes.ts validatePayload() expected flat JSON but M-15 sends nested JSON (metadata.ticker, market_state.session etc.)
@@ -93,3 +93,53 @@
 - [x] Fix: Home.tsx now fetches trpc.nexus.latestReport on mount so dashboard shows data immediately (not waiting for SSE catchup)
 - [x] End-to-end test: nested Pine Script payload accepted with 201, sse_clients_reached=14, all fields normalised correctly
 - [x] All 17 vitest tests still passing after fixes
+
+## Sprint 081 — ADE v2 Implementation & Certification Framework
+
+### Part 1 — ADE v2 Pine Script (M-14)
+- [x] Implement all 17 confidence dimensions in atlas_core.pine (M-14)
+- [x] Implement model-specific normalisation (A1, A2, A3 separate max scores)
+- [x] Implement confidence ranking and candidate selection
+- [x] Implement tie-breaking logic (D-SI-01 then D-MS-02)
+- [x] Implement Edge Attribution Record (EAR) generation in Pine Script
+- [x] Embed EAR fields in M-15 webhook payload (ade_v2 nested object)
+- [x] Verify ARI, TVL, M-15 Observatory remain unchanged
+
+### Part 2 — Database Schema
+- [x] Create ade_trade_records table (22 fields per Sprint 080 spec)
+- [x] Create ade_version_governance table (version governance)
+- [x] Run migration SQL via webdev_execute_sql
+- [x] Seed ADE v2.0.0 initial governance record
+
+### Part 3 — Edge Attribution Panel (Atlas Nexus)
+- [x] Build EdgeAttributionPanel component — top 5 positive + top 3 penalty dimensions
+- [x] Display: raw score, normalised score, candidate status, model, direction
+- [x] Per-dimension rows: name, weight, contribution, explanation, current value, normalised value
+- [x] Wire to live webhook payload ade_v2 fields via tRPC
+- [x] Add to ADE Decision Engine page
+
+### Part 4 — Model Ranking Display
+- [x] Build ModelRankingPanel component — ranked list of all evaluated models
+- [x] Display per model: rank, model ID, edge score, confidence, ARI state, TVL state, reason
+- [x] Wire to live webhook payload
+- [x] Add to ADE Decision Engine page
+
+### Part 5 — Atlas Certification Framework
+- [x] Build /certification route and CertificationDashboard page
+- [x] Display: current production version, research version, certification status
+- [x] Display all 14 certification checks with pass/fail/pending status
+- [x] Display: paper trades completed, MC pass rate, certification date, version, EDL reference
+- [x] Add certification route to App.tsx and sidebar navigation
+
+### Part 6 — Version Governance
+- [x] Build version history display in Certification dashboard
+- [x] Seed ADE v2.0.0 as the initial governance entry in ade_version_governance table
+
+### Part 7 — Self-Learning Schema
+- [x] ade_trade_records table active and ready to receive data from paper trades
+- [x] SLF record insertion wired to paper trade close handler in nexusRoutes.ts
+
+### Part 8 — Engineering Validation
+- [x] Python validation: all 6 checks pass (raw maxima, normalisation, confidence tiers, ARI/TVL compat, ranking, certification)
+- [x] Run full test suite — 17/17 tests pass
+- [x] TypeScript compilation clean (0 errors)

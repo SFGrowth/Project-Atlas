@@ -13,6 +13,8 @@ import {
   pipelineReports,
   systemHealthEvents,
   users,
+  adeVersionGovernance,
+  adeTradeRecords,
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 
@@ -421,4 +423,30 @@ export async function recomputeJournalDay(tradeDate: string, account = "ATLAS_MN
     ariInterventions,
     tvlInterventions,
   });
+}
+
+// ─── ADE Certification Framework ──────────────────────────────────────────────────────────────────────────────────
+
+export async function getAdeGovernanceLog() {
+  const db = await getDb();
+  if (!db) return [];
+  return db
+    .select()
+    .from(adeVersionGovernance)
+    .orderBy(desc(adeVersionGovernance.createdAt));
+}
+
+export async function getAdeTradeStats(): Promise<{ model: string; count: number }[]> {
+  const db = await getDb();
+  if (!db) return [];
+  const records = await db
+    .select({ model: adeTradeRecords.model, outcome: adeTradeRecords.outcome })
+    .from(adeTradeRecords);
+  const counts: Record<string, number> = {};
+  for (const r of records) {
+    if (r.outcome === "WIN" || r.outcome === "LOSS" || r.outcome === "BREAKEVEN") {
+      counts[r.model] = (counts[r.model] ?? 0) + 1;
+    }
+  }
+  return Object.entries(counts).map(([model, count]) => ({ model, count }));
 }

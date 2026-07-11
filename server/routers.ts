@@ -18,6 +18,8 @@ import {
   getLastWebhookEvent,
   getRecentNotifications,
   getAnalyticsData,
+  getAdeGovernanceLog,
+  getAdeTradeStats,
 } from "./db";
 
 export const appRouter = router({
@@ -239,6 +241,20 @@ export const appRouter = router({
       .query(async ({ input }) => {
         return await getAnalyticsData(input.account);
       }),
+  }),
+
+  // ─── Certification Framework ──────────────────────────────────────────────────────────────────────────────────
+  certification: router({
+    governance: publicProcedure.query(async () => {
+      const records = await getAdeGovernanceLog();
+      return records.map(r => ({
+        ...r,
+        createdAt: r.createdAt.toISOString(),
+      }));
+    }),
+    tradeStats: publicProcedure.query(async () => {
+      return await getAdeTradeStats();
+    }),
   }),
 });
 

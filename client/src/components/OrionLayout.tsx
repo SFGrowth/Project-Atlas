@@ -6,7 +6,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
 import {
-  Activity, AlertTriangle, BarChart2, BookOpen, Brain, ChevronLeft, ChevronRight,
+  Activity, AlertTriangle, BadgeCheck, BarChart2, BookOpen, Brain, ChevronLeft, ChevronRight,
   Clock, Cpu, Database, FlaskConical, Home, LayoutDashboard, LineChart, Menu,
   Radio, Settings, Shield, Telescope, TrendingUp, Zap,
 } from "lucide-react";
@@ -30,6 +30,7 @@ const NAV_GROUPS = [
       { icon: Brain, label: "Model Evaluations", path: "/models" },
       { icon: Cpu, label: "Atlas Brain", path: "/brain" },
       { icon: Zap, label: "ADE", path: "/ade" },
+      { icon: BadgeCheck, label: "Certification", path: "/certification" },
       { icon: Shield, label: "ARI", path: "/ari" },
       { icon: AlertTriangle, label: "TVL", path: "/tvl" },
     ],

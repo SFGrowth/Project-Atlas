@@ -29,6 +29,8 @@ import {
   insertHealthEvent,
   insertNotificationLog,
 } from "./db";
+import { adeTradeRecords } from "../drizzle/schema";
+import { getDb } from "./db";
 import { notifyOwner } from "./_core/notification";
 
 // ─── SSE Client Registry ──────────────────────────────────────────────────────
@@ -367,6 +369,49 @@ async function processPaperTrading(payload: Record<string, unknown>): Promise<vo
           await sendNotification("TRADE_CLOSED", "Trade Closed", `${openTrade.model} ${openTrade.direction} | ${exitReason} | P&L: $${finalPnl.toFixed(2)}`, { tradeId: openTrade.id });
 
           await insertHealthEvent({ eventType: "TRADE_CLOSED", severity: "INFO", message: `${openTrade.model} ${openTrade.direction} closed: ${exitReason} P&L=$${finalPnl.toFixed(2)}` });
+
+          // ── Self-Learning Framework: insert ADE trade record ──────────────
+          try {
+            const db2 = await getDb();
+            if (db2) {
+              const outcome = finalPnl > 0 ? "WIN" : finalPnl < 0 ? "LOSS" : "BREAKEVEN";
+              const ear = (payload as any)?.ade_v2 ?? null;
+              await db2.insert(adeTradeRecords).values({
+                tradeId: openTrade.id,
+                model: openTrade.model,
+                adeVersion: ear?.version ?? "2.0.0",
+                outcome,
+                rMultiple: String(finalR.toFixed(4)),
+                pnl: String(finalPnl.toFixed(2)),
+                normScore: ear ? String(ear.norm_score.toFixed(2)) : null,
+                confidence: ear?.confidence_tier ?? null,
+                dMs01: ear ? String(ear.d_ms01 ?? 0) : null,
+                dMs02: ear ? String(ear.d_ms02 ?? 0) : null,
+                dMs03: ear ? String(ear.d_ms03 ?? 0) : null,
+                dMs04: ear ? String(ear.d_ms04 ?? 0) : null,
+                dMs05: ear ? String(ear.d_ms05 ?? 0) : null,
+                dEq01: ear ? String(ear.d_eq01 ?? 0) : null,
+                dEq02: ear ? String(ear.d_eq02 ?? 0) : null,
+                dEq03: ear ? String(ear.d_eq03 ?? 0) : null,
+                dTc01: ear ? String(ear.d_tc01 ?? 0) : null,
+                dTc02: ear ? String(ear.d_tc02 ?? 0) : null,
+                dSi01: ear ? String(ear.d_si01 ?? 0) : null,
+                dSi02: ear ? String(ear.d_si02 ?? 0) : null,
+                dSi03: ear ? String(ear.d_si03 ?? 0) : null,
+                dCr01: ear ? String(ear.d_cr01 ?? 0) : null,
+                dCr02: ear ? String(ear.d_cr02 ?? 0) : null,
+                rawScore: ear ? String(ear.raw_score ?? 0) : null,
+                rawMax: ear ? String(ear.raw_max ?? 0) : null,
+                session: String(payload?.master_state ?? "UNKNOWN"),
+                adx14: String(Number(payload?.adx ?? 0).toFixed(4)),
+                atr14: String(Number(payload?.atr ?? 0).toFixed(4)),
+                openedAt: openTrade.openedAt,
+                closedAt,
+              });
+            }
+          } catch (slfErr) {
+            console.error("[SLF] Failed to insert ade_trade_record:", slfErr);
+          }
         } else {
           // Update live P&L
           await updatePaperTrade(openTrade.id, {
