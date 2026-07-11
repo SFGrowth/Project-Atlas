@@ -2,7 +2,7 @@ import { useNexusSSE } from "@/hooks/useNexusSSE";
 import { trpc } from "@/lib/trpc";
 import { OverviewStrip, HudPanel, DataRow, StateBadge, SignalBadge, ApprovalBadge, PassFailBadge, PageWrapper, fmt, fmtDateTime, fmtTime } from "@/components/HudComponents";
 import PipelineOrb from "@/components/PipelineOrb";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 // ─── Pipeline Orb Live Wrapper ───────────────────────────────────────────────
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -107,6 +107,30 @@ export default function Home() {
   const { data: initialReport } = trpc.nexus.latestReport.useQuery(undefined, { refetchInterval: 30000 });
   const [tick, setTick] = useState(0);
 
+  // ── Demo mode ──────────────────────────────────────────────────────────────
+  const [demoStages, setDemoStages] = useState<number | null>(null);
+  const [demoRunId, setDemoRunId] = useState<string | null>(null);
+  const demoTimers = useRef<ReturnType<typeof setTimeout>[]>([]);
+
+  const runDemo = () => {
+    demoTimers.current.forEach(clearTimeout);
+    demoTimers.current = [];
+    setDemoStages(0);
+    setDemoRunId(null);
+    // Each stage lights up with a realistic delay — fast at start, slower at ARI/TVL
+    const DELAYS = [0, 280, 380, 480, 580, 680, 780, 1020, 1380, 1720, 1980, 2200, 2420, 2680, 3050];
+    DELAYS.forEach((delay, i) => {
+      const t = setTimeout(() => {
+        setDemoStages(i);
+        if (i === 14) setDemoRunId(`demo-${Date.now()}`);
+      }, delay);
+      demoTimers.current.push(t);
+    });
+    // Reset back to live view after explosion animation
+    const reset = setTimeout(() => { setDemoStages(null); setDemoRunId(null); }, 7500);
+    demoTimers.current.push(reset);
+  };
+
   useEffect(() => {
     const t = setInterval(() => setTick((n) => n + 1), 1000);
     return () => clearInterval(t);
@@ -204,9 +228,36 @@ export default function Home() {
         </div>
         {/* Pipeline Orb — full width */}
         <div className="hud-panel hud-panel-br flex flex-col" style={{ gridColumn: "1 / 4" }}>
-          <div className="hud-header"><span className="hud-header-dot" />ORION Pipeline — 14-Stage Execution Sequence</div>
+          <div className="hud-header" style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <div className="flex items-center gap-2"><span className="hud-header-dot" />ORION Pipeline — 14-Stage Execution Sequence</div>
+            <button
+              onClick={runDemo}
+              disabled={demoStages !== null}
+              className="text-[10px] font-mono tracking-widest px-3 py-1 rounded border transition-all mr-1"
+              style={{
+                borderColor: demoStages !== null ? "oklch(0.35 0.08 220)" : "var(--arc-cyan)",
+                color: demoStages !== null ? "oklch(0.45 0.08 220)" : "var(--arc-cyan)",
+                background: "transparent",
+                cursor: demoStages !== null ? "not-allowed" : "pointer",
+                boxShadow: demoStages !== null ? "none" : "0 0 8px oklch(0.72 0.22 210 / 0.3)",
+              }}
+            >
+              {demoStages !== null ? "RUNNING…" : "▶ RUN DEMO"}
+            </button>
+          </div>
           <div className="flex flex-col items-center py-6 gap-2">
-            <PipelineOrbLive payload={p} />
+            {demoStages !== null ? (
+              <PipelineOrb
+                stagesPassed={demoStages}
+                failedStage={null}
+                running={demoStages > 0 && demoStages < 14}
+                tradeApproved={demoStages === 14}
+                lastRun={demoRunId}
+                size={480}
+              />
+            ) : (
+              <PipelineOrbLive payload={p} />
+            )}
           </div>
         </div>
         {/* Paper Trading Summary */}
