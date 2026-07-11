@@ -64,18 +64,25 @@ bool   i_enable_webhook    = input.bool(true,  title="Enable Observability Webho
 string i_webhook_secret    = input.string("",   title="Webhook Secret (ATLAS_WEBHOOK_TOKEN)", group=GRP_OBS, tooltip="Paste the ATLAS_WEBHOOK_TOKEN here. This is embedded in the JSON payload as webhook_secret for Layer 2 authentication. Keep this private.")
 bool   i_debug_preview     = input.bool(true,  title="Show JSON Preview Table",      group=GRP_DEBUG)
 bool   i_show_heartbeat    = input.bool(true,  title="Show Heartbeat Label",          group=GRP_DEBUG)
-// Kernel reference inputs (must match M-14 settings)
-string i_account_type      = input.string("PROP", title="Account Type (match M-14)", options=["PROP","LIVE"], group=GRP_KERN)
-float  i_base_risk         = input.float(800.0, title="Base Risk (match M-14)",       group=GRP_KERN)
-int    i_max_contracts     = input.int(2,       title="Max Contracts (match M-14)",   group=GRP_KERN)
-float  i_point_value       = input.float(20.0,  title="Point Value (match M-14)",     group=GRP_KERN)
-float  i_daily_loss_prop   = input.float(-2000.0, title="Daily Loss Limit Prop (match M-14)", group=GRP_KERN)
-float  i_daily_loss_live   = input.float(-3000.0, title="Daily Loss Limit Live (match M-14)", group=GRP_KERN)
-int    i_max_daily_trades  = input.int(3,       title="Max Daily Trades (match M-14)", group=GRP_KERN)
-bool   i_enable_a1         = input.bool(true,   title="A1 Enabled (match M-14)",      group=GRP_KERN)
-bool   i_enable_a3         = input.bool(true,   title="A3 Enabled (match M-14)",      group=GRP_KERN)
-bool   i_enable_b1         = input.bool(true,   title="B1 Enabled (match M-14)",      group=GRP_KERN)
-float  i_edge_threshold    = input.float(60.0,  title="Edge Score Threshold (match M-14)", group=GRP_KERN)
+// ── Sprint 083: ATLAS EXECUTION PROFILE (must match M-14 profile build exactly) ──────────
+string i_profile_name      = input.string("ATLAS PAPER — MNQ",  title="Profile Name (match M-14)",        group=GRP_KERN)
+string i_profile_id        = input.string("ATLAS_PAPER_MNQ",     title="Profile ID (match M-14)",          group=GRP_KERN)
+string i_execution_mode    = input.string("PAPER",               title="Execution Mode (match M-14)",      group=GRP_KERN, options=["PAPER","EVALUATION","FUNDED","LIVE"])
+string i_account_type      = input.string("PAPER",               title="Account Classification (match M-14)", group=GRP_KERN, options=["PAPER","PROP","LIVE"])
+float  i_dollar_risk       = input.float(100.0,                  title="Dollar Risk Per Trade (match M-14)",group=GRP_KERN, minval=10.0, step=50.0)
+float  i_point_value       = input.float(2.0,                    title="Point Value (match M-14)",          group=GRP_KERN, minval=0.5, step=0.5)
+int    i_max_contracts     = input.int(5,                        title="Max Contracts (match M-14)",        group=GRP_KERN, minval=1, maxval=20)
+float  i_daily_loss_limit  = input.float(-500.0,                 title="Daily Loss Limit (match M-14)",     group=GRP_KERN, maxval=-10.0)
+bool   i_execution_armed   = input.bool(true,                    title="Execution Armed (match M-14)",      group=GRP_KERN)
+int    i_max_daily_trades  = input.int(3,                        title="Max Daily Trades (match M-14)",     group=GRP_KERN, minval=1, maxval=10)
+bool   i_enable_a1         = input.bool(true,                    title="A1 Enabled (match M-14)",           group=GRP_KERN)
+bool   i_enable_a3         = input.bool(true,                    title="A3 Enabled (match M-14)",           group=GRP_KERN)
+bool   i_enable_b1         = input.bool(true,                    title="B1 Enabled (match M-14)",           group=GRP_KERN)
+float  i_edge_threshold    = input.float(60.0,                   title="Edge Score Threshold (match M-14)", group=GRP_KERN, minval=0.0, maxval=100.0, step=5.0)
+// ── DERIVED (mirrors M-14 derived block) ────────────────────────────────────────────────────────────────────
+float  i_daily_loss_prop   = i_daily_loss_limit
+float  i_daily_loss_live   = i_daily_loss_limit
+float  i_base_risk         = i_dollar_risk  // alias for legacy references
 
 // ============================================================================
 // SECTION 3: PERSISTENT STATE (mirrors M-14 state tracking)
@@ -712,16 +719,28 @@ if w_has_candidate
         ari_rejection := "R5: Max daily trades reached"
         ari_rule      := "R5"
     else
-        float current_mult = v_consecutive_losses >= 2 ? 0.5 : (v_consecutive_wins >= 3 ? 1.1 : 1.0)
-        v_risk_multiplier  := current_mult
-        float adj_risk     = i_base_risk * current_mult
-        float risk_per_c   = w_risk_pts * i_point_value
-        int calc_c         = risk_per_c > 0 ? math.floor(adj_risk / risk_per_c) : 0
-        ari_contracts      := math.min(math.max(calc_c, 1), i_max_contracts)
-        ari_actual_risk    := ari_contracts * risk_per_c
-        ari_approved       := true
-        ari_rejection      := "NONE"
-        ari_rule           := "NONE"
+        float current_mult          = v_consecutive_losses >= 2 ? 0.5 : (v_consecutive_wins >= 3 ? 1.1 : 1.0)
+        v_risk_multiplier           := current_mult
+        // Sprint 083: Dollar-risk formula (mirrors M-14 exactly)
+        float effective_dollar_risk = i_dollar_risk * current_mult
+        float risk_per_c            = w_risk_pts * i_point_value
+        int   raw_c                 = risk_per_c > 0 ? math.floor(effective_dollar_risk / risk_per_c) : 0
+        int   calc_c                = math.min(raw_c, i_max_contracts)
+        if calc_c < 1
+            ari_approved   := false
+            ari_rejection  := "RISK_TOO_SMALL_FOR_ONE_CONTRACT"
+            ari_rule       := "RISK_TOO_SMALL"
+        else
+            ari_contracts  := calc_c
+            ari_actual_risk := ari_contracts * risk_per_c
+            ari_approved   := ari_actual_risk <= effective_dollar_risk
+            if not ari_approved
+                ari_rejection := "ESTIMATED_RISK_EXCEEDS_CONFIGURED"
+                ari_rule      := "RISK_BUDGET_VIOLATION"
+            else
+                ari_approved  := true
+                ari_rejection := "NONE"
+                ari_rule      := "NONE"
 
 float remaining_daily = daily_limit - v_daily_pnl
 
@@ -1024,12 +1043,29 @@ if barstate.isconfirmed
     j_ade := j_ade + "\"no_trade_reason\":" + (w_has_candidate ? "null" : f_str(w_no_trade_reason)) + ","
     j_ade := j_ade + "\"model_ranking\":{\"a1\":" + j_ear_a1 + ",\"a3\":" + j_ear_a3 + ",\"b1\":" + j_ear_b1 + "}},"
 
-    // --- ARI DECISION ---
+    // --- ARI DECISION (Sprint 083: includes full profile + dollar-risk fields) ---
+    float stop_dist_pts = w_has_candidate ? math.abs(w_entry - w_stop) : 0.0
+    float risk_per_c_j  = stop_dist_pts * i_point_value
+    float est_risk_j    = ari_contracts * risk_per_c_j
+    float risk_diff_j   = i_dollar_risk - est_risk_j
     string j_ari = "\"ari_decision\":{"
+    // Profile identity
+    j_ari := j_ari + "\"profile_id\":" + f_str(i_profile_id) + ","
+    j_ari := j_ari + "\"profile_name\":" + f_str(i_profile_name) + ","
+    j_ari := j_ari + "\"execution_mode\":" + f_str(i_execution_mode) + ","
+    j_ari := j_ari + "\"account_type\":" + f_str(i_account_type) + ","
+    j_ari := j_ari + "\"execution_armed\":" + f_bts(i_execution_armed) + ","
+    // Dollar-risk sizing
+    j_ari := j_ari + "\"configured_risk_dollars\":" + f_fts(i_dollar_risk, "#.00") + ","
+    j_ari := j_ari + "\"estimated_risk_dollars\":" + f_fts(est_risk_j, "#.00") + ","
+    j_ari := j_ari + "\"risk_difference_dollars\":" + f_fts(risk_diff_j, "#.00") + ","
+    j_ari := j_ari + "\"stop_distance_points\":" + f_fts(stop_dist_pts, "#.####") + ","
+    j_ari := j_ari + "\"risk_per_contract\":" + f_fts(risk_per_c_j, "#.00") + ","
+    j_ari := j_ari + "\"point_value\":" + f_fts(i_point_value, "#.00") + ","
+    j_ari := j_ari + "\"maximum_contracts\":" + str.tostring(i_max_contracts) + ","
+    // ARI decision
     j_ari := j_ari + "\"approved\":" + f_bts(ari_approved) + ","
-    j_ari := j_ari + "\"base_risk\":" + f_fts(i_base_risk, "#.00") + ","
     j_ari := j_ari + "\"risk_multiplier\":" + f_fts(v_risk_multiplier, "#.##") + ","
-    j_ari := j_ari + "\"approved_risk\":" + f_fts(ari_actual_risk, "#.00") + ","
     j_ari := j_ari + "\"contracts\":" + str.tostring(ari_contracts) + ","
     j_ari := j_ari + "\"daily_pnl\":" + f_fts(v_daily_pnl, "#.00") + ","
     j_ari := j_ari + "\"daily_trade_count\":" + str.tostring(v_daily_trades) + ","
@@ -1101,33 +1137,41 @@ if barstate.isconfirmed
 // ============================================================================
 // SECTION 12: DEBUG PREVIEW TABLE
 // ============================================================================
-var table t_preview = table.new(position.bottom_left, 2, 20, bgcolor=color.new(color.black, 5), border_color=color.new(color.gray, 50), border_width=1, frame_color=color.new(color.blue, 20), frame_width=2)
-
 f_row(table t, int r, string lbl, string val, color vc) =>
     table.cell(t, 0, r, lbl, text_color=color.new(color.gray, 20), text_size=size.tiny, bgcolor=color.new(color.black, 5), text_halign=text.align_left)
     table.cell(t, 1, r, val, text_color=vc, text_size=size.tiny, bgcolor=color.new(color.black, 5), text_halign=text.align_left)
 
+// Sprint 083: extended preview table (24 rows — includes profile identity and dollar-risk fields)
+var table t_preview = table.new(position.bottom_left, 2, 24, bgcolor=color.new(color.black, 5), border_color=color.new(color.gray, 50), border_width=1, frame_color=color.new(color.blue, 20), frame_width=2)
+
 if i_debug_preview and barstate.islast
-    f_row(t_preview, 0,  "M-15 OBSERVABILITY",   "v" + MODULE_VERSION,                        color.new(color.blue, 0))
-    f_row(t_preview, 1,  "Payload Count",         str.tostring(v_payload_count),               color.new(color.white, 0))
-    f_row(t_preview, 2,  "Heartbeat",             str.tostring(v_heartbeat_count),             color.new(color.green, 0))
-    f_row(t_preview, 3,  "Errors",                str.tostring(v_error_count),                 v_error_count > 0 ? color.new(color.red, 0) : color.new(color.green, 0))
-    f_row(t_preview, 4,  "Last Payload Size",     str.tostring(j_size) + " chars",             j_valid ? color.new(color.green, 0) : color.new(color.red, 0))
-    f_row(t_preview, 5,  "Session",               session_val,                                 color.new(color.yellow, 0))
-    f_row(t_preview, 6,  "EMA Structure",         ema_struct,                                  ema_struct == "BULL" ? color.new(color.green, 0) : (ema_struct == "BEAR" ? color.new(color.red, 0) : color.new(color.yellow, 0)))
-    f_row(t_preview, 7,  "ADX14",                 str.tostring(adx14_val, "#.#"),              adx_trending_val ? color.new(color.green, 0) : color.new(color.gray, 0))
-    f_row(t_preview, 8,  "MVC-003",               mvc_003_val ? "ACTIVE" : "INACTIVE",        mvc_003_val ? color.new(color.orange, 0) : color.new(color.gray, 0))
-    f_row(t_preview, 9,  "A1 Signal",             a1_signal ? "SIGNAL " + f_dir_str(a1_dir) : "NO_SIGNAL",  a1_signal ? color.new(color.green, 0) : color.new(color.gray, 0))
-    f_row(t_preview, 10, "A3 Signal",             a3_signal ? "SIGNAL " + f_dir_str(a3_dir) : "NO_SIGNAL",  a3_signal ? color.new(color.green, 0) : color.new(color.gray, 0))
-    f_row(t_preview, 11, "B1 Signal",             b1_signal ? "SIGNAL " + f_dir_str(b1_dir) : "NO_SIGNAL",  b1_signal ? color.new(color.green, 0) : color.new(color.gray, 0))
-    f_row(t_preview, 12, "ADE Winner",            w_model_id + " (" + str.tostring(w_score, "#.#") + ")",   w_has_candidate ? color.new(color.green, 0) : color.new(color.gray, 0))
-    f_row(t_preview, 13, "ARI",                   ari_approved ? "APPROVED " + str.tostring(ari_contracts) + "c" : "REJECTED",  ari_approved ? color.new(color.green, 0) : color.new(color.red, 0))
-    f_row(t_preview, 14, "TVL",                   tvl_status,                                  tvl_verified ? color.new(color.green, 0) : color.new(color.red, 0))
-    f_row(t_preview, 15, "Position",              v_position_status,                           v_position_status == STATE_ACTIVE ? color.new(color.orange, 0) : color.new(color.gray, 0))
-    f_row(t_preview, 16, "Daily P&L",             "$" + f_fts(v_daily_pnl, "#.00"),            v_daily_pnl >= 0 ? color.new(color.green, 0) : color.new(color.red, 0))
-    f_row(t_preview, 17, "Webhook",               i_enable_webhook ? "ENABLED" : "DISABLED",  i_enable_webhook ? color.new(color.green, 0) : color.new(color.yellow, 0))
-    f_row(t_preview, 18, "Action",                action_summary,                              tvl_verified ? color.new(color.green, 0) : color.new(color.gray, 0))
-    f_row(t_preview, 19, "Confirmed",             barstate.isconfirmed ? "YES" : "NO",         barstate.isconfirmed ? color.new(color.green, 0) : color.new(color.yellow, 0))
+    // Profile identity rows (Sprint 083)
+    bool m15_armed = i_execution_mode == "PAPER" or i_execution_armed
+    color armed_c  = m15_armed ? color.new(color.green, 0) : color.new(color.yellow, 0)
+    f_row(t_preview, 0,  "M-15 OBSERVABILITY",   "v" + MODULE_VERSION + " | " + i_profile_id,  color.new(color.blue, 0))
+    f_row(t_preview, 1,  "Profile",               i_profile_name,                              color.new(color.teal, 0))
+    f_row(t_preview, 2,  "Mode",                  i_execution_mode + " [" + (m15_armed ? "ARMED" : "DISARMED") + "]",  armed_c)
+    f_row(t_preview, 3,  "Dollar Risk",           "$" + f_fts(i_dollar_risk, "#.00") + " | MaxC=" + str.tostring(i_max_contracts),  color.new(color.white, 0))
+    f_row(t_preview, 4,  "Point Value",           "$" + f_fts(i_point_value, "#.00") + " / pt / contract",  color.new(color.white, 0))
+    f_row(t_preview, 5,  "Payload Count",         str.tostring(v_payload_count),               color.new(color.white, 0))
+    f_row(t_preview, 6,  "Heartbeat",             str.tostring(v_heartbeat_count),             color.new(color.green, 0))
+    f_row(t_preview, 7,  "Errors",                str.tostring(v_error_count),                 v_error_count > 0 ? color.new(color.red, 0) : color.new(color.green, 0))
+    f_row(t_preview, 8,  "Last Payload Size",     str.tostring(j_size) + " chars",             j_valid ? color.new(color.green, 0) : color.new(color.red, 0))
+    f_row(t_preview, 9,  "Session",               session_val,                                 color.new(color.yellow, 0))
+    f_row(t_preview, 10, "EMA Structure",         ema_struct,                                  ema_struct == "BULL" ? color.new(color.green, 0) : (ema_struct == "BEAR" ? color.new(color.red, 0) : color.new(color.yellow, 0)))
+    f_row(t_preview, 11, "ADX14",                 str.tostring(adx14_val, "#.#"),              adx_trending_val ? color.new(color.green, 0) : color.new(color.gray, 0))
+    f_row(t_preview, 12, "MVC-003",               mvc_003_val ? "ACTIVE" : "INACTIVE",        mvc_003_val ? color.new(color.orange, 0) : color.new(color.gray, 0))
+    f_row(t_preview, 13, "A1 Signal",             a1_signal ? "SIGNAL " + f_dir_str(a1_dir) : "NO_SIGNAL",  a1_signal ? color.new(color.green, 0) : color.new(color.gray, 0))
+    f_row(t_preview, 14, "A3 Signal",             a3_signal ? "SIGNAL " + f_dir_str(a3_dir) : "NO_SIGNAL",  a3_signal ? color.new(color.green, 0) : color.new(color.gray, 0))
+    f_row(t_preview, 15, "B1 Signal",             b1_signal ? "SIGNAL " + f_dir_str(b1_dir) : "NO_SIGNAL",  b1_signal ? color.new(color.green, 0) : color.new(color.gray, 0))
+    f_row(t_preview, 16, "ADE Winner",            w_model_id + " (" + str.tostring(w_score, "#.#") + ")",   w_has_candidate ? color.new(color.green, 0) : color.new(color.gray, 0))
+    f_row(t_preview, 17, "ARI",                   ari_approved ? "APPROVED " + str.tostring(ari_contracts) + "c @ $" + f_fts(ari_actual_risk, "#.00") : "REJECTED: " + ari_rejection,  ari_approved ? color.new(color.green, 0) : color.new(color.red, 0))
+    f_row(t_preview, 18, "TVL",                   tvl_status,                                  tvl_verified ? color.new(color.green, 0) : color.new(color.red, 0))
+    f_row(t_preview, 19, "Position",              v_position_status,                           v_position_status == STATE_ACTIVE ? color.new(color.orange, 0) : color.new(color.gray, 0))
+    f_row(t_preview, 20, "Daily P&L",             "$" + f_fts(v_daily_pnl, "#.00"),            v_daily_pnl >= 0 ? color.new(color.green, 0) : color.new(color.red, 0))
+    f_row(t_preview, 21, "Webhook",               i_enable_webhook ? "ENABLED" : "DISABLED",  i_enable_webhook ? color.new(color.green, 0) : color.new(color.yellow, 0))
+    f_row(t_preview, 22, "Action",                action_summary,                              tvl_verified ? color.new(color.green, 0) : color.new(color.gray, 0))
+    f_row(t_preview, 23, "Confirmed",             barstate.isconfirmed ? "YES" : "NO",         barstate.isconfirmed ? color.new(color.green, 0) : color.new(color.yellow, 0))
 
 // ============================================================================
 // SECTION 13: HEARTBEAT LABEL
