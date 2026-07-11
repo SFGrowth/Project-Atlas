@@ -1,0 +1,432 @@
+// ============================================================================
+// ADE v2 ENGINE — Multidimensional Confidence Ranking
+// Sprint 081 Implementation
+// Architecture: Sprint 080 Specification
+// Version: 2.0.0
+// ============================================================================
+// This block is inlined into both M-14 (atlas_core.pine) and M-15
+// (atlas_observability_webhook.pine) replacing the legacy 3-line ADE v1 scoring.
+//
+// REQUIRED VARIABLES (must be declared before this block):
+//   mso / ms variables:
+//     ema_struct, ema_bull_val, ema_bear_val, adx14_val, adx_trending_val
+//     volcomp_val, is_comp_val, is_exp_val, atr14_val, atr5_val
+//     is_am_val, is_pm_val, is_ov_val, is_rth_val, dow_val
+//     ov_range_vs_atr_val, surge_val, mvc_003_val, rel_vol_val
+//   Proposals:
+//     prop_a1 / a1_signal, a1_dir, a1_entry, a1_stop, a1_target, a1_risk, a1_rr, a1_basis
+//     prop_a3 / a3_signal, a3_dir, a3_entry, a3_stop, a3_target, a3_risk, a3_rr, a3_basis
+//     prop_b1 / b1_signal, b1_dir, b1_entry, b1_stop, b1_target, b1_risk, b1_rr, b1_basis
+//   Risk state:
+//     v_consecutive_losses, v_daily_pnl, v_circuit_breaker, v_daily_trades
+//     v_risk_multiplier, v_current_drawdown
+//     i_daily_loss_prop, i_daily_loss_live, i_account_type, i_edge_score_threshold
+//   Position state:
+//     v_position_status (STATE_ACTIVE / STATE_FILLED etc.)
+// ============================================================================
+
+// ─── DIMENSION WEIGHTS (Sprint 080 Specification) ───────────────────────────
+// Group A: Market Structure (max 76 pts)
+float W_MS_01 = 20.0   // Trend Quality (EMA Structure)
+float W_MS_02 = 18.0   // ADX Regime
+float W_MS_03 = 14.0   // Volatility Expansion
+float W_MS_04 = 12.0   // Market Structure Integrity (OV range)
+float W_MS_05 = 12.0   // Compression Quality (A3 only; 0 for A1/B1)
+// Group B: Execution Quality (max 42 pts)
+float W_EQ_01 = 15.0   // Pullback Depth (A1 only; 0 for A3/B1)
+float W_EQ_02 = 15.0   // Liquidity Clearance (HTF clearance vs day range)
+float W_EQ_03 = 12.0   // Risk Distance (stop placement quality)
+// Group C: Temporal Context (max 16 pts)
+float W_TC_01 = 10.0   // Session Quality
+float W_TC_02 = 6.0    // Day of Week
+// Group D: Capital & Risk (penalty, max -35 pts)
+float W_CR_01 = -15.0  // Consecutive Loss Penalty (per loss, max 2)
+float W_CR_02 = -20.0  // Daily Drawdown Penalty (scaled to limit)
+// Group E: System Intelligence (max 22 pts)
+float W_SI_01 = 10.0   // Historical Reliability (model PF proxy)
+float W_SI_02 = 7.0    // Live Stability (paper trade win rate proxy)
+float W_SI_03 = 5.0    // Observatory Confidence (payload health)
+
+// ─── MODEL MAX SCORES (for normalisation) ────────────────────────────────────
+// A1: Groups A(no MS-05)+B(EQ-01)+C+E = 20+18+14+12+15+15+12+10+6+10+7+5 = 144 raw max
+// A3: Groups A(with MS-05, no EQ-01)+B(EQ-02,EQ-03)+C+E = 20+18+14+12+12+15+12+10+6+10+7+5 = 141 raw max
+// B1: Groups A(no MS-05, no EQ-01)+B(EQ-02,EQ-03)+C+E = 20+18+14+12+15+12+10+6+10+7+5 = 129 raw max
+float A1_RAW_MAX = 144.0
+float A3_RAW_MAX = 141.0
+float B1_RAW_MAX = 129.0
+
+// ─── HELPER: Normalise raw score to 0-100 ────────────────────────────────────
+f_normalise(float raw, float raw_max) =>
+    raw_max > 0 ? math.max(0.0, math.min(100.0, (raw / raw_max) * 100.0)) : 0.0
+
+// ─── HELPER: Peaked normalisation for pullback depth ─────────────────────────
+// Peak at 0.85 ATR, falls off toward 0.5 and 1.2
+f_peaked_depth(float depth_vs_atr) =>
+    float peak = 0.85
+    float lo   = 0.5
+    float hi   = 1.2
+    if depth_vs_atr < lo or depth_vs_atr > hi
+        0.0
+    else if depth_vs_atr <= peak
+        (depth_vs_atr - lo) / (peak - lo)
+    else
+        1.0 - ((depth_vs_atr - peak) / (hi - peak))
+
+// ─── COMPUTE PER-MODEL RAW SCORES ────────────────────────────────────────────
+
+// --- Daily drawdown ratio (0.0 = no drawdown, 1.0 = at limit) ---
+float daily_limit_val = i_account_type == "LIVE" ? i_daily_loss_live : i_daily_loss_prop
+float drawdown_ratio  = daily_limit_val < 0 ? math.max(0.0, math.min(1.0, v_daily_pnl / daily_limit_val)) : 0.0
+
+// --- Group D: Capital & Risk Penalties (shared across all models) ---
+float d_cr_01 = math.min(2, v_consecutive_losses) * W_CR_01   // -15 per loss, max -30
+float d_cr_02 = drawdown_ratio * W_CR_02                       // -20 at limit, 0 at 0 drawdown
+float group_d_penalty = d_cr_01 + d_cr_02                      // negative value
+
+// --- Group E: System Intelligence (shared across all models) ---
+// D-SI-01: Historical Reliability — PF proxy from validated sprint data
+// A1 PF=1.387, A3 PF=1.633, B1 PF=1.354 → normalise to 0-10 range (PF 1.0=0, PF 2.0=10)
+float si_01_a1 = math.min(10.0, (1.387 - 1.0) * 25.0)   // 9.68 → 9.68
+float si_01_a3 = math.min(10.0, (1.633 - 1.0) * 25.0)   // 15.83 → 10.0 (capped)
+float si_01_b1 = math.min(10.0, (1.354 - 1.0) * 25.0)   // 8.85 → 8.85
+// D-SI-02: Live Stability — placeholder 0.5 (neutral) until 100 paper trades
+float si_02_score = 0.5 * W_SI_02   // 3.5 pts (neutral)
+// D-SI-03: Observatory Confidence — payload health (always 1.0 if we reach this stage)
+float si_03_score = 1.0 * W_SI_03   // 5.0 pts
+
+// ─── MODEL A1: AM Trend Continuation ─────────────────────────────────────────
+float a1_raw = 0.0
+// Dimension scores for EAR
+float a1_d_ms01 = 0.0  // Trend Quality
+float a1_d_ms02 = 0.0  // ADX Regime
+float a1_d_ms03 = 0.0  // Volatility Expansion
+float a1_d_ms04 = 0.0  // Market Structure Integrity
+float a1_d_eq01 = 0.0  // Pullback Depth
+float a1_d_eq02 = 0.0  // Liquidity Clearance
+float a1_d_eq03 = 0.0  // Risk Distance
+float a1_d_tc01 = 0.0  // Session Quality
+float a1_d_tc02 = 0.0  // Day of Week
+float a1_d_si01 = 0.0  // Historical Reliability
+float a1_norm   = 0.0
+
+if a1_signal
+    // D-MS-01: Trend Quality — BULL/BEAR=1.0, MIXED=0.3
+    a1_d_ms01 := (ema_struct != "MIXED" ? 1.0 : 0.3) * W_MS_01
+    // D-MS-02: ADX Regime — peaked at 25-35 (A1 requires ADX < 40)
+    float adx_norm_a1 = adx14_val < 25 ? 0.3 : (adx14_val < 30 ? 0.7 : (adx14_val < 35 ? 1.0 : (adx14_val < 40 ? 0.6 : 0.0)))
+    a1_d_ms02 := adx_norm_a1 * W_MS_02
+    // D-MS-03: Volatility Expansion — A1 prefers moderate vol (volcomp 0.9-1.4)
+    float vexp_a1 = volcomp_val < 0.7 ? 0.2 : (volcomp_val < 0.9 ? 0.6 : (volcomp_val < 1.4 ? 1.0 : (volcomp_val < 1.8 ? 0.7 : 0.3)))
+    a1_d_ms03 := vexp_a1 * W_MS_03
+    // D-MS-04: Market Structure Integrity — OV range vs ATR (0.5-1.5 = good)
+    float msi_a1 = ov_range_vs_atr_val < 0.3 ? 0.2 : (ov_range_vs_atr_val < 0.5 ? 0.6 : (ov_range_vs_atr_val < 1.5 ? 1.0 : 0.7))
+    a1_d_ms04 := msi_a1 * W_MS_04
+    // D-EQ-01: Pullback Depth — peaked normalisation 0.5-1.2 ATR, peak at 0.85
+    float pullback_depth_a1 = atr14_val > 0 ? math.abs(ema9_val - close) / atr14_val : 0.0
+    a1_d_eq01 := f_peaked_depth(pullback_depth_a1) * W_EQ_01
+    // D-EQ-02: Liquidity Clearance — distance from entry to target vs day range
+    float a1_target_dist = math.abs(a1_target - a1_entry)
+    float day_range_pts  = safe_day_high - safe_day_low
+    float liq_clear_a1   = day_range_pts > 0 ? math.min(1.0, a1_target_dist / (day_range_pts * 0.5)) : 0.5
+    a1_d_eq02 := liq_clear_a1 * W_EQ_02
+    // D-EQ-03: Risk Distance — stop distance vs ATR (0.4-0.7 ATR = optimal for A1)
+    float stop_dist_a1 = atr14_val > 0 ? math.abs(a1_entry - a1_stop) / atr14_val : 0.0
+    float rdist_a1 = stop_dist_a1 < 0.3 ? 0.3 : (stop_dist_a1 < 0.4 ? 0.7 : (stop_dist_a1 < 0.7 ? 1.0 : (stop_dist_a1 < 1.0 ? 0.7 : 0.3)))
+    a1_d_eq03 := rdist_a1 * W_EQ_03
+    // D-TC-01: Session Quality — A1 is PM session (14:00-16:00 ET), Tue-Thu
+    bool a1_valid_day = dow_val >= 2 and dow_val <= 4
+    a1_d_tc01 := (is_pm_val and a1_valid_day ? 1.0 : (is_pm_val ? 0.7 : 0.0)) * W_TC_01
+    // D-TC-02: Day of Week — Wed=1.0, Tue/Thu=0.8, Mon/Fri=0.4
+    float dow_a1 = dow_val == 3 ? 1.0 : (dow_val == 2 or dow_val == 4 ? 0.8 : 0.4)
+    a1_d_tc02 := dow_a1 * W_TC_02
+    // D-SI-01: Historical Reliability
+    a1_d_si01 := si_01_a1
+    // Sum raw score
+    a1_raw := a1_d_ms01 + a1_d_ms02 + a1_d_ms03 + a1_d_ms04 + a1_d_eq01 + a1_d_eq02 + a1_d_eq03 + a1_d_tc01 + a1_d_tc02 + a1_d_si01 + si_02_score + si_03_score + group_d_penalty
+    a1_raw := math.max(0.0, a1_raw)
+    a1_norm := f_normalise(a1_raw, A1_RAW_MAX)
+
+// ─── MODEL A3: Overnight Compression Breakout ─────────────────────────────────
+float a3_raw = 0.0
+float a3_d_ms01 = 0.0
+float a3_d_ms02 = 0.0
+float a3_d_ms03 = 0.0
+float a3_d_ms04 = 0.0
+float a3_d_ms05 = 0.0  // Compression Quality (A3-specific)
+float a3_d_eq02 = 0.0
+float a3_d_eq03 = 0.0
+float a3_d_tc01 = 0.0
+float a3_d_tc02 = 0.0
+float a3_d_si01 = 0.0
+float a3_norm   = 0.0
+
+if a3_signal
+    // D-MS-01: Trend Quality
+    a3_d_ms01 := (ema_struct != "MIXED" ? 1.0 : 0.3) * W_MS_01
+    // D-MS-02: ADX Regime — A3 requires ADX >= 25, prefers 25-45
+    float adx_norm_a3 = adx14_val < 25 ? 0.0 : (adx14_val < 35 ? 0.8 : (adx14_val < 45 ? 1.0 : 0.7))
+    a3_d_ms02 := adx_norm_a3 * W_MS_02
+    // D-MS-03: Volatility Expansion — A3 requires is_exp (volcomp > 1.30)
+    float vexp_a3 = volcomp_val < 1.3 ? 0.0 : (volcomp_val < 1.6 ? 0.7 : (volcomp_val < 2.0 ? 1.0 : 0.8))
+    a3_d_ms03 := vexp_a3 * W_MS_03
+    // D-MS-04: Market Structure Integrity — OV range quality
+    float msi_a3 = ov_range_vs_atr_val < 0.3 ? 0.2 : (ov_range_vs_atr_val < 0.5 ? 0.6 : (ov_range_vs_atr_val < 2.0 ? 1.0 : 0.7))
+    a3_d_ms04 := msi_a3 * W_MS_04
+    // D-MS-05: Compression Quality — prior bar compressed (volcomp[1] < 0.80)
+    float volcomp_prior_a3 = atr5_20_val > 0 ? atr5_val[1] / atr5_20_val : 1.0
+    float comp_quality = volcomp_prior_a3 < 0.60 ? 1.0 : (volcomp_prior_a3 < 0.70 ? 0.9 : (volcomp_prior_a3 < 0.80 ? 0.7 : 0.0))
+    a3_d_ms05 := comp_quality * W_MS_05
+    // D-EQ-02: Liquidity Clearance
+    float a3_target_dist = math.abs(a3_target - a3_entry)
+    float day_range_a3   = safe_day_high - safe_day_low
+    float liq_clear_a3   = day_range_a3 > 0 ? math.min(1.0, a3_target_dist / (day_range_a3 * 0.5)) : 0.5
+    a3_d_eq02 := liq_clear_a3 * W_EQ_02
+    // D-EQ-03: Risk Distance — A3 stop is bar_low - 0.25 ATR
+    float stop_dist_a3 = atr14_val > 0 ? math.abs(a3_entry - a3_stop) / atr14_val : 0.0
+    float rdist_a3 = stop_dist_a3 < 0.15 ? 0.3 : (stop_dist_a3 < 0.25 ? 0.8 : (stop_dist_a3 < 0.40 ? 1.0 : (stop_dist_a3 < 0.60 ? 0.7 : 0.3)))
+    a3_d_eq03 := rdist_a3 * W_EQ_03
+    // D-TC-01: Session Quality — A3 is overnight only
+    a3_d_tc01 := (is_ov_val ? 1.0 : 0.0) * W_TC_01
+    // D-TC-02: Day of Week — Sun/Mon overnight = 0.9, Tue-Thu = 1.0, Fri = 0.5
+    float dow_a3 = dow_val == 5 ? 0.5 : (dow_val == 1 ? 0.9 : 1.0)
+    a3_d_tc02 := dow_a3 * W_TC_02
+    // D-SI-01: Historical Reliability
+    a3_d_si01 := si_01_a3
+    // Sum raw score
+    a3_raw := a3_d_ms01 + a3_d_ms02 + a3_d_ms03 + a3_d_ms04 + a3_d_ms05 + a3_d_eq02 + a3_d_eq03 + a3_d_tc01 + a3_d_tc02 + a3_d_si01 + si_02_score + si_03_score + group_d_penalty
+    a3_raw := math.max(0.0, a3_raw)
+    a3_norm := f_normalise(a3_raw, A3_RAW_MAX)
+
+// ─── MODEL B1: MVC-003 Apex Combination ──────────────────────────────────────
+float b1_raw = 0.0
+float b1_d_ms01 = 0.0
+float b1_d_ms02 = 0.0
+float b1_d_ms03 = 0.0
+float b1_d_ms04 = 0.0
+float b1_d_eq02 = 0.0
+float b1_d_eq03 = 0.0
+float b1_d_tc01 = 0.0
+float b1_d_tc02 = 0.0
+float b1_d_si01 = 0.0
+float b1_norm   = 0.0
+
+if b1_signal
+    // D-MS-01: Trend Quality
+    b1_d_ms01 := (ema_struct != "MIXED" ? 1.0 : 0.3) * W_MS_01
+    // D-MS-02: ADX Regime — B1 requires ADX >= 25
+    float adx_norm_b1 = adx14_val < 25 ? 0.0 : (adx14_val < 35 ? 0.8 : (adx14_val < 50 ? 1.0 : 0.8))
+    b1_d_ms02 := adx_norm_b1 * W_MS_02
+    // D-MS-03: Volatility Expansion — B1 requires surge (rel_txn > 2.0)
+    float vexp_b1 = not surge_val ? 0.0 : (rel_vol_val < 1.5 ? 0.6 : (rel_vol_val < 2.5 ? 1.0 : 0.9))
+    b1_d_ms03 := vexp_b1 * W_MS_03
+    // D-MS-04: Market Structure Integrity — OV range quality for B1
+    float msi_b1 = ov_range_vs_atr_val < 0.5 ? 0.3 : (ov_range_vs_atr_val < 0.8 ? 0.8 : (ov_range_vs_atr_val < 2.0 ? 1.0 : 0.7))
+    b1_d_ms04 := msi_b1 * W_MS_04
+    // D-EQ-02: Liquidity Clearance
+    float b1_target_dist = math.abs(b1_target - b1_entry)
+    float day_range_b1   = safe_day_high - safe_day_low
+    float liq_clear_b1   = day_range_b1 > 0 ? math.min(1.0, b1_target_dist / (day_range_b1 * 0.5)) : 0.5
+    b1_d_eq02 := liq_clear_b1 * W_EQ_02
+    // D-EQ-03: Risk Distance — B1 stop is 1.5 ATR
+    float stop_dist_b1 = atr14_val > 0 ? math.abs(b1_entry - b1_stop) / atr14_val : 0.0
+    float rdist_b1 = stop_dist_b1 < 1.0 ? 0.5 : (stop_dist_b1 < 1.3 ? 0.8 : (stop_dist_b1 < 1.7 ? 1.0 : (stop_dist_b1 < 2.0 ? 0.8 : 0.4)))
+    b1_d_eq03 := rdist_b1 * W_EQ_03
+    // D-TC-01: Session Quality — B1 is AM session
+    b1_d_tc01 := (is_am_val ? 1.0 : (is_rth_val ? 0.4 : 0.0)) * W_TC_01
+    // D-TC-02: Day of Week — Mon/Tue/Wed = 1.0, Thu = 0.8, Fri = 0.5
+    float dow_b1 = dow_val <= 3 ? 1.0 : (dow_val == 4 ? 0.8 : 0.5)
+    b1_d_tc02 := dow_b1 * W_TC_02
+    // D-SI-01: Historical Reliability
+    b1_d_si01 := si_01_b1
+    // Sum raw score
+    b1_raw := b1_d_ms01 + b1_d_ms02 + b1_d_ms03 + b1_d_ms04 + b1_d_eq02 + b1_d_eq03 + b1_d_tc01 + b1_d_tc02 + b1_d_si01 + si_02_score + si_03_score + group_d_penalty
+    b1_raw := math.max(0.0, b1_raw)
+    b1_norm := f_normalise(b1_raw, B1_RAW_MAX)
+
+// ─── RANKING & CANDIDATE SELECTION ───────────────────────────────────────────
+// Build ranking strings for all models
+string a1_rank_str = a1_signal ? "A1(" + str.tostring(a1_norm, "#.#") + ")" : "A1(NO_SIGNAL)"
+string a3_rank_str = a3_signal ? "A3(" + str.tostring(a3_norm, "#.#") + ")" : "A3(NO_SIGNAL)"
+string b1_rank_str = b1_signal ? "B1(" + str.tostring(b1_norm, "#.#") + ")" : "B1(NO_SIGNAL)"
+
+// Sort by normalised score descending
+// Determine 1st, 2nd, 3rd ranked eligible models
+string rank1_model = "NONE"
+float  rank1_score = 0.0
+string rank2_model = "NONE"
+float  rank2_score = 0.0
+string rank3_model = "NONE"
+float  rank3_score = 0.0
+
+// Collect eligible models (has_signal = true)
+// Use comparison to build sorted ranking
+float scores_arr_a1 = a1_signal ? a1_norm : -1.0
+float scores_arr_a3 = a3_signal ? a3_norm : -1.0
+float scores_arr_b1 = b1_signal ? b1_norm : -1.0
+
+// Find rank 1
+if scores_arr_b1 >= scores_arr_a3 and scores_arr_b1 >= scores_arr_a1 and b1_signal
+    rank1_model := "B1"
+    rank1_score := b1_norm
+    if scores_arr_a3 >= scores_arr_a1 and a3_signal
+        rank2_model := "A3"
+        rank2_score := a3_norm
+        if a1_signal
+            rank3_model := "A1"
+            rank3_score := a1_norm
+    else if a1_signal
+        rank2_model := "A1"
+        rank2_score := a1_norm
+        if a3_signal
+            rank3_model := "A3"
+            rank3_score := a3_norm
+else if scores_arr_a3 >= scores_arr_a1 and scores_arr_a3 >= scores_arr_b1 and a3_signal
+    rank1_model := "A3"
+    rank1_score := a3_norm
+    if scores_arr_b1 >= scores_arr_a1 and b1_signal
+        rank2_model := "B1"
+        rank2_score := b1_norm
+        if a1_signal
+            rank3_model := "A1"
+            rank3_score := a1_norm
+    else if a1_signal
+        rank2_model := "A1"
+        rank2_score := a1_norm
+        if b1_signal
+            rank3_model := "B1"
+            rank3_score := b1_norm
+else if a1_signal
+    rank1_model := "A1"
+    rank1_score := a1_norm
+    if scores_arr_a3 >= scores_arr_b1 and a3_signal
+        rank2_model := "A3"
+        rank2_score := a3_norm
+        if b1_signal
+            rank3_model := "B1"
+            rank3_score := b1_norm
+    else if b1_signal
+        rank2_model := "B1"
+        rank2_score := b1_norm
+        if a3_signal
+            rank3_model := "A3"
+            rank3_score := a3_norm
+
+// Select winner: highest ranked model above threshold
+bool   w_has_candidate = false
+string w_model_id      = "NO_TRADE"
+float  w_score         = 0.0
+float  w_score_raw     = 0.0
+int    w_dir           = 0
+float  w_entry         = na
+float  w_stop          = na
+float  w_target        = na
+float  w_risk_pts      = na
+float  w_rr            = na
+string w_basis         = ""
+string w_no_trade_reason = "No eligible model"
+
+// Forward only the top-ranked model that clears the threshold
+if rank1_model == "B1" and b1_norm >= i_edge_score_threshold
+    w_has_candidate := true
+    w_model_id  := "B1"
+    w_score     := b1_norm
+    w_score_raw := b1_raw
+    w_dir       := b1_dir
+    w_entry     := b1_entry
+    w_stop      := b1_stop
+    w_target    := b1_target
+    w_risk_pts  := b1_risk
+    w_rr        := b1_rr
+    w_basis     := b1_basis
+    w_no_trade_reason := "NONE"
+else if rank1_model == "A3" and a3_norm >= i_edge_score_threshold
+    w_has_candidate := true
+    w_model_id  := "A3"
+    w_score     := a3_norm
+    w_score_raw := a3_raw
+    w_dir       := a3_dir
+    w_entry     := a3_entry
+    w_stop      := a3_stop
+    w_target    := a3_target
+    w_risk_pts  := a3_risk
+    w_rr        := a3_rr
+    w_basis     := a3_basis
+    w_no_trade_reason := "NONE"
+else if rank1_model == "A1" and a1_norm >= i_edge_score_threshold
+    w_has_candidate := true
+    w_model_id  := "A1"
+    w_score     := a1_norm
+    w_score_raw := a1_raw
+    w_dir       := a1_dir
+    w_entry     := a1_entry
+    w_stop      := a1_stop
+    w_target    := a1_target
+    w_risk_pts  := a1_risk
+    w_rr        := a1_rr
+    w_basis     := a1_basis
+    w_no_trade_reason := "NONE"
+else if rank1_model != "NONE"
+    w_no_trade_reason := "Top model " + rank1_model + " score " + str.tostring(rank1_score, "#.#") + " below threshold " + str.tostring(i_edge_score_threshold, "#.#")
+else if not (a1_signal or a3_signal or b1_signal)
+    w_no_trade_reason := "No model generated a signal this bar"
+else
+    w_no_trade_reason := "No model score exceeded threshold (" + str.tostring(i_edge_score_threshold, "#.#") + ")"
+
+// Confidence label
+string w_confidence = w_score >= 80 ? "HIGH" : (w_score >= 65 ? "MEDIUM" : "LOW")
+
+// Ranking string (sorted by score)
+string w_ranking = b1_rank_str + " | " + a3_rank_str + " | " + a1_rank_str
+
+// ─── EDGE ATTRIBUTION RECORD (EAR) ───────────────────────────────────────────
+// Compact JSON string for embedding in M-15 webhook payload
+// Contains top-5 positive contributors and top-3 penalties for the winning model
+string ear_json = "null"
+if w_has_candidate
+    // Get the winning model's dimension scores
+    float ear_ms01 = w_model_id == "A1" ? a1_d_ms01 : (w_model_id == "A3" ? a3_d_ms01 : b1_d_ms01)
+    float ear_ms02 = w_model_id == "A1" ? a1_d_ms02 : (w_model_id == "A3" ? a3_d_ms02 : b1_d_ms02)
+    float ear_ms03 = w_model_id == "A1" ? a1_d_ms03 : (w_model_id == "A3" ? a3_d_ms03 : b1_d_ms03)
+    float ear_ms04 = w_model_id == "A1" ? a1_d_ms04 : (w_model_id == "A3" ? a3_d_ms04 : b1_d_ms04)
+    float ear_ms05 = w_model_id == "A3" ? a3_d_ms05 : 0.0
+    float ear_eq01 = w_model_id == "A1" ? a1_d_eq01 : 0.0
+    float ear_eq02 = w_model_id == "A1" ? a1_d_eq02 : (w_model_id == "A3" ? a3_d_eq02 : b1_d_eq02)
+    float ear_eq03 = w_model_id == "A1" ? a1_d_eq03 : (w_model_id == "A3" ? a3_d_eq03 : b1_d_eq03)
+    float ear_tc01 = w_model_id == "A1" ? a1_d_tc01 : (w_model_id == "A3" ? a3_d_tc01 : b1_d_tc01)
+    float ear_tc02 = w_model_id == "A1" ? a1_d_tc02 : (w_model_id == "A3" ? a3_d_tc02 : b1_d_tc02)
+    float ear_si01 = w_model_id == "A1" ? a1_d_si01 : (w_model_id == "A3" ? a3_d_si01 : b1_d_si01)
+    float ear_raw  = w_model_id == "A1" ? a1_raw     : (w_model_id == "A3" ? a3_raw     : b1_raw)
+    float ear_max  = w_model_id == "A1" ? A1_RAW_MAX : (w_model_id == "A3" ? A3_RAW_MAX : B1_RAW_MAX)
+
+    ear_json := "{"
+    ear_json := ear_json + "\"model\":\"" + w_model_id + "\","
+    ear_json := ear_json + "\"raw_score\":" + str.tostring(ear_raw, "#.##") + ","
+    ear_json := ear_json + "\"raw_max\":" + str.tostring(ear_max, "#.##") + ","
+    ear_json := ear_json + "\"norm_score\":" + str.tostring(w_score, "#.##") + ","
+    ear_json := ear_json + "\"confidence\":\"" + w_confidence + "\","
+    ear_json := ear_json + "\"dims\":{"
+    ear_json := ear_json + "\"ms01\":" + str.tostring(ear_ms01, "#.##") + ","
+    ear_json := ear_json + "\"ms02\":" + str.tostring(ear_ms02, "#.##") + ","
+    ear_json := ear_json + "\"ms03\":" + str.tostring(ear_ms03, "#.##") + ","
+    ear_json := ear_json + "\"ms04\":" + str.tostring(ear_ms04, "#.##") + ","
+    ear_json := ear_json + "\"ms05\":" + str.tostring(ear_ms05, "#.##") + ","
+    ear_json := ear_json + "\"eq01\":" + str.tostring(ear_eq01, "#.##") + ","
+    ear_json := ear_json + "\"eq02\":" + str.tostring(ear_eq02, "#.##") + ","
+    ear_json := ear_json + "\"eq03\":" + str.tostring(ear_eq03, "#.##") + ","
+    ear_json := ear_json + "\"tc01\":" + str.tostring(ear_tc01, "#.##") + ","
+    ear_json := ear_json + "\"tc02\":" + str.tostring(ear_tc02, "#.##") + ","
+    ear_json := ear_json + "\"si01\":" + str.tostring(ear_si01, "#.##") + ","
+    ear_json := ear_json + "\"si02\":" + str.tostring(si_02_score, "#.##") + ","
+    ear_json := ear_json + "\"si03\":" + str.tostring(si_03_score, "#.##") + ","
+    ear_json := ear_json + "\"cr01\":" + str.tostring(d_cr_01, "#.##") + ","
+    ear_json := ear_json + "\"cr02\":" + str.tostring(d_cr_02, "#.##") + "}"
+    ear_json := ear_json + "}"
+
+// ─── RANKING JSON (for M-15 payload) ─────────────────────────────────────────
+string ranking_json = "["
+ranking_json := ranking_json + "{\"rank\":1,\"model\":\"" + rank1_model + "\",\"score\":" + (rank1_model != "NONE" ? str.tostring(rank1_score, "#.##") : "0") + ",\"eligible\":" + (rank1_model != "NONE" ? "true" : "false") + "},"
+ranking_json := ranking_json + "{\"rank\":2,\"model\":\"" + rank2_model + "\",\"score\":" + (rank2_model != "NONE" ? str.tostring(rank2_score, "#.##") : "0") + ",\"eligible\":" + (rank2_model != "NONE" ? "true" : "false") + "},"
+ranking_json := ranking_json + "{\"rank\":3,\"model\":\"" + rank3_model + "\",\"score\":" + (rank3_model != "NONE" ? str.tostring(rank3_score, "#.##") : "0") + ",\"eligible\":" + (rank3_model != "NONE" ? "true" : "false") + "}]"
+
+// ─── ADE RATIONALE STRING ─────────────────────────────────────────────────────
+string ade_rationale = w_has_candidate ? "ADE v2 Selected " + w_model_id + " score=" + str.tostring(w_score, "#.#") + " (" + w_confidence + ") raw=" + str.tostring(w_score_raw, "#.#") + " | " + w_ranking : "NO_TRADE: " + w_no_trade_reason + " | " + w_ranking

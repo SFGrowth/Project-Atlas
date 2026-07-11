@@ -2,8 +2,8 @@
 // ATLAS OBSERVABILITY WEBHOOK — M-15
 // atlas_observability_webhook.pine
 // =============================================================================
-// Sprint:   074
-// Version:  1.0.0
+// Sprint:   081
+// Version:  2.0.0
 // Module:   M-15
 // Purpose:  Converts each completed-bar PipelineReport from M-14 into a
 //           validated JSON payload and transmits it to Atlas Nexus via
@@ -43,8 +43,8 @@ var string TICKER           = "MNQ1!"
 var string TIMEFRAME        = "5"
 var string APS_VERSION      = "0.12.0"
 var string PINE_VERSION     = "5"
-var int    SPRINT_NUMBER    = 74
-var string MODULE_VERSION   = "1.0.0"
+var int    SPRINT_NUMBER    = 81
+var string MODULE_VERSION   = "2.0.0"
 
 // Order state constants (must match M-14)
 var string STATE_NONE       = "NONE"
@@ -376,6 +376,8 @@ else
 bool   w_has_candidate = false
 string w_model_id      = "NO_TRADE"
 float  w_score         = 0.0
+float  w_raw           = 0.0
+float  w_raw_max       = 0.0
 int    w_dir           = 0
 float  w_entry         = na
 float  w_stop          = na
@@ -387,19 +389,230 @@ string w_ranking       = ""
 string w_confidence    = "LOW"
 string w_no_trade_reason = "No eligible model"
 
-float b1_score = b1_signal ? (ema_struct != "MIXED" ? 70.0 : 50.0) + (adx_trending_val ? 15.0 : 0.0) + (mvc_003_val ? 15.0 : 0.0) : 0.0
-float a3_score = a3_signal ? (ema_struct != "MIXED" ? 65.0 : 45.0) + (adx_trending_val ? 15.0 : 0.0) + (is_ov_val ? 10.0 : 0.0) : 0.0
-float a1_score = a1_signal ? (ema_struct != "MIXED" ? 60.0 : 40.0) + (adx_trending_val ? 10.0 : 0.0) + (is_pm_val ? 10.0 : 0.0) : 0.0
+// ─── ADE v2 ENGINE (Sprint 081) ──────────────────────────────────────────────
+float W_MS_01 = 20.0
+float W_MS_02 = 18.0
+float W_MS_03 = 14.0
+float W_MS_04 = 12.0
+float W_MS_05 = 12.0
+float W_EQ_01 = 15.0
+float W_EQ_02 = 15.0
+float W_EQ_03 = 12.0
+float W_TC_01 = 10.0
+float W_TC_02 = 6.0
+float W_CR_01 = -15.0
+float W_CR_02 = -20.0
+float W_SI_01 = 10.0
+float W_SI_02 = 7.0
+float W_SI_03 = 5.0
+float A1_RAW_MAX = 144.0
+float A3_RAW_MAX = 141.0
+float B1_RAW_MAX = 129.0
 
-string b1_str = b1_signal ? "B1(" + str.tostring(b1_score, "#.#") + ")" : "B1(NO_SIGNAL)"
-string a3_str = a3_signal ? "A3(" + str.tostring(a3_score, "#.#") + ")" : "A3(NO_SIGNAL)"
-string a1_str = a1_signal ? "A1(" + str.tostring(a1_score, "#.#") + ")" : "A1(NO_SIGNAL)"
-w_ranking := b1_str + " | " + a3_str + " | " + a1_str
+f_normalise_ade(float raw, float raw_max) =>
+    raw_max > 0 ? math.max(0.0, math.min(100.0, (raw / raw_max) * 100.0)) : 0.0
 
-if b1_signal and b1_score >= i_edge_threshold
+f_peaked_depth_ade(float depth_vs_atr) =>
+    float peak = 0.85
+    float lo   = 0.5
+    float hi   = 1.2
+    if depth_vs_atr < lo or depth_vs_atr > hi
+        0.0
+    else if depth_vs_atr <= peak
+        (depth_vs_atr - lo) / (peak - lo)
+    else
+        1.0 - ((depth_vs_atr - peak) / (hi - peak))
+
+float daily_limit_val = i_account_type == "LIVE" ? i_daily_loss_live : i_daily_loss_prop
+float drawdown_ratio  = daily_limit_val < 0 ? math.max(0.0, math.min(1.0, v_daily_pnl / daily_limit_val)) : 0.0
+float d_cr_01 = math.min(2, v_consecutive_losses) * W_CR_01
+float d_cr_02 = drawdown_ratio * W_CR_02
+float group_d_penalty = d_cr_01 + d_cr_02
+float si_01_a1 = math.min(10.0, (1.387 - 1.0) * 25.0)
+float si_01_a3 = math.min(10.0, (1.633 - 1.0) * 25.0)
+float si_01_b1 = math.min(10.0, (1.354 - 1.0) * 25.0)
+float si_02_score = 0.5 * W_SI_02
+float si_03_score = 1.0 * W_SI_03
+
+// ── Model A1 ──
+float a1_raw = 0.0
+float a1_d_ms01 = 0.0
+float a1_d_ms02 = 0.0
+float a1_d_ms03 = 0.0
+float a1_d_ms04 = 0.0
+float a1_d_eq01 = 0.0
+float a1_d_eq02 = 0.0
+float a1_d_eq03 = 0.0
+float a1_d_tc01 = 0.0
+float a1_d_tc02 = 0.0
+float a1_d_si01 = 0.0
+float a1_norm   = 0.0
+if a1_signal
+    a1_d_ms01 := (ema_struct != "MIXED" ? 1.0 : 0.3) * W_MS_01
+    float adx_norm_a1 = adx14_val < 25 ? 0.3 : (adx14_val < 30 ? 0.7 : (adx14_val < 35 ? 1.0 : (adx14_val < 40 ? 0.6 : 0.0)))
+    a1_d_ms02 := adx_norm_a1 * W_MS_02
+    float vexp_a1 = volcomp_val < 0.7 ? 0.2 : (volcomp_val < 0.9 ? 0.6 : (volcomp_val < 1.4 ? 1.0 : (volcomp_val < 1.8 ? 0.7 : 0.3)))
+    a1_d_ms03 := vexp_a1 * W_MS_03
+    float msi_a1 = ov_range_vs_atr_val < 0.3 ? 0.2 : (ov_range_vs_atr_val < 0.5 ? 0.6 : (ov_range_vs_atr_val < 1.5 ? 1.0 : 0.7))
+    a1_d_ms04 := msi_a1 * W_MS_04
+    float pullback_depth_a1 = atr14_val > 0 ? math.abs(ema9_val - close) / atr14_val : 0.0
+    a1_d_eq01 := f_peaked_depth_ade(pullback_depth_a1) * W_EQ_01
+    float a1_target_dist = math.abs(a1_target - a1_entry)
+    float day_range_pts  = safe_day_high - safe_day_low
+    float liq_clear_a1   = day_range_pts > 0 ? math.min(1.0, a1_target_dist / (day_range_pts * 0.5)) : 0.5
+    a1_d_eq02 := liq_clear_a1 * W_EQ_02
+    float stop_dist_a1 = atr14_val > 0 ? math.abs(a1_entry - a1_stop) / atr14_val : 0.0
+    float rdist_a1 = stop_dist_a1 < 0.3 ? 0.3 : (stop_dist_a1 < 0.4 ? 0.7 : (stop_dist_a1 < 0.7 ? 1.0 : (stop_dist_a1 < 1.0 ? 0.7 : 0.3)))
+    a1_d_eq03 := rdist_a1 * W_EQ_03
+    bool a1_valid_day = dow_val >= 2 and dow_val <= 4
+    a1_d_tc01 := (is_pm_val and a1_valid_day ? 1.0 : (is_pm_val ? 0.7 : 0.0)) * W_TC_01
+    float dow_a1 = dow_val == 3 ? 1.0 : (dow_val == 2 or dow_val == 4 ? 0.8 : 0.4)
+    a1_d_tc02 := dow_a1 * W_TC_02
+    a1_d_si01 := si_01_a1
+    a1_raw := a1_d_ms01 + a1_d_ms02 + a1_d_ms03 + a1_d_ms04 + a1_d_eq01 + a1_d_eq02 + a1_d_eq03 + a1_d_tc01 + a1_d_tc02 + a1_d_si01 + si_02_score + si_03_score + group_d_penalty
+    a1_raw := math.max(0.0, a1_raw)
+    a1_norm := f_normalise_ade(a1_raw, A1_RAW_MAX)
+
+// ── Model A3 ──
+float a3_raw = 0.0
+float a3_d_ms01 = 0.0
+float a3_d_ms02 = 0.0
+float a3_d_ms03 = 0.0
+float a3_d_ms04 = 0.0
+float a3_d_ms05 = 0.0
+float a3_d_eq02 = 0.0
+float a3_d_eq03 = 0.0
+float a3_d_tc01 = 0.0
+float a3_d_tc02 = 0.0
+float a3_d_si01 = 0.0
+float a3_norm   = 0.0
+if a3_signal
+    a3_d_ms01 := (ema_struct != "MIXED" ? 1.0 : 0.3) * W_MS_01
+    float adx_norm_a3 = adx14_val < 25 ? 0.0 : (adx14_val < 35 ? 0.8 : (adx14_val < 45 ? 1.0 : 0.7))
+    a3_d_ms02 := adx_norm_a3 * W_MS_02
+    float vexp_a3 = volcomp_val < 1.3 ? 0.0 : (volcomp_val < 1.6 ? 0.7 : (volcomp_val < 2.0 ? 1.0 : 0.8))
+    a3_d_ms03 := vexp_a3 * W_MS_03
+    float msi_a3 = ov_range_vs_atr_val < 0.3 ? 0.2 : (ov_range_vs_atr_val < 0.5 ? 0.6 : (ov_range_vs_atr_val < 2.0 ? 1.0 : 0.7))
+    a3_d_ms04 := msi_a3 * W_MS_04
+    float volcomp_prior_a3 = atr5_20_val > 0 ? atr5_val[1] / atr5_20_val : 1.0
+    float comp_quality = volcomp_prior_a3 < 0.60 ? 1.0 : (volcomp_prior_a3 < 0.70 ? 0.9 : (volcomp_prior_a3 < 0.80 ? 0.7 : 0.0))
+    a3_d_ms05 := comp_quality * W_MS_05
+    float a3_target_dist = math.abs(a3_target - a3_entry)
+    float day_range_a3   = safe_day_high - safe_day_low
+    float liq_clear_a3   = day_range_a3 > 0 ? math.min(1.0, a3_target_dist / (day_range_a3 * 0.5)) : 0.5
+    a3_d_eq02 := liq_clear_a3 * W_EQ_02
+    float stop_dist_a3 = atr14_val > 0 ? math.abs(a3_entry - a3_stop) / atr14_val : 0.0
+    float rdist_a3 = stop_dist_a3 < 0.15 ? 0.3 : (stop_dist_a3 < 0.25 ? 0.8 : (stop_dist_a3 < 0.40 ? 1.0 : (stop_dist_a3 < 0.60 ? 0.7 : 0.3)))
+    a3_d_eq03 := rdist_a3 * W_EQ_03
+    a3_d_tc01 := (is_ov_val ? 1.0 : 0.0) * W_TC_01
+    float dow_a3 = dow_val == 5 ? 0.5 : (dow_val == 1 ? 0.9 : 1.0)
+    a3_d_tc02 := dow_a3 * W_TC_02
+    a3_d_si01 := si_01_a3
+    a3_raw := a3_d_ms01 + a3_d_ms02 + a3_d_ms03 + a3_d_ms04 + a3_d_ms05 + a3_d_eq02 + a3_d_eq03 + a3_d_tc01 + a3_d_tc02 + a3_d_si01 + si_02_score + si_03_score + group_d_penalty
+    a3_raw := math.max(0.0, a3_raw)
+    a3_norm := f_normalise_ade(a3_raw, A3_RAW_MAX)
+
+// ── Model B1 ──
+float b1_raw = 0.0
+float b1_d_ms01 = 0.0
+float b1_d_ms02 = 0.0
+float b1_d_ms03 = 0.0
+float b1_d_ms04 = 0.0
+float b1_d_eq02 = 0.0
+float b1_d_eq03 = 0.0
+float b1_d_tc01 = 0.0
+float b1_d_tc02 = 0.0
+float b1_d_si01 = 0.0
+float b1_norm   = 0.0
+if b1_signal
+    b1_d_ms01 := (ema_struct != "MIXED" ? 1.0 : 0.3) * W_MS_01
+    float adx_norm_b1 = adx14_val < 25 ? 0.0 : (adx14_val < 35 ? 0.8 : (adx14_val < 50 ? 1.0 : 0.8))
+    b1_d_ms02 := adx_norm_b1 * W_MS_02
+    float vexp_b1 = not surge_val ? 0.0 : (rel_vol_val < 1.5 ? 0.6 : (rel_vol_val < 2.5 ? 1.0 : 0.9))
+    b1_d_ms03 := vexp_b1 * W_MS_03
+    float msi_b1 = ov_range_vs_atr_val < 0.5 ? 0.3 : (ov_range_vs_atr_val < 0.8 ? 0.8 : (ov_range_vs_atr_val < 2.0 ? 1.0 : 0.7))
+    b1_d_ms04 := msi_b1 * W_MS_04
+    float b1_target_dist = math.abs(b1_target - b1_entry)
+    float day_range_b1   = safe_day_high - safe_day_low
+    float liq_clear_b1   = day_range_b1 > 0 ? math.min(1.0, b1_target_dist / (day_range_b1 * 0.5)) : 0.5
+    b1_d_eq02 := liq_clear_b1 * W_EQ_02
+    float stop_dist_b1 = atr14_val > 0 ? math.abs(b1_entry - b1_stop) / atr14_val : 0.0
+    float rdist_b1 = stop_dist_b1 < 1.0 ? 0.5 : (stop_dist_b1 < 1.3 ? 0.8 : (stop_dist_b1 < 1.7 ? 1.0 : (stop_dist_b1 < 2.0 ? 0.8 : 0.4)))
+    b1_d_eq03 := rdist_b1 * W_EQ_03
+    b1_d_tc01 := (is_am_val ? 1.0 : (is_rth_val ? 0.4 : 0.0)) * W_TC_01
+    float dow_b1 = dow_val <= 3 ? 1.0 : (dow_val == 4 ? 0.8 : 0.5)
+    b1_d_tc02 := dow_b1 * W_TC_02
+    b1_d_si01 := si_01_b1
+    b1_raw := b1_d_ms01 + b1_d_ms02 + b1_d_ms03 + b1_d_ms04 + b1_d_eq02 + b1_d_eq03 + b1_d_tc01 + b1_d_tc02 + b1_d_si01 + si_02_score + si_03_score + group_d_penalty
+    b1_raw := math.max(0.0, b1_raw)
+    b1_norm := f_normalise_ade(b1_raw, B1_RAW_MAX)
+
+// ── Ranking ──
+string a1_rank_str = a1_signal ? "A1(" + str.tostring(a1_norm, "#.#") + ")" : "A1(NO_SIGNAL)"
+string a3_rank_str = a3_signal ? "A3(" + str.tostring(a3_norm, "#.#") + ")" : "A3(NO_SIGNAL)"
+string b1_rank_str = b1_signal ? "B1(" + str.tostring(b1_norm, "#.#") + ")" : "B1(NO_SIGNAL)"
+float scores_arr_a1 = a1_signal ? a1_norm : -1.0
+float scores_arr_a3 = a3_signal ? a3_norm : -1.0
+float scores_arr_b1 = b1_signal ? b1_norm : -1.0
+string rank1_model = "NONE"
+float  rank1_score = 0.0
+string rank2_model = "NONE"
+float  rank2_score = 0.0
+string rank3_model = "NONE"
+float  rank3_score = 0.0
+if scores_arr_b1 >= scores_arr_a3 and scores_arr_b1 >= scores_arr_a1 and b1_signal
+    rank1_model := "B1"
+    rank1_score := b1_norm
+    if scores_arr_a3 >= scores_arr_a1 and a3_signal
+        rank2_model := "A3"
+        rank2_score := a3_norm
+        if a1_signal
+            rank3_model := "A1"
+            rank3_score := a1_norm
+    else if a1_signal
+        rank2_model := "A1"
+        rank2_score := a1_norm
+        if a3_signal
+            rank3_model := "A3"
+            rank3_score := a3_norm
+else if scores_arr_a3 >= scores_arr_a1 and scores_arr_a3 >= scores_arr_b1 and a3_signal
+    rank1_model := "A3"
+    rank1_score := a3_norm
+    if scores_arr_b1 >= scores_arr_a1 and b1_signal
+        rank2_model := "B1"
+        rank2_score := b1_norm
+        if a1_signal
+            rank3_model := "A1"
+            rank3_score := a1_norm
+    else if a1_signal
+        rank2_model := "A1"
+        rank2_score := a1_norm
+        if b1_signal
+            rank3_model := "B1"
+            rank3_score := b1_norm
+else if a1_signal
+    rank1_model := "A1"
+    rank1_score := a1_norm
+    if scores_arr_a3 >= scores_arr_b1 and a3_signal
+        rank2_model := "A3"
+        rank2_score := a3_norm
+        if b1_signal
+            rank3_model := "B1"
+            rank3_score := b1_norm
+    else if b1_signal
+        rank2_model := "B1"
+        rank2_score := b1_norm
+        if a3_signal
+            rank3_model := "A3"
+            rank3_score := a3_norm
+
+// ── Winner Selection ──
+if rank1_model == "B1" and b1_norm >= i_edge_threshold
     w_has_candidate := true
     w_model_id  := "B1"
-    w_score     := b1_score
+    w_score     := b1_norm
+    w_raw       := b1_raw
+    w_raw_max   := B1_RAW_MAX
     w_dir       := b1_dir
     w_entry     := b1_entry
     w_stop      := b1_stop
@@ -408,10 +621,12 @@ if b1_signal and b1_score >= i_edge_threshold
     w_rr        := b1_rr
     w_basis     := b1_basis
     w_no_trade_reason := "NONE"
-else if a3_signal and a3_score >= i_edge_threshold
+else if rank1_model == "A3" and a3_norm >= i_edge_threshold
     w_has_candidate := true
     w_model_id  := "A3"
-    w_score     := a3_score
+    w_score     := a3_norm
+    w_raw       := a3_raw
+    w_raw_max   := A3_RAW_MAX
     w_dir       := a3_dir
     w_entry     := a3_entry
     w_stop      := a3_stop
@@ -420,10 +635,12 @@ else if a3_signal and a3_score >= i_edge_threshold
     w_rr        := a3_rr
     w_basis     := a3_basis
     w_no_trade_reason := "NONE"
-else if a1_signal and a1_score >= i_edge_threshold
+else if rank1_model == "A1" and a1_norm >= i_edge_threshold
     w_has_candidate := true
     w_model_id  := "A1"
-    w_score     := a1_score
+    w_score     := a1_norm
+    w_raw       := a1_raw
+    w_raw_max   := A1_RAW_MAX
     w_dir       := a1_dir
     w_entry     := a1_entry
     w_stop      := a1_stop
@@ -432,15 +649,36 @@ else if a1_signal and a1_score >= i_edge_threshold
     w_rr        := a1_rr
     w_basis     := a1_basis
     w_no_trade_reason := "NONE"
+else if rank1_model != "NONE"
+    w_no_trade_reason := "Top model " + rank1_model + " score " + str.tostring(rank1_score, "#.#") + " below threshold " + str.tostring(i_edge_threshold, "#.#")
 else if not (a1_signal or a3_signal or b1_signal)
     w_no_trade_reason := "No model generated a signal this bar"
 else
     w_no_trade_reason := "No model score exceeded threshold (" + str.tostring(i_edge_threshold, "#.#") + ")"
+w_confidence := w_score >= 80 ? "HIGH" : (w_score >= 65 ? "MEDIUM" : "LOW")
+w_ranking := b1_rank_str + " | " + a3_rank_str + " | " + a1_rank_str
 
-w_confidence := w_score >= 80 ? "HIGH" : (w_score >= 60 ? "MEDIUM" : "LOW")
+// ── Edge Attribution Record (EAR) ──
+string w_ear_json = "null"
+if w_has_candidate
+    float ear_ms01 = w_model_id == "A1" ? a1_d_ms01 : (w_model_id == "A3" ? a3_d_ms01 : b1_d_ms01)
+    float ear_ms02 = w_model_id == "A1" ? a1_d_ms02 : (w_model_id == "A3" ? a3_d_ms02 : b1_d_ms02)
+    float ear_ms03 = w_model_id == "A1" ? a1_d_ms03 : (w_model_id == "A3" ? a3_d_ms03 : b1_d_ms03)
+    float ear_ms04 = w_model_id == "A1" ? a1_d_ms04 : (w_model_id == "A3" ? a3_d_ms04 : b1_d_ms04)
+    float ear_ms05 = w_model_id == "A3" ? a3_d_ms05 : 0.0
+    float ear_eq01 = w_model_id == "A1" ? a1_d_eq01 : 0.0
+    float ear_eq02 = w_model_id == "A1" ? a1_d_eq02 : (w_model_id == "A3" ? a3_d_eq02 : b1_d_eq02)
+    float ear_eq03 = w_model_id == "A1" ? a1_d_eq03 : (w_model_id == "A3" ? a3_d_eq03 : b1_d_eq03)
+    float ear_tc01 = w_model_id == "A1" ? a1_d_tc01 : (w_model_id == "A3" ? a3_d_tc01 : b1_d_tc01)
+    float ear_tc02 = w_model_id == "A1" ? a1_d_tc02 : (w_model_id == "A3" ? a3_d_tc02 : b1_d_tc02)
+    float ear_si01 = w_model_id == "A1" ? a1_d_si01 : (w_model_id == "A3" ? a3_d_si01 : b1_d_si01)
+    float ear_raw  = w_model_id == "A1" ? a1_raw     : (w_model_id == "A3" ? a3_raw     : b1_raw)
+    float ear_max  = w_model_id == "A1" ? A1_RAW_MAX : (w_model_id == "A3" ? A3_RAW_MAX : B1_RAW_MAX)
+    w_ear_json := "{\"model\":\"" + w_model_id + "\",\"raw\":" + str.tostring(ear_raw, "#.##") + ",\"max\":" + str.tostring(ear_max, "#.##") + ",\"norm\":" + str.tostring(w_score, "#.##") + ",\"conf\":\"" + w_confidence + "\",\"ms01\":" + str.tostring(ear_ms01, "#.##") + ",\"ms02\":" + str.tostring(ear_ms02, "#.##") + ",\"ms03\":" + str.tostring(ear_ms03, "#.##") + ",\"ms04\":" + str.tostring(ear_ms04, "#.##") + ",\"ms05\":" + str.tostring(ear_ms05, "#.##") + ",\"eq01\":" + str.tostring(ear_eq01, "#.##") + ",\"eq02\":" + str.tostring(ear_eq02, "#.##") + ",\"eq03\":" + str.tostring(ear_eq03, "#.##") + ",\"tc01\":" + str.tostring(ear_tc01, "#.##") + ",\"tc02\":" + str.tostring(ear_tc02, "#.##") + ",\"si01\":" + str.tostring(ear_si01, "#.##") + ",\"si02\":" + str.tostring(si_02_score, "#.##") + ",\"si03\":" + str.tostring(si_03_score, "#.##") + ",\"cr01\":" + str.tostring(d_cr_01, "#.##") + ",\"cr02\":" + str.tostring(d_cr_02, "#.##") + "}"
 
 // ADE rationale
-string ade_rationale = w_has_candidate ? "Selected " + w_model_id + " with score " + str.tostring(w_score, "#.#") + " (" + w_confidence + ") | " + w_ranking : "NO_TRADE: " + w_no_trade_reason + " | " + w_ranking
+string ade_rationale = w_has_candidate ? "ADE v2 Selected " + w_model_id + " score=" + str.tostring(w_score, "#.#") + " (" + w_confidence + ") | " + w_ranking : "NO_TRADE: " + w_no_trade_reason + " | " + w_ranking
+// ─────────────────────────────────────────────────────────────────────────────
 
 // ============================================================================
 // SECTION 8: ARI DECISION (inline — mirrors M-14)
@@ -688,15 +926,103 @@ if barstate.isconfirmed
 
     string j_models = "\"model_evaluations\":{" + j_a1 + "," + j_a3 + "," + j_b1 + "},"
 
-    // --- ADE DECISION ---
+    // --- ADE DECISION (Sprint 082 — full v2 payload) ---
+    // Per-model raw scores and norm scores for ranking table
+    float a1_norm = a1_raw > 0 ? math.min((a1_raw / A1_RAW_MAX) * 100.0, 100.0) : 0.0
+    float a3_norm = a3_raw > 0 ? math.min((a3_raw / A3_RAW_MAX) * 100.0, 100.0) : 0.0
+    float b1_norm = b1_raw > 0 ? math.min((b1_raw / B1_RAW_MAX) * 100.0, 100.0) : 0.0
+    // Session/regime compatibility strings
+    string a1_sess_compat = is_pm_val ? "COMPATIBLE" : "INCOMPATIBLE"
+    string a3_sess_compat = is_ov_val ? "COMPATIBLE" : "INCOMPATIBLE"
+    string b1_sess_compat = is_am_val or is_rth_val ? "COMPATIBLE" : "INCOMPATIBLE"
+    string a1_regime_compat = adx14_val >= 20 and adx14_val <= 45 ? "COMPATIBLE" : "INCOMPATIBLE"
+    string a3_regime_compat = adx14_val <= 35 ? "COMPATIBLE" : "INCOMPATIBLE"
+    string b1_regime_compat = mvc_003_val ? "COMPATIBLE" : "INCOMPATIBLE"
+    // Tie-break result
+    string tie_break_result = "NONE"
+    // EAR — emitted on every bar for all 3 models (NOT_APPLICABLE where dimension does not apply)
+    // A1 EAR
+    string j_ear_a1 = "{"
+    j_ear_a1 := j_ear_a1 + "\"model\":\"A1\","
+    j_ear_a1 := j_ear_a1 + "\"raw\":" + f_fts(a1_raw, "#.##") + ","
+    j_ear_a1 := j_ear_a1 + "\"max\":" + str.tostring(A1_RAW_MAX, "#.##") + ","
+    j_ear_a1 := j_ear_a1 + "\"norm\":" + f_fts(a1_norm, "#.##") + ","
+    j_ear_a1 := j_ear_a1 + "\"ms01\":" + f_fts(a1_d_ms01, "#.##") + ","
+    j_ear_a1 := j_ear_a1 + "\"ms02\":" + f_fts(a1_d_ms02, "#.##") + ","
+    j_ear_a1 := j_ear_a1 + "\"ms03\":" + f_fts(a1_d_ms03, "#.##") + ","
+    j_ear_a1 := j_ear_a1 + "\"ms04\":" + f_fts(a1_d_ms04, "#.##") + ","
+    j_ear_a1 := j_ear_a1 + "\"ms05\":\"NOT_APPLICABLE\","
+    j_ear_a1 := j_ear_a1 + "\"eq01\":" + f_fts(a1_d_eq01, "#.##") + ","
+    j_ear_a1 := j_ear_a1 + "\"eq02\":" + f_fts(a1_d_eq02, "#.##") + ","
+    j_ear_a1 := j_ear_a1 + "\"eq03\":" + f_fts(a1_d_eq03, "#.##") + ","
+    j_ear_a1 := j_ear_a1 + "\"tc01\":" + f_fts(a1_d_tc01, "#.##") + ","
+    j_ear_a1 := j_ear_a1 + "\"tc02\":" + f_fts(a1_d_tc02, "#.##") + ","
+    j_ear_a1 := j_ear_a1 + "\"si01\":" + f_fts(a1_d_si01, "#.##") + ","
+    j_ear_a1 := j_ear_a1 + "\"si02\":\"RESEARCH_REQUIRED\","
+    j_ear_a1 := j_ear_a1 + "\"si03\":" + f_fts(si_03_score, "#.##") + ","
+    j_ear_a1 := j_ear_a1 + "\"si04\":\"RESEARCH_REQUIRED\","
+    j_ear_a1 := j_ear_a1 + "\"cr01\":" + f_fts(d_cr_01, "#.##") + ","
+    j_ear_a1 := j_ear_a1 + "\"cr02\":" + f_fts(d_cr_02, "#.##") + "}"
+    // A3 EAR
+    string j_ear_a3 = "{"
+    j_ear_a3 := j_ear_a3 + "\"model\":\"A3\","
+    j_ear_a3 := j_ear_a3 + "\"raw\":" + f_fts(a3_raw, "#.##") + ","
+    j_ear_a3 := j_ear_a3 + "\"max\":" + str.tostring(A3_RAW_MAX, "#.##") + ","
+    j_ear_a3 := j_ear_a3 + "\"norm\":" + f_fts(a3_norm, "#.##") + ","
+    j_ear_a3 := j_ear_a3 + "\"ms01\":" + f_fts(a3_d_ms01, "#.##") + ","
+    j_ear_a3 := j_ear_a3 + "\"ms02\":" + f_fts(a3_d_ms02, "#.##") + ","
+    j_ear_a3 := j_ear_a3 + "\"ms03\":" + f_fts(a3_d_ms03, "#.##") + ","
+    j_ear_a3 := j_ear_a3 + "\"ms04\":" + f_fts(a3_d_ms04, "#.##") + ","
+    j_ear_a3 := j_ear_a3 + "\"ms05\":" + f_fts(a3_d_ms05, "#.##") + ","
+    j_ear_a3 := j_ear_a3 + "\"eq01\":\"NOT_APPLICABLE\","
+    j_ear_a3 := j_ear_a3 + "\"eq02\":" + f_fts(a3_d_eq02, "#.##") + ","
+    j_ear_a3 := j_ear_a3 + "\"eq03\":" + f_fts(a3_d_eq03, "#.##") + ","
+    j_ear_a3 := j_ear_a3 + "\"tc01\":" + f_fts(a3_d_tc01, "#.##") + ","
+    j_ear_a3 := j_ear_a3 + "\"tc02\":" + f_fts(a3_d_tc02, "#.##") + ","
+    j_ear_a3 := j_ear_a3 + "\"si01\":" + f_fts(a3_d_si01, "#.##") + ","
+    j_ear_a3 := j_ear_a3 + "\"si02\":\"RESEARCH_REQUIRED\","
+    j_ear_a3 := j_ear_a3 + "\"si03\":" + f_fts(si_03_score, "#.##") + ","
+    j_ear_a3 := j_ear_a3 + "\"si04\":\"RESEARCH_REQUIRED\","
+    j_ear_a3 := j_ear_a3 + "\"cr01\":" + f_fts(d_cr_01, "#.##") + ","
+    j_ear_a3 := j_ear_a3 + "\"cr02\":" + f_fts(d_cr_02, "#.##") + "}"
+    // B1 EAR
+    string j_ear_b1 = "{"
+    j_ear_b1 := j_ear_b1 + "\"model\":\"B1\","
+    j_ear_b1 := j_ear_b1 + "\"raw\":" + f_fts(b1_raw, "#.##") + ","
+    j_ear_b1 := j_ear_b1 + "\"max\":" + str.tostring(B1_RAW_MAX, "#.##") + ","
+    j_ear_b1 := j_ear_b1 + "\"norm\":" + f_fts(b1_norm, "#.##") + ","
+    j_ear_b1 := j_ear_b1 + "\"ms01\":" + f_fts(b1_d_ms01, "#.##") + ","
+    j_ear_b1 := j_ear_b1 + "\"ms02\":" + f_fts(b1_d_ms02, "#.##") + ","
+    j_ear_b1 := j_ear_b1 + "\"ms03\":" + f_fts(b1_d_ms03, "#.##") + ","
+    j_ear_b1 := j_ear_b1 + "\"ms04\":" + f_fts(b1_d_ms04, "#.##") + ","
+    j_ear_b1 := j_ear_b1 + "\"ms05\":\"NOT_APPLICABLE\","
+    j_ear_b1 := j_ear_b1 + "\"eq01\":\"NOT_APPLICABLE\","
+    j_ear_b1 := j_ear_b1 + "\"eq02\":" + f_fts(b1_d_eq02, "#.##") + ","
+    j_ear_b1 := j_ear_b1 + "\"eq03\":" + f_fts(b1_d_eq03, "#.##") + ","
+    j_ear_b1 := j_ear_b1 + "\"tc01\":" + f_fts(b1_d_tc01, "#.##") + ","
+    j_ear_b1 := j_ear_b1 + "\"tc02\":" + f_fts(b1_d_tc02, "#.##") + ","
+    j_ear_b1 := j_ear_b1 + "\"si01\":" + f_fts(b1_d_si01, "#.##") + ","
+    j_ear_b1 := j_ear_b1 + "\"si02\":\"RESEARCH_REQUIRED\","
+    j_ear_b1 := j_ear_b1 + "\"si03\":" + f_fts(si_03_score, "#.##") + ","
+    j_ear_b1 := j_ear_b1 + "\"si04\":\"RESEARCH_REQUIRED\","
+    j_ear_b1 := j_ear_b1 + "\"cr01\":" + f_fts(d_cr_01, "#.##") + ","
+    j_ear_b1 := j_ear_b1 + "\"cr02\":" + f_fts(d_cr_02, "#.##") + "}"
+    // Full ADE decision block
     string j_ade = "\"ade_decision\":{"
+    j_ade := j_ade + "\"ade_version\":\"2.0.0\","
     j_ade := j_ade + "\"has_candidate\":" + f_bts(w_has_candidate) + ","
     j_ade := j_ade + "\"candidate_model\":" + f_str(w_model_id) + ","
-    j_ade := j_ade + "\"winning_edge_score\":" + (w_has_candidate ? f_fts(w_score, "#.#") : "null") + ","
+    j_ade := j_ade + "\"candidate_direction\":" + str.tostring(w_dir) + ","
+    j_ade := j_ade + "\"candidate_status\":" + f_str(w_has_candidate ? "SELECTED" : "NO_TRADE") + ","
+    j_ade := j_ade + "\"raw_score\":" + (w_has_candidate ? f_fts(w_raw, "#.##") : "null") + ","
+    j_ade := j_ade + "\"raw_max\":" + (w_has_candidate ? f_fts(w_raw_max, "#.##") : "null") + ","
+    j_ade := j_ade + "\"norm_score\":" + (w_has_candidate ? f_fts(w_score, "#.##") : "null") + ","
+    j_ade := j_ade + "\"threshold\":" + str.tostring(i_edge_threshold, "#.#") + ","
     j_ade := j_ade + "\"confidence_level\":" + f_str(w_confidence) + ","
-    j_ade := j_ade + "\"ranking_order\":" + f_str(w_ranking) + ","
+    j_ade := j_ade + "\"tie_break_result\":" + f_str(tie_break_result) + ","
     j_ade := j_ade + "\"decision_rationale\":" + f_str(ade_rationale) + ","
-    j_ade := j_ade + "\"no_trade_rationale\":" + (w_has_candidate ? "null" : f_str(w_no_trade_reason)) + "},"
+    j_ade := j_ade + "\"no_trade_reason\":" + (w_has_candidate ? "null" : f_str(w_no_trade_reason)) + ","
+    j_ade := j_ade + "\"model_ranking\":{\"a1\":" + j_ear_a1 + ",\"a3\":" + j_ear_a3 + ",\"b1\":" + j_ear_b1 + "}},"
 
     // --- ARI DECISION ---
     string j_ari = "\"ari_decision\":{"
