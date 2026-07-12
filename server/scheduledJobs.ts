@@ -225,6 +225,51 @@ async function handleMonteCarloRefresh(req: Request, res: Response): Promise<voi
   }
 }
 
+// ─── TIE Autonomous Discovery Handler ────────────────────────────────────────
+
+async function handleTIEDiscovery(req: Request, res: Response): Promise<void> {
+  const startTime = Date.now();
+  try {
+    const user = await sdk.authenticateRequest(req);
+    if (!user.isCron) {
+      res.status(403).json({ error: "cron-only endpoint" });
+      return;
+    }
+
+    console.log("[Scheduler] TIE Autonomous Discovery starting…");
+
+    // Run TIE processing on the last 500 bars from Atlas Memory
+    const { processTIE, runAutonomousDiscovery } = await import("./tieEngine");
+    await processTIE(500);
+    const discoveryResult = await runAutonomousDiscovery();
+
+    const durationMs = Date.now() - startTime;
+    console.log(`[Scheduler] TIE Discovery complete in ${durationMs}ms`, discoveryResult);
+
+    // Notify owner
+    await notifyOwner({
+      title: "TIE Autonomous Discovery Complete",
+      content: `Processed ${discoveryResult?.sequencesProcessed ?? 0} sequences, found ${discoveryResult?.newCandidates ?? 0} new research candidates in ${durationMs}ms`,
+    });
+
+    res.json({
+      ok: true,
+      durationMs,
+      ...discoveryResult,
+    });
+  } catch (err) {
+    const errorMsg = err instanceof Error ? err.message : String(err);
+    console.error("[Scheduler] TIE Discovery FAILED:", err);
+    try {
+      await notifyOwner({
+        title: "TIE Autonomous Discovery Failed",
+        content: `Error: ${errorMsg.slice(0, 200)}`,
+      });
+    } catch { /* suppress secondary failure */ }
+    res.status(500).json({ error: errorMsg, timestamp: new Date().toISOString() });
+  }
+}
+
 // ─── Registration ─────────────────────────────────────────────────────────────
 
 /**
@@ -272,5 +317,15 @@ export function registerScheduledJobs(app: Router): void {
     });
   });
 
-  console.log("[Scheduler] Registered 4 scheduled job endpoints");
+  // TIE Autonomous Discovery — every Sunday 06:00 UTC (Sprint 090)
+  app.post("/api/scheduled/tie-discovery", (req, res) => {
+    handleTIEDiscovery(req, res).catch((err) => {
+      console.error("[Scheduler] Unhandled error in tie-discovery:", err);
+      if (!res.headersSent) {
+        res.status(500).json({ error: String(err), timestamp: new Date().toISOString() });
+      }
+    });
+  });
+
+  console.log("[Scheduler] Registered 5 scheduled job endpoints");
 }

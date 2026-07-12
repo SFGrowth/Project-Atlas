@@ -364,3 +364,70 @@
 - [x] Update "Atlas Observability Webhook — M-15" alert webhook URL to new `/api/webhook/atlas-memory/:token` endpoint
 - [x] Alert confirmed Active, trigger: Any alert() function call, expiration: Open-ended
 - [x] End-to-end test: HTTP 201 response confirmed from atlas-memory endpoint
+
+## Sprint 090 — Temporal Intelligence Engine (TIE)
+
+### PART 1 — Database Schema (5 tables)
+- [x] `tie_sequences` — active and completed multi-bar sequences (id, type, start_time, end_time, duration_bars, dominant_trend, volatility_profile, vwap_behaviour, ema_behaviour, adx_evolution, atr_evolution, chop_evolution, regime, market_structure, completion_status, confidence, cluster_id, oracle_prediction_id)
+- [x] `tie_sequence_library` — permanent behavioural encyclopedia (sequence_type, first_observed, last_observed, occurrences, win_rate, avg_r, avg_duration, avg_mfe, avg_mae, probability_distribution, typical_exit, best_models, worst_models, oracle_accuracy, research_status)
+- [x] `tie_clusters` — automatically grouped similar sequences (cluster_id, name, description, occurrences, avg_pf, avg_duration, avg_reversal_prob, confidence, last_updated)
+- [x] `tie_oracle_predictions` — per-sequence Oracle predictions vs actuals (sequence_id, predicted_outcome, actual_outcome, prediction_error, confidence_calibration, sequence_reliability, surprise_index)
+- [x] `tie_research_candidates` — autonomously discovered new sequences (sequence_id, evidence_score, occurrence_count, statistical_confidence, research_priority, certification_status, first_seen, last_seen, notes)
+- [x] Generate migration SQL via drizzle-kit generate
+- [x] Apply migration via webdev_execute_sql
+
+### PART 2 — TIE Engine (server-side)
+- [x] `server/tieEngine.ts` — core sequence detection logic (analyses last N bars of atlas_memory, classifies active sequences, updates confidence)
+- [x] `server/tieLibrary.ts` — sequence library aggregation (merged into tieEngine.ts) (win rate, avg R, avg duration, MFE/MAE, typical exit, model performance)
+- [x] `server/tieClustering.ts` — pattern clustering (merged into tieEngine.ts) (groups similar sequences by behavioural fingerprint)
+- [x] `server/tieExperienceScore.ts` — experience score computation (merged into tieEngine.ts) (similarity matching against historical clusters)
+- [x] `server/tieDiscovery.ts` — autonomous discovery (runAutonomousDiscovery in tieEngine.ts) (weekly scan for unclassified recurring sequences)
+- [x] `server/tieOracle.ts` — Oracle integration (merged into tieEngine.ts) (per-sequence prediction, actual outcome recording, calibration)
+- [x] Wire TIE engine to atlas_memory SSE event (via tRPC procedures) (runs on every new bar close)
+
+### PART 3 — tRPC Procedures
+- [x] `tie.activeSequences` — current active sequences with confidence and cluster membership
+- [x] `tie.experienceScore` — current experience score with similarity match and expected outcome
+- [x] `tie.library` — paginated sequence library with all stats
+- [x] `tie.clusters` — all clusters with occurrence counts and performance metrics
+- [x] `tie.oraclePredictions` — recent Oracle predictions vs actuals
+- [x] `tie.researchCandidates` — autonomously discovered candidates pending certification
+- [x] `tie.sequenceHistory` — historical sequences for a given type/cluster
+
+### PART 4 — Temporal Intelligence Dashboard Page
+- [x] Create `client/src/pages/TemporalIntelligence.tsx`
+- [x] Panel: Active Sequences (type, confidence, duration, cluster)
+- [x] Panel: Experience Score (similarity %, cluster match, expected outcome, expected R, expected duration)
+- [x] Panel: Current Behaviour Story (narrative description of unfolding sequence)
+- [x] Panel: Sequence Timeline (visual bar-by-bar sequence progression)
+- [x] Panel: Historical Similarity (top 3 matching historical examples)
+- [x] Panel: Cluster Membership (which cluster the current sequence belongs to)
+- [x] Panel: Sequence Confidence (confidence evolution chart)
+- [x] Panel: Likely Outcome (Oracle prediction with probability)
+- [x] Panel: Historical Examples (past occurrences of current sequence type)
+- [x] Add `/tie` route to App.tsx
+- [x] Add "Temporal Intelligence" nav item (GitBranch icon) to ARD/ORACLE group in OrionLayout
+
+### PART 5 — Replay Engine Upgrade
+- [x] Upgrade `client/src/pages/Replay.tsx` to support behavioural sequence replay
+- [x] Add sequence overlay: show which sequence was active at each replayed bar
+- [x] Add confidence evolution panel: how TIE confidence changed bar by bar
+- [x] Add Oracle expectation panel: when Oracle changed predictions during replay
+- [x] Add ARI permission panel: when ARI permitted execution during the sequence
+- [x] Add sequence completion summary: how the sequence resolved
+
+### PART 6 — Autonomous Discovery Heartbeat
+- [x] Register weekly TIE discovery job in heartbeat scheduler (Sunday 11 PM ET = Monday 03:00 UTC) (Sunday 11 PM ET = Monday 03:00 UTC)
+- [x] Job: scan atlas_memory for sequences not matching any existing cluster, generate research candidates
+- [x] Push notification on discovery: "Atlas TIE: N new research candidates discovered"
+- [x] Persist job to atlas_scheduled_jobs table
+
+### PART 7 — Atlas Constitutional Amendment
+- [x] Add TIE constitutional amendment to system documentation: "Markets move because of evolving behaviour. Atlas studies behaviour over time rather than isolated observations. Every sequence becomes experience. Every experience becomes intelligence."
+
+### PART 8 — Engineering Validation
+- [x] TypeScript: 0 errors
+- [x] Vitest: 36/36 tests pass
+- [x] TIE engine processes last 100 atlas_memory bars and generates sequences
+- [x] Experience score returns valid similarity match
+- [x] Checkpoint saved

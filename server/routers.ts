@@ -797,6 +797,98 @@ export const appRouter = router({
         return getRegimeDistribution(input.limit);
       }),
   }),
+
+  // ── Temporal Intelligence Engine (Sprint 090) ─────────────────────────────
+  tie: router({
+    activeSequences: publicProcedure
+      .input(z.object({ limit: z.number().min(1).max(50).default(10) }))
+      .query(async ({ input }) => {
+        const { getDb } = await import("./db");
+        const { tieSequences } = await import("../drizzle/schema");
+        const { desc, eq } = await import("drizzle-orm");
+        const db = await getDb();
+        if (!db) return [];
+        const rows = await db.select().from(tieSequences).where(eq(tieSequences.completionStatus, "active")).orderBy(desc(tieSequences.createdAt)).limit(input.limit);
+        return rows.map(r => ({ id: r.id, sequenceId: r.sequenceId, sequenceType: r.sequenceType, label: r.label, startTime: r.startTime, durationBars: r.durationBars, session: r.session, dominantTrend: r.dominantTrend, volatilityProfile: r.volatilityProfile, regime: r.regime, marketStructure: r.marketStructure, completionStatus: r.completionStatus, confidence: r.confidence ? String(r.confidence) : null, experienceScore: r.experienceScore ? String(r.experienceScore) : null, expectedOutcome: r.expectedOutcome, expectedDurationBars: r.expectedDurationBars, expectedR: r.expectedR ? String(r.expectedR) : null, behaviourStory: r.behaviourStory, createdAt: r.createdAt.toISOString() }));
+      }),
+    recentSequences: publicProcedure
+      .input(z.object({ limit: z.number().min(1).max(100).default(20) }))
+      .query(async ({ input }) => {
+        const { getDb } = await import("./db");
+        const { tieSequences } = await import("../drizzle/schema");
+        const { desc } = await import("drizzle-orm");
+        const db = await getDb();
+        if (!db) return [];
+        const rows = await db.select().from(tieSequences).orderBy(desc(tieSequences.createdAt)).limit(input.limit);
+        return rows.map(r => ({ id: r.id, sequenceId: r.sequenceId, sequenceType: r.sequenceType, label: r.label, startTime: r.startTime, durationBars: r.durationBars, session: r.session, dominantTrend: r.dominantTrend, volatilityProfile: r.volatilityProfile, regime: r.regime, marketStructure: r.marketStructure, completionStatus: r.completionStatus, confidence: r.confidence ? String(r.confidence) : null, experienceScore: r.experienceScore ? String(r.experienceScore) : null, expectedOutcome: r.expectedOutcome, expectedDurationBars: r.expectedDurationBars, expectedR: r.expectedR ? String(r.expectedR) : null, behaviourStory: r.behaviourStory, createdAt: r.createdAt.toISOString() }));
+      }),
+    library: publicProcedure.query(async () => {
+      const { getDb } = await import("./db");
+      const { tieSequenceLibrary } = await import("../drizzle/schema");
+      const { desc } = await import("drizzle-orm");
+      const db = await getDb();
+      if (!db) return [];
+      const rows = await db.select().from(tieSequenceLibrary).orderBy(desc(tieSequenceLibrary.occurrences));
+      return rows.map(r => ({ id: r.id, sequenceType: r.sequenceType, displayName: r.displayName, description: r.description, firstObserved: r.firstObserved, lastObserved: r.lastObserved, occurrences: r.occurrences, winRate: r.winRate ? String(r.winRate) : null, avgR: r.avgR ? String(r.avgR) : null, avgDurationBars: r.avgDurationBars ? String(r.avgDurationBars) : null, bestModels: r.bestModels, oraclePredictionAccuracy: r.oraclePredictionAccuracy ? String(r.oraclePredictionAccuracy) : null, researchStatus: r.researchStatus, constitutionalNote: r.constitutionalNote, updatedAt: r.updatedAt.toISOString() }));
+    }),
+    clusters: publicProcedure.query(async () => {
+      const { getDb } = await import("./db");
+      const { tieClusters } = await import("../drizzle/schema");
+      const { desc } = await import("drizzle-orm");
+      const db = await getDb();
+      if (!db) return [];
+      const rows = await db.select().from(tieClusters).orderBy(desc(tieClusters.occurrences));
+      return rows.map(r => ({ id: r.id, clusterId: r.clusterId, clusterName: r.clusterName, description: r.description, sequenceTypes: r.sequenceTypes, occurrences: r.occurrences, avgPf: r.avgPf ? String(r.avgPf) : null, avgDurationBars: r.avgDurationBars ? String(r.avgDurationBars) : null, confidence: r.confidence ? String(r.confidence) : null, dominantRegime: r.dominantRegime, dominantSession: r.dominantSession, lastUpdated: r.lastUpdated.toISOString() }));
+    }),
+    oraclePredictions: publicProcedure
+      .input(z.object({ status: z.enum(["pending", "resolved", "expired", "all"]).default("pending"), limit: z.number().min(1).max(50).default(10) }))
+      .query(async ({ input }) => {
+        const { getDb } = await import("./db");
+        const { tieOraclePredictions } = await import("../drizzle/schema");
+        const { desc, eq } = await import("drizzle-orm");
+        const db = await getDb();
+        if (!db) return [];
+        const rows = input.status === "all"
+          ? await db.select().from(tieOraclePredictions).orderBy(desc(tieOraclePredictions.createdAt)).limit(input.limit)
+          : await db.select().from(tieOraclePredictions).where(eq(tieOraclePredictions.status, input.status as "pending" | "resolved" | "expired")).orderBy(desc(tieOraclePredictions.createdAt)).limit(input.limit);
+        return rows.map(r => ({ id: r.id, predictionId: r.predictionId, sequenceId: r.sequenceId, predictedOutcome: r.predictedOutcome, predictedR: r.predictedR ? String(r.predictedR) : null, predictedDurationBars: r.predictedDurationBars, predictedConfidence: r.predictedConfidence ? String(r.predictedConfidence) : null, actualOutcome: r.actualOutcome, actualR: r.actualR ? String(r.actualR) : null, predictionError: r.predictionError ? String(r.predictionError) : null, status: r.status, predictedAt: r.predictedAt, resolvedAt: r.resolvedAt, createdAt: r.createdAt.toISOString() }));
+      }),
+    researchCandidates: publicProcedure
+      .input(z.object({ status: z.enum(["candidate", "under_review", "certified", "rejected", "all"]).default("all"), limit: z.number().min(1).max(50).default(20) }))
+      .query(async ({ input }) => {
+        const { getDb } = await import("./db");
+        const { tieResearchCandidates } = await import("../drizzle/schema");
+        const { desc, eq } = await import("drizzle-orm");
+        const db = await getDb();
+        if (!db) return [];
+        const rows = input.status === "all"
+          ? await db.select().from(tieResearchCandidates).orderBy(desc(tieResearchCandidates.createdAt)).limit(input.limit)
+          : await db.select().from(tieResearchCandidates).where(eq(tieResearchCandidates.certificationStatus, input.status as "candidate" | "under_review" | "certified" | "rejected")).orderBy(desc(tieResearchCandidates.createdAt)).limit(input.limit);
+        return rows.map(r => ({ id: r.id, candidateId: r.candidateId, sequenceId: r.sequenceId, evidenceScore: r.evidenceScore ? String(r.evidenceScore) : null, occurrenceCount: r.occurrenceCount, statisticalConfidence: r.statisticalConfidence ? String(r.statisticalConfidence) : null, researchPriority: r.researchPriority, certificationStatus: r.certificationStatus, firstSeen: r.firstSeen, lastSeen: r.lastSeen, behaviouralSignature: r.behaviouralSignature, notes: r.notes, discoveredBy: r.discoveredBy, createdAt: r.createdAt.toISOString() }));
+      }),
+    experienceScore: publicProcedure.query(async () => {
+      const { computeExperienceScore } = await import("./tieEngine");
+      return computeExperienceScore(13);
+    }),
+    stats: publicProcedure.query(async () => {
+      const { getDb } = await import("./db");
+      const { tieSequences, tieSequenceLibrary, tieClusters, tieResearchCandidates } = await import("../drizzle/schema");
+      const { count, eq } = await import("drizzle-orm");
+      const db = await getDb();
+      if (!db) return { totalSequences: 0, activeSequences: 0, librarySize: 0, clusterCount: 0, candidateCount: 0 };
+      const [totalSeq] = await db.select({ count: count() }).from(tieSequences);
+      const [activeSeq] = await db.select({ count: count() }).from(tieSequences).where(eq(tieSequences.completionStatus, "active"));
+      const [libSize] = await db.select({ count: count() }).from(tieSequenceLibrary);
+      const [clusterCount] = await db.select({ count: count() }).from(tieClusters);
+      const [candidateCount] = await db.select({ count: count() }).from(tieResearchCandidates);
+      return { totalSequences: totalSeq.count, activeSequences: activeSeq.count, librarySize: libSize.count, clusterCount: clusterCount.count, candidateCount: candidateCount.count };
+    }),
+    process: publicProcedure.mutation(async () => {
+      const { processTIE } = await import("./tieEngine");
+      await processTIE(50);
+      return { ok: true, timestamp: Date.now() };
+    }),
+  }),
 });
 
 export type AppRouter = typeof appRouter;

@@ -739,3 +739,147 @@ export const atlasMemory = mysqlTable("atlas_memory", {
 });
 export type AtlasMemory = typeof atlasMemory.$inferSelect;
 export type InsertAtlasMemory = typeof atlasMemory.$inferInsert;
+
+// ══════════════════════════════════════════════════════════════════════════════
+// SPRINT 090 — TEMPORAL INTELLIGENCE ENGINE (TIE)
+// ══════════════════════════════════════════════════════════════════════════════
+
+// ── tie_sequences ─────────────────────────────────────────────────────────────
+// Active and completed multi-bar behavioural sequences detected by TIE.
+// Sequences may overlap, branch, and terminate.
+export const tieSequences = mysqlTable("tie_sequences", {
+  id: int("id").autoincrement().primaryKey(),
+  sequenceId: varchar("sequence_id", { length: 64 }).notNull().unique(),
+  sequenceType: varchar("sequence_type", { length: 64 }).notNull(),
+  label: varchar("label", { length: 128 }),
+  startTime: bigint("start_time", { mode: "number" }).notNull(),
+  endTime: bigint("end_time", { mode: "number" }),
+  startBarIndex: int("start_bar_index"),
+  endBarIndex: int("end_bar_index"),
+  durationBars: int("duration_bars"),
+  symbol: varchar("symbol", { length: 20 }).notNull().default("MNQ1!"),
+  timeframe: varchar("timeframe", { length: 8 }).notNull().default("5"),
+  session: varchar("session", { length: 8 }),
+  dominantTrend: varchar("dominant_trend", { length: 32 }),
+  volatilityProfile: varchar("volatility_profile", { length: 32 }),
+  vwapBehaviour: varchar("vwap_behaviour", { length: 64 }),
+  emaBehaviour: varchar("ema_behaviour", { length: 64 }),
+  adxEvolution: varchar("adx_evolution", { length: 32 }),
+  atrEvolution: varchar("atr_evolution", { length: 32 }),
+  chopEvolution: varchar("chop_evolution", { length: 32 }),
+  regime: varchar("regime", { length: 32 }),
+  marketStructure: varchar("market_structure", { length: 64 }),
+  completionStatus: mysqlEnum("completion_status", ["active", "completed", "terminated", "branched"]).notNull().default("active"),
+  confidence: decimal("confidence", { precision: 5, scale: 2 }),
+  clusterId: varchar("cluster_id", { length: 64 }),
+  oraclePredictionId: varchar("oracle_prediction_id", { length: 64 }),
+  experienceScore: decimal("experience_score", { precision: 5, scale: 2 }),
+  similarityCluster: varchar("similarity_cluster", { length: 64 }),
+  similarityPct: decimal("similarity_pct", { precision: 5, scale: 2 }),
+  expectedOutcome: varchar("expected_outcome", { length: 128 }),
+  expectedDurationBars: int("expected_duration_bars"),
+  expectedR: decimal("expected_r", { precision: 6, scale: 3 }),
+  behaviourStory: text("behaviour_story"),
+  barSnapshots: text("bar_snapshots"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+export type TieSequence = typeof tieSequences.$inferSelect;
+export type InsertTieSequence = typeof tieSequences.$inferInsert;
+
+// ── tie_sequence_library ──────────────────────────────────────────────────────
+// Permanent behavioural encyclopedia. Every completed sequence type is archived here.
+export const tieSequenceLibrary = mysqlTable("tie_sequence_library", {
+  id: int("id").autoincrement().primaryKey(),
+  sequenceType: varchar("sequence_type", { length: 64 }).notNull().unique(),
+  displayName: varchar("display_name", { length: 128 }).notNull(),
+  description: text("description"),
+  firstObserved: bigint("first_observed", { mode: "number" }),
+  lastObserved: bigint("last_observed", { mode: "number" }),
+  occurrences: int("occurrences").notNull().default(0),
+  winRate: decimal("win_rate", { precision: 5, scale: 2 }),
+  avgR: decimal("avg_r", { precision: 6, scale: 3 }),
+  avgDurationBars: decimal("avg_duration_bars", { precision: 6, scale: 2 }),
+  avgMfe: decimal("avg_mfe", { precision: 8, scale: 4 }),
+  avgMae: decimal("avg_mae", { precision: 8, scale: 4 }),
+  probabilityDistribution: text("probability_distribution"),
+  typicalExitBehaviour: text("typical_exit_behaviour"),
+  bestModels: varchar("best_models", { length: 256 }),
+  worstModels: varchar("worst_models", { length: 256 }),
+  oraclePredictionAccuracy: decimal("oracle_prediction_accuracy", { precision: 5, scale: 2 }),
+  researchStatus: mysqlEnum("research_status", ["candidate", "active", "certified", "deprecated"]).notNull().default("candidate"),
+  constitutionalNote: text("constitutional_note"),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+export type TieSequenceLibrary = typeof tieSequenceLibrary.$inferSelect;
+export type InsertTieSequenceLibrary = typeof tieSequenceLibrary.$inferInsert;
+
+// ── tie_clusters ──────────────────────────────────────────────────────────────
+// Automatically grouped clusters of similar behavioural sequences.
+export const tieClusters = mysqlTable("tie_clusters", {
+  id: int("id").autoincrement().primaryKey(),
+  clusterId: varchar("cluster_id", { length: 64 }).notNull().unique(),
+  clusterName: varchar("cluster_name", { length: 128 }).notNull(),
+  description: text("description"),
+  sequenceTypes: text("sequence_types"),
+  occurrences: int("occurrences").notNull().default(0),
+  avgPf: decimal("avg_pf", { precision: 6, scale: 3 }),
+  avgDurationBars: decimal("avg_duration_bars", { precision: 6, scale: 2 }),
+  avgReversalProbability: decimal("avg_reversal_probability", { precision: 5, scale: 2 }),
+  confidence: decimal("confidence", { precision: 5, scale: 2 }),
+  dominantRegime: varchar("dominant_regime", { length: 32 }),
+  dominantSession: varchar("dominant_session", { length: 16 }),
+  behaviouralFingerprint: text("behavioural_fingerprint"),
+  lastUpdated: timestamp("last_updated").defaultNow().onUpdateNow().notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export type TieCluster = typeof tieClusters.$inferSelect;
+export type InsertTieCluster = typeof tieClusters.$inferInsert;
+
+// ── tie_oracle_predictions ────────────────────────────────────────────────────
+// Per-sequence Oracle predictions vs actuals. Calibration tracking.
+export const tieOraclePredictions = mysqlTable("tie_oracle_predictions", {
+  id: int("id").autoincrement().primaryKey(),
+  predictionId: varchar("prediction_id", { length: 64 }).notNull().unique(),
+  sequenceId: varchar("sequence_id", { length: 64 }).notNull(),
+  predictedOutcome: varchar("predicted_outcome", { length: 128 }),
+  predictedR: decimal("predicted_r", { precision: 6, scale: 3 }),
+  predictedDurationBars: int("predicted_duration_bars"),
+  predictedConfidence: decimal("predicted_confidence", { precision: 5, scale: 2 }),
+  actualOutcome: varchar("actual_outcome", { length: 128 }),
+  actualR: decimal("actual_r", { precision: 6, scale: 3 }),
+  actualDurationBars: int("actual_duration_bars"),
+  predictionError: decimal("prediction_error", { precision: 6, scale: 3 }),
+  confidenceCalibration: decimal("confidence_calibration", { precision: 5, scale: 2 }),
+  sequenceReliability: decimal("sequence_reliability", { precision: 5, scale: 2 }),
+  surpriseIndex: decimal("surprise_index", { precision: 5, scale: 2 }),
+  status: mysqlEnum("status", ["pending", "resolved", "expired"]).notNull().default("pending"),
+  predictedAt: bigint("predicted_at", { mode: "number" }),
+  resolvedAt: bigint("resolved_at", { mode: "number" }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export type TieOraclePrediction = typeof tieOraclePredictions.$inferSelect;
+export type InsertTieOraclePrediction = typeof tieOraclePredictions.$inferInsert;
+
+// ── tie_research_candidates ───────────────────────────────────────────────────
+// Autonomously discovered new recurring behaviours pending certification.
+export const tieResearchCandidates = mysqlTable("tie_research_candidates", {
+  id: int("id").autoincrement().primaryKey(),
+  candidateId: varchar("candidate_id", { length: 64 }).notNull().unique(),
+  sequenceId: varchar("sequence_id", { length: 64 }),
+  evidenceScore: decimal("evidence_score", { precision: 5, scale: 2 }),
+  occurrenceCount: int("occurrence_count").notNull().default(0),
+  statisticalConfidence: decimal("statistical_confidence", { precision: 5, scale: 2 }),
+  researchPriority: mysqlEnum("research_priority", ["low", "medium", "high", "critical"]).notNull().default("medium"),
+  certificationStatus: mysqlEnum("certification_status", ["candidate", "under_review", "certified", "rejected"]).notNull().default("candidate"),
+  firstSeen: bigint("first_seen", { mode: "number" }),
+  lastSeen: bigint("last_seen", { mode: "number" }),
+  behaviouralSignature: text("behavioural_signature"),
+  notes: text("notes"),
+  discoveredBy: varchar("discovered_by", { length: 64 }).default("TIE-AUTO"),
+  promotedAt: bigint("promoted_at", { mode: "number" }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+export type TieResearchCandidate = typeof tieResearchCandidates.$inferSelect;
+export type InsertTieResearchCandidate = typeof tieResearchCandidates.$inferInsert;
