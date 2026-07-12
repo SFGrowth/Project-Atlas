@@ -230,3 +230,68 @@
 - [ ] Verify profile_id = "ATLAS_PAPER_MNQ" in payload
 - [ ] Verify chart banner visible with correct values
 - [ ] Verify Nexus Exec Profiles page shows live sizing data
+
+## Sprint 088 — SB1 Production Implementation & Forward Validation
+
+### PART 1–3: Pine Script RAS & Validation
+- [x] Write Pine Script v5 RAS implementation (9 components, 0–100 score, documented)
+- [x] Write Pine RAS vs GBM validation report — server-side GBM architecture chosen (rule-based cannot achieve ≥90% AUC)
+
+### PART 3: Database Schema — SB1 & Scheduler Tables
+- [x] Add `sb1_paper_trades` table (entry, exit, MFE, MAE, R, exit reason, holding time, regime, RAS, component scores)
+- [x] Add `sb1_rejected_signals` table (suppressed entries with reason code and component breakdown)
+- [x] Add `sb1_ras_snapshots` table (as sb1_ras_log) (per-bar RAS with all 9 component scores)
+- [x] Add `sb1_daily_reviews` table (as atlas_daily_reviews) (full daily review JSON, permanent archive, searchable)
+- [x] Add `sb1_rolling_performance` table (as atlas_rolling_performance) (7/30/90/lifetime rolling stats per window)
+- [x] Add `atlas_scheduled_jobs` table (scheduler registry — permanent Atlas scheduling service)
+- [x] Run all migration SQL via webdev_execute_sql
+
+### PART 4: Backend Procedures
+- [x] `sb1.logTrade` — create/update SB1 paper trade record
+- [x] `sb1.logRejectedSignal` — record suppressed entry with reason
+- [x] `sb1.logRasSnapshot` — record per-bar RAS component breakdown
+- [x] `sb1.openTrades` — get open SB1 paper trades
+- [x] `sb1.recentTrades` — paginated closed trades with full metadata
+- [x] `sb1.tradeById` — single trade detail
+- [x] `sb1.stats` — aggregate stats (PF, WR, expectancy, DD, trade count)
+- [x] `sb1.rollingPerformance` — 7/30/90/lifetime rolling metrics
+- [x] `sb1.latestRas` — most recent RAS snapshot with component breakdown
+- [x] `sb1.certificationStatus` — forward validation progress (days, trades, PF, WR, DD vs targets)
+- [x] `dailyReview.latest` — most recent daily review report
+- [x] `dailyReview.list` — paginated archive (searchable by date)
+- [x] `dailyReview.byDate` — single review by date
+- [x] `dailyReview.generateNow` — trigger manual review generation
+
+### PART 5: Heartbeat Scheduler (Permanent Atlas Scheduling Service)
+- [x] Create `server/scheduledJobs.ts` with full daily review generation logic
+- [x] Mount `/api/scheduled/daily-review` in server/_core/index.ts
+- [x] Daily review logic: trading summary, model activity, regime summary, decision review, system health, rolling performance
+- [x] Push notification on completion ("Atlas Daily Review Complete") and failure ("Atlas Daily Review Complete") and failure ("Atlas Daily Review Failed")
+- [ ] Register Heartbeat cron via `manus-heartbeat create` (4:30 PM ET = 20:30 UTC, 6-field: `0 30 20 * * 1-5`)
+- [ ] Persist task_uid to `atlas_scheduled_jobs` table
+
+### PART 6: Observatory Integration (SB1 Panel)
+- [ ] Add SB1 status panel to Observatory page (status, RAS gauge, component scores)
+- [ ] Add activation/suppression reason display with colour coding
+- [ ] Add winning/losing regime fingerprint comparison cards
+- [ ] Add live RAS gauge (0–100 arc, threshold line at 45, colour zones)
+
+### PART 7: SB1 Certification Dashboard (expand existing Certification page)
+- [ ] Add SB1 section to Certification page with 3-state status (🔴 Research / 🟡 Forward Validation / 🟢 Production Ready)
+- [ ] Forward validation progress tracker (60-day countdown, trade count vs 60, PF vs 2.0, WR vs 45%, DD vs −$643)
+- [ ] Pine implementation status card (implemented / validated / agreement rate)
+- [ ] Observatory connected status card
+- [ ] Governance isolation display (SB1 never influences A1/A3/B1/live — explicit rule list)
+
+### PART 8: Daily Review Page
+- [ ] Create `/daily-review` page with full 5-section layout
+- [ ] Latest review display: trading summary, model activity, regime summary, decision review, system health
+- [ ] Rolling performance tables (7/30/90/lifetime for PF, WR, expectancy, DD, avg R, trade count)
+- [ ] Searchable archive of all previous daily reviews
+- [ ] Add `/daily-review` route to App.tsx
+- [ ] Add "Daily Review" nav entry to OrionLayout sidebar
+
+### PART 9: Integration & Delivery
+- [ ] Write vitest tests for new sb1 and dailyReview procedures
+- [ ] Verify TypeScript compiles cleanly (0 errors)
+- [ ] Checkpoint and deliver

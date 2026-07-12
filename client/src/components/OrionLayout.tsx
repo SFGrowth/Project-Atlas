@@ -6,9 +6,9 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
 import {
-  Activity, AlertTriangle, BadgeCheck, BarChart2, BookOpen, Brain, ChevronLeft, ChevronRight,
+  Activity, AlertTriangle, BadgeCheck, BarChart2, BookOpen, Brain, CalendarCheck, ChevronLeft, ChevronRight,
   Clock, Cpu, Database, FlaskConical, Home, LayoutDashboard, Layers, LineChart, Menu,
-  Radio, Settings, Shield, Telescope, TrendingUp, Zap,
+  Radio, Settings, Shield, Target, Telescope, TrendingUp, Zap,
 } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
@@ -54,6 +54,14 @@ const NAV_GROUPS = [
       { icon: Database, label: "Reports", path: "/reports" },
       { icon: Telescope, label: "Atlas AI", path: "/ai" },
       { icon: Settings, label: "Settings", path: "/settings" },
+    ],
+  },
+  {
+    label: "SB1 REGIME",
+    items: [
+      { icon: Target, label: "SB1 Observatory", path: "/sb1" },
+      { icon: CalendarCheck, label: "Daily Review", path: "/daily-review" },
+      { icon: Clock, label: "Scheduler", path: "/scheduler" },
     ],
   },
 ];

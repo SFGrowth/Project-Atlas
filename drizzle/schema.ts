@@ -228,3 +228,215 @@ export const adeVersionGovernance = mysqlTable("ade_version_governance", {
 
 export type AdeVersionGovernance = typeof adeVersionGovernance.$inferSelect;
 export type InsertAdeVersionGovernance = typeof adeVersionGovernance.$inferInsert;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SPRINT 088 — SB1 REGIME INTELLIGENCE & FORWARD VALIDATION
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * SB1 paper trades — simulated SB1 Slow Burn positions during forward validation.
+ * Isolated from A1/A3/B1 paper trades. No live account connection.
+ * Governance: SB1 is LIVE ACCOUNT ONLY — no prop firm evaluation.
+ */
+export const sb1PaperTrades = mysqlTable("sb1_paper_trades", {
+  id: varchar("id", { length: 64 }).primaryKey(),
+  // Trade metadata
+  symbol: varchar("symbol", { length: 16 }).notNull().default("MNQ1!"),
+  direction: mysqlEnum("direction", ["LONG", "SHORT"]).notNull(),
+  status: mysqlEnum("status", ["OPEN", "CLOSED", "CANCELLED"]).notNull().default("OPEN"),
+  // Entry / exit
+  entry: decimal("entry", { precision: 12, scale: 4 }),
+  stop: decimal("stop", { precision: 12, scale: 4 }),
+  target: decimal("target", { precision: 12, scale: 4 }),
+  exitPrice: decimal("exit_price", { precision: 12, scale: 4 }),
+  exitReason: varchar("exit_reason", { length: 64 }),
+  // Size & risk
+  contracts: int("contracts").default(1),
+  riskDollars: decimal("risk_dollars", { precision: 10, scale: 2 }),
+  // P&L
+  pnl: decimal("pnl", { precision: 10, scale: 2 }),
+  rMultiple: decimal("r_multiple", { precision: 8, scale: 4 }),
+  mfe: decimal("mfe", { precision: 10, scale: 2 }),
+  mae: decimal("mae", { precision: 10, scale: 2 }),
+  // Timing
+  openedAt: timestamp("opened_at").defaultNow().notNull(),
+  closedAt: timestamp("closed_at"),
+  holdingTimeMs: bigint("holding_time_ms", { mode: "number" }),
+  session: varchar("session", { length: 32 }),
+  dow: int("dow"),
+  // Regime context at entry
+  ras: decimal("ras", { precision: 6, scale: 2 }),
+  rasActivated: boolean("ras_activated").default(false),
+  regimeCluster: int("regime_cluster"),
+  // RAS component scores at entry (0–100 each normalised)
+  rasC1PdRangeAtr: decimal("ras_c1_pd_range_atr", { precision: 6, scale: 2 }),
+  rasC2PdPosition: decimal("ras_c2_pd_position", { precision: 6, scale: 2 }),
+  rasC3OvernightGap: decimal("ras_c3_overnight_gap", { precision: 6, scale: 2 }),
+  rasC4Chop: decimal("ras_c4_chop", { precision: 6, scale: 2 }),
+  rasC5AtrExpansion: decimal("ras_c5_atr_expansion", { precision: 6, scale: 2 }),
+  rasC6VwapDist: decimal("ras_c6_vwap_dist", { precision: 6, scale: 2 }),
+  rasC7EmaSlope: decimal("ras_c7_ema_slope", { precision: 6, scale: 2 }),
+  rasC8EmaDist: decimal("ras_c8_ema_dist", { precision: 6, scale: 2 }),
+  rasC9TrendPers: decimal("ras_c9_trend_pers", { precision: 6, scale: 2 }),
+  // Raw feature values at entry
+  featurePdRangeAtr: decimal("feature_pd_range_atr", { precision: 8, scale: 4 }),
+  featurePdPosition: decimal("feature_pd_position", { precision: 8, scale: 4 }),
+  featureOvernightGap: decimal("feature_overnight_gap", { precision: 8, scale: 4 }),
+  featureChop: decimal("feature_chop", { precision: 8, scale: 4 }),
+  featureAtrExpansion: decimal("feature_atr_expansion", { precision: 8, scale: 4 }),
+  featureVwapDist: decimal("feature_vwap_dist", { precision: 8, scale: 4 }),
+  featureEmaSlope: decimal("feature_ema_slope", { precision: 8, scale: 4 }),
+  featureEmaDist: decimal("feature_ema_dist", { precision: 8, scale: 4 }),
+  featureTrendPers: decimal("feature_trend_pers", { precision: 8, scale: 4 }),
+  // Pipeline context
+  pipelineRunId: varchar("pipeline_run_id", { length: 128 }),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export type Sb1PaperTrade = typeof sb1PaperTrades.$inferSelect;
+export type InsertSb1PaperTrade = typeof sb1PaperTrades.$inferInsert;
+
+/**
+ * SB1 rejected signals — entries that were suppressed by the RAS filter.
+ * Records the reason for suppression for daily review analysis.
+ */
+export const sb1RejectedSignals = mysqlTable("sb1_rejected_signals", {
+  id: int("id").autoincrement().primaryKey(),
+  barTime: varchar("bar_time", { length: 32 }).notNull(),
+  symbol: varchar("symbol", { length: 16 }).notNull().default("MNQ1!"),
+  direction: mysqlEnum("direction", ["LONG", "SHORT"]).notNull(),
+  // RAS at rejection
+  ras: decimal("ras", { precision: 6, scale: 2 }).notNull(),
+  rejectionReason: varchar("rejection_reason", { length: 128 }).notNull(),
+  // e.g. "RAS_BELOW_THRESHOLD", "CHOP_CONFIRMED", "NARROW_PRIOR_DAY", "ATR_CONTRACTING", "NEAR_VWAP"
+  // Feature values
+  featurePdRangeAtr: decimal("feature_pd_range_atr", { precision: 8, scale: 4 }),
+  featureChop: decimal("feature_chop", { precision: 8, scale: 4 }),
+  featureAtrExpansion: decimal("feature_atr_expansion", { precision: 8, scale: 4 }),
+  featureVwapDist: decimal("feature_vwap_dist", { precision: 8, scale: 4 }),
+  // Would-have outcome (filled in retrospectively if known)
+  hypotheticalPnl: decimal("hypothetical_pnl", { precision: 10, scale: 2 }),
+  hypotheticalOutcome: varchar("hypothetical_outcome", { length: 16 }),
+  pipelineRunId: varchar("pipeline_run_id", { length: 128 }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export type Sb1RejectedSignal = typeof sb1RejectedSignals.$inferSelect;
+export type InsertSb1RejectedSignal = typeof sb1RejectedSignals.$inferInsert;
+
+/**
+ * SB1 RAS snapshots — per-bar RAS with all 9 component scores.
+ * Used for Observatory display and regime fingerprint analysis.
+ */
+export const sb1RasSnapshots = mysqlTable("sb1_ras_snapshots", {
+  id: int("id").autoincrement().primaryKey(),
+  barTime: varchar("bar_time", { length: 32 }).notNull(),
+  symbol: varchar("symbol", { length: 16 }).notNull().default("MNQ1!"),
+  // Composite RAS
+  ras: decimal("ras", { precision: 6, scale: 2 }).notNull(),
+  rasActivated: boolean("ras_activated").notNull().default(false),
+  activationReason: varchar("activation_reason", { length: 128 }),
+  // Raw feature values
+  featurePdRangeAtr: decimal("feature_pd_range_atr", { precision: 8, scale: 4 }),
+  featurePdPosition: decimal("feature_pd_position", { precision: 8, scale: 4 }),
+  featureOvernightGap: decimal("feature_overnight_gap", { precision: 8, scale: 4 }),
+  featureChop: decimal("feature_chop", { precision: 8, scale: 4 }),
+  featureAtrExpansion: decimal("feature_atr_expansion", { precision: 8, scale: 4 }),
+  featureVwapDist: decimal("feature_vwap_dist", { precision: 8, scale: 4 }),
+  featureEmaSlope: decimal("feature_ema_slope", { precision: 8, scale: 4 }),
+  featureEmaDist: decimal("feature_ema_dist", { precision: 8, scale: 4 }),
+  featureTrendPers: decimal("feature_trend_pers", { precision: 8, scale: 4 }),
+  pipelineRunId: varchar("pipeline_run_id", { length: 128 }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export type Sb1RasSnapshot = typeof sb1RasSnapshots.$inferSelect;
+export type InsertSb1RasSnapshot = typeof sb1RasSnapshots.$inferInsert;
+
+/**
+ * Daily reviews — permanent archive of every Atlas daily self-review report.
+ * Generated automatically at 4:30 PM ET by the Heartbeat scheduler.
+ * One row per trading day. Never deleted.
+ */
+export const dailyReviews = mysqlTable("daily_reviews", {
+  id: int("id").autoincrement().primaryKey(),
+  reviewDate: date("review_date").notNull(),
+  // Generation metadata
+  generatedAt: timestamp("generated_at").defaultNow().notNull(),
+  generatedBy: varchar("generated_by", { length: 32 }).notNull().default("HEARTBEAT"),
+  // e.g. "HEARTBEAT", "MANUAL", "AGENT"
+  generationStatus: mysqlEnum("generation_status", ["SUCCESS", "PARTIAL", "FAILED"]).notNull().default("SUCCESS"),
+  generationError: text("generation_error"),
+  // Trading summary (denormalised for fast display)
+  totalTrades: int("total_trades").default(0),
+  winningTrades: int("winning_trades").default(0),
+  losingTrades: int("losing_trades").default(0),
+  netPnl: decimal("net_pnl", { precision: 10, scale: 2 }),
+  grossProfit: decimal("gross_profit", { precision: 10, scale: 2 }),
+  grossLoss: decimal("gross_loss", { precision: 10, scale: 2 }),
+  winRate: decimal("win_rate", { precision: 6, scale: 4 }),
+  expectancy: decimal("expectancy", { precision: 10, scale: 2 }),
+  largestWinner: decimal("largest_winner", { precision: 10, scale: 2 }),
+  largestLoser: decimal("largest_loser", { precision: 10, scale: 2 }),
+  // Full report JSON (all 5 sections)
+  reportJson: json("report_json").notNull(),
+  // Notification status
+  notificationSent: boolean("notification_sent").default(false),
+  notificationSentAt: timestamp("notification_sent_at"),
+});
+export type DailyReview = typeof dailyReviews.$inferSelect;
+export type InsertDailyReview = typeof dailyReviews.$inferInsert;
+
+/**
+ * Rolling performance — pre-computed rolling stats for fast dashboard display.
+ * Updated by the daily review scheduler. One row per window per review date.
+ */
+export const rollingPerformance = mysqlTable("rolling_performance", {
+  id: int("id").autoincrement().primaryKey(),
+  reviewDate: date("review_date").notNull(),
+  window: mysqlEnum("window", ["7D", "30D", "90D", "LIFETIME"]).notNull(),
+  // Core metrics
+  tradeCount: int("trade_count").default(0),
+  winCount: int("win_count").default(0),
+  lossCount: int("loss_count").default(0),
+  winRate: decimal("win_rate", { precision: 6, scale: 4 }),
+  profitFactor: decimal("profit_factor", { precision: 8, scale: 4 }),
+  expectancy: decimal("expectancy", { precision: 10, scale: 2 }),
+  avgR: decimal("avg_r", { precision: 8, scale: 4 }),
+  netPnl: decimal("net_pnl", { precision: 10, scale: 2 }),
+  maxDrawdown: decimal("max_drawdown", { precision: 10, scale: 2 }),
+  // SB1-specific
+  sb1TradeCount: int("sb1_trade_count").default(0),
+  sb1WinRate: decimal("sb1_win_rate", { precision: 6, scale: 4 }),
+  sb1ProfitFactor: decimal("sb1_profit_factor", { precision: 8, scale: 4 }),
+  sb1NetPnl: decimal("sb1_net_pnl", { precision: 10, scale: 2 }),
+  sb1AvgRas: decimal("sb1_avg_ras", { precision: 6, scale: 2 }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export type RollingPerformance = typeof rollingPerformance.$inferSelect;
+export type InsertRollingPerformance = typeof rollingPerformance.$inferInsert;
+
+/**
+ * Atlas scheduled jobs — registry of all Heartbeat cron jobs.
+ * Permanent scheduling service. Survives sandbox hibernation.
+ */
+export const atlasScheduledJobs = mysqlTable("atlas_scheduled_jobs", {
+  id: int("id").autoincrement().primaryKey(),
+  jobName: varchar("job_name", { length: 64 }).notNull().unique(),
+  // e.g. "daily-review", "weekly-review", "monthly-review", "mc-refresh"
+  description: text("description"),
+  cronExpression: varchar("cron_expression", { length: 64 }).notNull(),
+  callbackPath: varchar("callback_path", { length: 128 }).notNull(),
+  // Heartbeat platform task UID (returned by manus-heartbeat create)
+  scheduleCronTaskUid: varchar("schedule_cron_task_uid", { length: 65 }),
+  isEnabled: boolean("is_enabled").default(true),
+  // Execution tracking
+  lastRunAt: timestamp("last_run_at"),
+  lastRunStatus: varchar("last_run_status", { length: 32 }),
+  lastRunDurationMs: int("last_run_duration_ms"),
+  totalRuns: int("total_runs").default(0),
+  successfulRuns: int("successful_runs").default(0),
+  failedRuns: int("failed_runs").default(0),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+export type AtlasScheduledJob = typeof atlasScheduledJobs.$inferSelect;
+export type InsertAtlasScheduledJob = typeof atlasScheduledJobs.$inferInsert;

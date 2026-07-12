@@ -10,6 +10,7 @@ import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
 import { Router } from "express";
 import { registerNexusRoutes } from "../nexusRoutes";
+import { registerScheduledJobs } from "../scheduledJobs";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -42,6 +43,8 @@ async function startServer() {
   const nexusRouter = Router();
   registerNexusRoutes(nexusRouter);
   app.use("/api", nexusRouter);
+  // Atlas scheduled job endpoints (must be before Vite/static fallthrough)
+  registerScheduledJobs(app);
   // tRPC API
   app.use(
     "/api/trpc",

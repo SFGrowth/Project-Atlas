@@ -28,6 +28,9 @@ const SettingsPage = lazy(() => import("./pages/SettingsPage"));
 const AnalyticsPage = lazy(() => import("./pages/Analytics"));
 const CertificationPage = lazy(() => import("./pages/Certification"));
 const ExecutionProfilesPage = lazy(() => import("./pages/ExecutionProfiles"));
+const SB1ObservatoryPage = lazy(() => import("./pages/SB1Observatory"));
+const DailyReviewPage = lazy(() => import("./pages/DailyReview"));
+const SchedulerPage = lazy(() => import("./pages/Scheduler"));
 
 function PageLoader() {
   return (
@@ -65,6 +68,9 @@ function Router() {
           <Route path="/analytics" component={AnalyticsPage} />
           <Route path="/certification" component={CertificationPage} />
           <Route path="/execution-profiles" component={ExecutionProfilesPage} />
+          <Route path="/sb1" component={SB1ObservatoryPage} />
+          <Route path="/daily-review" component={DailyReviewPage} />
+          <Route path="/scheduler" component={SchedulerPage} />
           <Route path="/404" component={NotFound} />
           <Route component={NotFound} />
         </Switch>
