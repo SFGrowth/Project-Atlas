@@ -1,5 +1,6 @@
 import {
   bigint,
+  datetime,
   decimal,
   int,
   json,
@@ -440,3 +441,208 @@ export const atlasScheduledJobs = mysqlTable("atlas_scheduled_jobs", {
 });
 export type AtlasScheduledJob = typeof atlasScheduledJobs.$inferSelect;
 export type InsertAtlasScheduledJob = typeof atlasScheduledJobs.$inferInsert;
+
+// ─── Sprint 089 — ARD Feature Store & Project ORACLE ─────────────────────────
+
+/**
+ * ARD Bar Observations — every confirmed MNQ 5-minute candle.
+ * Constitutional requirement: Law 5 — Every Five-Minute Candle Is a Research Event.
+ * Stores complete market-state snapshot for ORACLE and ARD pattern discovery.
+ */
+export const ardBarObservations = mysqlTable("ard_bar_observations", {
+  id: bigint("id", { mode: "number" }).autoincrement().primaryKey(),
+  // Identity
+  barTime: datetime("bar_time").notNull(),
+  symbol: varchar("symbol", { length: 16 }).notNull().default("MNQ1!"),
+  timeframe: varchar("timeframe", { length: 8 }).notNull().default("5"),
+  eventId: varchar("event_id", { length: 64 }).unique(),
+  idempotencyKey: varchar("idempotency_key", { length: 128 }).unique(),
+  // Session & time context
+  session: varchar("session", { length: 16 }),
+  dayOfWeek: varchar("day_of_week", { length: 16 }),
+  // OHLCV
+  open: decimal("open", { precision: 12, scale: 4 }),
+  high: decimal("high", { precision: 12, scale: 4 }),
+  low: decimal("low", { precision: 12, scale: 4 }),
+  close: decimal("close", { precision: 12, scale: 4 }),
+  volume: int("volume"),
+  // Core indicators
+  atr: decimal("atr", { precision: 10, scale: 4 }),
+  adx: decimal("adx", { precision: 8, scale: 4 }),
+  chop: decimal("chop", { precision: 8, scale: 4 }),
+  vwap: decimal("vwap", { precision: 12, scale: 4 }),
+  rsi: decimal("rsi", { precision: 8, scale: 4 }),
+  // EMA values
+  ema9: decimal("ema9", { precision: 12, scale: 4 }),
+  ema21: decimal("ema21", { precision: 12, scale: 4 }),
+  ema50: decimal("ema50", { precision: 12, scale: 4 }),
+  ema200: decimal("ema200", { precision: 12, scale: 4 }),
+  // EMA slopes (price per bar)
+  ema9Slope: decimal("ema9_slope", { precision: 10, scale: 6 }),
+  ema21Slope: decimal("ema21_slope", { precision: 10, scale: 6 }),
+  ema50Slope: decimal("ema50_slope", { precision: 10, scale: 6 }),
+  // Trend & regime
+  trendDirection: varchar("trend_direction", { length: 8 }),
+  emaAlignment: varchar("ema_alignment", { length: 16 }),
+  volatilityState: varchar("volatility_state", { length: 16 }),
+  compressionState: varchar("compression_state", { length: 16 }),
+  regimeClassification: varchar("regime_classification", { length: 32 }),
+  // Previous-day & overnight structure
+  prevDayHigh: decimal("prev_day_high", { precision: 12, scale: 4 }),
+  prevDayLow: decimal("prev_day_low", { precision: 12, scale: 4 }),
+  prevDayClose: decimal("prev_day_close", { precision: 12, scale: 4 }),
+  prevDayRange: decimal("prev_day_range", { precision: 10, scale: 4 }),
+  overnightGap: decimal("overnight_gap", { precision: 10, scale: 4 }),
+  priceVsPrevDay: varchar("price_vs_prev_day", { length: 16 }),
+  // Model eligibility & scores
+  a1Eligible: boolean("a1_eligible").default(false),
+  a3Eligible: boolean("a3_eligible").default(false),
+  b1Eligible: boolean("b1_eligible").default(false),
+  sb1Eligible: boolean("sb1_eligible").default(false),
+  adeEdgeScore: decimal("ade_edge_score", { precision: 8, scale: 4 }),
+  adeCandidate: varchar("ade_candidate", { length: 8 }),
+  ariDecision: varchar("ari_decision", { length: 16 }),
+  tvlDecision: varchar("tvl_decision", { length: 16 }),
+  sb1Ras: decimal("sb1_ras", { precision: 6, scale: 2 }),
+  sb1RasActivated: boolean("sb1_ras_activated").default(false),
+  // Active position state
+  hasOpenPosition: boolean("has_open_position").default(false),
+  openPositionDirection: varchar("open_position_direction", { length: 8 }),
+  openPositionEntry: decimal("open_position_entry", { precision: 12, scale: 4 }),
+  openPositionUnrealizedPnl: decimal("open_position_unrealized_pnl", { precision: 10, scale: 2 }),
+  // Pipeline health
+  pipelineRunId: varchar("pipeline_run_id", { length: 64 }),
+  pipelineHealth: varchar("pipeline_health", { length: 16 }),
+  // Metadata
+  schemaVersion: varchar("schema_version", { length: 16 }).default("1.0.0"),
+  receivedAt: timestamp("received_at").defaultNow().notNull(),
+});
+export type ArdBarObservation = typeof ardBarObservations.$inferSelect;
+export type InsertArdBarObservation = typeof ardBarObservations.$inferInsert;
+
+/**
+ * ARD Research Candidates — autonomous discovery of market behaviours.
+ * Constitution Part VI §3: Candidate Research Record.
+ */
+export const ardCandidates = mysqlTable("ard_candidates", {
+  id: int("id").autoincrement().primaryKey(),
+  candidateId: varchar("candidate_id", { length: 32 }).notNull().unique(),
+  title: varchar("title", { length: 128 }).notNull(),
+  discoveryDate: date("discovery_date").notNull(),
+  hypothesis: text("hypothesis").notNull(),
+  direction: varchar("direction", { length: 16 }),
+  horizon: varchar("horizon", { length: 32 }),
+  featureDefinition: text("feature_definition"),
+  occurrences: int("occurrences").default(0),
+  sampleSize: int("sample_size").default(0),
+  supportingEvidence: text("supporting_evidence"),
+  contradictingEvidence: text("contradicting_evidence"),
+  estimatedEffectSize: decimal("estimated_effect_size", { precision: 8, scale: 4 }),
+  noveltyScore: decimal("novelty_score", { precision: 6, scale: 4 }),
+  portfolioFit: varchar("portfolio_fit", { length: 32 }),
+  riskConcerns: text("risk_concerns"),
+  requiredValidation: text("required_validation"),
+  status: varchar("status", { length: 16 }).notNull().default("Observed"),
+  promotedToModel: varchar("promoted_to_model", { length: 16 }),
+  rejectionReason: text("rejection_reason"),
+  priorityScore: decimal("priority_score", { precision: 6, scale: 4 }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+export type ArdCandidate = typeof ardCandidates.$inferSelect;
+export type InsertArdCandidate = typeof ardCandidates.$inferInsert;
+
+/**
+ * ORACLE Predictions — immutable prediction record created at trade approval.
+ * Constitution Part V §2. Must be created BEFORE the outcome is known.
+ */
+export const oraclePredictions = mysqlTable("oracle_predictions", {
+  id: int("id").autoincrement().primaryKey(),
+  predictionId: varchar("prediction_id", { length: 64 }).notNull().unique(),
+  tradeId: varchar("trade_id", { length: 64 }),
+  modelId: varchar("model_id", { length: 16 }),
+  timestamp: datetime("timestamp").notNull(),
+  direction: varchar("direction", { length: 8 }),
+  entryPrice: decimal("entry_price", { precision: 12, scale: 4 }),
+  stopPrice: decimal("stop_price", { precision: 12, scale: 4 }),
+  targetPrice: decimal("target_price", { precision: 12, scale: 4 }),
+  expectedWinProb: decimal("expected_win_prob", { precision: 6, scale: 4 }),
+  expectedR: decimal("expected_r", { precision: 8, scale: 4 }),
+  expectedHoldingTimeMin: int("expected_holding_time_min"),
+  expectedMfe: decimal("expected_mfe", { precision: 10, scale: 4 }),
+  expectedMae: decimal("expected_mae", { precision: 10, scale: 4 }),
+  expectedExitType: varchar("expected_exit_type", { length: 32 }),
+  expectedTrendDuration: varchar("expected_trend_duration", { length: 32 }),
+  expectedVolatility: varchar("expected_volatility", { length: 16 }),
+  expectedRegime: varchar("expected_regime", { length: 32 }),
+  adeEdgeScore: decimal("ade_edge_score", { precision: 8, scale: 4 }),
+  ariState: varchar("ari_state", { length: 16 }),
+  tvlStatus: varchar("tvl_status", { length: 16 }),
+  sb1Ras: decimal("sb1_ras", { precision: 6, scale: 2 }),
+  topContributors: text("top_contributors"),
+  reasoningSummary: text("reasoning_summary"),
+  atlasVersion: varchar("atlas_version", { length: 32 }),
+  gitCommit: varchar("git_commit", { length: 64 }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export type OraclePrediction = typeof oraclePredictions.$inferSelect;
+export type InsertOraclePrediction = typeof oraclePredictions.$inferInsert;
+
+/**
+ * ORACLE Reality Records — actual outcome recorded at trade closure.
+ * Constitution Part V §3.
+ */
+export const oracleReality = mysqlTable("oracle_reality", {
+  id: int("id").autoincrement().primaryKey(),
+  predictionId: varchar("prediction_id", { length: 64 }).notNull().unique(),
+  tradeId: varchar("trade_id", { length: 64 }),
+  actualResult: varchar("actual_result", { length: 16 }),
+  actualR: decimal("actual_r", { precision: 8, scale: 4 }),
+  actualPnl: decimal("actual_pnl", { precision: 10, scale: 2 }),
+  actualHoldingTimeMin: int("actual_holding_time_min"),
+  actualMfe: decimal("actual_mfe", { precision: 10, scale: 4 }),
+  actualMae: decimal("actual_mae", { precision: 10, scale: 4 }),
+  actualExitType: varchar("actual_exit_type", { length: 32 }),
+  actualRegimeEvolution: text("actual_regime_evolution"),
+  actualVolatility: varchar("actual_volatility", { length: 16 }),
+  actualSessionBehaviour: text("actual_session_behaviour"),
+  unexpectedEvents: text("unexpected_events"),
+  dataQualityIssues: text("data_quality_issues"),
+  executionIssues: text("execution_issues"),
+  rError: decimal("r_error", { precision: 8, scale: 4 }),
+  holdingTimeError: int("holding_time_error"),
+  mfeError: decimal("mfe_error", { precision: 10, scale: 4 }),
+  maeError: decimal("mae_error", { precision: 10, scale: 4 }),
+  regimeMatchCorrect: boolean("regime_match_correct"),
+  exitTypeMatchCorrect: boolean("exit_type_match_correct"),
+  winProbCalibrationBin: decimal("win_prob_calibration_bin", { precision: 6, scale: 4 }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export type OracleReality = typeof oracleReality.$inferSelect;
+export type InsertOracleReality = typeof oracleReality.$inferInsert;
+
+/**
+ * ORACLE Scores — calibration metrics and Oracle Score by model/regime/portfolio.
+ * Constitution Part V §5: Oracle Score (7 components, weighted).
+ */
+export const oracleScores = mysqlTable("oracle_scores", {
+  id: int("id").autoincrement().primaryKey(),
+  scoreDate: date("score_date").notNull(),
+  modelId: varchar("model_id", { length: 16 }).notNull(),
+  windowType: varchar("window_type", { length: 16 }).notNull(),
+  calibrationAccuracy: decimal("calibration_accuracy", { precision: 6, scale: 2 }),
+  predictionAccuracy: decimal("prediction_accuracy", { precision: 6, scale: 2 }),
+  reasoningConsistency: decimal("reasoning_consistency", { precision: 6, scale: 2 }),
+  regimeRecognition: decimal("regime_recognition", { precision: 6, scale: 2 }),
+  confidenceReliability: decimal("confidence_reliability", { precision: 6, scale: 2 }),
+  decisionQuality: decimal("decision_quality", { precision: 6, scale: 2 }),
+  reportCompleteness: decimal("report_completeness", { precision: 6, scale: 2 }),
+  oracleScore: decimal("oracle_score", { precision: 6, scale: 2 }),
+  brierScore: decimal("brier_score", { precision: 8, scale: 6 }),
+  logLoss: decimal("log_loss", { precision: 8, scale: 6 }),
+  expectedCalibrationError: decimal("expected_calibration_error", { precision: 8, scale: 6 }),
+  tradeCount: int("trade_count").default(0),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export type OracleScore = typeof oracleScores.$inferSelect;
+export type InsertOracleScore = typeof oracleScores.$inferInsert;

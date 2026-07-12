@@ -596,6 +596,167 @@ export const appRouter = router({
       }));
     }),
   }),
+
+  // ─── ARD (Autonomous Research Division) ──────────────────────────────────────
+  ard: router({
+    recentObservations: publicProcedure
+      .input(z.object({ limit: z.number().min(1).max(200).default(50) }))
+      .query(async ({ input }) => {
+        const { getRecentObservations } = await import("./ardDb");
+        const rows = await getRecentObservations(input.limit);
+        return rows.map((r) => ({
+          ...r,
+          barTime: r.barTime.toISOString(),
+          receivedAt: r.receivedAt.toISOString(),
+        }));
+      }),
+    stats: publicProcedure.query(async () => {
+      const { getObservationStats } = await import("./ardDb");
+      return await getObservationStats();
+    }),
+    missingBars: publicProcedure
+      .input(z.object({ since: z.string().optional() }))
+      .query(async ({ input }) => {
+        const { detectMissingBars } = await import("./ardDb");
+        const since = input.since ? new Date(input.since) : new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+        return await detectMissingBars(since);
+      }),
+    candidates: publicProcedure
+      .input(z.object({ status: z.string().optional() }))
+      .query(async ({ input }) => {
+        const { listCandidates } = await import("./ardDb");
+        const rows = await listCandidates(input.status);
+        return rows.map((r) => ({
+          ...r,
+          discoveryDate: r.discoveryDate instanceof Date ? r.discoveryDate.toISOString().slice(0, 10) : String(r.discoveryDate),
+          createdAt: r.createdAt.toISOString(),
+          updatedAt: r.updatedAt.toISOString(),
+        }));
+      }),
+    createCandidate: publicProcedure
+      .input(z.object({
+        candidateId: z.string(),
+        title: z.string(),
+        hypothesis: z.string(),
+        direction: z.string().optional(),
+        horizon: z.string().optional(),
+        priorityScore: z.number().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const { insertCandidate } = await import("./ardDb");
+        return await insertCandidate({
+          candidateId: input.candidateId,
+          title: input.title,
+          hypothesis: input.hypothesis,
+          direction: input.direction ?? null,
+          horizon: input.horizon ?? null,
+          priorityScore: input.priorityScore !== undefined ? String(input.priorityScore) : null,
+          discoveryDate: new Date(),
+          status: "Observed",
+        });
+      }),
+    updateCandidateStatus: publicProcedure
+      .input(z.object({
+        candidateId: z.string(),
+        status: z.string(),
+        rejectionReason: z.string().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const { updateCandidateStatus } = await import("./ardDb");
+        return await updateCandidateStatus(input.candidateId, input.status, input.rejectionReason);
+      }),
+  }),
+
+  // ─── ORACLE (Prediction vs Reality) ──────────────────────────────────────────
+  oracle: router({
+    predictions: publicProcedure
+      .input(z.object({ modelId: z.string().optional(), limit: z.number().min(1).max(200).default(50) }))
+      .query(async ({ input }) => {
+        const { listOraclePredictions } = await import("./ardDb");
+        const rows = await listOraclePredictions(input.modelId, input.limit);
+        return rows.map((r) => ({
+          ...r,
+          timestamp: r.timestamp.toISOString(),
+          createdAt: r.createdAt.toISOString(),
+        }));
+      }),
+    createPrediction: publicProcedure
+      .input(z.object({
+        predictionId: z.string(),
+        modelId: z.string().optional(),
+        direction: z.string().optional(),
+        expectedWinProb: z.number().min(0).max(1).optional(),
+        expectedR: z.number().optional(),
+        expectedRegime: z.string().optional(),
+        reasoningSummary: z.string().optional(),
+        timestamp: z.string(),
+      }))
+      .mutation(async ({ input }) => {
+        const { createOraclePrediction } = await import("./ardDb");
+        return await createOraclePrediction({
+          predictionId: input.predictionId,
+          modelId: input.modelId ?? null,
+          direction: input.direction ?? null,
+          expectedWinProb: input.expectedWinProb !== undefined ? String(input.expectedWinProb) : null,
+          expectedR: input.expectedR !== undefined ? String(input.expectedR) : null,
+          expectedRegime: input.expectedRegime ?? null,
+          reasoningSummary: input.reasoningSummary ?? null,
+          timestamp: new Date(input.timestamp),
+        });
+      }),
+    recordReality: publicProcedure
+      .input(z.object({
+        predictionId: z.string(),
+        actualResult: z.string().optional(),
+        actualR: z.number().optional(),
+        actualPnl: z.number().optional(),
+        regimeMatchCorrect: z.boolean().optional(),
+        winProbCalibrationBin: z.number().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const { createOracleReality } = await import("./ardDb");
+        return await createOracleReality({
+          predictionId: input.predictionId,
+          actualResult: input.actualResult ?? null,
+          actualR: input.actualR !== undefined ? String(input.actualR) : null,
+          actualPnl: input.actualPnl !== undefined ? String(input.actualPnl) : null,
+          regimeMatchCorrect: input.regimeMatchCorrect ?? null,
+          winProbCalibrationBin: input.winProbCalibrationBin !== undefined ? String(input.winProbCalibrationBin) : null,
+        });
+      }),
+    scores: publicProcedure
+      .input(z.object({ modelId: z.string().optional() }))
+      .query(async ({ input }) => {
+        const { getLatestOracleScore, getOracleScoreHistory } = await import("./ardDb");
+        if (input.modelId) {
+          const latest = await getLatestOracleScore(input.modelId);
+          const history = await getOracleScoreHistory(input.modelId, 30);
+          return {
+            latest: latest ? { ...latest, scoreDate: latest.scoreDate instanceof Date ? latest.scoreDate.toISOString().slice(0, 10) : String(latest.scoreDate), createdAt: latest.createdAt.toISOString() } : null,
+            history: history.map((h) => ({ ...h, scoreDate: h.scoreDate instanceof Date ? h.scoreDate.toISOString().slice(0, 10) : String(h.scoreDate), createdAt: h.createdAt.toISOString() })),
+          };
+        }
+        return { latest: null, history: [] };
+      }),
+    pairs: publicProcedure
+      .input(z.object({ modelId: z.string().optional(), limit: z.number().min(1).max(200).default(100) }))
+      .query(async ({ input }) => {
+        const { getOraclePairs } = await import("./ardDb");
+        const rows = await getOraclePairs(input.modelId, input.limit);
+        return rows.map((r) => ({
+          predictionId: r.prediction.predictionId,
+          modelId: r.prediction.modelId,
+          predictionTime: r.prediction.timestamp.toISOString(),
+          direction: r.prediction.direction,
+          expectedWinProb: r.prediction.expectedWinProb ? String(r.prediction.expectedWinProb) : null,
+          expectedR: r.prediction.expectedR ? String(r.prediction.expectedR) : null,
+          actualResult: r.reality?.actualResult ?? null,
+          actualR: r.reality?.actualR ? String(r.reality.actualR) : null,
+          outcomeTime: r.reality?.createdAt ? r.reality.createdAt.toISOString() : null,
+          winProbCalibrationBin: r.reality?.winProbCalibrationBin ? String(r.reality.winProbCalibrationBin) : null,
+        }));
+      }),
+  }),
 });
 
 export type AppRouter = typeof appRouter;

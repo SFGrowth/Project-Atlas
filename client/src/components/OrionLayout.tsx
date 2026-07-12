@@ -64,6 +64,12 @@ const NAV_GROUPS = [
       { icon: Clock, label: "Scheduler", path: "/scheduler" },
     ],
   },
+  {
+    label: "ARD / ORACLE",
+    items: [
+      { icon: FlaskConical, label: "ARD Observatory", path: "/ard" },
+    ],
+  },
 ];
 
 const SIDEBAR_WIDTH_KEY = "orion-sidebar-width";

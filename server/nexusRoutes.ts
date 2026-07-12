@@ -879,4 +879,80 @@ export function registerNexusRoutes(router: Router) {
       res.status(500).json({ error: "Failed to fetch reports" });
     }
   });
+
+  // ── POST /api/webhook/bar-observation/:token ──────────────────────────────
+  // ARD every-bar observation ingestion endpoint.
+  // Constitution Law 5: Every Five-Minute Candle Is a Research Event.
+  // Idempotency enforced. Never returns 5xx to Pine — Pine decisions are unaffected.
+  router.post("/webhook/bar-observation/:token", async (req: Request, res: Response) => {
+    const { token } = req.params;
+    const expectedToken = process.env.ATLAS_WEBHOOK_TOKEN;
+    if (!expectedToken || token !== expectedToken) {
+      return res.status(401).json({ error: "Unauthorised" });
+    }
+    try {
+      const body = req.body as Record<string, unknown>;
+      if (!body || body.event_type !== "BAR_OBSERVATION") {
+        return res.status(422).json({ error: "Expected event_type: BAR_OBSERVATION" });
+      }
+      const barTimeRaw = (body.bar_time ?? (body.metadata as Record<string, unknown>)?.timestamp_utc) as string | undefined;
+      if (!barTimeRaw) return res.status(422).json({ error: "Missing bar_time" });
+      const barTime = new Date(barTimeRaw);
+      if (isNaN(barTime.getTime())) return res.status(422).json({ error: "Invalid bar_time" });
+      const sym = String(body.symbol ?? "MNQ1!");
+      const idempotencyKey = String(body.idempotency_key ?? `${sym}_${barTimeRaw}`);
+      const str = (v: unknown) => v != null ? String(v) : null;
+      const obs = {
+        barTime,
+        symbol: sym,
+        timeframe: String(body.timeframe ?? "5"),
+        eventId: str(body.event_id),
+        idempotencyKey,
+        session: str(body.session),
+        dayOfWeek: str(body.day_of_week),
+        open: str(body.open), high: str(body.high), low: str(body.low), close: str(body.close),
+        volume: body.volume != null ? Number(body.volume) : null,
+        atr: str(body.atr), adx: str(body.adx), chop: str(body.chop),
+        vwap: str(body.vwap), rsi: str(body.rsi),
+        ema9: str(body.ema9), ema21: str(body.ema21), ema50: str(body.ema50), ema200: str(body.ema200),
+        ema9Slope: str(body.ema9_slope), ema21Slope: str(body.ema21_slope), ema50Slope: str(body.ema50_slope),
+        trendDirection: str(body.trend_direction),
+        emaAlignment: str(body.ema_alignment),
+        volatilityState: str(body.volatility_state),
+        compressionState: str(body.compression_state),
+        regimeClassification: str(body.regime_classification),
+        prevDayHigh: str(body.prev_day_high), prevDayLow: str(body.prev_day_low),
+        prevDayClose: str(body.prev_day_close), prevDayRange: str(body.prev_day_range),
+        overnightGap: str(body.overnight_gap), priceVsPrevDay: str(body.price_vs_prev_day),
+        a1Eligible: Boolean(body.a1_eligible), a3Eligible: Boolean(body.a3_eligible),
+        b1Eligible: Boolean(body.b1_eligible), sb1Eligible: Boolean(body.sb1_eligible),
+        adeEdgeScore: str(body.ade_edge_score), adeCandidate: str(body.ade_candidate),
+        ariDecision: str(body.ari_decision), tvlDecision: str(body.tvl_decision),
+        sb1Ras: str(body.sb1_ras), sb1RasActivated: Boolean(body.sb1_ras_activated),
+        hasOpenPosition: Boolean(body.has_open_position),
+        openPositionDirection: str(body.open_position_direction),
+        openPositionEntry: str(body.open_position_entry),
+        openPositionUnrealizedPnl: str(body.open_position_unrealized_pnl),
+        pipelineRunId: str(body.pipeline_run_id),
+        pipelineHealth: str(body.pipeline_health) ?? "OK",
+        schemaVersion: str(body.schema_version) ?? "1.0.0",
+      };
+      const { insertBarObservation } = await import("./ardDb");
+      const result = await insertBarObservation(obs);
+      if (!result.inserted) {
+        return res.status(200).json({ status: "duplicate", id: result.id });
+      }
+      broadcastSSE("bar_observation", {
+        id: result.id, bar_time: barTimeRaw, symbol: sym,
+        session: obs.session, regime: obs.regimeClassification,
+        adx: body.adx, atr: body.atr, chop: body.chop,
+        sb1_ras: body.sb1_ras, trend_direction: obs.trendDirection,
+      });
+      return res.status(201).json({ status: "ok", id: result.id });
+    } catch (err) {
+      console.error("[ARD] BAR_OBSERVATION ingestion error:", err);
+      // Always 200 to Pine — failed delivery must never affect Pine decisions
+      return res.status(200).json({ status: "error", message: "Stored internally" });
+    }
+  });
 }

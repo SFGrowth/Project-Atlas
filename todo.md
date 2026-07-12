@@ -267,8 +267,8 @@
 - [x] Mount `/api/scheduled/daily-review` in server/_core/index.ts
 - [x] Daily review logic: trading summary, model activity, regime summary, decision review, system health, rolling performance
 - [x] Push notification on completion ("Atlas Daily Review Complete") and failure ("Atlas Daily Review Complete") and failure ("Atlas Daily Review Failed")
-- [ ] Register Heartbeat cron via `manus-heartbeat create` (4:30 PM ET = 20:30 UTC, 6-field: `0 30 20 * * 1-5`)
-- [ ] Persist task_uid to `atlas_scheduled_jobs` table
+- [x] Register Heartbeat cron via `manus-heartbeat create` (4:30 PM ET = 20:30 UTC, 6-field: `0 30 20 * * 1-5`) — task_uid: Szbswcmv98W7mRYFoX8Eci, next run: 2026-07-13T20:30:00Z
+- [x] Persist task_uid to `atlas_scheduled_jobs` table — Szbswcmv98W7mRYFoX8Eci inserted
 
 ### PART 6: Observatory Integration (SB1 Panel)
 - [x] Add SB1 status panel to Observatory page — built as dedicated /sb1 page (SB1Observatory.tsx)
@@ -295,3 +295,41 @@
 - [x] Write vitest tests for new sb1 and dailyReview procedures (8 new tests, 25/25 total passing)
 - [x] Verify TypeScript compiles cleanly (0 errors)
 - [x] Checkpoint and deliver
+
+## Sprint 089 — Every-Bar BAR_OBSERVATION + ARD Foundation (Constitution-Compliant)
+
+### Pine Script (M-15 Extension)
+- [ ] Add BAR_OBSERVATION event class to M-15 Pine Script (sent on every barstate.isconfirmed)
+- [ ] BAR_OBSERVATION payload: event_id, idempotency_key, bar_time, symbol, timeframe, session, OHLCV, ATR, ADX, CHOP, VWAP, EMA9/21/50/200 values and slopes, trend direction, volatility state, compression/expansion, prev-day structure, overnight structure, regime classification, eligible model states, ADE scores, SB1 RAS, active position state, pipeline health, schema/version metadata
+- [ ] Two-class event architecture: BAR_OBSERVATION (every bar) vs DECISION_EVENT (signals, ADE, ARI, TVL, entries, exits, errors, state changes)
+- [ ] Exactly one observation per confirmed candle — no intrabar duplicates
+- [ ] Failed Nexus delivery must never affect Pine decisions
+- [ ] No execution dependency on Nexus availability
+
+### Database Schema
+- [ ] `ard_bar_observations` table: full market-state snapshot per confirmed 5-min bar
+- [ ] `ard_candidates` table: research candidate registry (id, title, hypothesis, status, evidence, sample_size, effect_size, etc.)
+- [ ] `oracle_predictions` table: immutable prediction record (all fields from Constitution Part V §2)
+- [ ] `oracle_reality` table: reality record (all fields from Constitution Part V §3)
+- [ ] `oracle_scores` table: calibration metrics and Oracle Score by model/regime/portfolio
+- [ ] Run Drizzle migration and apply via webdev_execute_sql
+
+### Backend
+- [ ] POST /api/bar-observation ingestion endpoint (idempotency enforced on bar_time + symbol)
+- [ ] Missing-bar detection: flag gaps > 5 min during RTH hours
+- [ ] ARD feature store write on every ingested observation
+- [ ] tRPC procedures: ard.recentObservations, ard.observationCount, ard.missingBars, ard.candidates
+- [ ] Constitution document saved to Project-Atlas git repository
+
+### Frontend (ARD Foundation Page)
+- [ ] New page: /ard — Autonomous Research Division
+- [ ] Live observation stream: last 20 bars, bar time, regime, ADX, ATR, CHOP, RAS, model states
+- [ ] Feature store stats: total observations, today's count, missing bar count, coverage %
+- [ ] Research Candidate Registry: list with status badges (Observed / Monitor / Research / Rejected / Promoted)
+- [ ] Add /ard route to App.tsx
+- [ ] Add "ARD" nav entry to OrionLayout sidebar under INTELLIGENCE section
+
+### Tests & Delivery
+- [ ] Vitest tests for ard ingestion procedures
+- [ ] TypeScript 0 errors
+- [ ] Checkpoint and deliver
