@@ -271,27 +271,27 @@
 - [ ] Persist task_uid to `atlas_scheduled_jobs` table
 
 ### PART 6: Observatory Integration (SB1 Panel)
-- [ ] Add SB1 status panel to Observatory page (status, RAS gauge, component scores)
-- [ ] Add activation/suppression reason display with colour coding
-- [ ] Add winning/losing regime fingerprint comparison cards
-- [ ] Add live RAS gauge (0–100 arc, threshold line at 45, colour zones)
+- [x] Add SB1 status panel to Observatory page — built as dedicated /sb1 page (SB1Observatory.tsx)
+- [x] Add activation/suppression reason display with colour coding
+- [x] Add winning/losing regime fingerprint comparison cards
+- [x] Add live RAS gauge (0–100 arc, threshold line at 45, colour zones)
 
 ### PART 7: SB1 Certification Dashboard (expand existing Certification page)
-- [ ] Add SB1 section to Certification page with 3-state status (🔴 Research / 🟡 Forward Validation / 🟢 Production Ready)
-- [ ] Forward validation progress tracker (60-day countdown, trade count vs 60, PF vs 2.0, WR vs 45%, DD vs −$643)
-- [ ] Pine implementation status card (implemented / validated / agreement rate)
-- [ ] Observatory connected status card
-- [ ] Governance isolation display (SB1 never influences A1/A3/B1/live — explicit rule list)
+- [x] Add SB1 section to Certification page with 3-state status (built in SB1Observatory certificationStatus panel) (🔴 Research / 🟡 Forward Validation / 🟢 Production Ready)
+- [x] Forward validation progress tracker (60-day countdown, trade count vs 60, PF vs 2.0, WR vs 45%, DD vs −$643)
+- [x] Pine implementation status card (implemented / validated / agreement rate)
+- [x] Observatory connected status card
+- [x] Governance isolation display (SB1 never influences A1/A3/B1/live — explicit rule list)
 
 ### PART 8: Daily Review Page
-- [ ] Create `/daily-review` page with full 5-section layout
-- [ ] Latest review display: trading summary, model activity, regime summary, decision review, system health
-- [ ] Rolling performance tables (7/30/90/lifetime for PF, WR, expectancy, DD, avg R, trade count)
-- [ ] Searchable archive of all previous daily reviews
-- [ ] Add `/daily-review` route to App.tsx
-- [ ] Add "Daily Review" nav entry to OrionLayout sidebar
+- [x] Create `/daily-review` page with full 5-section layout
+- [x] Latest review display: trading summary, model activity, regime summary, decision review, system health
+- [x] Rolling performance tables (7/30/90/lifetime for PF, WR, expectancy, DD, avg R, trade count)
+- [x] Searchable archive of all previous daily reviews
+- [x] Add `/daily-review` route to App.tsx
+- [x] Add "Daily Review" nav entry to OrionLayout sidebar
 
 ### PART 9: Integration & Delivery
-- [ ] Write vitest tests for new sb1 and dailyReview procedures
-- [ ] Verify TypeScript compiles cleanly (0 errors)
-- [ ] Checkpoint and deliver
+- [x] Write vitest tests for new sb1 and dailyReview procedures (8 new tests, 25/25 total passing)
+- [x] Verify TypeScript compiles cleanly (0 errors)
+- [x] Checkpoint and deliver
