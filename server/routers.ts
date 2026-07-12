@@ -757,6 +757,46 @@ export const appRouter = router({
         }));
       }),
   }),
+
+  // ── Atlas Memory (Sprint 089A) ────────────────────────────────────────────────
+  atlasMemory: router({
+    stats: publicProcedure.query(async () => {
+      const { getAtlasMemoryStats } = await import("./atlasMemoryDb");
+      return getAtlasMemoryStats();
+    }),
+    recent: publicProcedure
+      .input(z.object({ limit: z.number().min(1).max(200).default(50) }))
+      .query(async ({ input }) => {
+        const { getRecentMemory } = await import("./atlasMemoryDb");
+        const rows = await getRecentMemory(input.limit);
+        return rows.map((r) => ({
+          id: r.id,
+          memoryId: r.memoryId,
+          barTime: r.barTime,
+          session: r.session,
+          close: r.close,
+          atr: r.atr,
+          adx: r.adx,
+          chop: r.chop,
+          regimeClassification: r.regimeClassification,
+          emaAlignment: r.emaAlignment,
+          trendDirection: r.trendDirection,
+          activeModels: r.activeModels,
+          sb1Eligible: r.sb1Eligible,
+          a1Eligible: r.a1Eligible,
+          pipelineHealth: r.pipelineHealth,
+          atlasVersion: r.atlasVersion,
+          schemaVersion: r.schemaVersion,
+          receivedAt: r.receivedAt.toISOString(),
+        }));
+      }),
+    regimeDistribution: publicProcedure
+      .input(z.object({ limit: z.number().min(1).max(1000).default(288) }))
+      .query(async ({ input }) => {
+        const { getRegimeDistribution } = await import("./atlasMemoryDb");
+        return getRegimeDistribution(input.limit);
+      }),
+  }),
 });
 
 export type AppRouter = typeof appRouter;

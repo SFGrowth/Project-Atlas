@@ -6,7 +6,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
 import {
-  Activity, AlertTriangle, BadgeCheck, BarChart2, BookOpen, Brain, CalendarCheck, ChevronLeft, ChevronRight,
+  Activity, AlertTriangle, BadgeCheck, BarChart2, BookOpen, Brain, BrainCircuit, CalendarCheck, ChevronLeft, ChevronRight,
   Clock, Cpu, Database, FlaskConical, Home, LayoutDashboard, Layers, LineChart, Menu,
   Radio, Settings, Shield, Target, Telescope, TrendingUp, Zap,
 } from "lucide-react";
@@ -68,6 +68,7 @@ const NAV_GROUPS = [
     label: "ARD / ORACLE",
     items: [
       { icon: FlaskConical, label: "ARD Observatory", path: "/ard" },
+      { icon: BrainCircuit, label: "Atlas Memory", path: "/atlas-memory" },
     ],
   },
 ];

@@ -646,3 +646,96 @@ export const oracleScores = mysqlTable("oracle_scores", {
 });
 export type OracleScore = typeof oracleScores.$inferSelect;
 export type InsertOracleScore = typeof oracleScores.$inferInsert;
+
+/**
+ * ATLAS MEMORY — Sprint 089A
+ * Permanent, immutable record of every confirmed 5-minute MNQ candle.
+ * Constitutional basis: Atlas Constitution v1.0 — Law 5 + Atlas Memory Amendment.
+ * "Every confirmed five-minute candle represents one market observation.
+ *  Every market observation becomes permanent Atlas memory."
+ *
+ * ARCHITECTURAL RULES:
+ *   - Never deleted, never truncated, never modified after insertion.
+ *   - Idempotent: duplicate inserts (same idempotency_key) are silently ignored.
+ *   - Completely isolated from execution pipeline (M-14, M-15).
+ *   - Source of truth for ARD pattern discovery and ORACLE calibration.
+ */
+export const atlasMemory = mysqlTable("atlas_memory", {
+  id: int("id").autoincrement().primaryKey(),
+  // ── Identity & Memory
+  memoryId: varchar("memory_id", { length: 64 }).notNull().unique(),
+  eventId: varchar("event_id", { length: 80 }).notNull(),
+  idempotencyKey: varchar("idempotency_key", { length: 64 }).notNull().unique(),
+  schemaVersion: varchar("schema_version", { length: 16 }).notNull().default("1.1.0"),
+  atlasVersion: varchar("atlas_version", { length: 32 }),
+  symbol: varchar("symbol", { length: 16 }).notNull().default("MNQ1!"),
+  timeframe: varchar("timeframe", { length: 8 }).notNull().default("5"),
+  barIndex: int("bar_index"),
+  pipelineRunId: varchar("pipeline_run_id", { length: 64 }),
+  // ── Timestamp
+  barTime: bigint("bar_time", { mode: "number" }).notNull(),
+  barTimeEt: varchar("bar_time_et", { length: 32 }),
+  session: varchar("session", { length: 8 }),
+  dayOfWeek: varchar("day_of_week", { length: 4 }),
+  hourEt: int("hour_et"),
+  isRth: boolean("is_rth").default(false),
+  // ── OHLCV
+  open: decimal("open", { precision: 10, scale: 2 }),
+  high: decimal("high", { precision: 10, scale: 2 }),
+  low: decimal("low", { precision: 10, scale: 2 }),
+  close: decimal("close", { precision: 10, scale: 2 }),
+  volume: decimal("volume", { precision: 14, scale: 0 }),
+  // ── Core Indicators
+  atr: decimal("atr", { precision: 10, scale: 4 }),
+  atr5: decimal("atr5", { precision: 10, scale: 4 }),
+  atrExpansion: decimal("atr_expansion", { precision: 8, scale: 4 }),
+  atrPercentile: decimal("atr_percentile", { precision: 6, scale: 2 }),
+  adx: decimal("adx", { precision: 6, scale: 2 }),
+  adxTrending: boolean("adx_trending").default(false),
+  chop: decimal("chop", { precision: 6, scale: 2 }),
+  rsi: decimal("rsi", { precision: 6, scale: 2 }),
+  vwap: decimal("vwap", { precision: 10, scale: 2 }),
+  distVwap: decimal("dist_vwap", { precision: 10, scale: 2 }),
+  // ── EMAs
+  ema9: decimal("ema9", { precision: 10, scale: 2 }),
+  ema21: decimal("ema21", { precision: 10, scale: 2 }),
+  ema50: decimal("ema50", { precision: 10, scale: 2 }),
+  ema200: decimal("ema200", { precision: 10, scale: 2 }),
+  ema9Slope: decimal("ema9_slope", { precision: 10, scale: 6 }),
+  ema21Slope: decimal("ema21_slope", { precision: 10, scale: 6 }),
+  ema50Slope: decimal("ema50_slope", { precision: 10, scale: 6 }),
+  emaAlignment: varchar("ema_alignment", { length: 8 }),
+  trendDirection: varchar("trend_direction", { length: 12 }),
+  // ── Regime
+  volatilityState: varchar("volatility_state", { length: 16 }),
+  compressionState: varchar("compression_state", { length: 16 }),
+  regimeClassification: varchar("regime_classification", { length: 24 }),
+  // ── Previous Day Structure
+  prevDayHigh: decimal("prev_day_high", { precision: 10, scale: 2 }),
+  prevDayLow: decimal("prev_day_low", { precision: 10, scale: 2 }),
+  prevDayClose: decimal("prev_day_close", { precision: 10, scale: 2 }),
+  prevDayRange: decimal("prev_day_range", { precision: 10, scale: 2 }),
+  prevDayRangeAtr: decimal("prev_day_range_atr", { precision: 8, scale: 4 }),
+  overnightGap: decimal("overnight_gap", { precision: 8, scale: 4 }),
+  priceVsPrevDay: varchar("price_vs_prev_day", { length: 16 }),
+  // ── Model Eligibility
+  a1Eligible: boolean("a1_eligible").default(false),
+  a3Eligible: boolean("a3_eligible").default(false),
+  b1Eligible: boolean("b1_eligible").default(false),
+  sb1Eligible: boolean("sb1_eligible").default(false),
+  activeModels: varchar("active_models", { length: 32 }),
+  // ── SB1 RAS
+  sb1Ras: decimal("sb1_ras", { precision: 6, scale: 2 }),
+  sb1RasActivated: boolean("sb1_ras_activated").default(false),
+  // ── Pipeline Health
+  pipelineHealth: varchar("pipeline_health", { length: 16 }).default("OK"),
+  obsCount: int("obs_count"),
+  errorCount: int("error_count").default(0),
+  moduleVersion: varchar("module_version", { length: 16 }),
+  sprint: int("sprint"),
+  // ── Server Metadata
+  receivedAt: timestamp("received_at").defaultNow().notNull(),
+  rawPayload: text("raw_payload"),
+});
+export type AtlasMemory = typeof atlasMemory.$inferSelect;
+export type InsertAtlasMemory = typeof atlasMemory.$inferInsert;

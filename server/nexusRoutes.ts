@@ -955,4 +955,103 @@ export function registerNexusRoutes(router: Router) {
       return res.status(200).json({ status: "error", message: "Stored internally" });
     }
   });
+
+  // ── POST /api/webhook/atlas-memory/:token ─────────────────────────────────
+  // ATLAS MEMORY — Sprint 089A
+  // Permanent, immutable ingestion of every confirmed 5-minute MNQ candle.
+  // Constitutional basis: Atlas Constitution v1.0 — Law 5 + Atlas Memory Amendment.
+  // Idempotency enforced via memory_id + idempotency_key UNIQUE constraints.
+  // Always returns 200 to Pine — failed delivery must never affect Pine decisions.
+  router.post("/webhook/atlas-memory/:token", async (req: Request, res: Response) => {
+    const { token } = req.params;
+    const expectedToken = process.env.ATLAS_WEBHOOK_TOKEN;
+    if (!expectedToken || token !== expectedToken) {
+      return res.status(401).json({ error: "Unauthorised" });
+    }
+    try {
+      const body = req.body as Record<string, unknown>;
+      if (!body || body.event_type !== "BAR_OBSERVATION") {
+        return res.status(422).json({ error: "Expected event_type: BAR_OBSERVATION" });
+      }
+      const barTimeRaw = body.bar_time as string | number | undefined;
+      if (barTimeRaw == null) return res.status(422).json({ error: "Missing bar_time" });
+      const barTimeMs = typeof barTimeRaw === "number" ? barTimeRaw : new Date(barTimeRaw).getTime();
+      if (isNaN(barTimeMs)) return res.status(422).json({ error: "Invalid bar_time" });
+      const sym = String(body.symbol ?? "MNQ1!");
+      const idempotencyKey = String(body.idempotency_key ?? `${sym}_${barTimeMs}`);
+      const memoryId = String(body.memory_id ?? `MEM_${sym}_${barTimeMs}`);
+      const str = (v: unknown) => v != null ? String(v) : null;
+      const bool = (v: unknown) => v === true || v === "true" || v === 1;
+      const mem = {
+        memoryId,
+        eventId: str(body.event_id) ?? `M16_${sym}_${barTimeMs}`,
+        idempotencyKey,
+        schemaVersion: str(body.schema_version) ?? "1.1.0",
+        atlasVersion: str(body.atlas_version),
+        symbol: sym,
+        timeframe: str(body.timeframe) ?? "5",
+        barIndex: body.bar_index != null ? Number(body.bar_index) : null,
+        pipelineRunId: str(body.pipeline_run_id),
+        barTime: barTimeMs,
+        barTimeEt: str(body.bar_time_et),
+        session: str(body.session),
+        dayOfWeek: str(body.day_of_week),
+        hourEt: body.hour_et != null ? Number(body.hour_et) : null,
+        isRth: bool(body.is_rth),
+        open: str(body.open), high: str(body.high), low: str(body.low), close: str(body.close),
+        volume: body.volume != null ? String(body.volume) : null,
+        atr: str(body.atr), atr5: str(body.atr5),
+        atrExpansion: str(body.atr_expansion),
+        atrPercentile: str(body.atr_percentile),
+        adx: str(body.adx), adxTrending: bool(body.adx_trending),
+        chop: str(body.chop), rsi: str(body.rsi),
+        vwap: str(body.vwap), distVwap: str(body.dist_vwap),
+        ema9: str(body.ema9), ema21: str(body.ema21),
+        ema50: str(body.ema50), ema200: str(body.ema200),
+        ema9Slope: str(body.ema9_slope), ema21Slope: str(body.ema21_slope),
+        ema50Slope: str(body.ema50_slope),
+        emaAlignment: str(body.ema_alignment),
+        trendDirection: str(body.trend_direction),
+        volatilityState: str(body.volatility_state),
+        compressionState: str(body.compression_state),
+        regimeClassification: str(body.regime_classification),
+        prevDayHigh: str(body.prev_day_high), prevDayLow: str(body.prev_day_low),
+        prevDayClose: str(body.prev_day_close), prevDayRange: str(body.prev_day_range),
+        prevDayRangeAtr: str(body.prev_day_range_atr),
+        overnightGap: str(body.overnight_gap),
+        priceVsPrevDay: str(body.price_vs_prev_day),
+        a1Eligible: bool(body.a1_eligible), a3Eligible: bool(body.a3_eligible),
+        b1Eligible: bool(body.b1_eligible), sb1Eligible: bool(body.sb1_eligible),
+        activeModels: str(body.active_models),
+        sb1Ras: str(body.sb1_ras), sb1RasActivated: bool(body.sb1_ras_activated),
+        pipelineHealth: str(body.pipeline_health) ?? "OK",
+        obsCount: body.obs_count != null ? Number(body.obs_count) : null,
+        errorCount: body.error_count != null ? Number(body.error_count) : 0,
+        moduleVersion: str(body.module_version),
+        sprint: body.sprint != null ? Number(body.sprint) : null,
+        rawPayload: JSON.stringify(body),
+      };
+      const { insertAtlasMemory } = await import("./atlasMemoryDb");
+      const result = await insertAtlasMemory(mem);
+      if (!result.inserted) {
+        return res.status(200).json({ status: "duplicate", id: result.id });
+      }
+      broadcastSSE("atlas_memory", {
+        id: result.id, memory_id: memoryId, bar_time: barTimeMs, symbol: sym,
+        session: mem.session, regime: mem.regimeClassification,
+        adx: body.adx, atr: body.atr, chop: body.chop, close: body.close,
+        trend_direction: mem.trendDirection, active_models: mem.activeModels,
+        schema_version: mem.schemaVersion, atlas_version: mem.atlasVersion,
+      });
+      return res.status(201).json({ status: "ok", id: result.id, memory_id: memoryId });
+    } catch (err) {
+      console.error("[ATLAS MEMORY] Ingestion error:", err);
+      return res.status(200).json({ status: "error", message: "Stored internally" });
+    }
+  });
+
+  // Catch-all for /webhook/atlas-memory (no token)
+  router.post("/webhook/atlas-memory", (_req: Request, res: Response) => {
+    return res.status(401).json({ error: "Missing token in URL path" });
+  });
 }

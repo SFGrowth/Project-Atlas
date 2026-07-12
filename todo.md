@@ -299,37 +299,68 @@
 ## Sprint 089 — Every-Bar BAR_OBSERVATION + ARD Foundation (Constitution-Compliant)
 
 ### Pine Script (M-15 Extension)
-- [ ] Add BAR_OBSERVATION event class to M-15 Pine Script (sent on every barstate.isconfirmed)
-- [ ] BAR_OBSERVATION payload: event_id, idempotency_key, bar_time, symbol, timeframe, session, OHLCV, ATR, ADX, CHOP, VWAP, EMA9/21/50/200 values and slopes, trend direction, volatility state, compression/expansion, prev-day structure, overnight structure, regime classification, eligible model states, ADE scores, SB1 RAS, active position state, pipeline health, schema/version metadata
-- [ ] Two-class event architecture: BAR_OBSERVATION (every bar) vs DECISION_EVENT (signals, ADE, ARI, TVL, entries, exits, errors, state changes)
-- [ ] Exactly one observation per confirmed candle — no intrabar duplicates
-- [ ] Failed Nexus delivery must never affect Pine decisions
-- [ ] No execution dependency on Nexus availability
+- [x] Add BAR_OBSERVATION event class to M-15 Pine Script (sent on every barstate.isconfirmed)
+- [x] BAR_OBSERVATION payload: event_id, idempotency_key, bar_time, symbol, timeframe, session, OHLCV, ATR, ADX, CHOP, VWAP, EMA9/21/50/200 values and slopes, trend direction, volatility state, compression/expansion, prev-day structure, overnight structure, regime classification, eligible model states, ADE scores, SB1 RAS, active position state, pipeline health, schema/version metadata
+- [x] Two-class event architecture: BAR_OBSERVATION (every bar) vs DECISION_EVENT (signals, ADE, ARI, TVL, entries, exits, errors, state changes)
+- [x] Exactly one observation per confirmed candle — no intrabar duplicates
+- [x] Failed Nexus delivery must never affect Pine decisions
+- [x] No execution dependency on Nexus availability
 
 ### Database Schema
-- [ ] `ard_bar_observations` table: full market-state snapshot per confirmed 5-min bar
-- [ ] `ard_candidates` table: research candidate registry (id, title, hypothesis, status, evidence, sample_size, effect_size, etc.)
-- [ ] `oracle_predictions` table: immutable prediction record (all fields from Constitution Part V §2)
-- [ ] `oracle_reality` table: reality record (all fields from Constitution Part V §3)
-- [ ] `oracle_scores` table: calibration metrics and Oracle Score by model/regime/portfolio
-- [ ] Run Drizzle migration and apply via webdev_execute_sql
+- [x] `ard_bar_observations` table: full market-state snapshot per confirmed 5-min bar
+- [x] `ard_candidates` table: research candidate registry (id, title, hypothesis, status, evidence, sample_size, effect_size, etc.)
+- [x] `oracle_predictions` table: immutable prediction record (all fields from Constitution Part V §2)
+- [x] `oracle_reality` table: reality record (all fields from Constitution Part V §3)
+- [x] `oracle_scores` table: calibration metrics and Oracle Score by model/regime/portfolio
+- [x] Run Drizzle migration and apply via webdev_execute_sql
 
 ### Backend
-- [ ] POST /api/bar-observation ingestion endpoint (idempotency enforced on bar_time + symbol)
-- [ ] Missing-bar detection: flag gaps > 5 min during RTH hours
-- [ ] ARD feature store write on every ingested observation
-- [ ] tRPC procedures: ard.recentObservations, ard.observationCount, ard.missingBars, ard.candidates
-- [ ] Constitution document saved to Project-Atlas git repository
+- [x] POST /api/bar-observation ingestion endpoint (idempotency enforced on bar_time + symbol)
+- [x] Missing-bar detection: flag gaps > 5 min during RTH hours
+- [x] ARD feature store write on every ingested observation
+- [x] tRPC procedures: ard.recentObservations, ard.observationCount, ard.missingBars, ard.candidates
+- [x] Constitution document saved to Project-Atlas git repository
 
 ### Frontend (ARD Foundation Page)
-- [ ] New page: /ard — Autonomous Research Division
-- [ ] Live observation stream: last 20 bars, bar time, regime, ADX, ATR, CHOP, RAS, model states
-- [ ] Feature store stats: total observations, today's count, missing bar count, coverage %
-- [ ] Research Candidate Registry: list with status badges (Observed / Monitor / Research / Rejected / Promoted)
-- [ ] Add /ard route to App.tsx
-- [ ] Add "ARD" nav entry to OrionLayout sidebar under INTELLIGENCE section
+- [x] New page: /ard — Autonomous Research Division
+- [x] Live observation stream: last 20 bars, bar time, regime, ADX, ATR, CHOP, RAS, model states
+- [x] Feature store stats: total observations, today's count, missing bar count, coverage %
+- [x] Research Candidate Registry: list with status badges (Observed / Monitor / Research / Rejected / Promoted)
+- [x] Add /ard route to App.tsx
+- [x] Add "ARD" nav entry to OrionLayout sidebar under INTELLIGENCE section
 
 ### Tests & Delivery
-- [ ] Vitest tests for ard ingestion procedures
-- [ ] TypeScript 0 errors
-- [ ] Checkpoint and deliver
+- [x] Vitest tests for ard ingestion procedures
+- [x] TypeScript 0 errors
+- [x] Checkpoint and deliver
+
+## Sprint 089A — Atlas Memory: Continuous Market Memory System
+
+### M-16 Pine Script (Atlas ARD Observer v1.1.0)
+- [x] Upgrade M-16 to Sprint 089A designation (v1.1.0)
+- [x] Confirm unconditional BAR_OBSERVATION fires on every confirmed 5-min candle (barstate.isconfirmed)
+- [x] Add bar_index field to JSON payload
+- [x] Confirm all Sprint 089A fields present: schema_version, bar_time, bar_index, OHLCV, EMAs + slopes, ATR, ATR5, ADX, CHOP, RSI, VWAP, regime, prev-day structure, model eligibility, SB1 RAS, pipeline health
+
+### Database Schema
+- [x] Add `atlas_memory` table (64 columns) — permanent, immutable, never-delete
+- [x] Unique constraints on memory_id and idempotency_key
+- [x] Generate migration SQL via drizzle-kit generate
+- [x] Apply migration via webdev_execute_sql
+
+### Backend
+- [x] Create `server/atlasMemoryDb.ts` — insert and query helpers
+- [x] Add `/api/webhook/atlas-memory/:token` endpoint to nexusRoutes.ts
+- [x] Idempotent insert (ON DUPLICATE KEY UPDATE skips re-insert)
+- [x] Returns HTTP 201 with inserted id and memory_id
+- [x] Add `atlasMemory` tRPC router with `recent` and `stats` procedures
+
+### Frontend
+- [x] Create `client/src/pages/AtlasMemory.tsx` — Atlas Memory stream dashboard
+- [x] Add route `/atlas-memory` to App.tsx
+- [x] Add "Atlas Memory" nav item (BrainCircuit icon) to ARD/ORACLE group in OrionLayout
+
+### TradingView Integration
+- [x] Update "Atlas Observability Webhook — M-15" alert webhook URL to new `/api/webhook/atlas-memory/:token` endpoint
+- [x] Alert confirmed Active, trigger: Any alert() function call, expiration: Open-ended
+- [x] End-to-end test: HTTP 201 response confirmed from atlas-memory endpoint

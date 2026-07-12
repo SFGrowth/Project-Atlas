@@ -32,6 +32,7 @@ const SB1ObservatoryPage = lazy(() => import("./pages/SB1Observatory"));
 const DailyReviewPage = lazy(() => import("./pages/DailyReview"));
 const SchedulerPage = lazy(() => import("./pages/Scheduler"));
 const ARDObservatoryPage = lazy(() => import("./pages/ARDObservatory"));
+const AtlasMemoryPage = lazy(() => import("./pages/AtlasMemory"));
 
 function PageLoader() {
   return (
@@ -73,6 +74,7 @@ function Router() {
           <Route path="/daily-review" component={DailyReviewPage} />
           <Route path="/scheduler" component={SchedulerPage} />
           <Route path="/ard" component={ARDObservatoryPage} />
+          <Route path="/atlas-memory" component={AtlasMemoryPage} />
           <Route path="/404" component={NotFound} />
           <Route component={NotFound} />
         </Switch>
