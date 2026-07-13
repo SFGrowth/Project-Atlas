@@ -1,3 +1,4 @@
+//@version=6
 // =============================================================================
 // ATLAS ARD OBSERVER — M-16
 // atlas_ard_observer_m16.pine
@@ -8,91 +9,18 @@
 // Purpose:  ATLAS MEMORY — Emits one BAR_OBSERVATION for every confirmed
 //           five-minute MNQ candle. No candle is ever skipped.
 //
-// CONSTITUTIONAL BASIS:
-//   Atlas Constitution v1.0 — Law 5: Every Five-Minute Candle Is a Research Event.
-//   Atlas Constitutional Amendment — ATLAS MEMORY:
-//     "Every confirmed five-minute candle represents one market observation.
-//      Every market observation becomes permanent Atlas memory."
-//
-// ARCHITECTURAL PRINCIPLE:
-//   M-16 is ATLAS MEMORY INFRASTRUCTURE.
-//   It never generates execution alerts.
-//   It never influences model decisions, ARI, TVL, or the Kernel.
-//   It is completely isolated from M-14 (execution) and M-15 (observability).
-//   Failure of M-16 must never block or alter the Atlas pipeline.
-//
-// EVENT CLASS: BAR_OBSERVATION (continuous market-state snapshot)
-//   STREAM A: ATLAS MEMORY — every confirmed candle, always emitted, never skipped.
-//   STREAM B: ATLAS EVENTS (signals, entries, exits) — handled by M-14/M-15.
-//   The two streams are independent.
-//
-// PAYLOAD DESIGN:
-//   Compact flat JSON — all key market-state dimensions in one object.
-//   Stays under TradingView's 4000-character alert limit.
-//   Idempotency key: symbol_bartime (enforced server-side).
-//   Failed delivery returns 200 to Pine — never affects Pine decisions.
-//
-// ATLAS NEXUS ENDPOINT: POST /api/webhook/atlas-memory/<ATLAS_WEBHOOK_TOKEN>
-// AUTHENTICATION: Secret path segment in URL (same token as M-15).
-//
-// SETUP:
-//   1. Add this indicator to the same MNQ 5-minute chart as M-14 and M-15.
-//   2. Create a TradingView alert on this indicator:
-//      - Condition: "Atlas ARD Observer — M-16" -> "Bar Observation Trigger"
-//      - Message: {{plot("BAR_OBS_TRIGGER")}} — NOT used; use alert() function
-//      - Webhook URL: https://atlasdash-j7nzp34b.manus.space/api/webhook/atlas-memory/<TOKEN>
-//      - Alert message: leave blank (alert() function sends the JSON payload)
-//   3. Frequency: Once Per Bar Close
-//   4. Expiry: Open-ended
-//
-// DEPENDENCIES:
-//   Recomputes all market state variables inline (Pine Script cannot share
-//   variables between indicators). Uses identical calculation logic to M-15
-//   to ensure consistency.
-//
-// FAIL-SAFE:
-//   All na() guards applied. Serialisation errors produce a minimal error
-//   payload. The alert always fires — even on error — to maintain the
-//   continuous observation record.
-//
-// =============================================================================
 // CHANGE LOG
-// =============================================================================
-//
-// [1.2.1] — 2026-07-13 — Sprint 095A (deployment fix)
-//   CHANGED: expandThresh recalibrated from 1.20 to 1.00
-//     is_exp_val = volcomp_val > 1.00
-//     Reason: Sprint 095A Part 8 action item. MNQ 5-min ATR ratio almost
-//     never exceeds 1.10. Over 625 trading days, only 14 had a mean daily
-//     ATR ratio above 1.10. The old 1.20 threshold caused EXPANDING state
-//     to be under-reported in every webhook payload. Recalibration to 1.00
-//     is F1-optimal and consistent with the ORB-1 eligibility threshold.
-//   FIXED: regime_classification JSON field missing closing quote
-//     Before: j := j + "\"regime_classification\":\"" + regime_val + ","
-//     After:  j := j + "\"regime_classification\":\"" + regime_val + "\","
-//     Reason: Missing closing quote produced malformed JSON on every bar.
-//   FIXED: f_row helper moved to top level (Pine v5 does not allow local
-//     function definitions inside if blocks)
-//   FIXED: active_models_str on single line (Pine v5 line continuation)
-//   CHANGED: Status table label updated to [095A-fix]
-//   CHANGED: Version 1.2.0 -> 1.2.1
-//
-// [1.2.0] — 2026-07-13 — Sprint 095A
-//   ADDED: ORB-1 eligibility flag (orb1_eligible)
-//   ADDED: orb1_eligible and active_models fields to webhook payload
-//   CHANGED: Status table expanded to 14 rows
-//   CHANGED: Version 1.1.0 -> 1.2.0
-//
-// [1.1.0] — 2026-07-10 — Sprint 089A
-//   ADDED: SB1 RAS inputs and payload fields
-//   CHANGED: Version 1.0.0 -> 1.1.0
-//
-// [1.0.0] — 2026-07-10 — Sprint 089
-//   INITIAL RELEASE
-//
+// [1.2.1] 2026-07-13 Sprint 095A
+//   CHANGED: expandThresh 1.20 -> 1.00 (F1-optimal, 171/625 eligible days)
+//   FIXED:   regime_classification JSON missing closing quote
+//   FIXED:   f_row removed (Pine v5/v6 no local funcs in if blocks)
+//   FIXED:   active_models_str on single line
+//   UPGRADED: //@version=5 -> //@version=6
+// [1.2.0] 2026-07-13 Sprint 095A — ORB-1 eligibility, active_models payload
+// [1.1.0] 2026-07-10 Sprint 089A — SB1 RAS inputs
+// [1.0.0] 2026-07-10 Sprint 089  — Initial release
 // =============================================================================
 
-//@version=5
 indicator("Atlas ARD Observer — M-16", overlay=false, max_labels_count=10, max_lines_count=0)
 
 // ============================================================================
@@ -117,14 +45,12 @@ i_webhook_secret = input.string("REPLACE_WITH_ATLAS_WEBHOOK_TOKEN", title="Webho
 i_enable_webhook = input.bool(true,  title="Enable Webhook Transmission", group=GRP_ARD)
 i_show_table     = input.bool(true,  title="Show Status Table",           group=GRP_DBG)
 i_show_heartbeat = input.bool(true,  title="Show Heartbeat Label",        group=GRP_DBG)
-
 i_sb1_ras        = input.float(0.0,  title="SB1 RAS (0-100)", minval=0, maxval=100, step=0.1, group=GRP_SB1)
 i_sb1_activated  = input.bool(false, title="SB1 RAS Activated (>=45)",   group=GRP_SB1)
 
 // ============================================================================
-// SECTION 3: UTILITY FUNCTIONS (all at top level — Pine v5 requirement)
+// SECTION 3: UTILITY FUNCTIONS
 // ============================================================================
-
 f_fts(v, fmt) =>
     na(v) ? "null" : str.tostring(v, fmt)
 
@@ -146,15 +72,14 @@ f_memory_id(t) =>
 // ============================================================================
 // SECTION 4: MARKET STATE CALCULATIONS
 // ============================================================================
-
 ema9_val   = ta.ema(close, 9)
 ema21_val  = ta.ema(close, 21)
 ema50_val  = ta.ema(close, 50)
 ema200_val = ta.ema(close, 200)
 
-atr14_val  = ta.atr(14)
-atr5_val   = ta.atr(5)
-safe_atr   = na(atr14_val) or atr14_val <= 0 ? 1.0 : atr14_val
+atr14_val = ta.atr(14)
+atr5_val  = ta.atr(5)
+safe_atr  = na(atr14_val) or atr14_val <= 0 ? 1.0 : atr14_val
 
 ema9_slope  = na(ema9_val[3])  ? 0.0 : (ema9_val  - ema9_val[3])  / safe_atr
 ema21_slope = na(ema21_val[3]) ? 0.0 : (ema21_val - ema21_val[3]) / safe_atr
@@ -192,7 +117,6 @@ is_rth_val = h_et >= 9 and (h_et < 16 or (h_et == 16 and m_et == 0))
 is_am_val  = h_et >= 9 and h_et < 12
 is_pm_val  = h_et >= 12 and h_et < 16
 is_ov_val  = not is_rth_val
-
 session_val = is_am_val ? "AM" : is_pm_val ? "PM" : is_ov_val ? "OV" : "MID"
 
 dow_str = dow_val == dayofweek.monday ? "MON" : dow_val == dayofweek.tuesday ? "TUE" : dow_val == dayofweek.wednesday ? "WED" : dow_val == dayofweek.thursday ? "THU" : dow_val == dayofweek.friday ? "FRI" : dow_val == dayofweek.saturday ? "SAT" : "SUN"
@@ -211,8 +135,7 @@ pd_range      = safe_pd_high - safe_pd_low
 pd_range_atr  = safe_atr > 0 ? pd_range / safe_atr : 0.0
 
 price_vs_pd = close > safe_pd_high ? "ABOVE_PDH" : close < safe_pd_low ? "BELOW_PDL" : close > safe_pd_close ? "ABOVE_PDC" : "BELOW_PDC"
-
-ov_gap = safe_pd_close > 0 ? (open - safe_pd_close) / safe_atr : 0.0
+ov_gap      = safe_pd_close > 0 ? (open - safe_pd_close) / safe_atr : 0.0
 
 a1_eligible   = adx_trending_val and is_rth_val
 a3_eligible   = adx_trending_val and is_rth_val
@@ -238,11 +161,9 @@ if barstate.isconfirmed
     string mem_id   = f_memory_id(time)
     string evt_id   = f_event_id(bar_index, time)
     string idem_key = f_idem_key(bar_index, time)
-
-    string ts_et = str.tostring(year(time, "America/New_York")) + "-" + str.tostring(month(time, "America/New_York"), "00") + "-" + str.tostring(dayofmonth(time, "America/New_York"), "00") + "T" + str.tostring(h_et, "00") + ":" + str.tostring(m_et, "00") + ":00"
+    string ts_et    = str.tostring(year(time, "America/New_York")) + "-" + str.tostring(month(time, "America/New_York"), "00") + "-" + str.tostring(dayofmonth(time, "America/New_York"), "00") + "T" + str.tostring(h_et, "00") + ":" + str.tostring(m_et, "00") + ":00"
 
     string j = "{"
-
     j := j + "\"event_type\":\"" + EVENT_TYPE + "\","
     j := j + "\"schema_version\":\"" + SCHEMA_VERSION + "\","
     j := j + "\"atlas_version\":\"" + ATLAS_VERSION + "\","
@@ -253,20 +174,17 @@ if barstate.isconfirmed
     j := j + "\"timeframe\":\"" + TIMEFRAME_STR + "\","
     j := j + "\"bar_index\":" + str.tostring(bar_index) + ","
     j := j + "\"pipeline_run_id\":\"" + idem_key + "\","
-
     j := j + "\"bar_time\":" + f_its(time) + ","
     j := j + "\"bar_time_et\":\"" + ts_et + "\","
     j := j + "\"session\":\"" + session_val + "\","
     j := j + "\"day_of_week\":\"" + dow_str + "\","
     j := j + "\"hour_et\":" + str.tostring(h_et) + ","
     j := j + "\"is_rth\":" + f_bts(is_rth_val) + ","
-
     j := j + "\"open\":" + f_fts(open, "#.00") + ","
     j := j + "\"high\":" + f_fts(high, "#.00") + ","
     j := j + "\"low\":" + f_fts(low, "#.00") + ","
     j := j + "\"close\":" + f_fts(close, "#.00") + ","
     j := j + "\"volume\":" + f_fts(volume, "#") + ","
-
     j := j + "\"atr\":" + f_fts(atr14_val, "#.####") + ","
     j := j + "\"atr5\":" + f_fts(atr5_val, "#.####") + ","
     j := j + "\"atr_expansion\":" + f_fts(volcomp_val, "#.####") + ","
@@ -277,7 +195,6 @@ if barstate.isconfirmed
     j := j + "\"rsi\":" + f_fts(rsi_val, "#.##") + ","
     j := j + "\"vwap\":" + f_fts(vwap_val, "#.00") + ","
     j := j + "\"dist_vwap\":" + f_fts(dist_vwap, "#.00") + ","
-
     j := j + "\"ema9\":" + f_fts(ema9_val, "#.00") + ","
     j := j + "\"ema21\":" + f_fts(ema21_val, "#.00") + ","
     j := j + "\"ema50\":" + f_fts(ema50_val, "#.00") + ","
@@ -287,11 +204,9 @@ if barstate.isconfirmed
     j := j + "\"ema50_slope\":" + f_fts(ema50_slope, "#.######") + ","
     j := j + "\"ema_alignment\":\"" + ema_struct + "\","
     j := j + "\"trend_direction\":\"" + trend_dir + "\","
-
     j := j + "\"volatility_state\":\"" + vol_state_val + "\","
     j := j + "\"compression_state\":\"" + comp_state_val + "\","
     j := j + "\"regime_classification\":\"" + regime_val + "\","
-
     j := j + "\"prev_day_high\":" + f_fts(safe_pd_high, "#.00") + ","
     j := j + "\"prev_day_low\":" + f_fts(safe_pd_low, "#.00") + ","
     j := j + "\"prev_day_close\":" + f_fts(safe_pd_close, "#.00") + ","
@@ -299,17 +214,14 @@ if barstate.isconfirmed
     j := j + "\"prev_day_range_atr\":" + f_fts(pd_range_atr, "#.####") + ","
     j := j + "\"overnight_gap\":" + f_fts(ov_gap, "#.####") + ","
     j := j + "\"price_vs_prev_day\":\"" + price_vs_pd + "\","
-
     j := j + "\"a1_eligible\":" + f_bts(a1_eligible) + ","
     j := j + "\"a3_eligible\":" + f_bts(a3_eligible) + ","
     j := j + "\"b1_eligible\":" + f_bts(b1_eligible) + ","
     j := j + "\"sb1_eligible\":" + f_bts(sb1_eligible) + ","
     j := j + "\"orb1_eligible\":" + f_bts(orb1_eligible) + ","
     j := j + "\"active_models\":\"" + active_models_display + "\","
-
     j := j + "\"sb1_ras\":" + f_fts(i_sb1_ras, "#.##") + ","
     j := j + "\"sb1_ras_activated\":" + f_bts(i_sb1_activated) + ","
-
     j := j + "\"pipeline_health\":\"" + (na(ema9_val) ? "DEGRADED" : "OK") + "\","
     j := j + "\"obs_count\":" + str.tostring(v_obs_count) + ","
     j := j + "\"error_count\":" + str.tostring(v_error_count) + ","
@@ -322,58 +234,42 @@ if barstate.isconfirmed
 
 // ============================================================================
 // SECTION 7: STATUS TABLE
-// NOTE: table and table.cell calls must be inside barstate.islast block.
-//       table.cell is called directly — no local function wrapper needed.
 // ============================================================================
 var table t_status = na
 if i_show_table and barstate.islast
     if na(t_status)
         t_status := table.new(position.top_right, 2, 15, bgcolor=color.new(color.black, 10), border_width=1, border_color=color.new(color.gray, 60), frame_width=1, frame_color=color.new(color.gray, 40))
 
-    table.cell(t_status, 0, 0,  "ATLAS MEMORY M-16",  text_color=color.new(color.gray, 20),  text_size=size.small, bgcolor=color.new(color.black, 20))
-    table.cell(t_status, 1, 0,  "v" + MODULE_VERSION + " [095A-fix]",                         text_color=color.new(color.cyan, 0),   text_size=size.small, bgcolor=color.new(color.black, 10))
-
-    table.cell(t_status, 0, 1,  "Webhook",             text_color=color.new(color.gray, 20),  text_size=size.small, bgcolor=color.new(color.black, 20))
-    table.cell(t_status, 1, 1,  i_enable_webhook ? "ENABLED" : "DISABLED",                    text_color=i_enable_webhook ? color.new(color.green, 0) : color.new(color.yellow, 0), text_size=size.small, bgcolor=color.new(color.black, 10))
-
-    table.cell(t_status, 0, 2,  "Observations",        text_color=color.new(color.gray, 20),  text_size=size.small, bgcolor=color.new(color.black, 20))
-    table.cell(t_status, 1, 2,  str.tostring(v_obs_count),                                    text_color=color.new(color.white, 0),  text_size=size.small, bgcolor=color.new(color.black, 10))
-
-    table.cell(t_status, 0, 3,  "Errors",              text_color=color.new(color.gray, 20),  text_size=size.small, bgcolor=color.new(color.black, 20))
-    table.cell(t_status, 1, 3,  str.tostring(v_error_count),                                  text_color=v_error_count > 0 ? color.new(color.red, 0) : color.new(color.green, 0), text_size=size.small, bgcolor=color.new(color.black, 10))
-
-    table.cell(t_status, 0, 4,  "Session",             text_color=color.new(color.gray, 20),  text_size=size.small, bgcolor=color.new(color.black, 20))
-    table.cell(t_status, 1, 4,  session_val,                                                  text_color=color.new(color.yellow, 0), text_size=size.small, bgcolor=color.new(color.black, 10))
-
-    table.cell(t_status, 0, 5,  "Regime",              text_color=color.new(color.gray, 20),  text_size=size.small, bgcolor=color.new(color.black, 20))
-    table.cell(t_status, 1, 5,  regime_val,                                                   text_color=adx_trending_val ? color.new(color.green, 0) : color.new(color.gray, 0), text_size=size.small, bgcolor=color.new(color.black, 10))
-
-    table.cell(t_status, 0, 6,  "ADX",                 text_color=color.new(color.gray, 20),  text_size=size.small, bgcolor=color.new(color.black, 20))
-    table.cell(t_status, 1, 6,  str.tostring(adx14_val, "#.#"),                               text_color=adx_trending_val ? color.new(color.green, 0) : color.new(color.gray, 0), text_size=size.small, bgcolor=color.new(color.black, 10))
-
-    table.cell(t_status, 0, 7,  "CHOP",                text_color=color.new(color.gray, 20),  text_size=size.small, bgcolor=color.new(color.black, 20))
-    table.cell(t_status, 1, 7,  str.tostring(chop_val, "#.#"),                                text_color=chop_val < 55 ? color.new(color.green, 0) : color.new(color.red, 0), text_size=size.small, bgcolor=color.new(color.black, 10))
-
-    table.cell(t_status, 0, 8,  "EMA Align",           text_color=color.new(color.gray, 20),  text_size=size.small, bgcolor=color.new(color.black, 20))
-    table.cell(t_status, 1, 8,  ema_struct,                                                   text_color=ema_bull_val ? color.new(color.green, 0) : ema_bear_val ? color.new(color.red, 0) : color.new(color.yellow, 0), text_size=size.small, bgcolor=color.new(color.black, 10))
-
-    table.cell(t_status, 0, 9,  "ATR Expansion",       text_color=color.new(color.gray, 20),  text_size=size.small, bgcolor=color.new(color.black, 20))
-    table.cell(t_status, 1, 9,  str.tostring(volcomp_val, "#.###") + " (t:1.00)",             text_color=is_exp_val ? color.new(color.orange, 0) : is_comp_val ? color.new(color.blue, 0) : color.new(color.white, 0), text_size=size.small, bgcolor=color.new(color.black, 10))
-
-    table.cell(t_status, 0, 10, "Vol State",           text_color=color.new(color.gray, 20),  text_size=size.small, bgcolor=color.new(color.black, 20))
-    table.cell(t_status, 1, 10, vol_state_val,                                                text_color=is_exp_val ? color.new(color.orange, 0) : is_comp_val ? color.new(color.blue, 0) : color.new(color.white, 0), text_size=size.small, bgcolor=color.new(color.black, 10))
-
-    table.cell(t_status, 0, 11, "Active Models",       text_color=color.new(color.gray, 20),  text_size=size.small, bgcolor=color.new(color.black, 20))
-    table.cell(t_status, 1, 11, active_models_display,                                        text_color=color.new(color.cyan, 0),   text_size=size.small, bgcolor=color.new(color.black, 10))
-
-    table.cell(t_status, 0, 12, "ORB-1",               text_color=color.new(color.gray, 20),  text_size=size.small, bgcolor=color.new(color.black, 20))
-    table.cell(t_status, 1, 12, orb1_eligible ? "ELIGIBLE" : "NOT ELIGIBLE",                  text_color=orb1_eligible ? color.new(color.green, 0) : color.new(color.gray, 0), text_size=size.small, bgcolor=color.new(color.black, 10))
-
-    table.cell(t_status, 0, 13, "SB1 RAS",             text_color=color.new(color.gray, 20),  text_size=size.small, bgcolor=color.new(color.black, 20))
+    table.cell(t_status, 0, 0,  "ATLAS MEMORY M-16",  text_color=color.new(color.gray, 20), text_size=size.small, bgcolor=color.new(color.black, 20))
+    table.cell(t_status, 1, 0,  "v" + MODULE_VERSION + " [095A-fix]", text_color=color.new(color.cyan, 0), text_size=size.small, bgcolor=color.new(color.black, 10))
+    table.cell(t_status, 0, 1,  "Webhook",  text_color=color.new(color.gray, 20), text_size=size.small, bgcolor=color.new(color.black, 20))
+    table.cell(t_status, 1, 1,  i_enable_webhook ? "ENABLED" : "DISABLED", text_color=i_enable_webhook ? color.new(color.green, 0) : color.new(color.yellow, 0), text_size=size.small, bgcolor=color.new(color.black, 10))
+    table.cell(t_status, 0, 2,  "Observations", text_color=color.new(color.gray, 20), text_size=size.small, bgcolor=color.new(color.black, 20))
+    table.cell(t_status, 1, 2,  str.tostring(v_obs_count), text_color=color.new(color.white, 0), text_size=size.small, bgcolor=color.new(color.black, 10))
+    table.cell(t_status, 0, 3,  "Errors", text_color=color.new(color.gray, 20), text_size=size.small, bgcolor=color.new(color.black, 20))
+    table.cell(t_status, 1, 3,  str.tostring(v_error_count), text_color=v_error_count > 0 ? color.new(color.red, 0) : color.new(color.green, 0), text_size=size.small, bgcolor=color.new(color.black, 10))
+    table.cell(t_status, 0, 4,  "Session", text_color=color.new(color.gray, 20), text_size=size.small, bgcolor=color.new(color.black, 20))
+    table.cell(t_status, 1, 4,  session_val, text_color=color.new(color.yellow, 0), text_size=size.small, bgcolor=color.new(color.black, 10))
+    table.cell(t_status, 0, 5,  "Regime", text_color=color.new(color.gray, 20), text_size=size.small, bgcolor=color.new(color.black, 20))
+    table.cell(t_status, 1, 5,  regime_val, text_color=adx_trending_val ? color.new(color.green, 0) : color.new(color.gray, 0), text_size=size.small, bgcolor=color.new(color.black, 10))
+    table.cell(t_status, 0, 6,  "ADX", text_color=color.new(color.gray, 20), text_size=size.small, bgcolor=color.new(color.black, 20))
+    table.cell(t_status, 1, 6,  str.tostring(adx14_val, "#.#"), text_color=adx_trending_val ? color.new(color.green, 0) : color.new(color.gray, 0), text_size=size.small, bgcolor=color.new(color.black, 10))
+    table.cell(t_status, 0, 7,  "CHOP", text_color=color.new(color.gray, 20), text_size=size.small, bgcolor=color.new(color.black, 20))
+    table.cell(t_status, 1, 7,  str.tostring(chop_val, "#.#"), text_color=chop_val < 55 ? color.new(color.green, 0) : color.new(color.red, 0), text_size=size.small, bgcolor=color.new(color.black, 10))
+    table.cell(t_status, 0, 8,  "EMA Align", text_color=color.new(color.gray, 20), text_size=size.small, bgcolor=color.new(color.black, 20))
+    table.cell(t_status, 1, 8,  ema_struct, text_color=ema_bull_val ? color.new(color.green, 0) : ema_bear_val ? color.new(color.red, 0) : color.new(color.yellow, 0), text_size=size.small, bgcolor=color.new(color.black, 10))
+    table.cell(t_status, 0, 9,  "ATR Expansion", text_color=color.new(color.gray, 20), text_size=size.small, bgcolor=color.new(color.black, 20))
+    table.cell(t_status, 1, 9,  str.tostring(volcomp_val, "#.###") + " (t:1.00)", text_color=is_exp_val ? color.new(color.orange, 0) : is_comp_val ? color.new(color.blue, 0) : color.new(color.white, 0), text_size=size.small, bgcolor=color.new(color.black, 10))
+    table.cell(t_status, 0, 10, "Vol State", text_color=color.new(color.gray, 20), text_size=size.small, bgcolor=color.new(color.black, 20))
+    table.cell(t_status, 1, 10, vol_state_val, text_color=is_exp_val ? color.new(color.orange, 0) : is_comp_val ? color.new(color.blue, 0) : color.new(color.white, 0), text_size=size.small, bgcolor=color.new(color.black, 10))
+    table.cell(t_status, 0, 11, "Active Models", text_color=color.new(color.gray, 20), text_size=size.small, bgcolor=color.new(color.black, 20))
+    table.cell(t_status, 1, 11, active_models_display, text_color=color.new(color.cyan, 0), text_size=size.small, bgcolor=color.new(color.black, 10))
+    table.cell(t_status, 0, 12, "ORB-1", text_color=color.new(color.gray, 20), text_size=size.small, bgcolor=color.new(color.black, 20))
+    table.cell(t_status, 1, 12, orb1_eligible ? "ELIGIBLE" : "NOT ELIGIBLE", text_color=orb1_eligible ? color.new(color.green, 0) : color.new(color.gray, 0), text_size=size.small, bgcolor=color.new(color.black, 10))
+    table.cell(t_status, 0, 13, "SB1 RAS", text_color=color.new(color.gray, 20), text_size=size.small, bgcolor=color.new(color.black, 20))
     table.cell(t_status, 1, 13, str.tostring(i_sb1_ras, "#.#") + (i_sb1_activated ? " ACTIVE" : " SUPPRESSED"), text_color=i_sb1_activated ? color.new(color.green, 0) : color.new(color.red, 0), text_size=size.small, bgcolor=color.new(color.black, 10))
-
-    table.cell(t_status, 0, 14, "Confirmed",           text_color=color.new(color.gray, 20),  text_size=size.small, bgcolor=color.new(color.black, 20))
-    table.cell(t_status, 1, 14, barstate.isconfirmed ? "YES" : "NO",                          text_color=barstate.isconfirmed ? color.new(color.green, 0) : color.new(color.yellow, 0), text_size=size.small, bgcolor=color.new(color.black, 10))
+    table.cell(t_status, 0, 14, "Confirmed", text_color=color.new(color.gray, 20), text_size=size.small, bgcolor=color.new(color.black, 20))
+    table.cell(t_status, 1, 14, barstate.isconfirmed ? "YES" : "NO", text_color=barstate.isconfirmed ? color.new(color.green, 0) : color.new(color.yellow, 0), text_size=size.small, bgcolor=color.new(color.black, 10))
 
 // ============================================================================
 // SECTION 8: HEARTBEAT LABEL
@@ -384,11 +280,11 @@ if i_show_heartbeat and barstate.islast
 // ============================================================================
 // SECTION 9: PLOTS
 // ============================================================================
-plot(barstate.isconfirmed ? 1 : 0, title="BAR_OBS_TRIGGER",   color=color.new(color.purple, 80), display=display.none)
-plot(v_obs_count,                  title="Observation Count",  color=color.new(color.cyan, 80),   display=display.none)
-plot(v_error_count,                title="Error Count",        color=color.new(color.red, 80),    display=display.none)
-plot(adx14_val,                    title="ADX14",              color=color.new(color.yellow, 80), display=display.pane)
-plot(chop_val,                     title="CHOP14",             color=color.new(color.orange, 80), display=display.pane)
+plot(barstate.isconfirmed ? 1 : 0, title="BAR_OBS_TRIGGER",  color=color.new(color.purple, 80), display=display.none)
+plot(v_obs_count,                  title="Observation Count", color=color.new(color.cyan, 80),   display=display.none)
+plot(v_error_count,                title="Error Count",       color=color.new(color.red, 80),    display=display.none)
+plot(adx14_val,                    title="ADX14",             color=color.new(color.yellow, 80), display=display.pane)
+plot(chop_val,                     title="CHOP14",            color=color.new(color.orange, 80), display=display.pane)
 hline(25,   "ADX Trend Threshold", color=color.new(color.green, 60), linestyle=hline.style_dashed)
 hline(55,   "CHOP Choppy",         color=color.new(color.red, 60),   linestyle=hline.style_dashed)
 hline(38.2, "CHOP Trending",       color=color.new(color.green, 60), linestyle=hline.style_dotted)
