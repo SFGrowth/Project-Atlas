@@ -472,3 +472,21 @@
 - [ ] Wire heartbeat scheduled jobs
 - [ ] Tests: queue recovery, duplicate protection, historical replay
 - [ ] Save checkpoint and produce Sprint 094A report
+
+## Sprint 095A — Discovery Validation & Regime Recalibration
+- [x] AES-001 context search: Sprint 032 RC-003 rejection confirmed on real data
+- [x] Regime classifier audit: ATR ratio threshold 1.10 miscalibrated for MNQ 5-min
+- [x] Threshold sensitivity analysis: optimal expandThresh = 1.00 (F1-optimal)
+- [x] ORB-1 retest with recalibrated regime: 83 trades, 79.5% WR, PF 7.76, PCS 91.2
+- [x] ORB-1 promoted to Forward Validation
+- [x] RC-002 Mean Reversion Gap Fill: REJECTED (0% WR on real data)
+- [x] RC-003 Overnight Inventory: REJECTED (confirms Sprint 032)
+- [x] RC-004 Failed Breakout Reversal: REJECTED (26% WR)
+- [x] RC-005 Liquidity Sweep Reversal: REJECTED (4.3% WR)
+- [x] RC-006 Volatility Expansion Momentum: RESEARCH FURTHER (PF 1.55)
+- [x] RC-007 Session Transition Momentum: REJECTED (PF 1.40)
+- [x] Portfolio health updated: 87/100, coverage 43.2%
+- [x] Sprint 095A report committed to GitHub
+- [x] M-16 v1.2.1: expandThresh recalibrated 1.20 → 1.00 (Part 8 action item)
+- [x] M-16 v1.2.1: regime_classification JSON closing quote bug fixed
+- [x] M-16 v1.2.1 committed and pushed to GitHub (sprint-051)

@@ -71,6 +71,13 @@
       "when": 1783932545924,
       "tag": "0009_blushing_jetstream",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "5",
+      "when": 1783977013343,
+      "tag": "0010_sloppy_red_shift",
+      "breakpoints": true
     }
   ]
 }

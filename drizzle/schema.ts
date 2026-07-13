@@ -1076,3 +1076,205 @@ export const darwinExecBriefings = mysqlTable("darwin_exec_briefings", {
 });
 export type DarwinExecBriefing = typeof darwinExecBriefings.$inferSelect;
 export type InsertDarwinExecBriefing = typeof darwinExecBriefings.$inferInsert;
+
+// ══════════════════════════════════════════════════════════════════════════════
+// SPRINT 099 — ATLAS LIVE DATA CERTIFICATION & AUTONOMOUS OPERATIONS
+// ══════════════════════════════════════════════════════════════════════════════
+
+// ── candle_certifications ─────────────────────────────────────────────────────
+// Every expected 5-minute MNQ candle receives a certification record.
+// Status: CERTIFIED | MISSING | DUPLICATE | INVALID | RECOVERED
+export const candleCertifications = mysqlTable("candle_certifications", {
+  id: int("id").autoincrement().primaryKey(),
+  certId: varchar("cert_id", { length: 64 }).notNull().unique(),
+  symbol: varchar("symbol", { length: 16 }).notNull().default("MNQ1!"),
+  expectedBarTime: bigint("expected_bar_time", { mode: "number" }).notNull(),
+  actualBarTime: bigint("actual_bar_time", { mode: "number" }),
+  session: varchar("session", { length: 16 }),
+  isRth: boolean("is_rth").default(false),
+  status: mysqlEnum("status", ["CERTIFIED", "MISSING", "DUPLICATE", "INVALID", "RECOVERED"]).notNull().default("MISSING"),
+  // Certification checks
+  timestampCorrect: boolean("timestamp_correct"),
+  noDuplicate: boolean("no_duplicate"),
+  noPredecessorGap: boolean("no_predecessor_gap"),
+  ohlcvValid: boolean("ohlcv_valid"),
+  writtenToMemory: boolean("written_to_memory"),
+  analysisComplete: boolean("analysis_complete"),
+  linkedToMarketLaws: boolean("linked_to_market_laws"),
+  // Metrics
+  ingestionLatencyMs: int("ingestion_latency_ms"),
+  gapFromPreviousMs: bigint("gap_from_previous_ms", { mode: "number" }),
+  atlasMemoryId: int("atlas_memory_id"),
+  pipelineReportId: varchar("pipeline_report_id", { length: 64 }),
+  // Recovery
+  recoveryAttempted: boolean("recovery_attempted").default(false),
+  recoverySucceeded: boolean("recovery_succeeded").default(false),
+  recoveryMethod: varchar("recovery_method", { length: 64 }),
+  notes: text("notes"),
+  certifiedAt: timestamp("certified_at").defaultNow().notNull(),
+});
+export type CandleCertification = typeof candleCertifications.$inferSelect;
+export type InsertCandleCertification = typeof candleCertifications.$inferInsert;
+
+// ── candle_gap_log ─────────────────────────────────────────────────────────────
+// Permanent record of every detected gap in the candle stream.
+export const candleGapLog = mysqlTable("candle_gap_log", {
+  id: int("id").autoincrement().primaryKey(),
+  gapId: varchar("gap_id", { length: 64 }).notNull().unique(),
+  symbol: varchar("symbol", { length: 16 }).notNull().default("MNQ1!"),
+  gapStartTime: bigint("gap_start_time", { mode: "number" }).notNull(),
+  gapEndTime: bigint("gap_end_time", { mode: "number" }),
+  expectedBars: int("expected_bars").notNull().default(1),
+  missingBars: int("missing_bars").notNull().default(1),
+  gapDurationMs: bigint("gap_duration_ms", { mode: "number" }),
+  gapDurationMinutes: decimal("gap_duration_minutes", { precision: 8, scale: 2 }),
+  isRthGap: boolean("is_rth_gap").default(false),
+  session: varchar("session", { length: 16 }),
+  causeClassification: mysqlEnum("cause_classification", [
+    "MARKET_CLOSED",
+    "TRADINGVIEW_ALERT_MISCONFIGURED",
+    "WEBHOOK_TIMEOUT",
+    "SERVER_RESTART",
+    "DUPLICATE_SUPPRESSED",
+    "UNKNOWN",
+    "HOLIDAY",
+  ]).default("UNKNOWN"),
+  causeNotes: text("cause_notes"),
+  recovered: boolean("recovered").default(false),
+  recoveryMethod: varchar("recovery_method", { length: 64 }),
+  ownerNotified: boolean("owner_notified").default(false),
+  detectedAt: timestamp("detected_at").defaultNow().notNull(),
+  resolvedAt: timestamp("resolved_at"),
+});
+export type CandleGap = typeof candleGapLog.$inferSelect;
+export type InsertCandleGap = typeof candleGapLog.$inferInsert;
+
+// ── market_laws ───────────────────────────────────────────────────────────────
+// Permanent Atlas Market Laws Library — evidence-based structural truths.
+export const marketLaws = mysqlTable("market_laws", {
+  id: int("id").autoincrement().primaryKey(),
+  lawId: varchar("law_id", { length: 16 }).notNull().unique(), // ML-001 … ML-NNN
+  title: varchar("title", { length: 128 }).notNull(),
+  statement: text("statement").notNull(),
+  causalExplanation: text("causal_explanation"),
+  discoveredSprint: int("discovered_sprint").notNull(),
+  discoveryDate: bigint("discovery_date", { mode: "number" }).notNull(),
+  historicalBarsSupporting: int("historical_bars_supporting").notNull().default(0),
+  historicalBarsContradicting: int("historical_bars_contradicting").notNull().default(0),
+  liveObservationsConsistent: int("live_observations_consistent").notNull().default(0),
+  liveObservationsContradicting: int("live_observations_contradicting").notNull().default(0),
+  confidenceScore: decimal("confidence_score", { precision: 5, scale: 2 }).notNull().default("0.00"),
+  admissionStatus: mysqlEnum("admission_status", ["PROVISIONAL", "ADMITTED", "CHALLENGED", "REVISED", "RETIRED"]).notNull().default("PROVISIONAL"),
+  lastChallengedAt: bigint("last_challenged_at", { mode: "number" }),
+  lastChallengeDescription: text("last_challenge_description"),
+  relatedLaws: varchar("related_laws", { length: 128 }),
+  relatedModels: varchar("related_models", { length: 128 }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull().onUpdateNow(),
+});
+export type MarketLaw = typeof marketLaws.$inferSelect;
+export type InsertMarketLaw = typeof marketLaws.$inferInsert;
+
+// ── morning_briefs ────────────────────────────────────────────────────────────
+// Auto-generated pre-session Atlas Morning Brief (runs at 08:30 ET weekdays).
+export const morningBriefs = mysqlTable("morning_briefs", {
+  id: int("id").autoincrement().primaryKey(),
+  briefId: varchar("brief_id", { length: 64 }).notNull().unique(),
+  briefDate: varchar("brief_date", { length: 10 }).notNull(), // YYYY-MM-DD
+  generatedAt: timestamp("generated_at").defaultNow().notNull(),
+  // Repository status
+  latestCommit: varchar("latest_commit", { length: 64 }),
+  latestCommitMessage: text("latest_commit_message"),
+  outstandingEngineeringTasks: int("outstanding_engineering_tasks").notNull().default(0),
+  // System health
+  systemHealthScore: decimal("system_health_score", { precision: 5, scale: 2 }),
+  lastWebhookReceivedAt: bigint("last_webhook_received_at", { mode: "number" }),
+  hoursSinceLastWebhook: decimal("hours_since_last_webhook", { precision: 6, scale: 2 }),
+  // Market regime
+  regimeProbabilityRange: decimal("regime_probability_range", { precision: 5, scale: 2 }),
+  regimeProbabilityTransition: decimal("regime_probability_transition", { precision: 5, scale: 2 }),
+  regimeProbabilityVolatile: decimal("regime_probability_volatile", { precision: 5, scale: 2 }),
+  expectedRegime: varchar("expected_regime", { length: 24 }),
+  // Portfolio
+  eligibleModels: varchar("eligible_models", { length: 128 }),
+  expectedTradeCount: int("expected_trade_count"),
+  totalRiskBudget: decimal("total_risk_budget", { precision: 10, scale: 2 }),
+  // Research
+  researchRunningOvernight: text("research_running_overnight"),
+  ownerActionsRequired: text("owner_actions_required"),
+  // Full brief
+  fullBriefMarkdown: text("full_brief_markdown"),
+  notificationSent: boolean("notification_sent").default(false),
+});
+export type MorningBrief = typeof morningBriefs.$inferSelect;
+export type InsertMorningBrief = typeof morningBriefs.$inferInsert;
+
+// ── live_concordance ──────────────────────────────────────────────────────────
+// Rolling comparison between live observations and historical expectations.
+// Updated daily. Triggers DARWIN review if divergence exceeds threshold.
+export const liveConcordance = mysqlTable("live_concordance", {
+  id: int("id").autoincrement().primaryKey(),
+  concordanceId: varchar("concordance_id", { length: 64 }).notNull().unique(),
+  windowDays: int("window_days").notNull(), // 7, 30, 90
+  computedAt: timestamp("computed_at").defaultNow().notNull(),
+  // Regime distribution
+  liveRangeRate: decimal("live_range_rate", { precision: 5, scale: 4 }),
+  liveTransitionRate: decimal("live_transition_rate", { precision: 5, scale: 4 }),
+  liveVolatileRate: decimal("live_volatile_rate", { precision: 5, scale: 4 }),
+  historicalRangeRate: decimal("historical_range_rate", { precision: 5, scale: 4 }).default("0.5100"),
+  historicalTransitionRate: decimal("historical_transition_rate", { precision: 5, scale: 4 }).default("0.4480"),
+  historicalVolatileRate: decimal("historical_volatile_rate", { precision: 5, scale: 4 }).default("0.0370"),
+  regimeDivergenceScore: decimal("regime_divergence_score", { precision: 5, scale: 4 }),
+  // Strategy performance
+  liveWinRate: decimal("live_win_rate", { precision: 5, scale: 4 }),
+  liveProfitFactor: decimal("live_profit_factor", { precision: 6, scale: 4 }),
+  historicalWinRate: decimal("historical_win_rate", { precision: 5, scale: 4 }).default("0.5010"),
+  historicalProfitFactor: decimal("historical_profit_factor", { precision: 6, scale: 4 }).default("1.5870"),
+  performanceDivergenceScore: decimal("performance_divergence_score", { precision: 5, scale: 4 }),
+  // Volatility
+  liveAvgAtr: decimal("live_avg_atr", { precision: 8, scale: 4 }),
+  historicalAvgAtr: decimal("historical_avg_atr", { precision: 8, scale: 4 }).default("12.5000"),
+  volatilityDivergenceScore: decimal("volatility_divergence_score", { precision: 5, scale: 4 }),
+  // Overall concordance
+  overallConcordanceScore: decimal("overall_concordance_score", { precision: 5, scale: 2 }),
+  darwinReviewTriggered: boolean("darwin_review_triggered").default(false),
+  darwinReviewReason: text("darwin_review_reason"),
+  totalLiveDays: int("total_live_days").notNull().default(0),
+  totalLiveBars: int("total_live_bars").notNull().default(0),
+});
+export type LiveConcordance = typeof liveConcordance.$inferSelect;
+export type InsertLiveConcordance = typeof liveConcordance.$inferInsert;
+
+// ── pipeline_health_events ────────────────────────────────────────────────────
+// Every detected pipeline health event — silence alerts, recovery attempts, etc.
+export const pipelineHealthEvents = mysqlTable("pipeline_health_events", {
+  id: int("id").autoincrement().primaryKey(),
+  eventId: varchar("event_id", { length: 64 }).notNull().unique(),
+  eventType: mysqlEnum("event_type", [
+    "WEBHOOK_SILENCE",
+    "WEBHOOK_RECOVERED",
+    "CANDLE_GAP_DETECTED",
+    "CANDLE_GAP_RESOLVED",
+    "SERVER_RESTART",
+    "DB_WRITE_FAILURE",
+    "DB_WRITE_RECOVERED",
+    "MEMORY_WRITE_FAILURE",
+    "SELF_HEAL_ATTEMPTED",
+    "SELF_HEAL_SUCCEEDED",
+    "SELF_HEAL_FAILED",
+    "OWNER_NOTIFIED",
+    "DARWIN_REVIEW_TRIGGERED",
+  ]).notNull(),
+  severity: mysqlEnum("severity", ["INFO", "WARNING", "CRITICAL"]).notNull().default("INFO"),
+  description: text("description").notNull(),
+  affectedComponent: varchar("affected_component", { length: 64 }),
+  lastSuccessfulAt: bigint("last_successful_at", { mode: "number" }),
+  silenceDurationMs: bigint("silence_duration_ms", { mode: "number" }),
+  autoRecovered: boolean("auto_recovered").default(false),
+  ownerNotified: boolean("owner_notified").default(false),
+  resolvedAt: timestamp("resolved_at"),
+  metadata: text("metadata"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export type PipelineHealthEvent = typeof pipelineHealthEvents.$inferSelect;
+export type InsertPipelineHealthEvent = typeof pipelineHealthEvents.$inferInsert;

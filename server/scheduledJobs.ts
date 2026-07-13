@@ -32,6 +32,13 @@ import {
   runWeeklyExecutiveBriefing,
   runMonthlyAudit,
 } from "./darwinAutonomous";
+import {
+  runHeartbeatMonitor,
+  generateMorningBrief,
+  generateDailyIntelligenceReport,
+  generateWeeklyExecutiveReview,
+  updateLiveConcordance,
+} from "./atlasAutonomous";
 
 // ─── Utility ─────────────────────────────────────────────────────────────────
 
@@ -387,5 +394,73 @@ export function registerScheduledJobs(app: Router): void {
     }
   });
 
-  console.log("[Scheduler] Registered 9 scheduled job endpoints (5 Atlas + 4 DARWIN)");
+  // ─── Sprint 099 Autonomous Operations Jobs ───────────────────────────────
+
+  // Heartbeat Monitor — every 5 minutes during RTH (checks for webhook silence)
+  app.post("/api/scheduled/atlas-heartbeat", async (req, res) => {
+    try {
+      const auth = await sdk.authenticateRequest(req);
+      if (!auth.isCron) { res.status(403).json({ error: "Forbidden" }); return; }
+      const result = await runHeartbeatMonitor();
+      res.json({ ok: true, job: "atlas-heartbeat", result, timestamp: new Date().toISOString() });
+    } catch (err) {
+      console.error("[Atlas] Heartbeat monitor error:", err);
+      if (!res.headersSent) res.status(500).json({ error: String(err) });
+    }
+  });
+
+  // Morning Brief — 08:30 ET weekdays (13:30 UTC)
+  app.post("/api/scheduled/atlas-morning-brief", async (req, res) => {
+    try {
+      const auth = await sdk.authenticateRequest(req);
+      if (!auth.isCron) { res.status(403).json({ error: "Forbidden" }); return; }
+      const result = await generateMorningBrief();
+      res.json({ ok: true, job: "atlas-morning-brief", result, timestamp: new Date().toISOString() });
+    } catch (err) {
+      console.error("[Atlas] Morning brief error:", err);
+      if (!res.headersSent) res.status(500).json({ error: String(err) });
+    }
+  });
+
+  // Daily Intelligence Report — 16:15 ET weekdays (20:15 UTC)
+  app.post("/api/scheduled/atlas-daily-intelligence", async (req, res) => {
+    try {
+      const auth = await sdk.authenticateRequest(req);
+      if (!auth.isCron) { res.status(403).json({ error: "Forbidden" }); return; }
+      const result = await generateDailyIntelligenceReport();
+      res.json({ ok: true, job: "atlas-daily-intelligence", result, timestamp: new Date().toISOString() });
+    } catch (err) {
+      console.error("[Atlas] Daily intelligence error:", err);
+      if (!res.headersSent) res.status(500).json({ error: String(err) });
+    }
+  });
+
+  // Weekly Executive Review — Sundays 18:00 ET (22:00 UTC)
+  app.post("/api/scheduled/atlas-weekly-review", async (req, res) => {
+    try {
+      const auth = await sdk.authenticateRequest(req);
+      if (!auth.isCron) { res.status(403).json({ error: "Forbidden" }); return; }
+      const result = await generateWeeklyExecutiveReview();
+      res.json({ ok: true, job: "atlas-weekly-review", result, timestamp: new Date().toISOString() });
+    } catch (err) {
+      console.error("[Atlas] Weekly review error:", err);
+      if (!res.headersSent) res.status(500).json({ error: String(err) });
+    }
+  });
+
+  // Live Concordance — 16:30 ET weekdays (20:30 UTC)
+  app.post("/api/scheduled/atlas-concordance", async (req, res) => {
+    try {
+      const auth = await sdk.authenticateRequest(req);
+      if (!auth.isCron) { res.status(403).json({ error: "Forbidden" }); return; }
+      await updateLiveConcordance(7);
+      await updateLiveConcordance(30);
+      res.json({ ok: true, job: "atlas-concordance", timestamp: new Date().toISOString() });
+    } catch (err) {
+      console.error("[Atlas] Concordance error:", err);
+      if (!res.headersSent) res.status(500).json({ error: String(err) });
+    }
+  });
+
+  console.log("[Scheduler] Registered 14 scheduled job endpoints (5 Atlas + 4 DARWIN + 5 Sprint-099)");
 }

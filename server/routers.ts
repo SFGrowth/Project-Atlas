@@ -2,7 +2,7 @@ import { COOKIE_NAME } from "@shared/const";
 import { z } from "zod";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
-import { publicProcedure, router } from "./_core/trpc";
+import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import {
   getLatestPipelineReport,
   getPipelineReportCount,
@@ -1016,12 +1016,149 @@ export const appRouter = router({
       await runWeeklyExecutiveBriefing();
       return { ok: true, timestamp: Date.now() };
     }),
-    ingestHistorical: publicProcedure.mutation(async () => {
+      ingestHistorical: publicProcedure.mutation(async () => {
       const { startHistoricalReplay } = await import("./darwinAutonomous");
       await startHistoricalReplay();
       return { ok: true, timestamp: Date.now() };
     }),
   }),
-});
 
+  // ── Sprint 099 Autonomous Operations ───────────────────────────────────────────────────────────────────────────────
+  autonomous: router({
+    // System health overview
+    systemHealth: publicProcedure.query(async () => {
+      const { getDb } = await import("./db");
+      const { atlasMemory, candleGapLog, pipelineHealthEvents, marketLaws, morningBriefs } = await import("../drizzle/schema");
+      const { desc, eq, gte, sql } = await import("drizzle-orm");
+      const db = await getDb();
+      if (!db) return null;
+
+      const [latestBar] = await db.select({ barTime: atlasMemory.barTime, regime: atlasMemory.regimeClassification, session: atlasMemory.session }).from(atlasMemory).where(eq(atlasMemory.symbol, "MNQ1!")).orderBy(desc(atlasMemory.barTime)).limit(1);
+      const [totalBars] = await db.select({ count: sql<number>`COUNT(*)` }).from(atlasMemory).where(eq(atlasMemory.symbol, "MNQ1!"));
+      const [openGaps] = await db.select({ count: sql<number>`COUNT(*)` }).from(candleGapLog).where(eq(candleGapLog.recovered, false));
+      const [recentEvents] = await db.select({ count: sql<number>`COUNT(*)` }).from(pipelineHealthEvents).where(gte(pipelineHealthEvents.createdAt, new Date(Date.now() - 24 * 3600000)));
+      const laws = await db.select({ lawId: marketLaws.lawId, title: marketLaws.title, confidenceScore: marketLaws.confidenceScore, admissionStatus: marketLaws.admissionStatus }).from(marketLaws).orderBy(marketLaws.lawId);
+      const [latestBrief] = await db.select({ briefDate: morningBriefs.briefDate, systemHealthScore: morningBriefs.systemHealthScore, expectedRegime: morningBriefs.expectedRegime, ownerActionsRequired: morningBriefs.ownerActionsRequired }).from(morningBriefs).orderBy(desc(morningBriefs.generatedAt)).limit(1);
+
+      const now = Date.now();
+      const lastBarTime = latestBar?.barTime ?? null;
+      const silenceMs = lastBarTime ? now - lastBarTime : -1;
+      const hoursSinceLast = silenceMs > 0 ? silenceMs / 3600000 : 999;
+      const healthScore = Math.max(0, Math.min(100, 100 - (hoursSinceLast > 24 ? 40 : hoursSinceLast > 8 ? 20 : hoursSinceLast > 2 ? 10 : 0) - Math.min(30, Number(openGaps?.count ?? 0) * 5) - (Number(totalBars?.count ?? 0) < 10 ? 20 : 0)));
+
+      return {
+        lastBarTime,
+        silenceMs,
+        hoursSinceLast,
+        totalBars: Number(totalBars?.count ?? 0),
+        openGaps: Number(openGaps?.count ?? 0),
+        recentHealthEvents: Number(recentEvents?.count ?? 0),
+        currentRegime: latestBar?.regime ?? null,
+        currentSession: latestBar?.session ?? null,
+        healthScore,
+        laws: laws.map(l => ({ lawId: l.lawId, title: l.title, confidenceScore: l.confidenceScore ? String(l.confidenceScore) : null, admissionStatus: l.admissionStatus })),
+        latestBrief: latestBrief ?? null,
+      };
+    }),
+
+    // Recent pipeline health events
+    recentHealthEvents: publicProcedure
+      .input(z.object({ limit: z.number().min(1).max(100).default(20) }))
+      .query(async ({ input }) => {
+        const { getDb } = await import("./db");
+        const { pipelineHealthEvents } = await import("../drizzle/schema");
+        const { desc } = await import("drizzle-orm");
+        const db = await getDb();
+        if (!db) return [];
+        const rows = await db.select().from(pipelineHealthEvents).orderBy(desc(pipelineHealthEvents.createdAt)).limit(input.limit);
+        return rows.map(r => ({ ...r, createdAt: r.createdAt.toISOString() }));
+      }),
+
+    // Recent candle gaps
+    recentGaps: publicProcedure
+      .input(z.object({ limit: z.number().min(1).max(100).default(20) }))
+      .query(async ({ input }) => {
+        const { getDb } = await import("./db");
+        const { candleGapLog } = await import("../drizzle/schema");
+        const { desc } = await import("drizzle-orm");
+        const db = await getDb();
+        if (!db) return [];
+        const rows = await db.select().from(candleGapLog).orderBy(desc(candleGapLog.gapStartTime)).limit(input.limit);
+        return rows.map(r => ({ ...r, detectedAt: r.detectedAt instanceof Date ? r.detectedAt.toISOString() : null }));
+      }),
+
+    // Market laws
+    marketLaws: publicProcedure.query(async () => {
+      const { getDb } = await import("./db");
+      const { marketLaws } = await import("../drizzle/schema");
+      const db = await getDb();
+      if (!db) return [];
+      const rows = await db.select().from(marketLaws).orderBy(marketLaws.lawId);
+      return rows.map(r => ({ ...r, createdAt: r.createdAt.toISOString(), updatedAt: r.updatedAt.toISOString() }));
+    }),
+
+    // Latest morning brief
+    latestMorningBrief: publicProcedure.query(async () => {
+      const { getDb } = await import("./db");
+      const { morningBriefs } = await import("../drizzle/schema");
+      const { desc } = await import("drizzle-orm");
+      const db = await getDb();
+      if (!db) return null;
+      const [row] = await db.select().from(morningBriefs).orderBy(desc(morningBriefs.generatedAt)).limit(1);
+      return row ? { ...row, generatedAt: row.generatedAt.toISOString() } : null;
+    }),
+
+    // Latest concordance
+    latestConcordance: publicProcedure.query(async () => {
+      const { getDb } = await import("./db");
+      const { liveConcordance } = await import("../drizzle/schema");
+      const { desc } = await import("drizzle-orm");
+      const db = await getDb();
+      if (!db) return null;
+      const [row] = await db.select().from(liveConcordance).orderBy(desc(liveConcordance.computedAt)).limit(1);
+      return row ? { ...row, computedAt: row.computedAt.toISOString() } : null;
+    }),
+
+    // Trigger morning brief manually
+    triggerMorningBrief: publicProcedure.mutation(async () => {
+      const { generateMorningBrief } = await import("./atlasAutonomous");
+      const result = await generateMorningBrief();
+      return { ok: true, ...result };
+    }),
+
+    // Trigger heartbeat monitor manually
+    triggerHeartbeat: publicProcedure.mutation(async () => {
+      const { runHeartbeatMonitor } = await import("./atlasAutonomous");
+      const result = await runHeartbeatMonitor();
+      return { ok: true, ...result };
+    }),
+
+    // Register Sprint 099 Heartbeat cron jobs
+    registerCronJobs: publicProcedure.mutation(async () => {
+      const { createHeartbeatJob } = await import("./_core/heartbeat");
+      const session = "";
+      const jobs = [
+        { name: "atlas-heartbeat", cron: "*/5 * * * *", path: "/api/scheduled/atlas-heartbeat", description: "Atlas Heartbeat Monitor — every 5 min, checks for webhook silence" },
+        { name: "atlas-morning-brief", cron: "30 13 * * 1-5", path: "/api/scheduled/atlas-morning-brief", description: "Atlas Morning Brief — 08:30 ET weekdays" },
+        { name: "atlas-daily-intelligence", cron: "15 20 * * 1-5", path: "/api/scheduled/atlas-daily-intelligence", description: "Atlas Daily Intelligence Report — 16:15 ET weekdays" },
+        { name: "atlas-weekly-review", cron: "0 22 * * 0", path: "/api/scheduled/atlas-weekly-review", description: "Atlas Weekly Executive Review — Sunday 18:00 ET" },
+        { name: "atlas-concordance", cron: "30 20 * * 1-5", path: "/api/scheduled/atlas-concordance", description: "Atlas Live Concordance — 16:30 ET weekdays" },
+      ];
+      const results: Array<{ name: string; taskUid?: string; error?: string }> = [];
+      for (const job of jobs) {
+        try {
+          const r = await createHeartbeatJob(job, session);
+          results.push({ name: job.name, taskUid: r.taskUid });
+        } catch (e) {
+          results.push({ name: job.name, error: String(e) });
+        }
+      }
+      return { ok: true, results };
+    }),
+  }),
+});
 export type AppRouter = typeof appRouter;
+
+// ── Sprint 099 Autonomous Operations ─────────────────────────────────────────
+// Note: The appRouter closing bracket is above; this file needs to be edited
+// to insert before the closing. Using a separate export instead.
