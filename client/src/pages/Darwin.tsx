@@ -268,7 +268,7 @@ export default function Darwin() {
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="bg-[#0d1117] border border-[#1e2a3a]">
+          <TabsList className="bg-[#0d1117] border border-[#1e2a3a] flex-wrap h-auto gap-1 p-1">
             <TabsTrigger value="overview" className="text-xs data-[state=active]:bg-[#1e2a3a]">Overview</TabsTrigger>
             <TabsTrigger value="candidates" className="text-xs data-[state=active]:bg-[#1e2a3a]">
               Candidates {candidates.length > 0 && <span className="ml-1 text-violet-400">({candidates.length})</span>}
