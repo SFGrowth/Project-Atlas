@@ -438,3 +438,17 @@
 - [x] Add session coverage panel to AtlasMemory.tsx showing RTH/ETH/OV/PRE/POST bar counts + % for last 288 bars
 - [x] Add "All Hours" indicator badge to dashboard header confirming 24/5 tracking is active
 - [x] Expand stats row to show RTH count and non-RTH count for today
+
+## Sprint 094 — Project DARWIN
+
+- [ ] DB schema: darwin_candidates, darwin_hypotheses, darwin_backtests, darwin_weekly_reports, darwin_self_eval tables
+- [ ] Apply DB migration via webdev_execute_sql
+- [ ] DARWIN analysis engine (darwinEngine.ts) — continuous Atlas Memory analysis, behaviour detection
+- [ ] Hypothesis generation with statistical significance scoring
+- [ ] Portfolio impact assessment (PCS, correlation, DD impact)
+- [ ] Robustness testing framework (sensitivity, parameter stability, stress tests)
+- [ ] tRPC procedures: darwin router (getCandidates, getHypotheses, getWeeklyReports, getSelfEval, getStats, triggerAnalysis)
+- [ ] Weekly research report scheduled job (every Sunday)
+- [ ] DARWIN dashboard page (live research laboratory UI)
+- [ ] Sprint 094 research report with constitutional amendment
+- [ ] Checkpoint save

@@ -895,6 +895,85 @@ export const appRouter = router({
       return { ok: true, timestamp: Date.now() };
     }),
   }),
+
+  // ─── DARWIN Autonomous Research Engine ──────────────────────────────────────
+  darwin: router({
+    stats: publicProcedure.query(async () => {
+      const { getDarwinStats } = await import("./darwinEngine");
+      return getDarwinStats();
+    }),
+    candidates: publicProcedure.query(async () => {
+      const { getDarwinCandidates } = await import("./darwinEngine");
+      const rows = await getDarwinCandidates();
+      return rows.map(r => ({
+        ...r,
+        statisticalSignificance: r.statisticalSignificance ? String(r.statisticalSignificance) : null,
+        confidence: r.confidence ? String(r.confidence) : null,
+        estimatedWinRate: r.estimatedWinRate ? String(r.estimatedWinRate) : null,
+        estimatedPf: r.estimatedPf ? String(r.estimatedPf) : null,
+        estimatedPcs: r.estimatedPcs ? String(r.estimatedPcs) : null,
+        estimatedCorrelation: r.estimatedCorrelation ? String(r.estimatedCorrelation) : null,
+        evidenceScore: r.evidenceScore ? String(r.evidenceScore) : null,
+        createdAt: r.createdAt.toISOString(),
+        updatedAt: r.updatedAt.toISOString(),
+      }));
+    }),
+    backtests: publicProcedure
+      .input(z.object({ candidateId: z.string().optional() }))
+      .query(async ({ input }) => {
+        const { getDarwinBacktests } = await import("./darwinEngine");
+        const rows = await getDarwinBacktests(input.candidateId);
+        return rows.map(r => ({
+          ...r,
+          winRate: r.winRate ? String(r.winRate) : null,
+          profitFactor: r.profitFactor ? String(r.profitFactor) : null,
+          netProfit: r.netProfit ? String(r.netProfit) : null,
+          maxDrawdown: r.maxDrawdown ? String(r.maxDrawdown) : null,
+          expectancy: r.expectancy ? String(r.expectancy) : null,
+          sharpeRatio: r.sharpeRatio ? String(r.sharpeRatio) : null,
+          mcProfitProbability: r.mcProfitProbability ? String(r.mcProfitProbability) : null,
+          ddViolationRisk: r.ddViolationRisk ? String(r.ddViolationRisk) : null,
+          parameterStabilityScore: r.parameterStabilityScore ? String(r.parameterStabilityScore) : null,
+          robustnessScore: r.robustnessScore ? String(r.robustnessScore) : null,
+          createdAt: r.createdAt.toISOString(),
+        }));
+      }),
+    weeklyReports: publicProcedure.query(async () => {
+      const { getDarwinWeeklyReports } = await import("./darwinEngine");
+      const rows = await getDarwinWeeklyReports(10);
+      return rows.map(r => ({
+        ...r,
+        portfolioHealthScore: r.portfolioHealthScore ? String(r.portfolioHealthScore) : null,
+        coverageScore: r.coverageScore ? String(r.coverageScore) : null,
+        oracleAccuracy: r.oracleAccuracy ? String(r.oracleAccuracy) : null,
+        researchVelocity: r.researchVelocity ? String(r.researchVelocity) : null,
+        createdAt: r.createdAt.toISOString(),
+      }));
+    }),
+    selfEval: publicProcedure.query(async () => {
+      const { getDarwinSelfEval } = await import("./darwinEngine");
+      const rows = await getDarwinSelfEval(10);
+      return rows.map(r => ({
+        ...r,
+        predictionAccuracy: r.predictionAccuracy ? String(r.predictionAccuracy) : null,
+        researchEfficiency: r.researchEfficiency ? String(r.researchEfficiency) : null,
+        avgTimeToCertificationDays: r.avgTimeToCertificationDays ? String(r.avgTimeToCertificationDays) : null,
+        discoveryRate: r.discoveryRate ? String(r.discoveryRate) : null,
+        qualityScore: r.qualityScore ? String(r.qualityScore) : null,
+        createdAt: r.createdAt.toISOString(),
+      }));
+    }),
+    triggerAnalysis: publicProcedure.mutation(async () => {
+      const { runDarwinAnalysis } = await import("./darwinEngine");
+      const result = await runDarwinAnalysis();
+      return result;
+    }),
+    generateWeeklyReport: publicProcedure.mutation(async () => {
+      const { generateWeeklyReport } = await import("./darwinEngine");
+      const reportId = await generateWeeklyReport();
+      return { reportId, timestamp: Date.now() };
+    }),
+  }),
 });
 
 export type AppRouter = typeof appRouter;

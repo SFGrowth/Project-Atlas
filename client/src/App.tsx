@@ -35,6 +35,7 @@ const ARDObservatoryPage = lazy(() => import("./pages/ARDObservatory"));
 const AtlasMemoryPage = lazy(() => import("./pages/AtlasMemory"));
 const TemporalIntelligencePage = lazy(() => import("./pages/TemporalIntelligence"));
 const PortfolioPage = lazy(() => import("./pages/Portfolio"));
+const DarwinPage = lazy(() => import("./pages/Darwin"));
 
 function PageLoader() {
   return (
@@ -79,6 +80,7 @@ function Router() {
           <Route path="/atlas-memory" component={AtlasMemoryPage} />
           <Route path="/tie" component={TemporalIntelligencePage} />
           <Route path="/portfolio" component={PortfolioPage} />
+          <Route path="/darwin" component={DarwinPage} />
           <Route path="/404" component={NotFound} />
           <Route component={NotFound} />
         </Switch>

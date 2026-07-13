@@ -883,3 +883,116 @@ export const tieResearchCandidates = mysqlTable("tie_research_candidates", {
 });
 export type TieResearchCandidate = typeof tieResearchCandidates.$inferSelect;
 export type InsertTieResearchCandidate = typeof tieResearchCandidates.$inferInsert;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// DARWIN — Discovery and Autonomous Research Workflow Intelligence Network
+// Sprint 094
+// ─────────────────────────────────────────────────────────────────────────────
+
+// ── darwin_candidates ─────────────────────────────────────────────────────────
+// Autonomously generated research candidates from Atlas Memory analysis.
+export const darwinCandidates = mysqlTable("darwin_candidates", {
+  id: int("id").autoincrement().primaryKey(),
+  candidateId: varchar("candidate_id", { length: 64 }).notNull().unique(),
+  behaviourClass: varchar("behaviour_class", { length: 64 }).notNull(),
+  behaviourDescription: text("behaviour_description"),
+  occurrenceCount: int("occurrence_count").notNull().default(0),
+  statisticalSignificance: decimal("statistical_significance", { precision: 5, scale: 4 }),
+  confidence: decimal("confidence", { precision: 5, scale: 2 }),
+  estimatedWinRate: decimal("estimated_win_rate", { precision: 5, scale: 2 }),
+  estimatedPf: decimal("estimated_pf", { precision: 6, scale: 3 }),
+  estimatedFrequency: int("estimated_frequency"),
+  estimatedPcs: decimal("estimated_pcs", { precision: 5, scale: 2 }),
+  estimatedCorrelation: decimal("estimated_correlation", { precision: 5, scale: 3 }),
+  researchPriority: int("research_priority").notNull().default(99),
+  evidenceScore: decimal("evidence_score", { precision: 5, scale: 2 }),
+  supportingRegimes: text("supporting_regimes"),
+  supportingSessions: text("supporting_sessions"),
+  humanExplanation: text("human_explanation"),
+  governanceStage: varchar("governance_stage", { length: 64 }).notNull().default("HYPOTHESIS"),
+  rejectionReason: text("rejection_reason"),
+  promotedAt: bigint("promoted_at", { mode: "number" }),
+  firstObserved: bigint("first_observed", { mode: "number" }),
+  lastObserved: bigint("last_observed", { mode: "number" }),
+  discoveredBy: varchar("discovered_by", { length: 64 }).notNull().default("DARWIN"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+export type DarwinCandidate = typeof darwinCandidates.$inferSelect;
+export type InsertDarwinCandidate = typeof darwinCandidates.$inferInsert;
+
+// ── darwin_backtests ──────────────────────────────────────────────────────────
+// Backtest results for each research candidate at each validation stage.
+export const darwinBacktests = mysqlTable("darwin_backtests", {
+  id: int("id").autoincrement().primaryKey(),
+  backtestId: varchar("backtest_id", { length: 64 }).notNull().unique(),
+  candidateId: varchar("candidate_id", { length: 64 }).notNull(),
+  stage: varchar("stage", { length: 64 }).notNull(),
+  totalTrades: int("total_trades"),
+  winRate: decimal("win_rate", { precision: 5, scale: 2 }),
+  profitFactor: decimal("profit_factor", { precision: 6, scale: 3 }),
+  netProfit: decimal("net_profit", { precision: 12, scale: 2 }),
+  maxDrawdown: decimal("max_drawdown", { precision: 12, scale: 2 }),
+  maxLossStreak: int("max_loss_streak"),
+  expectancy: decimal("expectancy", { precision: 8, scale: 2 }),
+  sharpeRatio: decimal("sharpe_ratio", { precision: 6, scale: 3 }),
+  mcProfitProbability: decimal("mc_profit_probability", { precision: 5, scale: 2 }),
+  ddViolationRisk: decimal("dd_violation_risk", { precision: 5, scale: 2 }),
+  parameterStabilityScore: decimal("parameter_stability_score", { precision: 5, scale: 2 }),
+  robustnessScore: decimal("robustness_score", { precision: 5, scale: 2 }),
+  passed: boolean("passed").notNull().default(false),
+  failureReason: text("failure_reason"),
+  rawResults: json("raw_results"),
+  runAt: bigint("run_at", { mode: "number" }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export type DarwinBacktest = typeof darwinBacktests.$inferSelect;
+export type InsertDarwinBacktest = typeof darwinBacktests.$inferInsert;
+
+// ── darwin_weekly_reports ─────────────────────────────────────────────────────
+// Automatically generated weekly quantitative research briefings.
+export const darwinWeeklyReports = mysqlTable("darwin_weekly_reports", {
+  id: int("id").autoincrement().primaryKey(),
+  reportId: varchar("report_id", { length: 64 }).notNull().unique(),
+  weekStart: date("week_start").notNull(),
+  weekEnd: date("week_end").notNull(),
+  newObservations: int("new_observations").notNull().default(0),
+  behaviouralChangesDetected: int("behavioural_changes_detected").notNull().default(0),
+  candidatesCreated: int("candidates_created").notNull().default(0),
+  candidatesRejected: int("candidates_rejected").notNull().default(0),
+  candidatesPromoted: int("candidates_promoted").notNull().default(0),
+  portfolioHealthScore: decimal("portfolio_health_score", { precision: 5, scale: 2 }),
+  coverageScore: decimal("coverage_score", { precision: 5, scale: 2 }),
+  highestPriorityCandidate: varchar("highest_priority_candidate", { length: 64 }),
+  highestConfidenceOpportunity: varchar("highest_confidence_opportunity", { length: 64 }),
+  estimatedPortfolioImpact: text("estimated_portfolio_impact"),
+  oracleAccuracy: decimal("oracle_accuracy", { precision: 5, scale: 2 }),
+  researchVelocity: decimal("research_velocity", { precision: 5, scale: 2 }),
+  fullReportMarkdown: text("full_report_markdown"),
+  generatedAt: bigint("generated_at", { mode: "number" }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export type DarwinWeeklyReport = typeof darwinWeeklyReports.$inferSelect;
+export type InsertDarwinWeeklyReport = typeof darwinWeeklyReports.$inferInsert;
+
+// ── darwin_self_eval ──────────────────────────────────────────────────────────
+// DARWIN self-evaluation metrics — research quality tracking over time.
+export const darwinSelfEval = mysqlTable("darwin_self_eval", {
+  id: int("id").autoincrement().primaryKey(),
+  evalId: varchar("eval_id", { length: 64 }).notNull().unique(),
+  periodStart: bigint("period_start", { mode: "number" }).notNull(),
+  periodEnd: bigint("period_end", { mode: "number" }).notNull(),
+  hypothesesCreated: int("hypotheses_created").notNull().default(0),
+  hypothesesValidated: int("hypotheses_validated").notNull().default(0),
+  hypothesesRejected: int("hypotheses_rejected").notNull().default(0),
+  falseDiscoveries: int("false_discoveries").notNull().default(0),
+  predictionAccuracy: decimal("prediction_accuracy", { precision: 5, scale: 2 }),
+  researchEfficiency: decimal("research_efficiency", { precision: 5, scale: 2 }),
+  avgTimeToCertificationDays: decimal("avg_time_to_certification_days", { precision: 6, scale: 2 }),
+  discoveryRate: decimal("discovery_rate", { precision: 5, scale: 2 }),
+  qualityScore: decimal("quality_score", { precision: 5, scale: 2 }),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export type DarwinSelfEval = typeof darwinSelfEval.$inferSelect;
+export type InsertDarwinSelfEval = typeof darwinSelfEval.$inferInsert;

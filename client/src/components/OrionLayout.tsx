@@ -7,7 +7,7 @@ import { getLoginUrl } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
 import {
   Activity, AlertTriangle, BadgeCheck, BarChart2, BookOpen, Brain, BrainCircuit, CalendarCheck, ChevronLeft, ChevronRight,
-  Clock, Cpu, Database, FlaskConical, GitBranch, Home, LayoutDashboard, Layers, LineChart, Menu,
+  Clock, Cpu, Database, Dna, FlaskConical, GitBranch, Home, LayoutDashboard, Layers, LineChart, Menu,
   Radio, Settings, Shield, Target, Telescope, TrendingUp, Zap,
 } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
@@ -76,6 +76,7 @@ const NAV_GROUPS = [
     label: "PORTFOLIO",
     items: [
       { icon: Layers, label: "Portfolio (PIE)", path: "/portfolio" },
+      { icon: Dna, label: "DARWIN Research", path: "/darwin" },
     ],
   },
 ];
