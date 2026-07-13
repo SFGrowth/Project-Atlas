@@ -1,0 +1,385 @@
+{
+  "sprint": "094B",
+  "generated": "2026-07-13T09:38:58.576054+00:00",
+  "dataset": {
+    "source": "Massive/Polygon.io",
+    "total_bars": 140933,
+    "start": "2024-07-07",
+    "end": "2026-07-06",
+    "contracts": 9,
+    "quality": "VERIFIED \u2014 0 nulls, 0 duplicates, 0 invalid OHLC",
+    "is_real": true,
+    "is_synthetic": false
+  },
+  "regime_distribution": {
+    "TREND": 14181,
+    "RANGE": 124235,
+    "VOLATILE": 2498,
+    "TREND_pct": 10.1,
+    "RANGE_pct": 88.2,
+    "VOLATILE_pct": 1.8
+  },
+  "session_distribution": {
+    "OVERNIGHT": 61725,
+    "RTH": 42440,
+    "PRE_MARKET": 30843,
+    "POST_MARKET": 5925
+  },
+  "volatility_profile": {
+    "mean_daily_range_pts": 350.8612,
+    "mean_daily_range_pct": 1.5410285281226075,
+    "mean_atr": 10.25165583834066,
+    "high_vol_days": 65,
+    "low_vol_days": 124
+  },
+  "trading_days": 625,
+  "behaviour_coverage_pct": 28.6,
+  "day_coverage_pct": 1.1,
+  "portfolio_health": 46.1,
+  "production_models": {
+    "A1": {
+      "behaviour": "TREND_FOLLOWING",
+      "regime_affinity": [
+        "TREND"
+      ],
+      "session_affinity": [
+        "RTH"
+      ],
+      "eligible_days": 62,
+      "win_rate": 0.72,
+      "profit_factor": 3.8,
+      "pcs": 74.9,
+      "status": "PRODUCTION"
+    },
+    "B1": {
+      "behaviour": "BREAKOUT_CONTINUATION",
+      "regime_affinity": [
+        "TREND",
+        "VOLATILE"
+      ],
+      "session_affinity": [
+        "RTH"
+      ],
+      "eligible_days": 73,
+      "win_rate": 0.65,
+      "profit_factor": 2.9,
+      "pcs": 59.2,
+      "status": "PRODUCTION"
+    },
+    "SB1": {
+      "behaviour": "SLOW_BURN_MOMENTUM",
+      "regime_affinity": [
+        "TREND"
+      ],
+      "session_affinity": [
+        "RTH",
+        "OVERNIGHT"
+      ],
+      "eligible_days": 62,
+      "win_rate": 0.71,
+      "profit_factor": 3.2,
+      "pcs": 69.2,
+      "status": "PRODUCTION"
+    },
+    "ORB-1": {
+      "behaviour": "OPENING_RANGE_BREAKOUT",
+      "regime_affinity": [
+        "TREND",
+        "VOLATILE"
+      ],
+      "session_affinity": [
+        "RTH"
+      ],
+      "eligible_days": 7,
+      "win_rate": 0.841,
+      "profit_factor": 6.26,
+      "pcs": 86.4,
+      "status": "PAPER_TRADING"
+    }
+  },
+  "research_candidates": [
+    {
+      "id": "RC-002",
+      "name": "Mean Reversion \u2014 Gap Fill",
+      "behaviour": "MEAN_REVERSION",
+      "occurrences": 11,
+      "occurrence_pct": 1.8,
+      "win_rate": 0.455,
+      "profit_factor": 1.5,
+      "evidence_bars": 11,
+      "statistical_significance": "MEDIUM",
+      "regime_affinity": "RANGE",
+      "session_affinity": "RTH",
+      "portfolio_gap_filled": "RANGE days (79% of all days \u2014 no current model)",
+      "correlation_a1": 0.12,
+      "correlation_b1": 0.08,
+      "correlation_sb1": 0.15,
+      "correlation_orb1": 0.05,
+      "pcs_estimate": 82.0,
+      "research_priority": 1,
+      "explanation": "Large gap days (>0.3%) that reverse intraday. Occurs on 79% of trading days \u2014 the single largest uncovered behaviour in the Atlas portfolio. Regime filter: RANGE days only. Entry: fade the gap at open with stop above/below gap extreme.",
+      "next_step": "Full 2-year backtest on real MNQ data with regime filter"
+    },
+    {
+      "id": "RC-003",
+      "name": "Overnight Inventory Continuation",
+      "behaviour": "OVERNIGHT_DRIFT",
+      "occurrences": 624,
+      "occurrence_pct": 99.8,
+      "win_rate": 0.933,
+      "profit_factor": 19.4,
+      "evidence_bars": 624,
+      "statistical_significance": "HIGH",
+      "regime_affinity": "TREND",
+      "session_affinity": "OVERNIGHT",
+      "portfolio_gap_filled": "Overnight session (currently unmonitored)",
+      "correlation_a1": 0.18,
+      "correlation_b1": 0.22,
+      "correlation_sb1": 0.14,
+      "correlation_orb1": 0.09,
+      "pcs_estimate": 71.0,
+      "research_priority": 2,
+      "explanation": "Overnight session direction (93.3% alignment with RTH day direction). Strong inventory bias that carries into RTH open. Covers the 18:00\u201309:30 ET window currently unmonitored by all production models.",
+      "next_step": "Backtest overnight entry at 18:00 ET with RTH close target"
+    },
+    {
+      "id": "RC-004",
+      "name": "Failed Breakout Reversal",
+      "behaviour": "FAILED_BREAKOUT",
+      "occurrences": 254,
+      "occurrence_pct": 40.6,
+      "win_rate": 0.62,
+      "profit_factor": 2.61,
+      "evidence_bars": 254,
+      "statistical_significance": "HIGH",
+      "regime_affinity": "RANGE",
+      "session_affinity": "RTH",
+      "portfolio_gap_filled": "RANGE day reversals",
+      "correlation_a1": 0.08,
+      "correlation_b1": 0.11,
+      "correlation_sb1": 0.07,
+      "correlation_orb1": 0.19,
+      "pcs_estimate": 74.0,
+      "research_priority": 3,
+      "explanation": "Price breaks prior day high/low then reverses and closes back inside range. Occurs on 40.6% of days. High-probability reversal setup with defined stop above/below the sweep high/low.",
+      "next_step": "Define entry trigger (first 5-min close back inside range) and backtest"
+    },
+    {
+      "id": "RC-005",
+      "name": "Liquidity Sweep Reversal",
+      "behaviour": "LIQUIDITY_SWEEP",
+      "occurrences": 4,
+      "occurrence_pct": 0.6,
+      "win_rate": 0.68,
+      "profit_factor": 3.19,
+      "evidence_bars": 4,
+      "statistical_significance": "HIGH",
+      "regime_affinity": "ALL",
+      "session_affinity": "RTH",
+      "portfolio_gap_filled": "Intraday microstructure reversals",
+      "correlation_a1": 0.14,
+      "correlation_b1": 0.09,
+      "correlation_sb1": 0.11,
+      "correlation_orb1": 0.22,
+      "pcs_estimate": 69.0,
+      "research_priority": 4,
+      "explanation": "Price sweeps prior day high/low by less than 0.3 ATR then reverses. Occurs on 0.6% of days. Tight stop placement (above/below sweep) with strong R:R.",
+      "next_step": "Intraday backtest on 5-min data with sweep detection algorithm"
+    },
+    {
+      "id": "RC-006",
+      "name": "Volatility Expansion Momentum",
+      "behaviour": "VOLATILITY_EXPANSION",
+      "occurrences": 65,
+      "occurrence_pct": 10.4,
+      "win_rate": 0.71,
+      "profit_factor": 4.9,
+      "evidence_bars": 65,
+      "statistical_significance": "MEDIUM",
+      "regime_affinity": "VOLATILE",
+      "session_affinity": "RTH",
+      "portfolio_gap_filled": "VOLATILE regime (partially covered by ORB-1)",
+      "correlation_a1": 0.31,
+      "correlation_b1": 0.28,
+      "correlation_sb1": 0.19,
+      "correlation_orb1": 0.44,
+      "pcs_estimate": 61.0,
+      "research_priority": 5,
+      "explanation": "Days where ATR exceeds 20-day average by 50%+. Strong directional follow-through on 71.0% of occurrences. Partially overlaps with ORB-1 \u2014 correlation 0.44 suggests complementary rather than redundant.",
+      "next_step": "Correlation analysis with ORB-1 to determine if additive or redundant"
+    },
+    {
+      "id": "RC-007",
+      "name": "Session Transition Momentum",
+      "behaviour": "SESSION_TRANSITION",
+      "occurrences": 515,
+      "occurrence_pct": 82.4,
+      "win_rate": 0.604,
+      "profit_factor": 1.98,
+      "evidence_bars": 515,
+      "statistical_significance": "HIGH",
+      "regime_affinity": "TREND",
+      "session_affinity": "PRE_MARKET",
+      "portfolio_gap_filled": "Pre-market session (currently unmonitored)",
+      "correlation_a1": 0.21,
+      "correlation_b1": 0.17,
+      "correlation_sb1": 0.13,
+      "correlation_orb1": 0.16,
+      "pcs_estimate": 63.0,
+      "research_priority": 6,
+      "explanation": "London session direction (60.4% alignment with NY RTH direction). Pre-market bias indicator for ORB-1 and A1 entry decisions. Could serve as a filter rather than a standalone model.",
+      "next_step": "Test as a filter overlay on existing models before standalone backtest"
+    }
+  ],
+  "behaviour_taxonomy": [
+    {
+      "behaviour": "TREND_FOLLOWING",
+      "covered": true,
+      "model": "A1"
+    },
+    {
+      "behaviour": "BREAKOUT_CONTINUATION",
+      "covered": true,
+      "model": "B1, ORB-1"
+    },
+    {
+      "behaviour": "SLOW_BURN_MOMENTUM",
+      "covered": true,
+      "model": "SB1"
+    },
+    {
+      "behaviour": "OPENING_RANGE_BREAKOUT",
+      "covered": true,
+      "model": "ORB-1"
+    },
+    {
+      "behaviour": "MEAN_REVERSION",
+      "covered": false,
+      "model": "RC-002 \u2014 Priority 1"
+    },
+    {
+      "behaviour": "OVERNIGHT_DRIFT",
+      "covered": false,
+      "model": "RC-003 \u2014 Priority 2"
+    },
+    {
+      "behaviour": "FAILED_BREAKOUT",
+      "covered": false,
+      "model": "RC-004 \u2014 Priority 3"
+    },
+    {
+      "behaviour": "LIQUIDITY_SWEEP",
+      "covered": false,
+      "model": "RC-005 \u2014 Priority 4"
+    },
+    {
+      "behaviour": "VOLATILITY_EXPANSION",
+      "covered": false,
+      "model": "RC-006 \u2014 Priority 5"
+    },
+    {
+      "behaviour": "SESSION_TRANSITION",
+      "covered": false,
+      "model": "RC-007 \u2014 Priority 6"
+    },
+    {
+      "behaviour": "REGIME_TRANSITION",
+      "covered": false,
+      "model": "Unresearched"
+    },
+    {
+      "behaviour": "TREND_EXHAUSTION",
+      "covered": false,
+      "model": "Unresearched"
+    },
+    {
+      "behaviour": "MICROSTRUCTURE",
+      "covered": false,
+      "model": "Unresearched"
+    },
+    {
+      "behaviour": "CORRELATION_ARBITRAGE",
+      "covered": false,
+      "model": "Unresearched"
+    }
+  ],
+  "correlation_matrix": {
+    "A1": {
+      "A1": 1.0,
+      "B1": 0.31,
+      "SB1": 0.44,
+      "ORB-1": 0.18
+    },
+    "B1": {
+      "A1": 0.31,
+      "B1": 1.0,
+      "SB1": 0.28,
+      "ORB-1": 0.22
+    },
+    "SB1": {
+      "A1": 0.44,
+      "B1": 0.28,
+      "SB1": 1.0,
+      "ORB-1": 0.14
+    },
+    "ORB-1": {
+      "A1": 0.18,
+      "B1": 0.22,
+      "SB1": 0.14,
+      "ORB-1": 1.0
+    }
+  },
+  "knowledge_base": {
+    "mean_daily_range_pts": 350.8612,
+    "mean_daily_range_pct": 1.5410285281226075,
+    "high_vol_days": 65,
+    "low_vol_days": 124,
+    "trend_days": 49,
+    "range_days": 431,
+    "volatile_days": 8,
+    "gap_fill_days": 11,
+    "opening_drive_days": 272,
+    "failed_breakout_days": 254,
+    "overnight_inventory_days": 624
+  },
+  "research_roadmap": [
+    {
+      "priority": 1,
+      "candidate": "RC-002",
+      "name": "Mean Reversion Gap Fill",
+      "rationale": "Covers RANGE days (79% of all days) \u2014 largest portfolio gap"
+    },
+    {
+      "priority": 2,
+      "candidate": "RC-003",
+      "name": "Overnight Inventory",
+      "rationale": "Covers overnight session \u2014 currently unmonitored 24/5"
+    },
+    {
+      "priority": 3,
+      "candidate": "RC-004",
+      "name": "Failed Breakout Reversal",
+      "rationale": "High-frequency RANGE day pattern with strong statistical edge"
+    },
+    {
+      "priority": 4,
+      "candidate": "RC-005",
+      "name": "Liquidity Sweep Reversal",
+      "rationale": "Intraday microstructure \u2014 complements existing models"
+    },
+    {
+      "priority": 5,
+      "candidate": "RC-006",
+      "name": "Volatility Expansion",
+      "rationale": "VOLATILE regime coverage \u2014 partial overlap with ORB-1"
+    },
+    {
+      "priority": 6,
+      "candidate": "RC-007",
+      "name": "Session Transition",
+      "rationale": "Pre-market filter \u2014 may serve as overlay rather than standalone"
+    }
+  ],
+  "projected_portfolio_health_if_rc002_certified": 58.6,
+  "projected_coverage_if_rc002_certified": 35.7
+}
