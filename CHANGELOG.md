@@ -6,6 +6,29 @@ The format is based on clear version history rather than informal memory. Every 
 
 ## [Unreleased]
 
+## [0.16.0] - 2026-07-13 (Sprint 095A — M-16 Deployment)
+
+### Changed
+
+- **M-16 Pine Script** (`pine-script/core/atlas_ard_observer_m16.pine`) — v1.2.0 → v1.2.1. Two calibration fixes deployed per Sprint 095A Part 8 action item:
+  1. `expandThresh` recalibrated from **1.20 → 1.00** for MNQ 5-min (`is_exp_val = volcomp_val > 1.00`). The old 1.20 threshold caused `volatility_state` and `compression_state` to report `EXPANDING` on only ~2% of trading days. Recalibration to 1.00 (F1-optimal across 625 trading days) correctly classifies ~14% of days as EXPANDING, consistent with the ORB-1 eligibility threshold already deployed in v1.2.0.
+  2. `regime_classification` JSON field **closing quote bug fixed**. Missing `"` before the trailing comma produced malformed JSON on every webhook payload, causing server-side JSON parsers to reject or misparse the regime field on every bar since v1.0.0.
+- **M-16 status table** — Row 9 now displays calibrated threshold alongside ATR expansion ratio. Row 10 added for `Vol State`. Table expanded from 14 to 15 rows.
+- **M-16 heartbeat label** — Now includes `vol_state_val` for at-a-glance volatility state on chart.
+- **M-16 script header** — Full embedded change log added (v1.0.0 through v1.2.1).
+
+### Fixed
+
+- **M-16 `sb1_eligible` indentation** — Normalised to consistent 4-space indent (cosmetic only).
+- **M-16 `active_models_str`** — Reformatted to multi-line for readability (no behavioural change).
+
+### Deployment Impact
+
+- Webhook payload format: **unchanged**. All existing fields present with identical names and types. No database migration required.
+- `volatility_state = "EXPANDING"` will now fire on ~14% of bars (up from ~2%).
+- `orb1_eligible = true` will now appear on ~27% of RTH bars (up from ~0.3%).
+- Existing TradingView alerts: **unchanged**. Alert fires on every confirmed bar close as before.
+
 ## [0.15.0] - 2026-07-10 (Sprint 077)
 
 ### Added
