@@ -1,0 +1,672 @@
+{
+  "universe_summary": {
+    "total_trades": 67,
+    "approved": 19,
+    "rejected": 48,
+    "universe_wr": 0.8208955223880597,
+    "approved_wr": 0.6842105263157895,
+    "rejected_wr": 0.875,
+    "universe_net": 23206.020000000226,
+    "approved_net": 6580.199999999302,
+    "rejected_net": 16625.820000000924,
+    "rejected_winners": 42,
+    "rejected_losers": 6
+  },
+  "attribution": {
+    "MACRO_EVENT": {
+      "trades_blocked": 5,
+      "trades_reduced": 0,
+      "winners_blocked": 5,
+      "losers_blocked": 0,
+      "net_profit_blocked": 2186.5000000006403,
+      "profit_blocked": 2186.5000000006403,
+      "loss_prevented": 0.0,
+      "opportunity_cost": 2186.5000000006403,
+      "net_impact": -2186.5000000006403,
+      "win_rate_blocked": 1.0,
+      "avg_r_blocked": 0.9878394667293813,
+      "pct_of_universe": 0.07462686567164178
+    },
+    "VIX_ELEVATED": {
+      "trades_blocked": 0,
+      "trades_reduced": 18,
+      "winners_blocked": 0,
+      "losers_blocked": 0,
+      "net_profit_blocked": 0.0,
+      "profit_blocked": 0.0,
+      "loss_prevented": 0.0,
+      "opportunity_cost": 0.0,
+      "net_impact": -0.0,
+      "win_rate_blocked": 0,
+      "avg_r_blocked": 0,
+      "pct_of_universe": 0.0
+    },
+    "VIX_EXTREME": {
+      "trades_blocked": 0,
+      "trades_reduced": 0,
+      "winners_blocked": 0,
+      "losers_blocked": 0,
+      "net_profit_blocked": 0.0,
+      "profit_blocked": 0.0,
+      "loss_prevented": 0.0,
+      "opportunity_cost": 0.0,
+      "net_impact": -0.0,
+      "win_rate_blocked": 0,
+      "avg_r_blocked": 0,
+      "pct_of_universe": 0.0
+    },
+    "GAP_ALIGNMENT": {
+      "trades_blocked": 0,
+      "trades_reduced": 0,
+      "winners_blocked": 0,
+      "losers_blocked": 0,
+      "net_profit_blocked": 0.0,
+      "profit_blocked": 0.0,
+      "loss_prevented": 0.0,
+      "opportunity_cost": 0.0,
+      "net_impact": -0.0,
+      "win_rate_blocked": 0,
+      "avg_r_blocked": 0,
+      "pct_of_universe": 0.0
+    },
+    "PDH_PDL": {
+      "trades_blocked": 0,
+      "trades_reduced": 0,
+      "winners_blocked": 0,
+      "losers_blocked": 0,
+      "net_profit_blocked": 0.0,
+      "profit_blocked": 0.0,
+      "loss_prevented": 0.0,
+      "opportunity_cost": 0.0,
+      "net_impact": -0.0,
+      "win_rate_blocked": 0,
+      "avg_r_blocked": 0,
+      "pct_of_universe": 0.0
+    },
+    "LONDON_ORB": {
+      "trades_blocked": 0,
+      "trades_reduced": 0,
+      "winners_blocked": 0,
+      "losers_blocked": 0,
+      "net_profit_blocked": 0.0,
+      "profit_blocked": 0.0,
+      "loss_prevented": 0.0,
+      "opportunity_cost": 0.0,
+      "net_impact": -0.0,
+      "win_rate_blocked": 0,
+      "avg_r_blocked": 0,
+      "pct_of_universe": 0.0
+    },
+    "ES_NQ_ALIGNED": {
+      "trades_blocked": 0,
+      "trades_reduced": 22,
+      "winners_blocked": 0,
+      "losers_blocked": 0,
+      "net_profit_blocked": 0.0,
+      "profit_blocked": 0.0,
+      "loss_prevented": 0.0,
+      "opportunity_cost": 0.0,
+      "net_impact": -0.0,
+      "win_rate_blocked": 0,
+      "avg_r_blocked": 0,
+      "pct_of_universe": 0.0
+    },
+    "PRIOR_DAY_TYPE": {
+      "trades_blocked": 0,
+      "trades_reduced": 0,
+      "winners_blocked": 0,
+      "losers_blocked": 0,
+      "net_profit_blocked": 0.0,
+      "profit_blocked": 0.0,
+      "loss_prevented": 0.0,
+      "opportunity_cost": 0.0,
+      "net_impact": -0.0,
+      "win_rate_blocked": 0,
+      "avg_r_blocked": 0,
+      "pct_of_universe": 0.0
+    },
+    "CONVICTION_GATE": {
+      "trades_blocked": 45,
+      "trades_reduced": 0,
+      "winners_blocked": 40,
+      "losers_blocked": 5,
+      "net_profit_blocked": 15593.000000000327,
+      "profit_blocked": 17813.060000000216,
+      "loss_prevented": 2220.0599999998885,
+      "opportunity_cost": 17813.060000000216,
+      "net_impact": -15593.000000000327,
+      "win_rate_blocked": 0.8888888888888888,
+      "avg_r_blocked": 0.7783433411690067,
+      "pct_of_universe": 0.6716417910447762
+    },
+    "WEAK_CANDLE": {
+      "trades_blocked": 4,
+      "trades_reduced": 0,
+      "winners_blocked": 2,
+      "losers_blocked": 2,
+      "net_profit_blocked": -240.35999999991327,
+      "profit_blocked": 648.3400000000329,
+      "loss_prevented": 888.6999999999462,
+      "opportunity_cost": 648.3400000000329,
+      "net_impact": 240.35999999991327,
+      "win_rate_blocked": 0.5,
+      "avg_r_blocked": -0.13962365956861705,
+      "pct_of_universe": 0.05970149253731343
+    }
+  },
+  "winner_rejection": {
+    "count": 42,
+    "total_profit_lost": 19295.560000000703,
+    "by_rule": {
+      "CONVICTION_GATE": {
+        "count": 37,
+        "total_profit_lost": 17109.060000000063,
+        "avg_profit_lost": 462.40702702702873,
+        "avg_r_lost": 1.0383510174808628
+      },
+      "MACRO_EVENT": {
+        "count": 5,
+        "total_profit_lost": 2186.5000000006403,
+        "avg_profit_lost": 437.3000000001281,
+        "avg_r_lost": 0.9878394667293813
+      }
+    },
+    "trades": [
+      {
+        "date": "2023-07-13",
+        "bias": "SHORT",
+        "regime": "TREND",
+        "pnl_dollars": 2784.599999999882,
+        "r_achieved": 6.187999999999738,
+        "blocking_rules": [
+          "CONVICTION_GATE"
+        ],
+        "primary_blocker": "CONVICTION_GATE",
+        "regime_alone_approved": true,
+        "regime_made_it_redundant": true,
+        "vix": 14.618516708766885,
+        "es_nq_aligned": true,
+        "premarket_bias": "LONG"
+      },
+      {
+        "date": "2023-07-19",
+        "bias": "SHORT",
+        "regime": "VOLATILE",
+        "pnl_dollars": 212.79999999998836,
+        "r_achieved": 0.4771300448430388,
+        "blocking_rules": [
+          "CONVICTION_GATE"
+        ],
+        "primary_blocker": "CONVICTION_GATE",
+        "regime_alone_approved": true,
+        "regime_made_it_redundant": true,
+        "vix": 14.738688178336664,
+        "es_nq_aligned": false,
+        "premarket_bias": "LONG"
+      },
+      {
+        "date": "2023-07-20",
+        "bias": "LONG",
+        "regime": "TREND",
+        "pnl_dollars": 2309.060000000187,
+        "r_achieved": 5.1626794258373785,
+        "blocking_rules": [
+          "CONVICTION_GATE"
+        ],
+        "primary_blocker": "CONVICTION_GATE",
+        "regime_alone_approved": true,
+        "regime_made_it_redundant": true,
+        "vix": 17.610700591289312,
+        "es_nq_aligned": false,
+        "premarket_bias": "NEUTRAL"
+      },
+      {
+        "date": "2023-07-31",
+        "bias": "SHORT",
+        "regime": "TREND",
+        "pnl_dollars": 147.52000000001863,
+        "r_achieved": 0.34583645911482425,
+        "blocking_rules": [
+          "CONVICTION_GATE"
+        ],
+        "primary_blocker": "CONVICTION_GATE",
+        "regime_alone_approved": true,
+        "regime_made_it_redundant": true,
+        "vix": 18.106279127418627,
+        "es_nq_aligned": true,
+        "premarket_bias": "LONG"
+      },
+      {
+        "date": "2023-08-08",
+        "bias": "SHORT",
+        "regime": "VOLATILE",
+        "pnl_dollars": 193.599999999984,
+        "r_achieved": 0.4352126607318875,
+        "blocking_rules": [
+          "CONVICTION_GATE"
+        ],
+        "primary_blocker": "CONVICTION_GATE",
+        "regime_alone_approved": true,
+        "regime_made_it_redundant": true,
+        "vix": 22.002131457174713,
+        "es_nq_aligned": false,
+        "premarket_bias": "NEUTRAL"
+      },
+      {
+        "date": "2023-08-21",
+        "bias": "SHORT",
+        "regime": "TREND",
+        "pnl_dollars": 656.8799999999464,
+        "r_achieved": 1.4661190965088797,
+        "blocking_rules": [
+          "CONVICTION_GATE"
+        ],
+        "primary_blocker": "CONVICTION_GATE",
+        "regime_alone_approved": true,
+        "regime_made_it_redundant": true,
+        "vix": 18.44362535523066,
+        "es_nq_aligned": true,
+        "premarket_bias": "LONG"
+      },
+      {
+        "date": "2023-08-28",
+        "bias": "LONG",
+        "regime": "TREND",
+        "pnl_dollars": 415.5200000000077,
+        "r_achieved": 0.9289099526063961,
+        "blocking_rules": [
+          "CONVICTION_GATE"
+        ],
+        "primary_blocker": "CONVICTION_GATE",
+        "regime_alone_approved": true,
+        "regime_made_it_redundant": true,
+        "vix": 18.725257140451,
+        "es_nq_aligned": true,
+        "premarket_bias": "SHORT"
+      },
+      {
+        "date": "2023-09-05",
+        "bias": "LONG",
+        "regime": "VOLATILE",
+        "pnl_dollars": 268.55999999996857,
+        "r_achieved": 0.6006441223830911,
+        "blocking_rules": [
+          "CONVICTION_GATE"
+        ],
+        "primary_blocker": "CONVICTION_GATE",
+        "regime_alone_approved": true,
+        "regime_made_it_redundant": true,
+        "vix": 17.429723199929796,
+        "es_nq_aligned": true,
+        "premarket_bias": "SHORT"
+      },
+      {
+        "date": "2023-10-19",
+        "bias": "LONG",
+        "regime": "TREND",
+        "pnl_dollars": 1170.9600000000792,
+        "r_achieved": 2.6330275229363385,
+        "blocking_rules": [
+          "CONVICTION_GATE"
+        ],
+        "primary_blocker": "CONVICTION_GATE",
+        "regime_alone_approved": true,
+        "regime_made_it_redundant": true,
+        "vix": 15.398175804868778,
+        "es_nq_aligned": false,
+        "premarket_bias": "SHORT"
+      },
+      {
+        "date": "2023-11-29",
+        "bias": "LONG",
+        "regime": "TREND",
+        "pnl_dollars": 339.35999999999694,
+        "r_achieved": 0.7814313346228059,
+        "blocking_rules": [
+          "CONVICTION_GATE"
+        ],
+        "primary_blocker": "CONVICTION_GATE",
+        "regime_alone_approved": true,
+        "regime_made_it_redundant": true,
+        "vix": 19.432557589612625,
+        "es_nq_aligned": true,
+        "premarket_bias": "SHORT"
+      },
+      {
+        "date": "2023-12-27",
+        "bias": "SHORT",
+        "regime": "TREND",
+        "pnl_dollars": 32.86000000015338,
+        "r_achieved": 0.07340720221643426,
+        "blocking_rules": [
+          "CONVICTION_GATE",
+          "WEAK_CANDLE"
+        ],
+        "primary_blocker": "CONVICTION_GATE",
+        "regime_alone_approved": true,
+        "regime_made_it_redundant": true,
+        "vix": 24.95195209702406,
+        "es_nq_aligned": true,
+        "premarket_bias": "LONG"
+      },
+      {
+        "date": "2024-01-02",
+        "bias": "SHORT",
+        "regime": "TREND",
+        "pnl_dollars": 490.61999999994805,
+        "r_achieved": 1.1057471264365721,
+        "blocking_rules": [
+          "CONVICTION_GATE"
+        ],
+        "primary_blocker": "CONVICTION_GATE",
+        "regime_alone_approved": true,
+        "regime_made_it_redundant": true,
+        "vix": 21.745727890673884,
+        "es_nq_aligned": true,
+        "premarket_bias": "LONG"
+      },
+      {
+        "date": "2024-01-04",
+        "bias": "LONG",
+        "regime": "TREND",
+        "pnl_dollars": 589.6800000000367,
+        "r_achieved": 1.3125000000001275,
+        "blocking_rules": [
+          "CONVICTION_GATE"
+        ],
+        "primary_blocker": "CONVICTION_GATE",
+        "regime_alone_approved": true,
+        "regime_made_it_redundant": true,
+        "vix": 21.162200041381354,
+        "es_nq_aligned": false,
+        "premarket_bias": "NEUTRAL"
+      },
+      {
+        "date": "2024-01-09",
+        "bias": "LONG",
+        "regime": "TREND",
+        "pnl_dollars": 292.79999999998836,
+        "r_achieved": 0.6524064171122058,
+        "blocking_rules": [
+          "CONVICTION_GATE"
+        ],
+        "primary_blocker": "CONVICTION_GATE",
+        "regime_alone_approved": true,
+        "regime_made_it_redundant": true,
+        "vix": 19.27124839624282,
+        "es_nq_aligned": true,
+        "premarket_bias": "SHORT"
+      },
+      {
+        "date": "2024-01-22",
+        "bias": "SHORT",
+        "regime": "TREND",
+        "pnl_dollars": 364.62000000001717,
+        "r_achieved": 0.8218085106386864,
+        "blocking_rules": [
+          "CONVICTION_GATE"
+        ],
+        "primary_blocker": "CONVICTION_GATE",
+        "regime_alone_approved": true,
+        "regime_made_it_redundant": true,
+        "vix": 17.6417874445099,
+        "es_nq_aligned": true,
+        "premarket_bias": "LONG"
+      },
+      {
+        "date": "2024-02-09",
+        "bias": "SHORT",
+        "regime": "TREND",
+        "pnl_dollars": 404.79999999996653,
+        "r_achieved": 0.9302325581395439,
+        "blocking_rules": [
+          "MACRO_EVENT",
+          "CONVICTION_GATE"
+        ],
+        "primary_blocker": "MACRO_EVENT",
+        "regime_alone_approved": true,
+        "regime_made_it_redundant": true,
+        "vix": 13.033351605600119,
+        "es_nq_aligned": true,
+        "premarket_bias": "LONG"
+      },
+      {
+        "date": "2024-02-16",
+        "bias": "SHORT",
+        "regime": "TREND",
+        "pnl_dollars": 299.8800000002375,
+        "r_achieved": 0.6727688787192251,
+        "blocking_rules": [
+          "CONVICTION_GATE"
+        ],
+        "primary_blocker": "CONVICTION_GATE",
+        "regime_alone_approved": true,
+        "regime_made_it_redundant": true,
+        "vix": 16.905234324575225,
+        "es_nq_aligned": true,
+        "premarket_bias": "LONG"
+      },
+      {
+        "date": "2024-02-19",
+        "bias": "LONG",
+        "regime": "TREND",
+        "pnl_dollars": 629.7599999997765,
+        "r_achieved": 1.4057142857137868,
+        "blocking_rules": [
+          "CONVICTION_GATE"
+        ],
+        "primary_blocker": "CONVICTION_GATE",
+        "regime_alone_approved": true,
+        "regime_made_it_redundant": true,
+        "vix": 18.157346240949806,
+        "es_nq_aligned": true,
+        "premarket_bias": "SHORT"
+      },
+      {
+        "date": "2024-02-23",
+        "bias": "LONG",
+        "regime": "TREND",
+        "pnl_dollars": 826.0200000000114,
+        "r_achieved": 1.8385416666672028,
+        "blocking_rules": [
+          "CONVICTION_GATE"
+        ],
+        "primary_blocker": "CONVICTION_GATE",
+        "regime_alone_approved": true,
+        "regime_made_it_redundant": true,
+        "vix": 11.612938434100597,
+        "es_nq_aligned": true,
+        "premarket_bias": "SHORT"
+      },
+      {
+        "date": "2024-02-29",
+        "bias": "SHORT",
+        "regime": "VOLATILE",
+        "pnl_dollars": 615.4799999998795,
+        "r_achieved": 1.3680981595090975,
+        "blocking_rules": [
+          "CONVICTION_GATE",
+          "WEAK_CANDLE"
+        ],
+        "primary_blocker": "CONVICTION_GATE",
+        "regime_alone_approved": true,
+        "regime_made_it_redundant": true,
+        "vix": 14.75970690906362,
+        "es_nq_aligned": true,
+        "premarket_bias": "LONG"
+      }
+    ]
+  },
+  "loser_prevention": {
+    "count": 6,
+    "total_loss_prevented": 2669.7399999997797,
+    "by_rule": {
+      "WEAK_CANDLE": {
+        "count": 1,
+        "total_loss_prevented": 449.67999999989115,
+        "avg_loss_prevented": 449.67999999989115
+      },
+      "CONVICTION_GATE": {
+        "count": 5,
+        "total_loss_prevented": 2220.0599999998885,
+        "avg_loss_prevented": 444.0119999999777
+      }
+    }
+  },
+  "redundancy": {
+    "MACRO_EVENT": {
+      "redundancy_score": 100,
+      "classification": "HARMFUL",
+      "total_blocked": 5,
+      "winners_blocked": 5,
+      "losers_blocked": 0,
+      "opportunity_cost": 2186.5000000006403,
+      "loss_prevented": 0.0,
+      "net_impact": -2186.5000000006403,
+      "verdict": "RETIRE \u2192 Move to Explanation Layer"
+    },
+    "VIX_ELEVATED": {
+      "redundancy_score": 0,
+      "classification": "INACTIVE",
+      "note": "Rule never triggered",
+      "verdict": "RETIRE \u2192 Never triggers",
+      "total_blocked": 0,
+      "winners_blocked": 0,
+      "losers_blocked": 0,
+      "opportunity_cost": 0,
+      "loss_prevented": 0,
+      "net_impact": 0
+    },
+    "VIX_EXTREME": {
+      "redundancy_score": 0,
+      "classification": "INACTIVE",
+      "note": "Rule never triggered",
+      "verdict": "RETIRE \u2192 Never triggers",
+      "total_blocked": 0,
+      "winners_blocked": 0,
+      "losers_blocked": 0,
+      "opportunity_cost": 0,
+      "loss_prevented": 0,
+      "net_impact": 0
+    },
+    "GAP_ALIGNMENT": {
+      "redundancy_score": 0,
+      "classification": "INACTIVE",
+      "note": "Rule never triggered",
+      "verdict": "RETIRE \u2192 Never triggers",
+      "total_blocked": 0,
+      "winners_blocked": 0,
+      "losers_blocked": 0,
+      "opportunity_cost": 0,
+      "loss_prevented": 0,
+      "net_impact": 0
+    },
+    "PDH_PDL": {
+      "redundancy_score": 0,
+      "classification": "INACTIVE",
+      "note": "Rule never triggered",
+      "verdict": "RETIRE \u2192 Never triggers",
+      "total_blocked": 0,
+      "winners_blocked": 0,
+      "losers_blocked": 0,
+      "opportunity_cost": 0,
+      "loss_prevented": 0,
+      "net_impact": 0
+    },
+    "LONDON_ORB": {
+      "redundancy_score": 0,
+      "classification": "INACTIVE",
+      "note": "Rule never triggered",
+      "verdict": "RETIRE \u2192 Never triggers",
+      "total_blocked": 0,
+      "winners_blocked": 0,
+      "losers_blocked": 0,
+      "opportunity_cost": 0,
+      "loss_prevented": 0,
+      "net_impact": 0
+    },
+    "ES_NQ_ALIGNED": {
+      "redundancy_score": 0,
+      "classification": "INACTIVE",
+      "note": "Rule never triggered",
+      "verdict": "RETIRE \u2192 Never triggers",
+      "total_blocked": 0,
+      "winners_blocked": 0,
+      "losers_blocked": 0,
+      "opportunity_cost": 0,
+      "loss_prevented": 0,
+      "net_impact": 0
+    },
+    "PRIOR_DAY_TYPE": {
+      "redundancy_score": 0,
+      "classification": "INACTIVE",
+      "note": "Rule never triggered",
+      "verdict": "RETIRE \u2192 Never triggers",
+      "total_blocked": 0,
+      "winners_blocked": 0,
+      "losers_blocked": 0,
+      "opportunity_cost": 0,
+      "loss_prevented": 0,
+      "net_impact": 0
+    },
+    "CONVICTION_GATE": {
+      "redundancy_score": 88,
+      "classification": "HARMFUL",
+      "total_blocked": 45,
+      "winners_blocked": 40,
+      "losers_blocked": 5,
+      "opportunity_cost": 17813.060000000216,
+      "loss_prevented": 2220.0599999998885,
+      "net_impact": -15593.000000000327,
+      "verdict": "RETIRE \u2192 Move to Explanation Layer"
+    },
+    "WEAK_CANDLE": {
+      "redundancy_score": 50,
+      "classification": "NEUTRAL",
+      "total_blocked": 4,
+      "winners_blocked": 2,
+      "losers_blocked": 2,
+      "opportunity_cost": 648.3400000000329,
+      "loss_prevented": 888.6999999999462,
+      "net_impact": 240.35999999991327,
+      "verdict": "NEUTRAL \u2192 No clear signal"
+    }
+  },
+  "explanation_samples": [
+    {
+      "date": "2023-07-10",
+      "bias": "SHORT",
+      "outcome": "LOSS",
+      "pnl_dollars": -446.04000000011,
+      "explanation": "\u2713 Atlas Regime: TREND day confirmed\n\u2713 VIX 17.6 \u2014 Low volatility, standard size\n\u2713 ES / NQ / VIX alignment confirmed\n\u26a0 Gap misaligned with SHORT bias\n\u2713 London ORB confirms SHORT bias\n\u2713 Prior day: Inside/Doji \u2014 compressed energy, breakout favoured\n\u2713 ORB breakout confirmed \u2014 SHORT bias established\n\u2713 EMA(20) reclaim entry triggered\n\u2713 ARI risk acceptable \u2014 stop distance within parameters"
+    },
+    {
+      "date": "2023-07-18",
+      "bias": "LONG",
+      "outcome": "WIN",
+      "pnl_dollars": 455.2800000000061,
+      "explanation": "\u2713 Atlas Regime: TREND day confirmed\n\u2713 VIX 12.7 \u2014 Low volatility, standard size\n\u2713 ES / NQ / VIX alignment confirmed\n\u26a0 Gap misaligned with LONG bias\n\u2713 London ORB confirms LONG bias\n\u2713 Prior day: Normal range\n\u2713 ORB breakout confirmed \u2014 LONG bias established\n\u2713 EMA(20) reclaim entry triggered\n\u2713 ARI risk acceptable \u2014 stop distance within parameters"
+    },
+    {
+      "date": "2023-08-01",
+      "bias": "LONG",
+      "outcome": "WIN",
+      "pnl_dollars": 338.03999999997905,
+      "explanation": "\u2713 Atlas Regime: TREND day confirmed\n\u2713 VIX 19.2 \u2014 Low volatility, standard size\n\u2713 ES / NQ / VIX alignment confirmed\n\u2713 Gap aligned with LONG bias\n\u2713 London ORB confirms LONG bias\n\u2713 Prior day: Normal range\n\u2713 ORB breakout confirmed \u2014 LONG bias established\n\u2713 EMA(20) reclaim entry triggered\n\u2713 ARI risk acceptable \u2014 stop distance within parameters"
+    },
+    {
+      "date": "2023-08-10",
+      "bias": "LONG",
+      "outcome": "WIN",
+      "pnl_dollars": 525.8400000000183,
+      "explanation": "\u2713 Atlas Regime: TREND day confirmed\n\u2713 VIX 19.7 \u2014 Low volatility, standard size\n\u2713 ES / NQ / VIX alignment confirmed\n\u26a0 Gap misaligned with LONG bias\n\u2713 London ORB confirms LONG bias\n\u2713 Prior day: Inside/Doji \u2014 compressed energy, breakout favoured\n\u2713 ORB breakout confirmed \u2014 LONG bias established\n\u2713 EMA(20) reclaim entry triggered\n\u2713 ARI risk acceptable \u2014 stop distance within parameters"
+    },
+    {
+      "date": "2023-10-06",
+      "bias": "LONG",
+      "outcome": "LOSS",
+      "pnl_dollars": -447.29999999994106,
+      "explanation": "\u2713 Atlas Regime: TREND day confirmed\n\u2713 VIX 18.1 \u2014 Low volatility, standard size\n\u26a0 ES / NQ divergence noted \u2014 size reduced\n\u2713 Gap aligned with LONG bias\n\u26a0 London ORB diverges from LONG bias\n\u2713 Prior day: Normal range\n\u2713 ORB breakout confirmed \u2014 LONG bias established\n\u2713 EMA(20) reclaim entry triggered\n\u2713 ARI risk acceptable \u2014 stop distance within parameters"
+    }
+  ]
+}

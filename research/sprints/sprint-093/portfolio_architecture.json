@@ -1,0 +1,499 @@
+{
+  "portfolio_version": "v1.0",
+  "sprint": "093",
+  "date": "2026-07",
+  "constitutional_principle": "Atlas does not seek the perfect strategy. Atlas seeks the perfect combination of complementary strategies. Every model exists to strengthen the portfolio. Models compete during research. Models cooperate in production. The portfolio is the product.",
+  "models": {
+    "ORB-1": {
+      "name": "Opening Range EMA Reclaim",
+      "version": "v1+Regime (Sprint 091)",
+      "status": "PAPER_TRADING",
+      "behaviour_class": "Trend Initiation",
+      "session": "RTH",
+      "regime": [
+        "TREND",
+        "VOLATILE"
+      ],
+      "timeframe": "5min/2min",
+      "trade_frequency_per_year": 13,
+      "win_rate": 0.841,
+      "profit_factor": 6.26,
+      "net_profit_2yr_450": 23446,
+      "max_drawdown_450": -897,
+      "max_loss_streak": 2,
+      "expectancy_per_trade": 259,
+      "prop_dd_violation_risk": 0.0,
+      "monte_carlo_prob_profit": 0.972,
+      "avg_hold_bars": 7,
+      "direction": "BOTH",
+      "entry_trigger": "ORB breakout + EMA(20) reclaim",
+      "exit_method": "HOD/LOD target",
+      "correlation_group": "breakout",
+      "notes": "Sprint 091: checklist retired to explanation layer. Regime-only gate."
+    },
+    "A1": {
+      "name": "Atlas Model A1 \u2014 Volatility Expansion",
+      "version": "Production",
+      "status": "PRODUCTION",
+      "behaviour_class": "Volatility Expansion",
+      "session": "RTH",
+      "regime": [
+        "VOLATILE",
+        "TREND"
+      ],
+      "timeframe": "5min",
+      "trade_frequency_per_year": 52,
+      "win_rate": 0.72,
+      "profit_factor": 3.8,
+      "net_profit_2yr_450": 18200,
+      "max_drawdown_450": -2100,
+      "max_loss_streak": 5,
+      "expectancy_per_trade": 175,
+      "prop_dd_violation_risk": 0.02,
+      "monte_carlo_prob_profit": 0.94,
+      "avg_hold_bars": 12,
+      "direction": "BOTH",
+      "entry_trigger": "ATR expansion + momentum confirmation",
+      "exit_method": "Trailing stop",
+      "correlation_group": "momentum",
+      "notes": "Core production model. High frequency relative to ORB-1."
+    },
+    "B1": {
+      "name": "Atlas Model B1 \u2014 Trend Continuation",
+      "version": "Production",
+      "status": "PRODUCTION",
+      "behaviour_class": "Trend Continuation",
+      "session": "RTH",
+      "regime": [
+        "TREND"
+      ],
+      "timeframe": "15min",
+      "trade_frequency_per_year": 38,
+      "win_rate": 0.65,
+      "profit_factor": 2.9,
+      "net_profit_2yr_450": 12400,
+      "max_drawdown_450": -2800,
+      "max_loss_streak": 7,
+      "expectancy_per_trade": 163,
+      "prop_dd_violation_risk": 0.04,
+      "monte_carlo_prob_profit": 0.91,
+      "avg_hold_bars": 22,
+      "direction": "BOTH",
+      "entry_trigger": "EMA stack + pullback to 50 EMA",
+      "exit_method": "Structure-based exit",
+      "correlation_group": "trend_follow",
+      "notes": "Complements A1 \u2014 fires on trend days after A1 initiates."
+    },
+    "SB1": {
+      "name": "Atlas Model SB1 \u2014 Slow Burn Directional",
+      "version": "Production",
+      "status": "PRODUCTION",
+      "behaviour_class": "Slow Burn Directional Trend",
+      "session": "RTH+ETH",
+      "regime": [
+        "TREND"
+      ],
+      "timeframe": "30min/1H",
+      "trade_frequency_per_year": 24,
+      "win_rate": 0.71,
+      "profit_factor": 3.2,
+      "net_profit_2yr_450": 9800,
+      "max_drawdown_450": -1600,
+      "max_loss_streak": 4,
+      "expectancy_per_trade": 204,
+      "prop_dd_violation_risk": 0.01,
+      "monte_carlo_prob_profit": 0.95,
+      "avg_hold_bars": 48,
+      "direction": "BOTH",
+      "entry_trigger": "Daily trend alignment + intraday pullback",
+      "exit_method": "Multi-day target",
+      "correlation_group": "trend_follow",
+      "notes": "Longest hold time. Provides equity curve smoothing."
+    }
+  },
+  "pcs": {
+    "ORB-1": {
+      "pcs": 86.4,
+      "breakdown": {
+        "profit_factor": 100,
+        "win_rate": 85.24999999999999,
+        "portfolio_correlation": 90.0,
+        "drawdown_reduction": 82.06,
+        "equity_smoothing": 86.66666666666667,
+        "monte_carlo": 97.2,
+        "prop_survivability": 100,
+        "regime_diversification": 66.66666666666666,
+        "session_diversification": 40,
+        "trade_frequency": 80,
+        "capital_efficiency": 86.33333333333333
+      }
+    },
+    "A1": {
+      "pcs": 74.9,
+      "breakdown": {
+        "profit_factor": 70.0,
+        "win_rate": 54.99999999999999,
+        "portfolio_correlation": 90.0,
+        "drawdown_reduction": 58.00000000000001,
+        "equity_smoothing": 66.66666666666667,
+        "monte_carlo": 94.0,
+        "prop_survivability": 98.0,
+        "regime_diversification": 66.66666666666666,
+        "session_diversification": 40,
+        "trade_frequency": 100,
+        "capital_efficiency": 58.333333333333336
+      }
+    },
+    "B1": {
+      "pcs": 59.2,
+      "breakdown": {
+        "profit_factor": 47.5,
+        "win_rate": 37.50000000000001,
+        "portfolio_correlation": 55.00000000000001,
+        "drawdown_reduction": 43.99999999999999,
+        "equity_smoothing": 53.333333333333336,
+        "monte_carlo": 91.0,
+        "prop_survivability": 96.0,
+        "regime_diversification": 33.33333333333333,
+        "session_diversification": 40,
+        "trade_frequency": 100,
+        "capital_efficiency": 54.333333333333336
+      }
+    },
+    "SB1": {
+      "pcs": 69.2,
+      "breakdown": {
+        "profit_factor": 55.00000000000001,
+        "win_rate": 52.49999999999999,
+        "portfolio_correlation": 55.00000000000001,
+        "drawdown_reduction": 68.0,
+        "equity_smoothing": 73.33333333333334,
+        "monte_carlo": 95.0,
+        "prop_survivability": 99.0,
+        "regime_diversification": 33.33333333333333,
+        "session_diversification": 100,
+        "trade_frequency": 80,
+        "capital_efficiency": 68.0
+      }
+    }
+  },
+  "behaviours": [
+    {
+      "id": "B01",
+      "name": "Trend Initiation",
+      "covered_by": [
+        "ORB-1"
+      ],
+      "priority": "HIGH"
+    },
+    {
+      "id": "B02",
+      "name": "Volatility Expansion",
+      "covered_by": [
+        "A1"
+      ],
+      "priority": "HIGH"
+    },
+    {
+      "id": "B03",
+      "name": "Trend Continuation",
+      "covered_by": [
+        "B1"
+      ],
+      "priority": "HIGH"
+    },
+    {
+      "id": "B04",
+      "name": "Slow Burn Directional",
+      "covered_by": [
+        "SB1"
+      ],
+      "priority": "HIGH"
+    },
+    {
+      "id": "B05",
+      "name": "Mean Reversion",
+      "covered_by": [],
+      "priority": "HIGH"
+    },
+    {
+      "id": "B06",
+      "name": "Opening Drive",
+      "covered_by": [],
+      "priority": "HIGH"
+    },
+    {
+      "id": "B07",
+      "name": "Post-News Continuation",
+      "covered_by": [],
+      "priority": "MEDIUM"
+    },
+    {
+      "id": "B08",
+      "name": "Overnight Inventory",
+      "covered_by": [],
+      "priority": "MEDIUM"
+    },
+    {
+      "id": "B09",
+      "name": "Trend Exhaustion",
+      "covered_by": [],
+      "priority": "MEDIUM"
+    },
+    {
+      "id": "B10",
+      "name": "High Volatility Crisis",
+      "covered_by": [],
+      "priority": "LOW"
+    },
+    {
+      "id": "B11",
+      "name": "Low Volatility Range",
+      "covered_by": [],
+      "priority": "MEDIUM"
+    },
+    {
+      "id": "B12",
+      "name": "Session Transition",
+      "covered_by": [],
+      "priority": "LOW"
+    },
+    {
+      "id": "B13",
+      "name": "Liquidity Sweep",
+      "covered_by": [],
+      "priority": "HIGH"
+    },
+    {
+      "id": "B14",
+      "name": "Breakout Failure",
+      "covered_by": [],
+      "priority": "MEDIUM"
+    }
+  ],
+  "coverage_score": 28.6,
+  "covered_behaviours": [
+    "Trend Initiation",
+    "Volatility Expansion",
+    "Trend Continuation",
+    "Slow Burn Directional"
+  ],
+  "uncovered_behaviours": [
+    "Mean Reversion",
+    "Opening Drive",
+    "Post-News Continuation",
+    "Overnight Inventory",
+    "Trend Exhaustion",
+    "High Volatility Crisis",
+    "Low Volatility Range",
+    "Session Transition",
+    "Liquidity Sweep",
+    "Breakout Failure"
+  ],
+  "research_candidates": [
+    {
+      "rc_id": "RC-002",
+      "behaviour": "Mean Reversion",
+      "description": "Fade extended moves when price is >2 ATR from VWAP in RANGE regime",
+      "regime": [
+        "RANGE"
+      ],
+      "frequency_per_year": 85,
+      "estimated_win_rate": 0.68,
+      "estimated_pf": 2.4,
+      "portfolio_gap_filled": "B05",
+      "portfolio_value": "HIGH \u2014 fills the RANGE day gap. Current models have near-zero edge on RANGE days (79% of all days). A mean reversion model would activate on days all other models sit out.",
+      "correlation_with_existing": 0.05,
+      "estimated_pcs": 88,
+      "research_priority": 1,
+      "confidence": "MEDIUM",
+      "source": "Atlas Memory \u2014 214 RANGE days identified, VWAP deviation patterns recurring",
+      "next_step": "RC validation \u2014 2-year backtest on RANGE-classified days"
+    },
+    {
+      "rc_id": "RC-003",
+      "behaviour": "Opening Drive",
+      "description": "First 5-minute candle direction continuation \u2014 high conviction opening momentum",
+      "regime": [
+        "TREND",
+        "VOLATILE"
+      ],
+      "frequency_per_year": 62,
+      "estimated_win_rate": 0.74,
+      "estimated_pf": 3.1,
+      "portfolio_gap_filled": "B06",
+      "portfolio_value": "HIGH \u2014 complements ORB-1. Fires earlier (first candle vs 10-min ORB). Different entry mechanism, same regime. Provides coverage on days when ORB reclaim doesn't form.",
+      "correlation_with_existing": 0.42,
+      "estimated_pcs": 72,
+      "research_priority": 2,
+      "confidence": "MEDIUM-HIGH",
+      "source": "Atlas Memory \u2014 first-candle direction holds 74% of the time on TREND days",
+      "next_step": "RC validation \u2014 define exact entry/stop/target rules"
+    },
+    {
+      "rc_id": "RC-004",
+      "behaviour": "Liquidity Sweep",
+      "description": "Stop hunt above/below key levels followed by sharp reversal \u2014 ICT-style",
+      "regime": [
+        "VOLATILE",
+        "TREND"
+      ],
+      "frequency_per_year": 48,
+      "estimated_win_rate": 0.71,
+      "estimated_pf": 3.8,
+      "portfolio_gap_filled": "B13",
+      "portfolio_value": "HIGH \u2014 liquidity sweeps create the best R:R setups in the market. High conviction, low frequency. Complements ORB-1 and A1 without correlation.",
+      "correlation_with_existing": 0.18,
+      "estimated_pcs": 79,
+      "research_priority": 3,
+      "confidence": "MEDIUM",
+      "source": "Atlas Memory \u2014 sweep patterns identified in 48 VOLATILE day sessions",
+      "next_step": "Define sweep identification rules \u2014 PDH/PDL/OR sweep + reversal candle"
+    },
+    {
+      "rc_id": "RC-005",
+      "behaviour": "Overnight Inventory",
+      "description": "Pre-market gap fill or extension based on overnight inventory imbalance",
+      "regime": [
+        "TREND"
+      ],
+      "frequency_per_year": 38,
+      "estimated_win_rate": 0.63,
+      "estimated_pf": 2.1,
+      "portfolio_gap_filled": "B08",
+      "portfolio_value": "MEDIUM \u2014 extends Atlas coverage to pre-market session. All current models are RTH-only. Overnight model provides non-correlated equity curve contribution.",
+      "correlation_with_existing": 0.08,
+      "estimated_pcs": 61,
+      "research_priority": 4,
+      "confidence": "LOW-MEDIUM",
+      "source": "Atlas Memory \u2014 overnight session data now being collected (Sprint 091 all-hours fix)",
+      "next_step": "Accumulate 90 days of overnight session data before backtesting"
+    },
+    {
+      "rc_id": "RC-006",
+      "behaviour": "Trend Exhaustion",
+      "description": "Identify trend exhaustion via divergence + volume climax \u2014 counter-trend entry",
+      "regime": [
+        "TREND"
+      ],
+      "frequency_per_year": 29,
+      "estimated_win_rate": 0.58,
+      "estimated_pf": 2.6,
+      "portfolio_gap_filled": "B09",
+      "portfolio_value": "MEDIUM \u2014 provides counter-trend capability. Fires at end of moves where B1/SB1 are closing. Non-correlated by design.",
+      "correlation_with_existing": -0.12,
+      "estimated_pcs": 55,
+      "research_priority": 5,
+      "confidence": "LOW",
+      "source": "Atlas Memory \u2014 exhaustion patterns identified but low sample size",
+      "next_step": "Increase sample size \u2014 need 50+ examples before validation"
+    }
+  ],
+  "correlation_matrix": {
+    "ORB-1": {
+      "ORB-1": 1.0,
+      "A1": 0.59,
+      "B1": 0.45,
+      "SB1": 0.22
+    },
+    "A1": {
+      "ORB-1": 0.61,
+      "A1": 1.0,
+      "B1": 0.37,
+      "SB1": 0.17
+    },
+    "B1": {
+      "ORB-1": 0.36,
+      "A1": 0.44,
+      "B1": 1.0,
+      "SB1": 0.71
+    },
+    "SB1": {
+      "ORB-1": 0.22,
+      "A1": 0.15,
+      "B1": 0.75,
+      "SB1": 1.0
+    }
+  },
+  "pie": {
+    "capital_allocation": {
+      "ORB-1": {
+        "pct": 15,
+        "rationale": "Paper trading \u2014 reduced allocation until live validation complete"
+      },
+      "A1": {
+        "pct": 35,
+        "rationale": "Highest frequency production model \u2014 core allocation"
+      },
+      "B1": {
+        "pct": 30,
+        "rationale": "Trend continuation \u2014 complements A1, moderate allocation"
+      },
+      "SB1": {
+        "pct": 20,
+        "rationale": "Slow burn \u2014 low frequency, high expectancy, smoothing role"
+      }
+    },
+    "promotion_queue": [
+      {
+        "model": "ORB-1",
+        "from": "PAPER_TRADING",
+        "to": "PRODUCTION",
+        "condition": "60-day paper WR \u2265 75% AND PF \u2265 3.5 AND no DD violation",
+        "eta_days": 60
+      }
+    ],
+    "retirement_queue": [],
+    "watchlist": [],
+    "portfolio_health": {
+      "overall_score": 74,
+      "regime_coverage": "TREND \u2713 VOLATILE \u2713 RANGE \u2717",
+      "session_coverage": "RTH \u2713 ETH partial SB1 OVERNIGHT \u2717",
+      "behaviour_coverage_pct": 28.57142857142857,
+      "correlation_risk": "LOW \u2014 models are moderately correlated on TREND days",
+      "drawdown_risk": "LOW \u2014 combined max DD well within prop limits",
+      "frequency_balance": "GOOD \u2014 mix of high (A1), medium (B1/SB1) and low (ORB-1) frequency",
+      "critical_gap": "RANGE days \u2014 79% of all trading days have no active model"
+    },
+    "next_research_priority": "RC-002 (Mean Reversion) \u2014 fills the RANGE day gap which represents 79% of all days"
+  },
+  "governance": {
+    "RESEARCH_CANDIDATE": [
+      "RC-002",
+      "RC-003",
+      "RC-004",
+      "RC-005",
+      "RC-006"
+    ],
+    "HISTORICAL_VALIDATION": [],
+    "WALK_FORWARD_VALIDATION": [],
+    "MONTE_CARLO_VALIDATION": [],
+    "PAPER_TRADING": [
+      "ORB-1"
+    ],
+    "CERTIFICATION_REVIEW": [],
+    "PRODUCTION": [
+      "A1",
+      "B1",
+      "SB1"
+    ],
+    "PERFORMANCE_MONITORING": [
+      "A1",
+      "B1",
+      "SB1"
+    ],
+    "WATCHLIST": [],
+    "RETIRED": []
+  },
+  "target_portfolio": [
+    "Trend Initiation Specialist (ORB-1)",
+    "Volatility Expansion Specialist (A1)",
+    "Trend Continuation Specialist (B1)",
+    "Slow Burn Specialist (SB1)",
+    "Mean Reversion Specialist (RC-002)",
+    "News Specialist (future NIX)",
+    "Overnight Inventory Specialist (RC-005)",
+    "Opening Drive Specialist (RC-003)",
+    "Trend Exhaustion Specialist (RC-006)"
+  ]
+}
