@@ -526,7 +526,18 @@
 - [x] Add /live-learning route to App.tsx
 - [x] Add Live Learning Cert nav link in OrionLayout.tsx (PORTFOLIO group)
 - [x] TypeScript: 0 errors
-- [ ] Checkpoint saved (pending)
-- [ ] Commit all outputs to GitHub sprint-051 (pending)
-- [ ] Write Sprint 100A Report (pending)
-- [ ] Run certification against 5 live RTH sessions (BLOCKED: M-16 fix required first)
+- [x] Checkpoint saved (version: 125a4845)
+- [x] Commit all outputs to GitHub sprint-051 (commit: 977267e)
+- [x] Write Sprint 100A Report
+- [ ] Run certification against 5 live RTH sessions (BLOCKED: M-16 fix required first — Sprint 100B)
+
+## Sprint 100B — Live Learning Deployment & Certification
+
+- [x] AES-001: Read M-16 v1.2.2, deployment notes, atlas_memory schema, webhook handler
+- [x] Verify M-16 script is already correct (EVENT_TYPE=BAR_OBSERVATION, alert.freq_once_per_bar_close, expandThresh=1.00)
+- [x] Produce TradingView deployment instructions (correct webhook URL: /api/webhook/atlas-memory/:token)
+- [ ] User deploys corrected TradingView alert (BLOCKED: requires user action in TradingView)
+- [ ] Verify live pipeline: TradingView → Webhook → Atlas Memory → 7 learning steps
+- [ ] Run 5-session Live Learning Certification
+- [ ] Produce Atlas Live Learning Certificate
+- [ ] Commit all Sprint 100B outputs to GitHub sprint-051
