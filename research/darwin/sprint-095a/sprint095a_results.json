@@ -1,0 +1,233 @@
+{
+  "sprint": "095A",
+  "regime_recalibration": {
+    "old_trend_threshold": 1.1,
+    "new_trend_threshold": 1.0,
+    "old_orb1_eligible_days": 2,
+    "new_orb1_eligible_days": 171,
+    "regime_distribution": {
+      "RANGE": 454,
+      "TREND": 72,
+      "VOLATILE": 99,
+      "range_pct": 72.6,
+      "trend_pct": 11.5,
+      "volatile_pct": 15.8
+    }
+  },
+  "models": [
+    {
+      "name": "A1",
+      "status": "PRODUCTION",
+      "trades": 13,
+      "win_rate": 30.8,
+      "pf": 0.92,
+      "net_profit": -323.0,
+      "max_dd": -1991.0,
+      "pcs": 33.8,
+      "regime": "TREND",
+      "dd_violation_pct": 39.9,
+      "promotion_decision": "MAINTAIN"
+    },
+    {
+      "name": "B1",
+      "status": "PRODUCTION",
+      "trades": 180,
+      "win_rate": 65.0,
+      "pf": 2.9,
+      "net_profit": 28000,
+      "max_dd": -3200,
+      "pcs": 59.2,
+      "regime": "RANGE",
+      "dd_violation_pct": 8.0,
+      "promotion_decision": "MAINTAIN"
+    },
+    {
+      "name": "SB1",
+      "status": "PRODUCTION",
+      "trades": 156,
+      "win_rate": 71.0,
+      "pf": 3.2,
+      "net_profit": 32000,
+      "max_dd": -2800,
+      "pcs": 69.2,
+      "regime": "TREND",
+      "dd_violation_pct": 4.0,
+      "promotion_decision": "MAINTAIN"
+    },
+    {
+      "name": "ORB-1",
+      "status": "PAPER_TRADING",
+      "trades": 83,
+      "win_rate": 79.5,
+      "pf": 7.76,
+      "net_profit": "51750",
+      "max_dd": "-900",
+      "pcs": 85.1,
+      "regime": "TREND+VOLATILE",
+      "dd_violation_pct": 0.5,
+      "promotion_decision": "FORWARD_VALIDATION"
+    },
+    {
+      "name": "RC-002",
+      "status": "RESEARCH",
+      "trades": 49,
+      "win_rate": 0.0,
+      "pf": 0.0,
+      "net_profit": "-22050",
+      "max_dd": "-21600",
+      "pcs": 4.9,
+      "regime": "RANGE",
+      "dd_violation_pct": 100.0,
+      "promotion_decision": "REJECTED"
+    },
+    {
+      "name": "RC-003",
+      "status": "RESEARCH",
+      "trades": 99,
+      "win_rate": 38.4,
+      "pf": 1.25,
+      "net_profit": "6750",
+      "max_dd": "-4500",
+      "pcs": 33.6,
+      "regime": "VOLATILE",
+      "dd_violation_pct": 96.6,
+      "promotion_decision": "REJECTED"
+    },
+    {
+      "name": "RC-004",
+      "status": "RESEARCH",
+      "trades": 200,
+      "win_rate": 26.0,
+      "pf": 0.94,
+      "net_profit": -4040.0,
+      "max_dd": -16063.0,
+      "pcs": 23.8,
+      "regime": "RANGE",
+      "dd_violation_pct": 100.0,
+      "promotion_decision": "REJECTED"
+    },
+    {
+      "name": "RC-005",
+      "status": "RESEARCH",
+      "trades": 211,
+      "win_rate": 4.3,
+      "pf": 0.14,
+      "net_profit": -78119.0,
+      "max_dd": -77669.0,
+      "pcs": 12.2,
+      "regime": "ALL",
+      "dd_violation_pct": 100.0,
+      "promotion_decision": "REJECTED"
+    },
+    {
+      "name": "RC-006",
+      "status": "RESEARCH",
+      "trades": 87,
+      "win_rate": 43.7,
+      "pf": 1.55,
+      "net_profit": "12150",
+      "max_dd": "-4500",
+      "pcs": 32.7,
+      "regime": "VOLATILE",
+      "dd_violation_pct": 83.8,
+      "promotion_decision": "RESEARCH_FURTHER"
+    },
+    {
+      "name": "RC-007",
+      "status": "RESEARCH",
+      "trades": 70,
+      "win_rate": 45.7,
+      "pf": 1.4,
+      "net_profit": 6900.0,
+      "max_dd": -1500.0,
+      "pcs": 50.4,
+      "regime": "TREND",
+      "dd_violation_pct": 75.4,
+      "promotion_decision": "REJECTED"
+    }
+  ],
+  "portfolio_health": 100,
+  "coverage_score": 100.0,
+  "promotion_board": [
+    {
+      "name": "A1",
+      "current": "PRODUCTION",
+      "decision": "MAINTAIN",
+      "pf": 0.92,
+      "wr": 30.8,
+      "trades": 13
+    },
+    {
+      "name": "B1",
+      "current": "PRODUCTION",
+      "decision": "MAINTAIN",
+      "pf": 2.9,
+      "wr": 65.0,
+      "trades": 180
+    },
+    {
+      "name": "SB1",
+      "current": "PRODUCTION",
+      "decision": "MAINTAIN",
+      "pf": 3.2,
+      "wr": 71.0,
+      "trades": 156
+    },
+    {
+      "name": "ORB-1",
+      "current": "PAPER_TRADING",
+      "decision": "FORWARD_VALIDATION",
+      "pf": 7.76,
+      "wr": 79.5,
+      "trades": 83
+    },
+    {
+      "name": "RC-002",
+      "current": "RESEARCH",
+      "decision": "REJECTED",
+      "pf": 0.0,
+      "wr": 0.0,
+      "trades": 49
+    },
+    {
+      "name": "RC-003",
+      "current": "RESEARCH",
+      "decision": "REJECTED",
+      "pf": 1.25,
+      "wr": 38.4,
+      "trades": 99
+    },
+    {
+      "name": "RC-004",
+      "current": "RESEARCH",
+      "decision": "REJECTED",
+      "pf": 0.94,
+      "wr": 26.0,
+      "trades": 200
+    },
+    {
+      "name": "RC-005",
+      "current": "RESEARCH",
+      "decision": "REJECTED",
+      "pf": 0.14,
+      "wr": 4.3,
+      "trades": 211
+    },
+    {
+      "name": "RC-006",
+      "current": "RESEARCH",
+      "decision": "RESEARCH_FURTHER",
+      "pf": 1.55,
+      "wr": 43.7,
+      "trades": 87
+    },
+    {
+      "name": "RC-007",
+      "current": "RESEARCH",
+      "decision": "REJECTED",
+      "pf": 1.4,
+      "wr": 45.7,
+      "trades": 70
+    }
+  ]
+}
