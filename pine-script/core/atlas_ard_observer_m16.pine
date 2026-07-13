@@ -71,32 +71,24 @@
 //     Before: j := j + "\"regime_classification\":\"" + regime_val + ","
 //     After:  j := j + "\"regime_classification\":\"" + regime_val + "\","
 //     Reason: Missing closing quote produced malformed JSON on every bar.
-//   FIXED: active_models_str collapsed to single line (Pine v5 syntax)
+//   FIXED: f_row helper moved to top level (Pine v5 does not allow local
+//     function definitions inside if blocks)
+//   FIXED: active_models_str on single line (Pine v5 line continuation)
 //   CHANGED: Status table label updated to [095A-fix]
-//   CHANGED: Version 1.2.0 -> 1.2.1, SCHEMA_VERSION 1.2.0 -> 1.2.1
+//   CHANGED: Version 1.2.0 -> 1.2.1
 //
 // [1.2.0] — 2026-07-13 — Sprint 095A
 //   ADDED: ORB-1 eligibility flag (orb1_eligible)
-//     orb1_eligible = is_rth_val and (adx_trending_val or volcomp_val > 1.00)
-//     Reason: Sprint 095A recalibration. volcomp > 1.00 captures TREND and
-//     VOLATILE days (171 eligible days vs 2 with old 1.10 threshold).
-//   ADDED: orb1_eligible field to webhook payload
-//   ADDED: active_models string field to webhook payload
-//   CHANGED: Status table expanded to 14 rows (added ORB-1 row)
-//   CHANGED: Sprint number updated to 095A
+//   ADDED: orb1_eligible and active_models fields to webhook payload
+//   CHANGED: Status table expanded to 14 rows
 //   CHANGED: Version 1.1.0 -> 1.2.0
 //
 // [1.1.0] — 2026-07-10 — Sprint 089A
-//   ADDED: SB1 RAS inputs (i_sb1_ras, i_sb1_activated)
-//   ADDED: sb1_ras and sb1_ras_activated fields to webhook payload
-//   ADDED: SB1 RAS row to status table
+//   ADDED: SB1 RAS inputs and payload fields
 //   CHANGED: Version 1.0.0 -> 1.1.0
 //
 // [1.0.0] — 2026-07-10 — Sprint 089
-//   INITIAL RELEASE: Atlas ARD Observer M-16
-//   Full BAR_OBSERVATION payload: 40+ fields covering OHLCV, EMAs, ADX,
-//   CHOP, RSI, VWAP, volatility state, regime classification, previous day
-//   structure, overnight gap, model eligibility, pipeline health.
+//   INITIAL RELEASE
 //
 // =============================================================================
 
@@ -130,7 +122,7 @@ i_sb1_ras        = input.float(0.0,  title="SB1 RAS (0-100)", minval=0, maxval=1
 i_sb1_activated  = input.bool(false, title="SB1 RAS Activated (>=45)",   group=GRP_SB1)
 
 // ============================================================================
-// SECTION 3: UTILITY FUNCTIONS
+// SECTION 3: UTILITY FUNCTIONS (all at top level — Pine v5 requirement)
 // ============================================================================
 
 f_fts(v, fmt) =>
@@ -138,9 +130,6 @@ f_fts(v, fmt) =>
 
 f_bts(b) =>
     b ? "true" : "false"
-
-f_str(s) =>
-    na(s) or str.length(s) == 0 ? "null" : "\"" + s + "\""
 
 f_its(v) =>
     str.tostring(v)
@@ -184,16 +173,16 @@ chop_val = 100.0 * math.log10(math.sum(ta.atr(1), 14) / (ta.highest(high, 14) - 
 rsi_val  = ta.rsi(close, 14)
 vwap_val = ta.vwap(close)
 
-// Sprint 095A: expandThresh recalibrated 1.20 -> 1.00 (F1-optimal on 625 MNQ trading days)
-atr_mean20  = ta.sma(atr14_val, 20)
-volcomp_val = na(atr_mean20) or atr_mean20 <= 0 ? 1.0 : atr14_val / atr_mean20
-is_comp_val = volcomp_val < 0.85
-is_exp_val  = volcomp_val > 1.00
-vol_state_val = is_comp_val ? "COMPRESSED" : is_exp_val ? "EXPANDING" : "NORMAL"
+// Sprint 095A: expandThresh recalibrated 1.20 -> 1.00
+atr_mean20     = ta.sma(atr14_val, 20)
+volcomp_val    = na(atr_mean20) or atr_mean20 <= 0 ? 1.0 : atr14_val / atr_mean20
+is_comp_val    = volcomp_val < 0.85
+is_exp_val     = volcomp_val > 1.00
+vol_state_val  = is_comp_val ? "COMPRESSED" : is_exp_val ? "EXPANDING" : "NORMAL"
+comp_state_val = is_comp_val ? "COMPRESSED" : is_exp_val ? "EXPANDING" : "NEUTRAL"
 
 atr_pct_rank = ta.percentrank(atr14_val, 20)
 dist_vwap    = na(vwap_val) ? 0.0 : close - vwap_val
-comp_state_val = is_comp_val ? "COMPRESSED" : is_exp_val ? "EXPANDING" : "NEUTRAL"
 
 h_et    = hour(time, "America/New_York")
 m_et    = minute(time, "America/New_York")
@@ -225,11 +214,10 @@ price_vs_pd = close > safe_pd_high ? "ABOVE_PDH" : close < safe_pd_low ? "BELOW_
 
 ov_gap = safe_pd_close > 0 ? (open - safe_pd_close) / safe_atr : 0.0
 
-a1_eligible  = adx_trending_val and is_rth_val
-a3_eligible  = adx_trending_val and is_rth_val
-b1_eligible  = is_rth_val and not is_comp_val
-sb1_eligible = is_rth_val and adx_trending_val and (ema_bull_val or ema_bear_val)
-// Sprint 095A: volcomp > 1.00 gives 171/625 eligible days vs 2/625 with old 1.10 threshold
+a1_eligible   = adx_trending_val and is_rth_val
+a3_eligible   = adx_trending_val and is_rth_val
+b1_eligible   = is_rth_val and not is_comp_val
+sb1_eligible  = is_rth_val and adx_trending_val and (ema_bull_val or ema_bear_val)
 orb1_eligible = is_rth_val and (adx_trending_val or volcomp_val > 1.00)
 
 active_models_str = (a1_eligible ? "A1" : "") + (a3_eligible ? (a1_eligible ? ",A3" : "A3") : "") + (b1_eligible ? ((a1_eligible or a3_eligible) ? ",B1" : "B1") : "") + (sb1_eligible ? ((a1_eligible or a3_eligible or b1_eligible) ? ",SB1" : "SB1") : "") + (orb1_eligible ? ((a1_eligible or a3_eligible or b1_eligible or sb1_eligible) ? ",ORB1" : "ORB1") : "")
@@ -334,31 +322,58 @@ if barstate.isconfirmed
 
 // ============================================================================
 // SECTION 7: STATUS TABLE
+// NOTE: table and table.cell calls must be inside barstate.islast block.
+//       table.cell is called directly — no local function wrapper needed.
 // ============================================================================
 var table t_status = na
 if i_show_table and barstate.islast
     if na(t_status)
         t_status := table.new(position.top_right, 2, 15, bgcolor=color.new(color.black, 10), border_width=1, border_color=color.new(color.gray, 60), frame_width=1, frame_color=color.new(color.gray, 40))
 
-    f_row(idx, k, v, vc) =>
-        table.cell(t_status, 0, idx, k, text_color=color.new(color.gray, 20), text_size=size.small, bgcolor=color.new(color.black, 20))
-        table.cell(t_status, 1, idx, v, text_color=vc, text_size=size.small, bgcolor=color.new(color.black, 10))
+    table.cell(t_status, 0, 0,  "ATLAS MEMORY M-16",  text_color=color.new(color.gray, 20),  text_size=size.small, bgcolor=color.new(color.black, 20))
+    table.cell(t_status, 1, 0,  "v" + MODULE_VERSION + " [095A-fix]",                         text_color=color.new(color.cyan, 0),   text_size=size.small, bgcolor=color.new(color.black, 10))
 
-    f_row(0,  "ATLAS MEMORY M-16",  "v" + MODULE_VERSION + " [095A-fix]",                                                                 color.new(color.cyan, 0))
-    f_row(1,  "Webhook",            i_enable_webhook ? "ENABLED" : "DISABLED",                                                            i_enable_webhook ? color.new(color.green, 0) : color.new(color.yellow, 0))
-    f_row(2,  "Observations",       str.tostring(v_obs_count),                                                                            color.new(color.white, 0))
-    f_row(3,  "Errors",             str.tostring(v_error_count),                                                                          v_error_count > 0 ? color.new(color.red, 0) : color.new(color.green, 0))
-    f_row(4,  "Session",            session_val,                                                                                          color.new(color.yellow, 0))
-    f_row(5,  "Regime",             regime_val,                                                                                           adx_trending_val ? color.new(color.green, 0) : color.new(color.gray, 0))
-    f_row(6,  "ADX",                str.tostring(adx14_val, "#.#"),                                                                       adx_trending_val ? color.new(color.green, 0) : color.new(color.gray, 0))
-    f_row(7,  "CHOP",               str.tostring(chop_val, "#.#"),                                                                        chop_val < 55 ? color.new(color.green, 0) : color.new(color.red, 0))
-    f_row(8,  "EMA Align",          ema_struct,                                                                                           ema_bull_val ? color.new(color.green, 0) : ema_bear_val ? color.new(color.red, 0) : color.new(color.yellow, 0))
-    f_row(9,  "ATR Expansion",      str.tostring(volcomp_val, "#.###") + " (thresh 1.00)",                                                is_exp_val ? color.new(color.orange, 0) : is_comp_val ? color.new(color.blue, 0) : color.new(color.white, 0))
-    f_row(10, "Vol State",          vol_state_val,                                                                                        is_exp_val ? color.new(color.orange, 0) : is_comp_val ? color.new(color.blue, 0) : color.new(color.white, 0))
-    f_row(11, "Active Models",      active_models_display,                                                                                color.new(color.cyan, 0))
-    f_row(12, "ORB-1",              orb1_eligible ? "ELIGIBLE" : "NOT ELIGIBLE",                                                          orb1_eligible ? color.new(color.green, 0) : color.new(color.gray, 0))
-    f_row(13, "SB1 RAS",            str.tostring(i_sb1_ras, "#.#") + (i_sb1_activated ? " ACTIVE" : " SUPPRESSED"),                      i_sb1_activated ? color.new(color.green, 0) : color.new(color.red, 0))
-    f_row(14, "Confirmed",          barstate.isconfirmed ? "YES" : "NO",                                                                  barstate.isconfirmed ? color.new(color.green, 0) : color.new(color.yellow, 0))
+    table.cell(t_status, 0, 1,  "Webhook",             text_color=color.new(color.gray, 20),  text_size=size.small, bgcolor=color.new(color.black, 20))
+    table.cell(t_status, 1, 1,  i_enable_webhook ? "ENABLED" : "DISABLED",                    text_color=i_enable_webhook ? color.new(color.green, 0) : color.new(color.yellow, 0), text_size=size.small, bgcolor=color.new(color.black, 10))
+
+    table.cell(t_status, 0, 2,  "Observations",        text_color=color.new(color.gray, 20),  text_size=size.small, bgcolor=color.new(color.black, 20))
+    table.cell(t_status, 1, 2,  str.tostring(v_obs_count),                                    text_color=color.new(color.white, 0),  text_size=size.small, bgcolor=color.new(color.black, 10))
+
+    table.cell(t_status, 0, 3,  "Errors",              text_color=color.new(color.gray, 20),  text_size=size.small, bgcolor=color.new(color.black, 20))
+    table.cell(t_status, 1, 3,  str.tostring(v_error_count),                                  text_color=v_error_count > 0 ? color.new(color.red, 0) : color.new(color.green, 0), text_size=size.small, bgcolor=color.new(color.black, 10))
+
+    table.cell(t_status, 0, 4,  "Session",             text_color=color.new(color.gray, 20),  text_size=size.small, bgcolor=color.new(color.black, 20))
+    table.cell(t_status, 1, 4,  session_val,                                                  text_color=color.new(color.yellow, 0), text_size=size.small, bgcolor=color.new(color.black, 10))
+
+    table.cell(t_status, 0, 5,  "Regime",              text_color=color.new(color.gray, 20),  text_size=size.small, bgcolor=color.new(color.black, 20))
+    table.cell(t_status, 1, 5,  regime_val,                                                   text_color=adx_trending_val ? color.new(color.green, 0) : color.new(color.gray, 0), text_size=size.small, bgcolor=color.new(color.black, 10))
+
+    table.cell(t_status, 0, 6,  "ADX",                 text_color=color.new(color.gray, 20),  text_size=size.small, bgcolor=color.new(color.black, 20))
+    table.cell(t_status, 1, 6,  str.tostring(adx14_val, "#.#"),                               text_color=adx_trending_val ? color.new(color.green, 0) : color.new(color.gray, 0), text_size=size.small, bgcolor=color.new(color.black, 10))
+
+    table.cell(t_status, 0, 7,  "CHOP",                text_color=color.new(color.gray, 20),  text_size=size.small, bgcolor=color.new(color.black, 20))
+    table.cell(t_status, 1, 7,  str.tostring(chop_val, "#.#"),                                text_color=chop_val < 55 ? color.new(color.green, 0) : color.new(color.red, 0), text_size=size.small, bgcolor=color.new(color.black, 10))
+
+    table.cell(t_status, 0, 8,  "EMA Align",           text_color=color.new(color.gray, 20),  text_size=size.small, bgcolor=color.new(color.black, 20))
+    table.cell(t_status, 1, 8,  ema_struct,                                                   text_color=ema_bull_val ? color.new(color.green, 0) : ema_bear_val ? color.new(color.red, 0) : color.new(color.yellow, 0), text_size=size.small, bgcolor=color.new(color.black, 10))
+
+    table.cell(t_status, 0, 9,  "ATR Expansion",       text_color=color.new(color.gray, 20),  text_size=size.small, bgcolor=color.new(color.black, 20))
+    table.cell(t_status, 1, 9,  str.tostring(volcomp_val, "#.###") + " (t:1.00)",             text_color=is_exp_val ? color.new(color.orange, 0) : is_comp_val ? color.new(color.blue, 0) : color.new(color.white, 0), text_size=size.small, bgcolor=color.new(color.black, 10))
+
+    table.cell(t_status, 0, 10, "Vol State",           text_color=color.new(color.gray, 20),  text_size=size.small, bgcolor=color.new(color.black, 20))
+    table.cell(t_status, 1, 10, vol_state_val,                                                text_color=is_exp_val ? color.new(color.orange, 0) : is_comp_val ? color.new(color.blue, 0) : color.new(color.white, 0), text_size=size.small, bgcolor=color.new(color.black, 10))
+
+    table.cell(t_status, 0, 11, "Active Models",       text_color=color.new(color.gray, 20),  text_size=size.small, bgcolor=color.new(color.black, 20))
+    table.cell(t_status, 1, 11, active_models_display,                                        text_color=color.new(color.cyan, 0),   text_size=size.small, bgcolor=color.new(color.black, 10))
+
+    table.cell(t_status, 0, 12, "ORB-1",               text_color=color.new(color.gray, 20),  text_size=size.small, bgcolor=color.new(color.black, 20))
+    table.cell(t_status, 1, 12, orb1_eligible ? "ELIGIBLE" : "NOT ELIGIBLE",                  text_color=orb1_eligible ? color.new(color.green, 0) : color.new(color.gray, 0), text_size=size.small, bgcolor=color.new(color.black, 10))
+
+    table.cell(t_status, 0, 13, "SB1 RAS",             text_color=color.new(color.gray, 20),  text_size=size.small, bgcolor=color.new(color.black, 20))
+    table.cell(t_status, 1, 13, str.tostring(i_sb1_ras, "#.#") + (i_sb1_activated ? " ACTIVE" : " SUPPRESSED"), text_color=i_sb1_activated ? color.new(color.green, 0) : color.new(color.red, 0), text_size=size.small, bgcolor=color.new(color.black, 10))
+
+    table.cell(t_status, 0, 14, "Confirmed",           text_color=color.new(color.gray, 20),  text_size=size.small, bgcolor=color.new(color.black, 20))
+    table.cell(t_status, 1, 14, barstate.isconfirmed ? "YES" : "NO",                          text_color=barstate.isconfirmed ? color.new(color.green, 0) : color.new(color.yellow, 0), text_size=size.small, bgcolor=color.new(color.black, 10))
 
 // ============================================================================
 // SECTION 8: HEARTBEAT LABEL
