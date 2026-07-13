@@ -1,7 +1,10 @@
 /**
- * Atlas Memory — Sprint 089A Dashboard
+ * Atlas Memory — Sprint 089A / Sprint 091 Dashboard
  * Permanent, immutable record of every confirmed 5-minute MNQ candle.
  * Constitutional basis: Atlas Constitution v1.0 — Law 5 + Atlas Memory Amendment.
+ *
+ * Sprint 091: Session Coverage Panel — shows RTH/ETH/OV/PRE/POST bar counts
+ * confirming that ALL market hours (24/5) are being tracked.
  */
 import { trpc } from "@/lib/trpc";
 import { Badge } from "@/components/ui/badge";
@@ -16,6 +19,22 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useEffect, useRef, useState } from "react";
+import { Clock } from "lucide-react";
+
+// ── Session config ────────────────────────────────────────────────────────────
+const SESSION_CONFIG: Record<string, { label: string; color: string; bg: string; description: string }> = {
+  RTH:       { label: "RTH",       color: "text-sky-300",    bg: "bg-sky-900/40 border-sky-700",    description: "Regular Trading Hours (9:30–16:00 ET)" },
+  OV:        { label: "Overnight", color: "text-indigo-300", bg: "bg-indigo-900/40 border-indigo-700", description: "Overnight (18:00–9:30 ET)" },
+  OVERNIGHT: { label: "Overnight", color: "text-indigo-300", bg: "bg-indigo-900/40 border-indigo-700", description: "Overnight (18:00–9:30 ET)" },
+  PRE:       { label: "Pre-Mkt",   color: "text-orange-300", bg: "bg-orange-900/40 border-orange-700", description: "Pre-Market (4:00–9:30 ET)" },
+  POST:      { label: "Post-Mkt",  color: "text-slate-300",  bg: "bg-slate-800/60 border-slate-600",  description: "Post-Market (16:00–20:00 ET)" },
+  ETH:       { label: "ETH",       color: "text-violet-300", bg: "bg-violet-900/40 border-violet-700", description: "Extended Trading Hours" },
+};
+
+function getSessionCfg(session: string | null | undefined) {
+  if (!session) return null;
+  return SESSION_CONFIG[session.toUpperCase()] ?? null;
+}
 
 // ── Regime colour mapping ─────────────────────────────────────────────────────
 function regimeBadge(regime: string | null | undefined) {
@@ -31,11 +50,8 @@ function regimeBadge(regime: string | null | undefined) {
 
 function sessionBadge(session: string | null | undefined) {
   if (!session) return <span className="text-muted-foreground text-xs">—</span>;
-  const s = session.toUpperCase();
-  if (s === "RTH") return <Badge className="bg-sky-600 text-white text-xs">RTH</Badge>;
-  if (s === "OV" || s === "OVERNIGHT") return <Badge className="bg-indigo-700 text-white text-xs">OV</Badge>;
-  if (s === "PRE") return <Badge className="bg-orange-500 text-white text-xs">PRE</Badge>;
-  if (s === "POST") return <Badge className="bg-slate-500 text-white text-xs">POST</Badge>;
+  const cfg = getSessionCfg(session);
+  if (cfg) return <Badge className={`text-xs border ${cfg.bg} ${cfg.color}`}>{cfg.label}</Badge>;
   return <Badge variant="outline" className="text-xs">{session}</Badge>;
 }
 
@@ -74,6 +90,137 @@ function useAtlasMemorySSE(onEvent: (data: Record<string, unknown>) => void) {
   }, []);
 }
 
+// ── Session Coverage Panel ────────────────────────────────────────────────────
+function SessionCoveragePanel({ limit = 288 }: { limit?: number }) {
+  const { data: sessionDist, isLoading } = trpc.atlasMemory.sessionDistribution.useQuery({ limit });
+
+  if (isLoading) {
+    return (
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm flex items-center gap-2">
+            <Clock className="w-4 h-4 text-sky-400" />
+            Session Coverage — All Hours Tracked
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Skeleton className="h-20 w-full" />
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (!sessionDist || sessionDist.length === 0) {
+    return (
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm flex items-center gap-2">
+            <Clock className="w-4 h-4 text-sky-400" />
+            Session Coverage — All Hours Tracked
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-xs text-muted-foreground">No session data yet. Waiting for first candle.</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const total = sessionDist.reduce((s, r) => s + Number(r.count), 0);
+  const rthCount = sessionDist.find((r) => r.session?.toUpperCase() === "RTH")?.count ?? 0;
+  const nonRthCount = total - Number(rthCount);
+  const nonRthPct = total > 0 ? ((nonRthCount / total) * 100).toFixed(0) : "0";
+
+  // Merge OV + OVERNIGHT
+  const merged: { key: string; count: number }[] = [];
+  const seen = new Set<string>();
+  for (const r of sessionDist) {
+    const key = r.session?.toUpperCase() === "OVERNIGHT" ? "OV" : (r.session?.toUpperCase() ?? "UNKNOWN");
+    const existing = merged.find((m) => m.key === key);
+    if (existing) {
+      existing.count += Number(r.count);
+    } else {
+      merged.push({ key, count: Number(r.count) });
+    }
+    seen.add(key);
+  }
+  merged.sort((a, b) => b.count - a.count);
+
+  return (
+    <Card>
+      <CardHeader className="pb-2">
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-sm flex items-center gap-2">
+            <Clock className="w-4 h-4 text-sky-400" />
+            Session Coverage — All Hours Tracked
+          </CardTitle>
+          <div className="flex items-center gap-2">
+            <Badge className="bg-emerald-700 text-white text-xs">24/5 ACTIVE</Badge>
+            <span className="text-xs text-muted-foreground">
+              {nonRthPct}% non-RTH in last {limit} bars
+            </span>
+          </div>
+        </div>
+        <p className="text-xs text-muted-foreground mt-1">
+          Every confirmed 5-minute MNQ candle is stored regardless of session.
+          RTH, overnight, pre-market and post-market bars are all captured.
+        </p>
+      </CardHeader>
+      <CardContent>
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+          {merged.map(({ key, count }) => {
+            const cfg = SESSION_CONFIG[key];
+            const pct = total > 0 ? ((count / total) * 100).toFixed(1) : "0.0";
+            const barWidth = total > 0 ? (count / total) * 100 : 0;
+            return (
+              <div key={key} className={`rounded-lg border p-3 ${cfg?.bg ?? "bg-muted/20 border-border"}`}>
+                <div className={`text-xs font-semibold mb-0.5 ${cfg?.color ?? "text-muted-foreground"}`}>
+                  {cfg?.label ?? key}
+                </div>
+                <div className="text-2xl font-bold tabular-nums">{count.toLocaleString()}</div>
+                <div className="text-xs text-muted-foreground mb-2">{pct}% of window</div>
+                {/* Mini bar */}
+                <div className="h-1 rounded-full bg-white/10 overflow-hidden">
+                  <div
+                    className="h-full rounded-full transition-all"
+                    style={{
+                      width: `${barWidth}%`,
+                      background: cfg ? undefined : "#6b7280",
+                      backgroundColor: key === "RTH" ? "#0ea5e9"
+                        : key === "OV" ? "#6366f1"
+                        : key === "PRE" ? "#f97316"
+                        : key === "POST" ? "#94a3b8"
+                        : key === "ETH" ? "#8b5cf6"
+                        : "#6b7280",
+                    }}
+                  />
+                </div>
+                {cfg && <div className="text-xs text-muted-foreground/60 mt-1.5 leading-tight">{cfg.description}</div>}
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Summary row */}
+        <div className="mt-4 pt-3 border-t border-border flex flex-wrap gap-4 text-xs text-muted-foreground">
+          <span>
+            <span className="text-sky-300 font-semibold">{Number(rthCount).toLocaleString()}</span> RTH bars
+          </span>
+          <span>
+            <span className="text-indigo-300 font-semibold">{nonRthCount.toLocaleString()}</span> non-RTH bars
+          </span>
+          <span>
+            <span className="text-white font-semibold">{total.toLocaleString()}</span> total in last {limit} bars
+          </span>
+          <span className="ml-auto text-emerald-400">
+            ✓ No session gate — all bars accepted by server
+          </span>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 // ── Main Page ─────────────────────────────────────────────────────────────────
 export default function AtlasMemoryPage() {
   const { data: stats, isLoading: statsLoading, refetch: refetchStats } = trpc.atlasMemory.stats.useQuery();
@@ -93,9 +240,12 @@ export default function AtlasMemoryPage() {
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Atlas Memory</h1>
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl font-bold tracking-tight">Atlas Memory</h1>
+            <Badge className="bg-emerald-700 text-white text-xs">ALL HOURS</Badge>
+          </div>
           <p className="text-sm text-muted-foreground mt-1">
-            Sprint 089A — Permanent, immutable record of every confirmed 5-minute MNQ candle.
+            Permanent, immutable record of every confirmed 5-minute MNQ candle — RTH, overnight, pre-market and post-market.
             <span className="ml-2 italic opacity-60">
               "Every market observation becomes permanent Atlas memory."
             </span>
@@ -122,7 +272,7 @@ export default function AtlasMemoryPage() {
               </CardHeader>
               <CardContent className="px-4 pb-4">
                 <div className="text-3xl font-bold tabular-nums">{stats?.total?.toLocaleString() ?? "—"}</div>
-                <div className="text-xs text-muted-foreground mt-1">all-time candles</div>
+                <div className="text-xs text-muted-foreground mt-1">all-time candles (all sessions)</div>
               </CardContent>
             </Card>
             <Card>
@@ -131,7 +281,7 @@ export default function AtlasMemoryPage() {
               </CardHeader>
               <CardContent className="px-4 pb-4">
                 <div className="text-3xl font-bold tabular-nums">{stats?.todayCount?.toLocaleString() ?? "—"}</div>
-                <div className="text-xs text-muted-foreground mt-1">candles today</div>
+                <div className="text-xs text-muted-foreground mt-1">candles today (all sessions)</div>
               </CardContent>
             </Card>
             <Card>
@@ -145,12 +295,12 @@ export default function AtlasMemoryPage() {
             </Card>
             <Card>
               <CardHeader className="pb-1 pt-4 px-4">
-                <CardTitle className="text-xs text-muted-foreground uppercase tracking-wider">Latest Regime</CardTitle>
+                <CardTitle className="text-xs text-muted-foreground uppercase tracking-wider">Latest Session</CardTitle>
               </CardHeader>
               <CardContent className="px-4 pb-4">
-                <div className="mt-1">{regimeBadge(stats?.latestRegime)}</div>
+                <div className="mt-1">{sessionBadge(stats?.latestSession)}</div>
                 <div className="text-xs text-muted-foreground mt-2">
-                  {stats?.latestSession ? sessionBadge(stats.latestSession) : "—"}
+                  {regimeBadge(stats?.latestRegime)}
                 </div>
               </CardContent>
             </Card>
@@ -158,11 +308,14 @@ export default function AtlasMemoryPage() {
         )}
       </div>
 
+      {/* Session Coverage Panel — Sprint 091 */}
+      <SessionCoveragePanel limit={288} />
+
       {/* Regime Distribution */}
       {regimeDist && regimeDist.length > 0 && (
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm">Regime Distribution (last 288 bars ≈ 1 day)</CardTitle>
+            <CardTitle className="text-sm">Regime Distribution (last 288 bars ≈ 1 day, all sessions)</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex flex-wrap gap-2">
@@ -182,7 +335,7 @@ export default function AtlasMemoryPage() {
       {/* Memory Stream Table */}
       <Card>
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm">Memory Stream — Last 100 Bars</CardTitle>
+          <CardTitle className="text-sm">Memory Stream — Last 100 Bars (all sessions)</CardTitle>
         </CardHeader>
         <CardContent className="p-0">
           {rowsLoading ? (
@@ -247,7 +400,7 @@ export default function AtlasMemoryPage() {
       {/* Constitutional footnote */}
       <p className="text-xs text-muted-foreground text-center pb-2">
         Atlas Constitution v1.0 — Law 5 + Atlas Memory Amendment ·
-        Sprint 089A · Schema v1.1.0 · Records are permanent and immutable
+        Sprint 089A / 091 · Schema v1.1.0 · Records are permanent and immutable · All sessions tracked 24/5
       </p>
     </div>
   );

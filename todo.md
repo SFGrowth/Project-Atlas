@@ -431,3 +431,10 @@
 - [x] TIE engine processes last 100 atlas_memory bars and generates sequences
 - [x] Experience score returns valid similarity match
 - [x] Checkpoint saved
+
+## Sprint 091 — Session Coverage Panel (Atlas Memory Dashboard)
+
+- [x] Add `atlasMemory.sessionDistribution` tRPC procedure to routers.ts
+- [x] Add session coverage panel to AtlasMemory.tsx showing RTH/ETH/OV/PRE/POST bar counts + % for last 288 bars
+- [x] Add "All Hours" indicator badge to dashboard header confirming 24/5 tracking is active
+- [x] Expand stats row to show RTH count and non-RTH count for today

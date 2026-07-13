@@ -796,6 +796,12 @@ export const appRouter = router({
         const { getRegimeDistribution } = await import("./atlasMemoryDb");
         return getRegimeDistribution(input.limit);
       }),
+    sessionDistribution: publicProcedure
+      .input(z.object({ limit: z.number().min(1).max(1000).default(288) }))
+      .query(async ({ input }) => {
+        const { getSessionDistribution } = await import("./atlasMemoryDb");
+        return getSessionDistribution(input.limit);
+      }),
   }),
 
   // ── Temporal Intelligence Engine (Sprint 090) ─────────────────────────────

@@ -99,16 +99,25 @@ export async function getRegimeDistribution(limit = 288) {
 }
 
 // ── Session distribution (last N bars) ───────────────────────────────────────
+// Uses a subquery to first get the N most recent bars, then groups by session.
 export async function getSessionDistribution(limit = 288) {
   const db = await getDb();
   if (!db) throw new Error("DB unavailable");
+  // Subquery: get the IDs of the N most recent bars
+  const recentIds = db
+    .select({ id: atlasMemory.id })
+    .from(atlasMemory)
+    .orderBy(desc(atlasMemory.barTime))
+    .limit(limit)
+    .as("recent");
+  // Group by session within those N bars
   return db
     .select({
       session: atlasMemory.session,
       count: sql<number>`count(*)`,
     })
     .from(atlasMemory)
-    .orderBy(desc(atlasMemory.barTime))
-    .limit(limit)
-    .groupBy(atlasMemory.session);
+    .innerJoin(recentIds, sql`${atlasMemory.id} = ${recentIds.id}`)
+    .groupBy(atlasMemory.session)
+    .orderBy(desc(sql<number>`count(*)`));
 }
