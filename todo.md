@@ -441,37 +441,37 @@
 
 ## Sprint 094 — Project DARWIN
 
-- [ ] DB schema: darwin_candidates, darwin_hypotheses, darwin_backtests, darwin_weekly_reports, darwin_self_eval tables
-- [ ] Apply DB migration via webdev_execute_sql
-- [ ] DARWIN analysis engine (darwinEngine.ts) — continuous Atlas Memory analysis, behaviour detection
-- [ ] Hypothesis generation with statistical significance scoring
-- [ ] Portfolio impact assessment (PCS, correlation, DD impact)
-- [ ] Robustness testing framework (sensitivity, parameter stability, stress tests)
-- [ ] tRPC procedures: darwin router (getCandidates, getHypotheses, getWeeklyReports, getSelfEval, getStats, triggerAnalysis)
-- [ ] Weekly research report scheduled job (every Sunday)
-- [ ] DARWIN dashboard page (live research laboratory UI)
-- [ ] Sprint 094 research report with constitutional amendment
-- [ ] Checkpoint save
+- [x] DB schema: darwin_candidates, darwin_hypotheses, darwin_backtests, darwin_weekly_reports, darwin_self_eval tables
+- [x] Apply DB migration via webdev_execute_sql
+- [x] DARWIN analysis engine (darwinEngine.ts) — continuous Atlas Memory analysis, behaviour detection
+- [x] Hypothesis generation with statistical significance scoring
+- [x] Portfolio impact assessment (PCS, correlation, DD impact)
+- [x] Robustness testing framework (sensitivity, parameter stability, stress tests)
+- [x] tRPC procedures: darwin router (getCandidates, getHypotheses, getWeeklyReports, getSelfEval, getStats, triggerAnalysis)
+- [x] Weekly research report scheduled job (every Sunday)
+- [x] DARWIN dashboard page (live research laboratory UI)
+- [x] Sprint 094 research report with constitutional amendment
+- [x] Checkpoint save
 
 ## Sprint 094A — DARWIN Evolution (Autonomous Research Organisation)
-- [ ] Add darwin_job_queue table to schema
-- [ ] Add darwin_research_memory table to schema
-- [ ] Add darwin_exec_briefings table to schema
-- [ ] Apply DB migration for new tables
-- [ ] Build darwinAutonomous.ts: job queue manager, duplicate protection, layered scheduler
-- [ ] Layer 1: per-bar incremental updates (triggered by atlas-memory webhook)
-- [ ] Layer 2: hourly analysis (heartbeat)
-- [ ] Layer 3: daily research review (heartbeat)
-- [ ] Layer 4: weekly executive briefing (heartbeat, Sunday)
-- [ ] Layer 5: monthly full audit (heartbeat)
-- [ ] Historical knowledge ingestion: replay 2-year MNQ archive
-- [ ] Generate Atlas Foundational Research Report
-- [ ] Research economy scoring (ROI per research hour)
-- [ ] Owner notifications for high-confidence candidates, promotions, failures
-- [ ] Update DARWIN dashboard: autonomous mode, engine status, queue, velocity
-- [ ] Wire heartbeat scheduled jobs
-- [ ] Tests: queue recovery, duplicate protection, historical replay
-- [ ] Save checkpoint and produce Sprint 094A report
+- [x] Add darwin_job_queue table to schema
+- [x] Add darwin_research_memory table to schema
+- [x] Add darwin_exec_briefings table to schema
+- [x] Apply DB migration for new tables
+- [x] Build darwinAutonomous.ts: job queue manager, duplicate protection, layered scheduler
+- [x] Layer 1: per-bar incremental updates (triggered by atlas-memory webhook)
+- [x] Layer 2: hourly analysis (heartbeat)
+- [x] Layer 3: daily research review (heartbeat)
+- [x] Layer 4: weekly executive briefing (heartbeat, Sunday)
+- [x] Layer 5: monthly full audit (heartbeat)
+- [x] Historical knowledge ingestion: replay 2-year MNQ archive
+- [x] Generate Atlas Foundational Research Report
+- [x] Research economy scoring (ROI per research hour)
+- [x] Owner notifications for high-confidence candidates, promotions, failures
+- [x] Update DARWIN dashboard: autonomous mode, engine status, queue, velocity
+- [x] Wire heartbeat scheduled jobs
+- [ ] Tests: queue recovery, duplicate protection, historical replay (Sprint 100 backlog)
+- [x] Save checkpoint and produce Sprint 094A report
 
 ## Sprint 095A — Discovery Validation & Regime Recalibration
 - [x] AES-001 context search: Sprint 032 RC-003 rejection confirmed on real data
@@ -490,3 +490,24 @@
 - [x] M-16 v1.2.1: expandThresh recalibrated 1.20 → 1.00 (Part 8 action item)
 - [x] M-16 v1.2.1: regime_classification JSON closing quote bug fixed
 - [x] M-16 v1.2.1 committed and pushed to GitHub (sprint-051)
+
+## Sprint 099 — Atlas Live Data Certification & Autonomous Operations Engine
+
+- [x] AES-001: Read all institutional memory (KNOWLEDGE_BASE, ATLAS_MARKET_LAWS, Sprint 096/097/098 outputs, existing schema, scheduled jobs, routers.ts)
+- [x] Add candle_certifications table to schema
+- [x] Add candle_gap_log table to schema
+- [x] Add market_laws table to schema
+- [x] Add morning_briefs table to schema
+- [x] Add live_concordance table to schema
+- [x] Add pipeline_health_events table to schema
+- [x] Apply DB migration via webdev_execute_sql
+- [x] Seed 6 Atlas Market Laws (ML-001 through ML-006) into market_laws table
+- [x] Build atlasAutonomous.ts: pipeline certification, gap detection, heartbeat monitor, morning brief, daily intelligence report, weekly executive review, live vs historical concordance, self-healing
+- [x] Register 5 Sprint-099 scheduled job endpoints in scheduledJobs.ts (total: 14 endpoints)
+- [x] Add Sprint 099 tRPC autonomous router to routers.ts (systemHealth, pipelineHealthEvents, candleGapLog, marketLaws, latestMorningBrief, latestConcordance, triggerMorningBrief, triggerHeartbeat, registerCronJobs)
+- [x] Build permanent Atlas Owner Dashboard (/autonomous page)
+- [x] TypeScript: 0 errors
+- [x] KNOWLEDGE_BASE.md updated with Sprint 099 entry
+- [x] SPRINT-099-Report.md committed to GitHub sprint-051
+- [x] Checkpoint saved (version: 7e48f1cd)
+- [ ] Register 5 Sprint-099 Heartbeat cron jobs via /autonomous dashboard (requires owner login — Sprint 100 action)
