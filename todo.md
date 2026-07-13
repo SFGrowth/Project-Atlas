@@ -452,3 +452,23 @@
 - [ ] DARWIN dashboard page (live research laboratory UI)
 - [ ] Sprint 094 research report with constitutional amendment
 - [ ] Checkpoint save
+
+## Sprint 094A — DARWIN Evolution (Autonomous Research Organisation)
+- [ ] Add darwin_job_queue table to schema
+- [ ] Add darwin_research_memory table to schema
+- [ ] Add darwin_exec_briefings table to schema
+- [ ] Apply DB migration for new tables
+- [ ] Build darwinAutonomous.ts: job queue manager, duplicate protection, layered scheduler
+- [ ] Layer 1: per-bar incremental updates (triggered by atlas-memory webhook)
+- [ ] Layer 2: hourly analysis (heartbeat)
+- [ ] Layer 3: daily research review (heartbeat)
+- [ ] Layer 4: weekly executive briefing (heartbeat, Sunday)
+- [ ] Layer 5: monthly full audit (heartbeat)
+- [ ] Historical knowledge ingestion: replay 2-year MNQ archive
+- [ ] Generate Atlas Foundational Research Report
+- [ ] Research economy scoring (ROI per research hour)
+- [ ] Owner notifications for high-confidence candidates, promotions, failures
+- [ ] Update DARWIN dashboard: autonomous mode, engine status, queue, velocity
+- [ ] Wire heartbeat scheduled jobs
+- [ ] Tests: queue recovery, duplicate protection, historical replay
+- [ ] Save checkpoint and produce Sprint 094A report

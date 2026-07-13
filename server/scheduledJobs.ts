@@ -26,6 +26,12 @@ import {
   computeRollingStats,
   updateScheduledJobRun,
 } from "./sb1Db";
+import {
+  runHourlyAnalysis,
+  runDailyResearchReview,
+  runWeeklyExecutiveBriefing,
+  runMonthlyAudit,
+} from "./darwinAutonomous";
 
 // ─── Utility ─────────────────────────────────────────────────────────────────
 
@@ -327,5 +333,59 @@ export function registerScheduledJobs(app: Router): void {
     });
   });
 
-  console.log("[Scheduler] Registered 5 scheduled job endpoints");
+  // ─── DARWIN Autonomous Jobs (Sprint 094A) ─────────────────────────────────
+
+  // DARWIN Hourly Analysis — every hour during market hours
+  app.post("/api/scheduled/darwin-hourly", async (req, res) => {
+    try {
+      const auth = await sdk.authenticateRequest(req);
+      if (!auth.isCron) { res.status(403).json({ error: "Forbidden" }); return; }
+      await runHourlyAnalysis();
+      res.json({ ok: true, job: "darwin-hourly", timestamp: new Date().toISOString() });
+    } catch (err) {
+      console.error("[DARWIN] Hourly analysis error:", err);
+      if (!res.headersSent) res.status(500).json({ error: String(err) });
+    }
+  });
+
+  // DARWIN Daily Review — 4:45 PM ET (21:45 UTC) weekdays
+  app.post("/api/scheduled/darwin-daily", async (req, res) => {
+    try {
+      const auth = await sdk.authenticateRequest(req);
+      if (!auth.isCron) { res.status(403).json({ error: "Forbidden" }); return; }
+      await runDailyResearchReview();
+      res.json({ ok: true, job: "darwin-daily", timestamp: new Date().toISOString() });
+    } catch (err) {
+      console.error("[DARWIN] Daily review error:", err);
+      if (!res.headersSent) res.status(500).json({ error: String(err) });
+    }
+  });
+
+  // DARWIN Weekly Briefing — Saturdays 09:00 ET (13:00 UTC)
+  app.post("/api/scheduled/darwin-weekly", async (req, res) => {
+    try {
+      const auth = await sdk.authenticateRequest(req);
+      if (!auth.isCron) { res.status(403).json({ error: "Forbidden" }); return; }
+      await runWeeklyExecutiveBriefing();
+      res.json({ ok: true, job: "darwin-weekly", timestamp: new Date().toISOString() });
+    } catch (err) {
+      console.error("[DARWIN] Weekly briefing error:", err);
+      if (!res.headersSent) res.status(500).json({ error: String(err) });
+    }
+  });
+
+  // DARWIN Monthly Audit — 1st of month 09:00 ET
+  app.post("/api/scheduled/darwin-monthly", async (req, res) => {
+    try {
+      const auth = await sdk.authenticateRequest(req);
+      if (!auth.isCron) { res.status(403).json({ error: "Forbidden" }); return; }
+      await runMonthlyAudit();
+      res.json({ ok: true, job: "darwin-monthly", timestamp: new Date().toISOString() });
+    } catch (err) {
+      console.error("[DARWIN] Monthly audit error:", err);
+      if (!res.headersSent) res.status(500).json({ error: String(err) });
+    }
+  });
+
+  console.log("[Scheduler] Registered 9 scheduled job endpoints (5 Atlas + 4 DARWIN)");
 }

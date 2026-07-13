@@ -973,6 +973,54 @@ export const appRouter = router({
       const reportId = await generateWeeklyReport();
       return { reportId, timestamp: Date.now() };
     }),
+
+    // ── Autonomous engine procedures ──────────────────────────────────────────
+    engineStatus: publicProcedure.query(async () => {
+      const { getDarwinEngineStatus } = await import("./darwinAutonomous");
+      return getDarwinEngineStatus();
+    }),
+    latestBriefing: publicProcedure.query(async () => {
+      const { getLatestExecBriefing } = await import("./darwinAutonomous");
+      const r = await getLatestExecBriefing();
+      if (!r) return null;
+      return {
+        ...r,
+        portfolioHealthScore: r.portfolioHealthScore ? String(r.portfolioHealthScore) : null,
+        portfolioCoverageScore: r.portfolioCoverageScore ? String(r.portfolioCoverageScore) : null,
+        darwinHealthScore: r.darwinHealthScore ? String(r.darwinHealthScore) : null,
+        oracleAccuracy: r.oracleAccuracy ? String(r.oracleAccuracy) : null,
+        highestConfidenceScore: r.highestConfidenceScore ? String(r.highestConfidenceScore) : null,
+        estimatedFutureImprovement: r.estimatedFutureImprovement ? String(r.estimatedFutureImprovement) : null,
+          briefingDate: String(r.briefingDate),
+        createdAt: r.createdAt.toISOString(),
+      };
+    }),
+    researchMemory: publicProcedure
+      .input(z.object({ limit: z.number().default(10) }))
+      .query(async ({ input }) => {
+        const { getResearchMemory } = await import("./darwinAutonomous");
+        return getResearchMemory(input.limit);
+      }),
+    triggerHourly: publicProcedure.mutation(async () => {
+      const { runHourlyAnalysis } = await import("./darwinAutonomous");
+      await runHourlyAnalysis();
+      return { ok: true, timestamp: Date.now() };
+    }),
+    triggerDaily: publicProcedure.mutation(async () => {
+      const { runDailyResearchReview } = await import("./darwinAutonomous");
+      await runDailyResearchReview();
+      return { ok: true, timestamp: Date.now() };
+    }),
+    triggerWeekly: publicProcedure.mutation(async () => {
+      const { runWeeklyExecutiveBriefing } = await import("./darwinAutonomous");
+      await runWeeklyExecutiveBriefing();
+      return { ok: true, timestamp: Date.now() };
+    }),
+    ingestHistorical: publicProcedure.mutation(async () => {
+      const { startHistoricalReplay } = await import("./darwinAutonomous");
+      await startHistoricalReplay();
+      return { ok: true, timestamp: Date.now() };
+    }),
   }),
 });
 

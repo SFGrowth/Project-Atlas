@@ -996,3 +996,83 @@ export const darwinSelfEval = mysqlTable("darwin_self_eval", {
 });
 export type DarwinSelfEval = typeof darwinSelfEval.$inferSelect;
 export type InsertDarwinSelfEval = typeof darwinSelfEval.$inferInsert;
+
+// ── darwin_job_queue ──────────────────────────────────────────────────────────
+// Durable autonomous research job queue — survives restarts, no skips, no duplicates.
+export const darwinJobQueue = mysqlTable("darwin_job_queue", {
+  id: int("id").autoincrement().primaryKey(),
+  jobId: varchar("job_id", { length: 64 }).notNull().unique(),
+  jobType: varchar("job_type", { length: 64 }).notNull(),
+  layer: int("layer").notNull().default(1),
+  status: varchar("status", { length: 32 }).notNull().default("PENDING"),
+  priority: int("priority").notNull().default(5),
+  payload: text("payload"),
+  referenceKey: varchar("reference_key", { length: 128 }),
+  scheduledAt: bigint("scheduled_at", { mode: "number" }).notNull(),
+  startedAt: bigint("started_at", { mode: "number" }),
+  completedAt: bigint("completed_at", { mode: "number" }),
+  durationMs: int("duration_ms"),
+  errorMessage: text("error_message"),
+  retryCount: int("retry_count").notNull().default(0),
+  maxRetries: int("max_retries").notNull().default(3),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export type DarwinJob = typeof darwinJobQueue.$inferSelect;
+export type InsertDarwinJob = typeof darwinJobQueue.$inferInsert;
+
+// ── darwin_research_memory ────────────────────────────────────────────────────
+// Permanent institutional research memory — every hypothesis ever investigated.
+export const darwinResearchMemory = mysqlTable("darwin_research_memory", {
+  id: int("id").autoincrement().primaryKey(),
+  memoryId: varchar("memory_id", { length: 64 }).notNull().unique(),
+  candidateId: varchar("candidate_id", { length: 64 }),
+  behaviourClass: varchar("behaviour_class", { length: 64 }),
+  hypothesisDescription: text("hypothesis_description").notNull(),
+  proposedReason: text("proposed_reason"),
+  supportingEvidence: text("supporting_evidence"),
+  backtestSummary: text("backtest_summary"),
+  monteCarloSummary: text("monte_carlo_summary"),
+  robustnessScore: decimal("robustness_score", { precision: 5, scale: 2 }),
+  oracleFindings: text("oracle_findings"),
+  portfolioImpact: text("portfolio_impact"),
+  finalOutcome: varchar("final_outcome", { length: 32 }),
+  rejectionReasons: text("rejection_reasons"),
+  lessonsLearned: text("lessons_learned"),
+  researchHoursEstimate: decimal("research_hours_estimate", { precision: 6, scale: 2 }),
+  certificationProbability: decimal("certification_probability", { precision: 5, scale: 2 }),
+  expectedPortfolioContribution: decimal("expected_portfolio_contribution", { precision: 5, scale: 2 }),
+  roiScore: decimal("roi_score", { precision: 5, scale: 2 }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull().onUpdateNow(),
+});
+export type DarwinResearchMemory = typeof darwinResearchMemory.$inferSelect;
+export type InsertDarwinResearchMemory = typeof darwinResearchMemory.$inferInsert;
+
+// ── darwin_exec_briefings ─────────────────────────────────────────────────────
+// Weekly executive research briefings — auto-generated every Sunday.
+export const darwinExecBriefings = mysqlTable("darwin_exec_briefings", {
+  id: int("id").autoincrement().primaryKey(),
+  briefingId: varchar("briefing_id", { length: 64 }).notNull().unique(),
+  briefingDate: bigint("briefing_date", { mode: "number" }).notNull(),
+  portfolioHealthScore: decimal("portfolio_health_score", { precision: 5, scale: 2 }),
+  portfolioCoverageScore: decimal("portfolio_coverage_score", { precision: 5, scale: 2 }),
+  atlasMemoryGrowth: int("atlas_memory_growth").notNull().default(0),
+  darwinHealthScore: decimal("darwin_health_score", { precision: 5, scale: 2 }),
+  oracleAccuracy: decimal("oracle_accuracy", { precision: 5, scale: 2 }),
+  newObservationsWeek: int("new_observations_week").notNull().default(0),
+  totalCandidates: int("total_candidates").notNull().default(0),
+  promotionCandidates: int("promotion_candidates").notNull().default(0),
+  rejectedCandidates: int("rejected_candidates").notNull().default(0),
+  highestConfidenceDiscovery: varchar("highest_confidence_discovery", { length: 128 }),
+  highestConfidenceScore: decimal("highest_confidence_score", { precision: 5, scale: 2 }),
+  highestExpectedGainCandidate: varchar("highest_expected_gain_candidate", { length: 128 }),
+  highestPriorityResearch: text("highest_priority_research"),
+  modelHealthSummary: text("model_health_summary"),
+  behaviourCoverageMap: text("behaviour_coverage_map"),
+  estimatedFutureImprovement: decimal("estimated_future_improvement", { precision: 5, scale: 2 }),
+  fullBriefingMarkdown: text("full_briefing_markdown"),
+  readTimeSeconds: int("read_time_seconds").notNull().default(45),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export type DarwinExecBriefing = typeof darwinExecBriefings.$inferSelect;
+export type InsertDarwinExecBriefing = typeof darwinExecBriefings.$inferInsert;

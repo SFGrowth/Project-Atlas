@@ -147,6 +147,26 @@ export default function Darwin() {
   const backtestsQ = trpc.darwin.backtests.useQuery({}, { refetchInterval: 60_000 });
   const reportsQ = trpc.darwin.weeklyReports.useQuery(undefined, { refetchInterval: 60_000 });
   const selfEvalQ = trpc.darwin.selfEval.useQuery(undefined, { refetchInterval: 60_000 });
+  const engineStatusQ = trpc.darwin.engineStatus.useQuery(undefined, { refetchInterval: 15_000 });
+  const latestBriefingQ = trpc.darwin.latestBriefing.useQuery(undefined, { refetchInterval: 60_000 });
+  const researchMemoryQ = trpc.darwin.researchMemory.useQuery({ limit: 10 }, { refetchInterval: 120_000 });
+
+  const hourlyMut = trpc.darwin.triggerHourly.useMutation({
+    onSuccess: () => { toast.success("Hourly analysis triggered"); engineStatusQ.refetch(); },
+    onError: () => toast.error("Hourly analysis failed"),
+  });
+  const dailyMut = trpc.darwin.triggerDaily.useMutation({
+    onSuccess: () => { toast.success("Daily review triggered"); engineStatusQ.refetch(); },
+    onError: () => toast.error("Daily review failed"),
+  });
+  const weeklyMut = trpc.darwin.triggerWeekly.useMutation({
+    onSuccess: () => { toast.success("Weekly briefing triggered"); latestBriefingQ.refetch(); },
+    onError: () => toast.error("Weekly briefing failed"),
+  });
+  const ingestMut = trpc.darwin.ingestHistorical.useMutation({
+    onSuccess: () => { toast.success("Historical ingestion started"); statsQ.refetch(); },
+    onError: () => toast.error("Historical ingestion failed"),
+  });
 
   const triggerMut = trpc.darwin.triggerAnalysis.useMutation({
     onSuccess: (data) => {
@@ -258,6 +278,8 @@ export default function Darwin() {
             </TabsTrigger>
             <TabsTrigger value="reports" className="text-xs data-[state=active]:bg-[#1e2a3a]">Weekly Reports</TabsTrigger>
             <TabsTrigger value="self-eval" className="text-xs data-[state=active]:bg-[#1e2a3a]">Self-Evaluation</TabsTrigger>
+            <TabsTrigger value="autonomous" className="text-xs data-[state=active]:bg-[#1e2a3a] text-violet-400">⚙ Autonomous</TabsTrigger>
+            <TabsTrigger value="memory" className="text-xs data-[state=active]:bg-[#1e2a3a]">Research Memory</TabsTrigger>
           </TabsList>
 
           {/* OVERVIEW */}
@@ -474,6 +496,131 @@ export default function Darwin() {
                       </details>
                     </CardContent>
                   )}
+                </Card>
+              ))
+            )}
+          </TabsContent>
+
+          {/* AUTONOMOUS ENGINE */}
+          <TabsContent value="autonomous" className="mt-4 space-y-4">
+            {/* Engine status banner */}
+            {engineStatusQ.isLoading ? (
+              <Skeleton className="h-24 bg-[#0d1117]" />
+            ) : (
+              <Card className={`border ${engineStatusQ.data?.engineStatus === 'OPERATIONAL' ? 'bg-emerald-950/20 border-emerald-500/30' : 'bg-orange-950/20 border-orange-500/30'}`}>
+                <CardContent className="py-4 px-5">
+                  <div className="flex items-center justify-between flex-wrap gap-4">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-3 h-3 rounded-full ${engineStatusQ.data?.engineStatus === 'OPERATIONAL' ? 'bg-emerald-400 animate-pulse' : 'bg-orange-400'}`} />
+                      <div>
+                        <p className="text-sm font-semibold text-slate-100">
+                          DARWIN Autonomous Engine — {engineStatusQ.data?.engineStatus ?? 'UNKNOWN'}
+                        </p>
+                        <p className="text-xs text-slate-400 mt-0.5">
+                          {engineStatusQ.data?.atlasMemorySize ?? 0} total observations · {engineStatusQ.data?.queue?.pending ?? 0} jobs pending · {engineStatusQ.data?.totalCandidates ?? 0} candidates
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex gap-2 flex-wrap">
+                      <Button size="sm" variant="outline" className="text-xs border-[#1e2a3a] text-slate-300 hover:bg-[#1e2a3a]" onClick={() => hourlyMut.mutate()} disabled={hourlyMut.isPending}>
+                        {hourlyMut.isPending ? '...' : '▶ Hourly'}
+                      </Button>
+                      <Button size="sm" variant="outline" className="text-xs border-[#1e2a3a] text-slate-300 hover:bg-[#1e2a3a]" onClick={() => dailyMut.mutate()} disabled={dailyMut.isPending}>
+                        {dailyMut.isPending ? '...' : '▶ Daily Review'}
+                      </Button>
+                      <Button size="sm" variant="outline" className="text-xs border-[#1e2a3a] text-slate-300 hover:bg-[#1e2a3a]" onClick={() => weeklyMut.mutate()} disabled={weeklyMut.isPending}>
+                        {weeklyMut.isPending ? '...' : '▶ Weekly Briefing'}
+                      </Button>
+                      <Button size="sm" className="text-xs bg-violet-600 hover:bg-violet-700 text-white" onClick={() => ingestMut.mutate()} disabled={ingestMut.isPending}>
+                        {ingestMut.isPending ? 'Ingesting...' : '⟳ Ingest Historical'}
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Latest Executive Briefing */}
+            {latestBriefingQ.data ? (
+              <Card className="bg-[#0d1117] border-[#1e2a3a]">
+                <CardHeader className="pb-2 pt-4 px-4">
+                  <CardTitle className="text-xs text-slate-400 uppercase tracking-widest">Latest Executive Briefing</CardTitle>
+                </CardHeader>
+                <CardContent className="px-4 pb-4 space-y-3">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    <div className="text-center">
+                      <p className="text-[10px] text-slate-500 uppercase">Portfolio Health</p>
+                      <p className="text-xl font-mono font-bold text-emerald-400">{parseFloat(latestBriefingQ.data.portfolioHealthScore ?? '0').toFixed(0)}/100</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-[10px] text-slate-500 uppercase">Coverage</p>
+                      <p className="text-xl font-mono font-bold text-orange-400">{parseFloat(latestBriefingQ.data.portfolioCoverageScore ?? '0').toFixed(0)}%</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-[10px] text-slate-500 uppercase">DARWIN Health</p>
+                      <p className="text-xl font-mono font-bold text-violet-400">{parseFloat(latestBriefingQ.data.darwinHealthScore ?? '0').toFixed(0)}/100</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-[10px] text-slate-500 uppercase">Promotion Ready</p>
+                      <p className="text-xl font-mono font-bold text-sky-400">{latestBriefingQ.data.promotionCandidates ?? 0}</p>
+                    </div>
+                  </div>
+                  {latestBriefingQ.data.highestConfidenceDiscovery && (
+                    <div className="border-t border-[#1e2a3a] pt-3">
+                      <p className="text-xs text-slate-500">Highest confidence discovery: <span className="text-slate-200 font-medium">{latestBriefingQ.data.highestConfidenceDiscovery}</span></p>
+                      <p className="text-xs text-slate-500 mt-1">Priority research: <span className="text-orange-300">{latestBriefingQ.data.highestPriorityResearch}</span></p>
+                    </div>
+                  )}
+                  {latestBriefingQ.data.fullBriefingMarkdown && (
+                    <details className="group">
+                      <summary className="text-xs text-slate-500 cursor-pointer hover:text-slate-300">View full briefing ▸</summary>
+                      <pre className="mt-2 text-[11px] text-slate-400 whitespace-pre-wrap leading-relaxed max-h-96 overflow-y-auto border border-[#1e2a3a] rounded p-3 bg-[#070b11]">
+                        {latestBriefingQ.data.fullBriefingMarkdown}
+                      </pre>
+                    </details>
+                  )}
+                </CardContent>
+              </Card>
+            ) : (
+              <Card className="bg-[#0d1117] border-[#1e2a3a]">
+                <CardContent className="py-8 text-center">
+                  <p className="text-slate-500 text-sm">No executive briefing yet. Trigger a weekly briefing to generate one.</p>
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
+
+          {/* RESEARCH MEMORY */}
+          <TabsContent value="memory" className="mt-4 space-y-3">
+            {researchMemoryQ.isLoading ? (
+              Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-24 bg-[#0d1117]" />)
+            ) : (researchMemoryQ.data ?? []).length === 0 ? (
+              <Card className="bg-[#0d1117] border-[#1e2a3a]">
+                <CardContent className="py-16 text-center">
+                  <p className="text-slate-500">No research memory entries yet. DARWIN records lessons learned from every rejected or deferred hypothesis.</p>
+                </CardContent>
+              </Card>
+            ) : (
+              (researchMemoryQ.data ?? []).map((m: any) => (
+                <Card key={m.memoryId} className="bg-[#0d1117] border-[#1e2a3a]">
+                  <CardContent className="py-4 px-4 space-y-2">
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <p className="text-sm font-medium text-slate-200">{m.behaviourClass ?? 'Unknown'}</p>
+                        <p className="text-xs text-slate-400 mt-0.5">{m.hypothesisDescription}</p>
+                      </div>
+                      <Badge className={`text-[10px] shrink-0 border ${
+                        m.finalOutcome === 'CERTIFIED' ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' :
+                        m.finalOutcome === 'REJECTED' ? 'bg-red-500/20 text-red-300 border-red-500/30' :
+                        'bg-slate-700 text-slate-400 border-slate-600'
+                      }`}>{m.finalOutcome}</Badge>
+                    </div>
+                    {m.lessonsLearned && (
+                      <p className="text-xs text-slate-500 border-t border-[#1e2a3a] pt-2">
+                        <span className="text-slate-400 font-medium">Lesson: </span>{m.lessonsLearned}
+                      </p>
+                    )}
+                  </CardContent>
                 </Card>
               ))
             )}
