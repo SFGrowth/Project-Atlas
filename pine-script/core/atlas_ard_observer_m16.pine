@@ -4,16 +4,19 @@
 // atlas_ard_observer_m16.pine
 // =============================================================================
 // Sprint:   095A
-// Version:  1.2.1
+// Version:  1.2.2
 // Module:   M-16
 // Purpose:  ATLAS MEMORY — Emits one BAR_OBSERVATION for every confirmed
 //           five-minute MNQ candle. No candle is ever skipped.
 //
 // CHANGE LOG
+// [1.2.2] 2026-07-13 Sprint 095A
+//   FIXED:   Pine v6 colour compatibility — replaced color.cyan, color.blue,
+//            color.orange, color.purple with color.rgb() equivalents
 // [1.2.1] 2026-07-13 Sprint 095A
 //   CHANGED: expandThresh 1.20 -> 1.00 (F1-optimal, 171/625 eligible days)
 //   FIXED:   regime_classification JSON missing closing quote
-//   FIXED:   f_row removed (Pine v5/v6 no local funcs in if blocks)
+//   FIXED:   f_row removed (no local funcs in if blocks)
 //   FIXED:   active_models_str on single line
 //   UPGRADED: //@version=5 -> //@version=6
 // [1.2.0] 2026-07-13 Sprint 095A — ORB-1 eligibility, active_models payload
@@ -26,12 +29,12 @@ indicator("Atlas ARD Observer — M-16", overlay=false, max_labels_count=10, max
 // ============================================================================
 // SECTION 1: CONSTANTS
 // ============================================================================
-var string SCHEMA_VERSION = "1.2.1"
+var string SCHEMA_VERSION = "1.2.2"
 var string ATLAS_VERSION  = "Sprint-095A"
 var string EVENT_TYPE     = "BAR_OBSERVATION"
 var string SYMBOL         = "MNQ1!"
 var string TIMEFRAME_STR  = "5"
-var string MODULE_VERSION = "1.2.1"
+var string MODULE_VERSION = "1.2.2"
 var int    SPRINT_NUMBER  = 95
 
 // ============================================================================
@@ -113,10 +116,10 @@ h_et    = hour(time, "America/New_York")
 m_et    = minute(time, "America/New_York")
 dow_val = dayofweek(time, "America/New_York")
 
-is_rth_val = h_et >= 9 and (h_et < 16 or (h_et == 16 and m_et == 0))
-is_am_val  = h_et >= 9 and h_et < 12
-is_pm_val  = h_et >= 12 and h_et < 16
-is_ov_val  = not is_rth_val
+is_rth_val  = h_et >= 9 and (h_et < 16 or (h_et == 16 and m_et == 0))
+is_am_val   = h_et >= 9 and h_et < 12
+is_pm_val   = h_et >= 12 and h_et < 16
+is_ov_val   = not is_rth_val
 session_val = is_am_val ? "AM" : is_pm_val ? "PM" : is_ov_val ? "OV" : "MID"
 
 dow_str = dow_val == dayofweek.monday ? "MON" : dow_val == dayofweek.tuesday ? "TUE" : dow_val == dayofweek.wednesday ? "WED" : dow_val == dayofweek.thursday ? "THU" : dow_val == dayofweek.friday ? "FRI" : dow_val == dayofweek.saturday ? "SAT" : "SUN"
@@ -234,6 +237,11 @@ if barstate.isconfirmed
 
 // ============================================================================
 // SECTION 7: STATUS TABLE
+// Pine v6 colour palette — no color.cyan/blue/orange/purple
+// C_CYAN   = color.rgb(0, 229, 255)
+// C_BLUE   = color.rgb(33, 150, 243)
+// C_ORANGE = color.rgb(255, 152, 0)
+// C_PURPLE = color.rgb(156, 39, 176)
 // ============================================================================
 var table t_status = na
 if i_show_table and barstate.islast
@@ -241,7 +249,7 @@ if i_show_table and barstate.islast
         t_status := table.new(position.top_right, 2, 15, bgcolor=color.new(color.black, 10), border_width=1, border_color=color.new(color.gray, 60), frame_width=1, frame_color=color.new(color.gray, 40))
 
     table.cell(t_status, 0, 0,  "ATLAS MEMORY M-16",  text_color=color.new(color.gray, 20), text_size=size.small, bgcolor=color.new(color.black, 20))
-    table.cell(t_status, 1, 0,  "v" + MODULE_VERSION + " [095A-fix]", text_color=color.new(color.cyan, 0), text_size=size.small, bgcolor=color.new(color.black, 10))
+    table.cell(t_status, 1, 0,  "v" + MODULE_VERSION + " [095A]", text_color=color.rgb(0, 229, 255), text_size=size.small, bgcolor=color.new(color.black, 10))
     table.cell(t_status, 0, 1,  "Webhook",  text_color=color.new(color.gray, 20), text_size=size.small, bgcolor=color.new(color.black, 20))
     table.cell(t_status, 1, 1,  i_enable_webhook ? "ENABLED" : "DISABLED", text_color=i_enable_webhook ? color.new(color.green, 0) : color.new(color.yellow, 0), text_size=size.small, bgcolor=color.new(color.black, 10))
     table.cell(t_status, 0, 2,  "Observations", text_color=color.new(color.gray, 20), text_size=size.small, bgcolor=color.new(color.black, 20))
@@ -259,11 +267,11 @@ if i_show_table and barstate.islast
     table.cell(t_status, 0, 8,  "EMA Align", text_color=color.new(color.gray, 20), text_size=size.small, bgcolor=color.new(color.black, 20))
     table.cell(t_status, 1, 8,  ema_struct, text_color=ema_bull_val ? color.new(color.green, 0) : ema_bear_val ? color.new(color.red, 0) : color.new(color.yellow, 0), text_size=size.small, bgcolor=color.new(color.black, 10))
     table.cell(t_status, 0, 9,  "ATR Expansion", text_color=color.new(color.gray, 20), text_size=size.small, bgcolor=color.new(color.black, 20))
-    table.cell(t_status, 1, 9,  str.tostring(volcomp_val, "#.###") + " (t:1.00)", text_color=is_exp_val ? color.new(color.orange, 0) : is_comp_val ? color.new(color.blue, 0) : color.new(color.white, 0), text_size=size.small, bgcolor=color.new(color.black, 10))
+    table.cell(t_status, 1, 9,  str.tostring(volcomp_val, "#.###") + " (t:1.00)", text_color=is_exp_val ? color.rgb(255, 152, 0) : is_comp_val ? color.rgb(33, 150, 243) : color.new(color.white, 0), text_size=size.small, bgcolor=color.new(color.black, 10))
     table.cell(t_status, 0, 10, "Vol State", text_color=color.new(color.gray, 20), text_size=size.small, bgcolor=color.new(color.black, 20))
-    table.cell(t_status, 1, 10, vol_state_val, text_color=is_exp_val ? color.new(color.orange, 0) : is_comp_val ? color.new(color.blue, 0) : color.new(color.white, 0), text_size=size.small, bgcolor=color.new(color.black, 10))
+    table.cell(t_status, 1, 10, vol_state_val, text_color=is_exp_val ? color.rgb(255, 152, 0) : is_comp_val ? color.rgb(33, 150, 243) : color.new(color.white, 0), text_size=size.small, bgcolor=color.new(color.black, 10))
     table.cell(t_status, 0, 11, "Active Models", text_color=color.new(color.gray, 20), text_size=size.small, bgcolor=color.new(color.black, 20))
-    table.cell(t_status, 1, 11, active_models_display, text_color=color.new(color.cyan, 0), text_size=size.small, bgcolor=color.new(color.black, 10))
+    table.cell(t_status, 1, 11, active_models_display, text_color=color.rgb(0, 229, 255), text_size=size.small, bgcolor=color.new(color.black, 10))
     table.cell(t_status, 0, 12, "ORB-1", text_color=color.new(color.gray, 20), text_size=size.small, bgcolor=color.new(color.black, 20))
     table.cell(t_status, 1, 12, orb1_eligible ? "ELIGIBLE" : "NOT ELIGIBLE", text_color=orb1_eligible ? color.new(color.green, 0) : color.new(color.gray, 0), text_size=size.small, bgcolor=color.new(color.black, 10))
     table.cell(t_status, 0, 13, "SB1 RAS", text_color=color.new(color.gray, 20), text_size=size.small, bgcolor=color.new(color.black, 20))
@@ -275,16 +283,16 @@ if i_show_table and barstate.islast
 // SECTION 8: HEARTBEAT LABEL
 // ============================================================================
 if i_show_heartbeat and barstate.islast
-    label.new(bar_index, high + atr14_val * 0.5, "ATLAS MEMORY M-16 v" + MODULE_VERSION + " | " + str.tostring(v_obs_count) + " obs | " + regime_val + " | " + vol_state_val + " | " + (i_enable_webhook ? "LIVE" : "PREVIEW"), style=label.style_label_down, color=color.new(color.purple, 20), textcolor=color.white, size=size.small)
+    label.new(bar_index, high + atr14_val * 0.5, "ATLAS MEMORY M-16 v" + MODULE_VERSION + " | " + str.tostring(v_obs_count) + " obs | " + regime_val + " | " + vol_state_val + " | " + (i_enable_webhook ? "LIVE" : "PREVIEW"), style=label.style_label_down, color=color.rgb(156, 39, 176), textcolor=color.white, size=size.small)
 
 // ============================================================================
 // SECTION 9: PLOTS
 // ============================================================================
-plot(barstate.isconfirmed ? 1 : 0, title="BAR_OBS_TRIGGER",  color=color.new(color.purple, 80), display=display.none)
-plot(v_obs_count,                  title="Observation Count", color=color.new(color.cyan, 80),   display=display.none)
+plot(barstate.isconfirmed ? 1 : 0, title="BAR_OBS_TRIGGER",  color=color.rgb(156, 39, 176, 80), display=display.none)
+plot(v_obs_count,                  title="Observation Count", color=color.rgb(0, 229, 255, 80),  display=display.none)
 plot(v_error_count,                title="Error Count",       color=color.new(color.red, 80),    display=display.none)
 plot(adx14_val,                    title="ADX14",             color=color.new(color.yellow, 80), display=display.pane)
-plot(chop_val,                     title="CHOP14",            color=color.new(color.orange, 80), display=display.pane)
+plot(chop_val,                     title="CHOP14",            color=color.rgb(255, 152, 0, 80),  display=display.pane)
 hline(25,   "ADX Trend Threshold", color=color.new(color.green, 60), linestyle=hline.style_dashed)
 hline(55,   "CHOP Choppy",         color=color.new(color.red, 60),   linestyle=hline.style_dashed)
 hline(38.2, "CHOP Trending",       color=color.new(color.green, 60), linestyle=hline.style_dotted)
