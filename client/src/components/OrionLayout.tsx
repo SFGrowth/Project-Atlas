@@ -8,7 +8,7 @@ import { useIsMobile } from "@/hooks/useMobile";
 import {
   Activity, AlertTriangle, BadgeCheck, BarChart2, BookOpen, Brain, BrainCircuit, CalendarCheck, ChevronLeft, ChevronRight,
   Clock, Cpu, Database, Dna, FlaskConical, GitBranch, Home, LayoutDashboard, Layers, LineChart, Menu,
-  Radio, Settings, Shield, Target, Telescope, TrendingUp, Zap,
+  Radio, Settings, Shield, ShieldCheck, Target, Telescope, TrendingUp, Zap,
 } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
@@ -78,6 +78,7 @@ const NAV_GROUPS = [
       { icon: Layers, label: "Portfolio (PIE)", path: "/portfolio" },
       { icon: Dna, label: "DARWIN Research", path: "/darwin" },
       { icon: Cpu, label: "Autonomous Ops", path: "/autonomous" },
+      { icon: ShieldCheck, label: "Live Learning Cert", path: "/live-learning" },
     ],
   },
 ];

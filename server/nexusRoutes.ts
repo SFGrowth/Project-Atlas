@@ -1043,6 +1043,43 @@ export function registerNexusRoutes(router: Router) {
         trend_direction: mem.trendDirection, active_models: mem.activeModels,
         schema_version: mem.schemaVersion, atlas_version: mem.atlasVersion,
       });
+      // ── Sprint 100A: Trigger Live Learning Engine (non-blocking) ──────────────
+      const receivedAtMs = Date.now();
+      setImmediate(async () => {
+        try {
+          const { processLiveBar } = await import("./liveLearnEngine");
+          await processLiveBar({
+            id: result.id!,
+            memoryId,
+            barTime: barTimeMs,
+            symbol: sym,
+            session: mem.session ?? null,
+            regime: mem.regimeClassification ?? null,
+            open: mem.open ?? null,
+            high: mem.high ?? null,
+            low: mem.low ?? null,
+            close: mem.close ?? null,
+            volume: mem.volume ?? null,
+            atr: mem.atr ?? null,
+            atrExpansion: mem.atrExpansion ?? null,
+            rsi: mem.rsi ?? null,
+            vwap: mem.vwap ?? null,
+            ema9: mem.ema9 ?? null,
+            ema21: mem.ema21 ?? null,
+            adx: mem.adx ?? null,
+            adxTrending: mem.adxTrending ?? false,
+            trendDirection: mem.trendDirection ?? null,
+            volatilityState: mem.volatilityState ?? null,
+            a1Eligible: mem.a1Eligible ?? false,
+            a3Eligible: mem.a3Eligible ?? false,
+            b1Eligible: mem.b1Eligible ?? false,
+            sb1Eligible: mem.sb1Eligible ?? false,
+            receivedAt: receivedAtMs,
+          });
+        } catch (leErr) {
+          console.error("[LIVE LEARN] processLiveBar error:", leErr);
+        }
+      });
       return res.status(201).json({ status: "ok", id: result.id, memory_id: memoryId });
     } catch (err) {
       console.error("[ATLAS MEMORY] Ingestion error:", err);

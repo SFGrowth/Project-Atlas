@@ -78,6 +78,13 @@
       "when": 1783977013343,
       "tag": "0010_sloppy_red_shift",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "5",
+      "when": 1783979318153,
+      "tag": "0011_aberrant_nova",
+      "breakpoints": true
     }
   ]
 }

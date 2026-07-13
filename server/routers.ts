@@ -1,8 +1,16 @@
 import { COOKIE_NAME } from "@shared/const";
 import { z } from "zod";
+import { desc, eq, sql } from "drizzle-orm";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
+import {
+  liveLearningCertSessions,
+  behaviourLibrary,
+  candleCertifications,
+  candleGapLog,
+  marketLaws,
+} from "../drizzle/schema";
 import {
   getLatestPipelineReport,
   getPipelineReportCount,
@@ -1156,9 +1164,52 @@ export const appRouter = router({
       return { ok: true, results };
     }),
   }),
+
+  // ─── Sprint 100A: Live Learning Certification ─────────────────────────────
+  liveLearning: router({
+    getSessions: publicProcedure.query(async () => {
+      const { getDb } = await import("./db");
+      const db = await getDb();
+      if (!db) return [];
+      return db.select().from(liveLearningCertSessions).orderBy(desc(liveLearningCertSessions.createdAt)).limit(30);
+    }),
+    getTodaySession: publicProcedure.query(async () => {
+      const { getDb } = await import("./db");
+      const db = await getDb();
+      if (!db) return null;
+      const nowEt = new Date(Date.now() - 4 * 60 * 60 * 1000);
+      const today = nowEt.toISOString().slice(0, 10);
+      const [session] = await db.select().from(liveLearningCertSessions).where(eq(liveLearningCertSessions.sessionDate, today)).limit(1);
+      return session ?? null;
+    }),
+    getBehaviourLibrary: publicProcedure.query(async () => {
+      const { getDb } = await import("./db");
+      const db = await getDb();
+      if (!db) return [];
+      return db.select().from(behaviourLibrary).orderBy(desc(behaviourLibrary.totalObservations));
+    }),
+    getRecentCertifications: publicProcedure.input(z.object({ limit: z.number().default(50) })).query(async ({ input }) => {
+      const { getDb } = await import("./db");
+      const db = await getDb();
+      if (!db) return [];
+      return db.select().from(candleCertifications).orderBy(desc(candleCertifications.certifiedAt)).limit(input.limit);
+    }),
+    getRecentGaps: publicProcedure.input(z.object({ limit: z.number().default(20) })).query(async ({ input }) => {
+      const { getDb } = await import("./db");
+      const db = await getDb();
+      if (!db) return [];
+      return db.select().from(candleGapLog).orderBy(desc(candleGapLog.detectedAt)).limit(input.limit);
+    }),
+    getMarketLaws: publicProcedure.query(async () => {
+      const { getDb } = await import("./db");
+      const db = await getDb();
+      if (!db) return [];
+      return db.select().from(marketLaws).orderBy(marketLaws.lawId);
+    }),
+    runSessionCertification: publicProcedure.mutation(async () => {
+      const { runSessionCertification } = await import("./liveLearnEngine");
+      return runSessionCertification();
+    }),
+  }),
 });
 export type AppRouter = typeof appRouter;
-
-// ── Sprint 099 Autonomous Operations ─────────────────────────────────────────
-// Note: The appRouter closing bracket is above; this file needs to be edited
-// to insert before the closing. Using a separate export instead.

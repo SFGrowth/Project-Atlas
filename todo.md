@@ -511,3 +511,22 @@
 - [x] SPRINT-099-Report.md committed to GitHub sprint-051
 - [x] Checkpoint saved (version: 7e48f1cd)
 - [ ] Register 5 Sprint-099 Heartbeat cron jobs via /autonomous dashboard (requires owner login — Sprint 100 action)
+
+## Sprint 100A — Live Learning Certification
+
+- [x] Add behaviour_library table to schema
+- [x] Add portfolio_intelligence_inputs table to schema
+- [x] Add live_learning_cert_sessions table to schema
+- [x] Apply DB migration via webdev_execute_sql
+- [x] Seed 8 core behaviours from Sprint 096 into behaviour_library
+- [x] Build liveLearnEngine.ts: processLiveBar(), certifyCandle(), updateBehaviourLibrary(), updateSequenceLibrary(), updateMarketLawsFromBar(), writeDarwinResearchMemory(), updatePortfolioIntelligenceInputs(), runSessionCertification()
+- [x] Wire processLiveBar() into atlas-memory webhook handler (non-blocking)
+- [x] Add liveLearning tRPC router (7 queries + 1 mutation)
+- [x] Build LiveLearningDashboard.tsx page (/live-learning)
+- [x] Add /live-learning route to App.tsx
+- [x] Add Live Learning Cert nav link in OrionLayout.tsx (PORTFOLIO group)
+- [x] TypeScript: 0 errors
+- [ ] Checkpoint saved (pending)
+- [ ] Commit all outputs to GitHub sprint-051 (pending)
+- [ ] Write Sprint 100A Report (pending)
+- [ ] Run certification against 5 live RTH sessions (BLOCKED: M-16 fix required first)

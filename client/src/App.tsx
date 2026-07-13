@@ -37,6 +37,7 @@ const TemporalIntelligencePage = lazy(() => import("./pages/TemporalIntelligence
 const PortfolioPage = lazy(() => import("./pages/Portfolio"));
 const DarwinPage = lazy(() => import("./pages/Darwin"));
 const AutonomousDashboardPage = lazy(() => import("./pages/AutonomousDashboard"));
+const LiveLearningPage = lazy(() => import("./pages/LiveLearningDashboard"));
 
 function PageLoader() {
   return (
@@ -83,6 +84,7 @@ function Router() {
           <Route path="/portfolio" component={PortfolioPage} />
           <Route path="/darwin" component={DarwinPage} />
           <Route path="/autonomous" component={AutonomousDashboardPage} />
+          <Route path="/live-learning" component={LiveLearningPage} />
           <Route path="/404" component={NotFound} />
           <Route component={NotFound} />
         </Switch>

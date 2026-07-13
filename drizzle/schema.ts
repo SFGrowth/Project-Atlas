@@ -1278,3 +1278,78 @@ export const pipelineHealthEvents = mysqlTable("pipeline_health_events", {
 });
 export type PipelineHealthEvent = typeof pipelineHealthEvents.$inferSelect;
 export type InsertPipelineHealthEvent = typeof pipelineHealthEvents.$inferInsert;
+
+// ── behaviour_library ─────────────────────────────────────────────────────────
+// Per-behaviour statistics updated on every confirmed candle
+export const behaviourLibrary = mysqlTable("behaviour_library", {
+  id: int("id").autoincrement().primaryKey(),
+  behaviourId: varchar("behaviour_id", { length: 32 }).notNull().unique(),
+  behaviourName: varchar("behaviour_name", { length: 128 }).notNull(),
+  description: text("description"),
+  totalObservations: int("total_observations").default(0).notNull(),
+  continuationCount: int("continuation_count").default(0).notNull(),
+  reversalCount: int("reversal_count").default(0).notNull(),
+  continuationRate: decimal("continuation_rate", { precision: 6, scale: 4 }),
+  avgAtr: decimal("avg_atr", { precision: 10, scale: 4 }),
+  avgVolume: decimal("avg_volume", { precision: 14, scale: 2 }),
+  regimeBreakdown: text("regime_breakdown"),
+  sessionBreakdown: text("session_breakdown"),
+  lastObservedAt: bigint("last_observed_at", { mode: "number" }),
+  lastUpdatedAt: timestamp("last_updated_at").defaultNow().onUpdateNow().notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export type BehaviourLibraryEntry = typeof behaviourLibrary.$inferSelect;
+export type InsertBehaviourLibraryEntry = typeof behaviourLibrary.$inferInsert;
+
+// ── portfolio_intelligence_inputs ─────────────────────────────────────────────
+// Per-bar portfolio intelligence inputs for the PIE
+export const portfolioIntelligenceInputs = mysqlTable("portfolio_intelligence_inputs", {
+  id: int("id").autoincrement().primaryKey(),
+  barTime: bigint("bar_time", { mode: "number" }).notNull(),
+  symbol: varchar("symbol", { length: 16 }).notNull(),
+  session: varchar("session", { length: 32 }),
+  regime: varchar("regime", { length: 32 }),
+  regimeProbabilities: text("regime_probabilities"),
+  eligibleModels: text("eligible_models"),
+  activeModel: varchar("active_model", { length: 16 }),
+  signalQuality: int("signal_quality"),
+  dailyTradeCount: int("daily_trade_count").default(0),
+  dailyPnl: decimal("daily_pnl", { precision: 12, scale: 2 }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export type PortfolioIntelligenceInput = typeof portfolioIntelligenceInputs.$inferSelect;
+export type InsertPortfolioIntelligenceInput = typeof portfolioIntelligenceInputs.$inferInsert;
+
+// ── live_learning_cert_sessions ───────────────────────────────────────────────
+// Per-RTH-session Live Learning Certification report
+export const liveLearningCertSessions = mysqlTable("live_learning_cert_sessions", {
+  id: int("id").autoincrement().primaryKey(),
+  sessionDate: varchar("session_date", { length: 16 }).notNull().unique(),
+  sessionStart: bigint("session_start", { mode: "number" }),
+  sessionEnd: bigint("session_end", { mode: "number" }),
+  expectedCandles: int("expected_candles").default(78),
+  receivedCandles: int("received_candles").default(0),
+  missingCandles: int("missing_candles").default(0),
+  duplicateCandles: int("duplicate_candles").default(0),
+  certifiedCandles: int("certified_candles").default(0),
+  failedCandles: int("failed_candles").default(0),
+  coveragePct: decimal("coverage_pct", { precision: 6, scale: 3 }),
+  avgLatencyMs: int("avg_latency_ms"),
+  maxLatencyMs: int("max_latency_ms"),
+  minLatencyMs: int("min_latency_ms"),
+  uptimePct: decimal("uptime_pct", { precision: 6, scale: 3 }),
+  gateResults: text("gate_results"),
+  behaviourLibraryUpdates: int("behaviour_library_updates").default(0),
+  sequenceLibraryUpdates: int("sequence_library_updates").default(0),
+  marketLawEvaluations: int("market_law_evaluations").default(0),
+  marketLawsReinforced: int("market_laws_reinforced").default(0),
+  marketLawsChallenged: int("market_laws_challenged").default(0),
+  darwinMemoryWrites: int("darwin_memory_writes").default(0),
+  portfolioIntelUpdates: int("portfolio_intel_updates").default(0),
+  certificationStatus: varchar("certification_status", { length: 16 }).default("PENDING"),
+  certificationNotes: text("certification_notes"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+export type LiveLearningCertSession = typeof liveLearningCertSessions.$inferSelect;
+export type InsertLiveLearningCertSession = typeof liveLearningCertSessions.$inferInsert;
