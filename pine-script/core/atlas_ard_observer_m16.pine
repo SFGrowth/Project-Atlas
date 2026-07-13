@@ -2,8 +2,8 @@
 // ATLAS ARD OBSERVER — M-16
 // atlas_ard_observer_m16.pine
 // =============================================================================
-// Sprint:   089A
-// Version:  1.1.0
+// Sprint:   095A
+// Version:  1.2.0
 // Module:   M-16
 // Purpose:  ATLAS MEMORY — Emits one BAR_OBSERVATION for every confirmed
 //           five-minute MNQ candle. No candle is ever skipped.
@@ -62,13 +62,13 @@ indicator("Atlas ARD Observer — M-16", overlay=false, max_labels_count=10, max
 // ============================================================================
 // SECTION 1: CONSTANTS
 // ============================================================================
-var string SCHEMA_VERSION   = "1.1.0"
-var string ATLAS_VERSION    = "Sprint-089A"
+var string SCHEMA_VERSION   = "1.2.0"
+var string ATLAS_VERSION    = "Sprint-095A"
 var string EVENT_TYPE       = "BAR_OBSERVATION"
 var string SYMBOL           = "MNQ1!"
 var string TIMEFRAME_STR    = "5"
-var string MODULE_VERSION   = "1.1.0"
-var int    SPRINT_NUMBER    = 89
+var string MODULE_VERSION   = "1.2.0"
+var int    SPRINT_NUMBER    = 95
 
 // ============================================================================
 // SECTION 2: INPUTS
@@ -225,9 +225,12 @@ a1_eligible = adx_trending_val and is_rth_val
 a3_eligible = adx_trending_val and is_rth_val
 b1_eligible = is_rth_val and not is_comp_val
 sb1_eligible = is_rth_val and adx_trending_val and (ema_bull_val or ema_bear_val)
+// ORB-1: RTH + (ADX trending OR ATR expanding above 20-bar mean)
+// Sprint 095A recalibration: volcomp > 1.00 captures TREND and VOLATILE days
+orb1_eligible = is_rth_val and (adx_trending_val or volcomp_val > 1.00)
 
 // ── Active Models string
-active_models_str = (a1_eligible ? "A1" : "") + (a3_eligible ? (a1_eligible ? ",A3" : "A3") : "") + (b1_eligible ? ((a1_eligible or a3_eligible) ? ",B1" : "B1") : "") + (sb1_eligible ? ((a1_eligible or a3_eligible or b1_eligible) ? ",SB1" : "SB1") : "")
+active_models_str = (a1_eligible ? "A1" : "") + (a3_eligible ? (a1_eligible ? ",A3" : "A3") : "") + (b1_eligible ? ((a1_eligible or a3_eligible) ? ",B1" : "B1") : "") + (sb1_eligible ? ((a1_eligible or a3_eligible or b1_eligible) ? ",SB1" : "SB1") : "") + (orb1_eligible ? ((a1_eligible or a3_eligible or b1_eligible or sb1_eligible) ? ",ORB1" : "ORB1") : "")
 active_models_display = str.length(active_models_str) > 0 ? active_models_str : "NONE"
 
 // ============================================================================
@@ -329,6 +332,7 @@ if barstate.isconfirmed
     j := j + "\"a3_eligible\":" + f_bts(a3_eligible) + ","
     j := j + "\"b1_eligible\":" + f_bts(b1_eligible) + ","
         j := j + "\"sb1_eligible\":" + f_bts(sb1_eligible) + ","
+    j := j + "\"orb1_eligible\":" + f_bts(orb1_eligible) + ","
     j := j + "\"active_models\":\"" + active_models_display + "\","
     // ── SB1 RAS (from inputs — updated from Atlas Nexus) ──────────────────────
     j := j + "\"sb1_ras\":" + f_fts(i_sb1_ras, "#.##") + ","
@@ -352,13 +356,13 @@ if barstate.isconfirmed
 var table t_status = na
 if i_show_table and barstate.islast
     if na(t_status)
-        t_status := table.new(position.top_right, 2, 13, bgcolor=color.new(color.black, 10), border_width=1, border_color=color.new(color.gray, 60), frame_width=1, frame_color=color.new(color.gray, 40))
+        t_status := table.new(position.top_right, 2, 15, bgcolor=color.new(color.black, 10), border_width=1, border_color=color.new(color.gray, 60), frame_width=1, frame_color=color.new(color.gray, 40))
 
     f_row(idx, k, v, vc) =>
         table.cell(t_status, 0, idx, k, text_color=color.new(color.gray, 20), text_size=size.small, bgcolor=color.new(color.black, 20))
         table.cell(t_status, 1, idx, v, text_color=vc, text_size=size.small, bgcolor=color.new(color.black, 10))
 
-    f_row(0,  "ATLAS MEMORY M-16",  "v" + MODULE_VERSION + " [089A]",                                   color.new(color.cyan, 0))
+    f_row(0,  "ATLAS MEMORY M-16",  "v" + MODULE_VERSION + " [095A]",                                   color.new(color.cyan, 0))
     f_row(1,  "Webhook",            i_enable_webhook ? "ENABLED" : "DISABLED",              i_enable_webhook ? color.new(color.green, 0) : color.new(color.yellow, 0))
     f_row(2,  "Observations",       str.tostring(v_obs_count),                              color.new(color.white, 0))
     f_row(3,  "Errors",             str.tostring(v_error_count),                            v_error_count > 0 ? color.new(color.red, 0) : color.new(color.green, 0))
@@ -369,8 +373,9 @@ if i_show_table and barstate.islast
     f_row(8,  "EMA Align",          ema_struct,                                             ema_bull_val ? color.new(color.green, 0) : ema_bear_val ? color.new(color.red, 0) : color.new(color.yellow, 0))
     f_row(9,  "ATR Expansion",      str.tostring(volcomp_val, "#.###"),                     is_exp_val ? color.new(color.orange, 0) : is_comp_val ? color.new(color.blue, 0) : color.new(color.white, 0))
     f_row(10, "Active Models",      active_models_display,                                      color.new(color.cyan, 0))
-    f_row(11, "SB1 RAS",            str.tostring(i_sb1_ras, "#.#") + (i_sb1_activated ? " ✓ ACTIVE" : " ✗ SUPPRESSED"), i_sb1_activated ? color.new(color.green, 0) : color.new(color.red, 0))
-    f_row(12, "Confirmed",          barstate.isconfirmed ? "YES" : "NO",                   barstate.isconfirmed ? color.new(color.green, 0) : color.new(color.yellow, 0))
+    f_row(11, "ORB-1",              orb1_eligible ? "ELIGIBLE" : "NOT ELIGIBLE",               orb1_eligible ? color.new(color.green, 0) : color.new(color.gray, 0))
+    f_row(12, "SB1 RAS",            str.tostring(i_sb1_ras, "#.#") + (i_sb1_activated ? " ✓ ACTIVE" : " ✗ SUPPRESSED"), i_sb1_activated ? color.new(color.green, 0) : color.new(color.red, 0))
+    f_row(13, "Confirmed",          barstate.isconfirmed ? "YES" : "NO",                   barstate.isconfirmed ? color.new(color.green, 0) : color.new(color.yellow, 0))
 
 // ============================================================================
 // SECTION 8: HEARTBEAT LABEL
