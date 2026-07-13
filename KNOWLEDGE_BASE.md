@@ -14,6 +14,54 @@ Every entry in this Knowledge Base represents a specific instance of converting 
 
 ---
 
+## 2026-07-13 | Sprint 098 — Atlas Live Status, Continuous Learning & Portfolio Evolution — COMPLETE ✅
+
+**Research Stream:** F — Live System Operations & Portfolio Architecture  
+**Research Question:** Is Atlas fully operational? What has it observed since market reopened? Design the Continuous Learning architecture and Portfolio Intelligence Engine.  
+**Status:** COMPLETE. Live System Health Score: 52/100. Critical webhook gap identified. PIE designed. Continuous Learning architecture specified.  
+**Dataset:** Live `pipeline_reports` table: 74 reports | `atlas_memory`: 4 bars | `ard_bar_observations`: 29 entries
+
+### Live System Health: 52/100 — CRITICAL ISSUES IDENTIFIED
+
+**Critical Finding:** The M-16 Pine Script is NOT firing every 5-minute bar. Reports arrive in bursts of 3 at irregular intervals. The entire Monday July 13 RTH session (09:30–16:00 ET) produced ZERO webhook reports. 74 total reports received since live, but only ~25 distinct bar events.
+
+**Root Cause:** M-16 alert configured to fire on condition changes, not every closed bar. Must be reconfigured to fire unconditionally on every closed 5-min bar during CME Globex session.
+
+**Secondary Finding:** 74 pipeline_reports received but only 4 rows in atlas_memory. The bar-writing pipeline has a silent failure or conditional write logic that is not persisting most incoming bars.
+
+**Webhook Infrastructure:** Healthy. Latency 220–2,566ms. 100% acceptance rate. Server running with 9 scheduled jobs.
+
+### Market Law Validation: No Change
+
+All 6 Market Laws remain at current confidence levels. Live sample (25 bars, 0 RTH sessions today) is insufficient for statistical validation. Target: 50 full RTH sessions before any law confidence is updated.
+
+### Portfolio Intelligence Engine (PIE) — Designed
+
+- Pre-session (08:00–09:30 ET): Regime forecast + model eligibility
+- Intraday (09:30–16:00 ET): Active trade monitoring + portfolio P&L + single-active-strategy enforcement
+- Post-session (16:00–17:00 ET): Outcome recording + confidence updates
+- Expected portfolio: 2.9 trades/day, 14.5/week, 58/month
+- Portfolio blended expectancy: $126/trade at $450 risk
+
+### Continuous Learning Architecture — Designed
+
+- Every confirmed bar writes: OHLCV + 8 derived indicators + session + regime + behaviour flags
+- Per-session end-of-day job: regime classification, RC-A03 outcome tracking, Market Law challenge detection
+- Bayesian weighting: historical evidence weighted 100:1 against live evidence
+- Minimum 20 live observations before any law update
+
+### Sprint 099 Priority Queue
+1. **CRITICAL:** Repair M-16 alert — fire every 5-min bar unconditionally
+2. RC-A03 refinement: session + regime + daily limit filters
+3. Gap fill strategy: 0.1%–0.3% gaps, time exit 11:00 ET
+4. Monday RANGE bias: full backtest (R04)
+5. Implement webhook silence alerting (owner notification)
+6. Implement PIE Phase 1: Daily Regime Forecast + Model Eligibility Engine
+
+**Deliverables:** `rc_validation/SPRINT-098-Report.md`
+
+---
+
 ## 2026-07-13 | Sprint 097 — DARWIN Market Laws & Causal Discovery — COMPLETE ✅
 
 **Research Stream:** E — AI Discovery Engine / Market Intelligence  
