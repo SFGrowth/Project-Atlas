@@ -1,0 +1,434 @@
+// ============================================================================
+// SB1 REGIME ACTIVATION SCORE (RAS) v1.0
+// Atlas Regime Intelligence — Sprint 088
+// ============================================================================
+// PURPOSE:
+//   Deterministic Pine Script v5 approximation of the Sprint 087 Gradient
+//   Boosting Machine (GBM) Regime Activation Score.
+//
+//   The GBM is not directly implementable in Pine Script. This script
+//   implements a weighted rule-based approximation derived from the GBM's
+//   top feature importances and the regime fingerprint analysis.
+//
+// ARCHITECTURE:
+//   9 components, each contributing a fixed maximum number of points.
+//   Total possible score: 100 points.
+//   Activation threshold: RAS >= 45.
+//
+// COMPONENT WEIGHTS (derived from GBM feature importances):
+//   C1  Previous Day Range / ATR    → max 25 pts  (importance: 13.3%)
+//   C2  Previous Day Position       → max 20 pts  (importance: 19.5%)
+//   C3  Overnight Gap               → max 10 pts  (importance: 8.9%)
+//   C4  CHOP Index (14)             → max 15 pts  (importance: 5.4%)
+//   C5  ATR Expansion Ratio         → max 10 pts  (importance: 5.0%)
+//   C6  VWAP Distance               → max 8 pts   (importance: 5.4%)
+//   C7  EMA Slope                   → max 5 pts   (importance: ~4%)
+//   C8  Directional Bias (EMA)      → max 4 pts   (importance: ~3%)
+//   C9  Trend Persistence           → max 3 pts   (importance: ~3%)
+//                                   ─────────────
+//   TOTAL                           → max 100 pts
+//
+// VALIDATION:
+//   See sb1-088-pine-ras-validation-report.md for correlation, F1, precision,
+//   recall, and agreement rate vs the research GBM (target: ≥90% agreement).
+//
+// GOVERNANCE:
+//   - SB1 is LIVE ACCOUNT ONLY. No prop firm connection.
+//   - This script is PAPER MODE only. No live execution.
+//   - Do NOT modify weights without Sprint governance approval.
+//   - Version changes must be logged in Atlas Nexus ade_version_governance.
+//
+// ============================================================================
+
+//@version=5
+indicator(title="SB1 Regime Activation Score v1.0", 
+          shorttitle="SB1-RAS", 
+          overlay=false, 
+          max_lines_count=5,
+          max_labels_count=50)
+
+// ─── INPUTS ──────────────────────────────────────────────────────────────────
+grp_ras = "RAS Settings"
+i_ras_threshold     = input.int(45,  "Activation Threshold (RAS ≥)", minval=30, maxval=80, group=grp_ras)
+i_atr_len           = input.int(14,  "ATR Length",                   minval=5,  maxval=50,  group=grp_ras)
+i_ema_len           = input.int(15,  "EMA Length",                   minval=5,  maxval=50,  group=grp_ras)
+i_chop_len          = input.int(14,  "CHOP Index Length",            minval=5,  maxval=50,  group=grp_ras)
+i_atr_mean_len      = input.int(20,  "ATR Expansion Mean Length",    minval=10, maxval=50,  group=grp_ras)
+i_ema_slope_len     = input.int(5,   "EMA Slope Lookback (bars)",    minval=2,  maxval=20,  group=grp_ras)
+i_trend_pers_len    = input.int(20,  "Trend Persistence Window",     minval=5,  maxval=50,  group=grp_ras)
+
+grp_display = "Display"
+i_show_components   = input.bool(true,  "Show Component Breakdown Table", group=grp_display)
+i_show_threshold    = input.bool(true,  "Show Activation Threshold Line",  group=grp_display)
+i_show_labels       = input.bool(true,  "Show Activation Labels",          group=grp_display)
+
+// ─── CORE INDICATORS ─────────────────────────────────────────────────────────
+
+// ATR
+atr14 = ta.atr(i_atr_len)
+atr_mean = ta.sma(atr14, i_atr_mean_len)
+
+// EMA
+ema15 = ta.ema(close, i_ema_len)
+
+// CHOP Index
+// CHOP = 100 × log10(sum(ATR,n) / (highest(n) - lowest(n))) / log10(n)
+chop_high = ta.highest(high, i_chop_len)
+chop_low  = ta.lowest(low, i_chop_len)
+chop_range = chop_high - chop_low
+chop_atr_sum = math.sum(ta.atr(1), i_chop_len)
+chop14 = chop_range > 0 ? 100.0 * math.log10(chop_atr_sum / chop_range) / math.log10(i_chop_len) : 50.0
+
+// VWAP (session-anchored)
+vwap_val = ta.vwap(hlc3)
+
+// Previous day values (using request.security for daily data)
+prev_day_high  = request.security(syminfo.tickerid, "D", high[1],  lookahead=barmerge.lookahead_on)
+prev_day_low   = request.security(syminfo.tickerid, "D", low[1],   lookahead=barmerge.lookahead_on)
+prev_day_close = request.security(syminfo.tickerid, "D", close[1], lookahead=barmerge.lookahead_on)
+prev_day_range = prev_day_high - prev_day_low
+
+// Opening range (first 30 min = 6 bars on 5-min chart)
+// Track session open
+is_new_session = ta.change(time("D")) != 0
+session_bar_count = ta.barssince(is_new_session)
+or_high = ta.valuewhen(session_bar_count == 5, ta.highest(high, 6), 0)
+or_low  = ta.valuewhen(session_bar_count == 5, ta.lowest(low, 6), 0)
+
+// ─── COMPONENT 1: PREVIOUS DAY RANGE / ATR ───────────────────────────────────
+// GBM importance: 13.3% → max 25 pts
+// Research finding: winners have prev_day_range/ATR ≥ 12.6 (mean)
+//                   losers have prev_day_range/ATR ≤ 10.7 (mean)
+//                   Threshold ≥ 8.0 required for any activation
+//
+// Scoring:
+//   pd_range_atr ≥ 16.0 → 25 pts (exceptional prior session)
+//   pd_range_atr ≥ 13.0 → 20 pts (strong prior session)
+//   pd_range_atr ≥ 10.0 → 12 pts (adequate prior session)
+//   pd_range_atr ≥  8.0 →  5 pts (marginal)
+//   pd_range_atr <  8.0 →  0 pts (SUPPRESSED — narrow prior session)
+
+pd_range_atr = atr14 > 0 ? prev_day_range / atr14 : 0.0
+
+c1_pts = pd_range_atr >= 16.0 ? 25 :
+         pd_range_atr >= 13.0 ? 20 :
+         pd_range_atr >= 10.0 ? 12 :
+         pd_range_atr >=  8.0 ?  5 : 0
+
+// ─── COMPONENT 2: PREVIOUS DAY POSITION ──────────────────────────────────────
+// GBM importance: 19.5% → max 20 pts
+// Research finding: SB1 wins when price is in the upper/lower zone of the
+//                   prior day's range (continuing the prior directional bias).
+//                   Near the midpoint = ambiguous = losing regime.
+//
+// Scoring (direction-aware):
+//   LONG entries: prefer price in upper 40–80% of prior day range
+//   SHORT entries: prefer price in lower 20–60% of prior day range
+//   Near midpoint (40–60%): marginal
+//   At extremes (>90% or <10%): reduced (overextended)
+//
+// Note: direction is inferred from EMA position (above = LONG bias)
+
+pd_position = prev_day_range > 0 ? (close - prev_day_low) / prev_day_range : 0.5
+is_long_bias = close > ema15
+
+// Long bias: upper zone (50–80%) is ideal
+// Short bias: lower zone (20–50%) is ideal
+c2_pts = is_long_bias ?
+    (pd_position >= 0.50 and pd_position <= 0.80 ? 20 :
+     pd_position >= 0.35 and pd_position <  0.50 ? 12 :
+     pd_position >  0.80 and pd_position <= 0.90 ? 10 :
+     pd_position >  0.90 ?  5 :
+     pd_position <  0.35 ?  5 : 8) :
+    (pd_position >= 0.20 and pd_position <= 0.50 ? 20 :
+     pd_position >  0.50 and pd_position <= 0.65 ? 12 :
+     pd_position >= 0.10 and pd_position <  0.20 ? 10 :
+     pd_position <  0.10 ?  5 :
+     pd_position >  0.65 ?  5 : 8)
+
+// ─── COMPONENT 3: OVERNIGHT GAP ──────────────────────────────────────────────
+// GBM importance: 8.9% → max 10 pts
+// Research finding: winners (long) have overnight gap mean = −0.85× ATR
+//                   (slight gap-down before long entry = pullback into strength)
+//                   losers have overnight gap ≈ 0 (no directional commitment)
+//
+// Scoring (direction-aware):
+//   LONG: slight gap-down (−1.0 to −0.3× ATR) = 10 pts (pullback into strength)
+//         flat gap (−0.3 to +0.3× ATR) = 5 pts (neutral)
+//         large gap-up (>+1.5× ATR) = 2 pts (overextended open)
+//         large gap-down (<−2.0× ATR) = 2 pts (panic open)
+//   SHORT: mirror image
+
+overnight_gap_atr = atr14 > 0 ? (open - prev_day_close) / atr14 : 0.0
+
+c3_pts = is_long_bias ?
+    (overnight_gap_atr >= -1.0 and overnight_gap_atr <= -0.3 ? 10 :
+     overnight_gap_atr >  -0.3 and overnight_gap_atr <=  0.3 ?  5 :
+     overnight_gap_atr >   0.3 and overnight_gap_atr <=  1.5 ?  3 :
+     overnight_gap_atr >   1.5 ?  2 : 2) :
+    (overnight_gap_atr >=  0.3 and overnight_gap_atr <=  1.0 ? 10 :
+     overnight_gap_atr >= -0.3 and overnight_gap_atr <   0.3 ?  5 :
+     overnight_gap_atr >= -1.5 and overnight_gap_atr <  -0.3 ?  3 :
+     overnight_gap_atr <  -1.5 ?  2 : 2)
+
+// ─── COMPONENT 4: CHOP INDEX ─────────────────────────────────────────────────
+// GBM importance: 5.4% → max 15 pts
+// Research finding: winning regime CHOP mean = 50.6, losing = 51.7
+//                   Hard suppression above 61.8 (standard chop threshold)
+//                   Scores improve as CHOP decreases (more directional)
+//
+// Scoring:
+//   CHOP ≤ 38.2 → 15 pts (strongly trending)
+//   CHOP ≤ 45.0 → 12 pts (trending)
+//   CHOP ≤ 50.0 → 9 pts  (mildly trending)
+//   CHOP ≤ 55.0 → 5 pts  (neutral)
+//   CHOP ≤ 61.8 → 2 pts  (choppy)
+//   CHOP >  61.8 → 0 pts (SUPPRESSED — confirmed chop)
+
+c4_pts = chop14 <= 38.2 ? 15 :
+         chop14 <= 45.0 ? 12 :
+         chop14 <= 50.0 ?  9 :
+         chop14 <= 55.0 ?  5 :
+         chop14 <= 61.8 ?  2 : 0
+
+// ─── COMPONENT 5: ATR EXPANSION RATIO ────────────────────────────────────────
+// GBM importance: 5.0% → max 10 pts
+// Research finding: winning cluster C1 has ATR expansion = 1.521
+//                   losing cluster C0 has ATR expansion = 0.952
+//                   Contracting volatility suppresses the strategy
+//
+// Scoring:
+//   ATR/mean ≥ 1.50 → 10 pts (strong expansion)
+//   ATR/mean ≥ 1.20 →  8 pts (expanding)
+//   ATR/mean ≥ 1.00 →  5 pts (neutral)
+//   ATR/mean ≥ 0.90 →  2 pts (mild contraction)
+//   ATR/mean <  0.90 → 0 pts (SUPPRESSED — contracting volatility)
+
+atr_expansion = atr_mean > 0 ? atr14 / atr_mean : 1.0
+
+c5_pts = atr_expansion >= 1.50 ? 10 :
+         atr_expansion >= 1.20 ?  8 :
+         atr_expansion >= 1.00 ?  5 :
+         atr_expansion >= 0.90 ?  2 : 0
+
+// ─── COMPONENT 6: VWAP DISTANCE ──────────────────────────────────────────────
+// GBM importance: 5.4% → max 8 pts
+// Research finding: winners have VWAP distance = 0.64× ATR (in trade direction)
+//                   losers have VWAP distance = 0.47× ATR (near equilibrium)
+//                   Hard suppression within 0.3× ATR of VWAP
+//
+// Scoring (direction-aware, signed distance):
+//   LONG: close above VWAP by 0.5–1.5× ATR = 8 pts (ideal zone)
+//         close above VWAP by 0.3–0.5× ATR = 5 pts (marginal)
+//         close above VWAP by 1.5–3.0× ATR = 3 pts (extended)
+//         close within 0.3× ATR of VWAP    = 0 pts (SUPPRESSED)
+//         close below VWAP                  = 0 pts (SUPPRESSED)
+//   SHORT: mirror image
+
+vwap_dist_atr = atr14 > 0 ? (close - vwap_val) / atr14 : 0.0
+
+c6_pts = is_long_bias ?
+    (vwap_dist_atr >=  0.5 and vwap_dist_atr <=  1.5 ?  8 :
+     vwap_dist_atr >=  0.3 and vwap_dist_atr <   0.5 ?  5 :
+     vwap_dist_atr >   1.5 and vwap_dist_atr <=  3.0 ?  3 :
+     vwap_dist_atr >   3.0 ?  1 : 0) :
+    (vwap_dist_atr <= -0.5 and vwap_dist_atr >= -1.5 ?  8 :
+     vwap_dist_atr <= -0.3 and vwap_dist_atr >  -0.5 ?  5 :
+     vwap_dist_atr <  -1.5 and vwap_dist_atr >= -3.0 ?  3 :
+     vwap_dist_atr <  -3.0 ?  1 : 0)
+
+// ─── COMPONENT 7: EMA SLOPE ──────────────────────────────────────────────────
+// GBM importance: ~4% → max 5 pts
+// Research finding: winners have EMA slope = 0.106× ATR/bar
+//                   losers have EMA slope = 0.052× ATR/bar
+//                   Positive slope confirms active trend in trade direction
+//
+// Scoring (direction-aware):
+//   LONG: EMA slope ≥ +0.10× ATR/bar = 5 pts (strong uptrend)
+//         EMA slope ≥ +0.05× ATR/bar = 3 pts (mild uptrend)
+//         EMA slope ≥  0.00× ATR/bar = 1 pt  (flat)
+//         EMA slope <   0.00          = 0 pts (downtrend — wrong direction)
+//   SHORT: mirror image
+
+ema_slope_raw = ema15 - ema15[i_ema_slope_len]
+ema_slope_atr = atr14 > 0 ? ema_slope_raw / atr14 : 0.0
+
+c7_pts = is_long_bias ?
+    (ema_slope_atr >=  0.10 ? 5 :
+     ema_slope_atr >=  0.05 ? 3 :
+     ema_slope_atr >=  0.00 ? 1 : 0) :
+    (ema_slope_atr <= -0.10 ? 5 :
+     ema_slope_atr <= -0.05 ? 3 :
+     ema_slope_atr <=  0.00 ? 1 : 0)
+
+// ─── COMPONENT 8: DIRECTIONAL BIAS (EMA ALIGNMENT) ───────────────────────────
+// GBM importance: ~3% → max 4 pts
+// Research finding: price must be on the correct side of EMA for the trade
+//                   direction. This is a binary gate with partial credit for
+//                   proximity.
+//
+// Scoring:
+//   Price clearly above EMA (>0.3× ATR) for LONG  = 4 pts
+//   Price near EMA (0–0.3× ATR) for LONG           = 2 pts
+//   Price below EMA for LONG                        = 0 pts
+//   Mirror for SHORT
+
+ema_dist_atr = atr14 > 0 ? (close - ema15) / atr14 : 0.0
+
+c8_pts = is_long_bias ?
+    (ema_dist_atr >  0.3 ? 4 :
+     ema_dist_atr >= 0.0 ? 2 : 0) :
+    (ema_dist_atr < -0.3 ? 4 :
+     ema_dist_atr <= 0.0 ? 2 : 0)
+
+// ─── COMPONENT 9: TREND PERSISTENCE ──────────────────────────────────────────
+// GBM importance: ~3% → max 3 pts
+// Research finding: winners have trend persistence = 5.5 bars (consecutive bars
+//                   on same side of EMA). Losers = 5.5 bars (similar).
+//                   This component has low discriminating power but adds
+//                   confirmation for sustained moves.
+//
+// Scoring:
+//   ≥ 8 consecutive bars on correct side of EMA = 3 pts (sustained)
+//   ≥ 5 consecutive bars                         = 2 pts (established)
+//   ≥ 3 consecutive bars                         = 1 pt  (forming)
+//   < 3 consecutive bars                          = 0 pts
+
+// Count consecutive bars on same side of EMA
+above_ema = close > ema15
+var int consec_above = 0
+var int consec_below = 0
+consec_above := above_ema ? consec_above + 1 : 0
+consec_below := not above_ema ? consec_below + 1 : 0
+
+trend_persistence = is_long_bias ? consec_above : consec_below
+
+c9_pts = trend_persistence >= 8 ? 3 :
+         trend_persistence >= 5 ? 2 :
+         trend_persistence >= 3 ? 1 : 0
+
+// ─── COMPOSITE RAS ───────────────────────────────────────────────────────────
+// Sum all components. Hard suppression rules override the score.
+
+ras_raw = c1_pts + c2_pts + c3_pts + c4_pts + c5_pts + c6_pts + c7_pts + c8_pts + c9_pts
+
+// Hard suppression rules (from Sprint 087 activation logic):
+//   1. Previous day range / ATR < 8.0 → SUPPRESS (C1 = 0, also force RAS = 0)
+//   2. CHOP14 > 61.8 → SUPPRESS (C4 = 0, also force RAS = 0)
+//   3. ATR expansion < 0.90 → SUPPRESS (C5 = 0, also force RAS = 0)
+//   4. VWAP distance < 0.3× ATR → SUPPRESS (C6 = 0, also force RAS = 0)
+
+suppress_narrow_pd   = pd_range_atr < 8.0
+suppress_chop        = chop14 > 61.8
+suppress_atr_contract = atr_expansion < 0.90
+suppress_vwap_near   = math.abs(vwap_dist_atr) < 0.30
+
+is_suppressed = suppress_narrow_pd or suppress_chop or suppress_atr_contract or suppress_vwap_near
+ras = is_suppressed ? 0 : math.min(ras_raw, 100)
+
+// Activation state
+is_activated = ras >= i_ras_threshold and not is_suppressed
+
+// Suppression reason (first matching rule)
+suppression_reason = suppress_narrow_pd    ? "NARROW_PRIOR_DAY" :
+                     suppress_chop         ? "CHOP_CONFIRMED" :
+                     suppress_atr_contract ? "ATR_CONTRACTING" :
+                     suppress_vwap_near    ? "NEAR_VWAP" :
+                     ras < i_ras_threshold  ? "RAS_BELOW_THRESHOLD" : "NONE"
+
+// ─── PLOTS ───────────────────────────────────────────────────────────────────
+
+// Background colour zones
+bgcolor(ras >= 70 ? color.new(color.green, 92) :
+        ras >= 45 ? color.new(color.blue, 94) :
+        ras >= 25 ? color.new(color.yellow, 96) :
+        color.new(color.red, 97), title="RAS Zone Background")
+
+// Main RAS line
+plot(ras, title="RAS", color=is_activated ? color.new(color.lime, 0) : color.new(color.gray, 30), 
+     linewidth=2, style=plot.style_line)
+
+// Component plots (thin, for debugging)
+plot(c1_pts, title="C1 Prev Day Range", color=color.new(color.blue, 60), linewidth=1, display=display.none)
+plot(c2_pts, title="C2 Prev Day Position", color=color.new(color.purple, 60), linewidth=1, display=display.none)
+plot(c3_pts, title="C3 Overnight Gap", color=color.new(color.orange, 60), linewidth=1, display=display.none)
+plot(c4_pts, title="C4 CHOP", color=color.new(color.yellow, 60), linewidth=1, display=display.none)
+plot(c5_pts, title="C5 ATR Expansion", color=color.new(color.teal, 60), linewidth=1, display=display.none)
+plot(c6_pts, title="C6 VWAP Distance", color=color.new(color.fuchsia, 60), linewidth=1, display=display.none)
+plot(c7_pts, title="C7 EMA Slope", color=color.new(color.aqua, 60), linewidth=1, display=display.none)
+plot(c8_pts, title="C8 Directional Bias", color=color.new(color.lime, 60), linewidth=1, display=display.none)
+plot(c9_pts, title="C9 Trend Persistence", color=color.new(color.silver, 60), linewidth=1, display=display.none)
+
+// Threshold line
+hline(i_ras_threshold, "Activation Threshold", color=color.new(color.yellow, 20), 
+      linestyle=hline.style_dashed, linewidth=1)
+hline(0,  "Zero",  color=color.new(color.gray, 60), linestyle=hline.style_dotted)
+hline(100, "Max",  color=color.new(color.gray, 60), linestyle=hline.style_dotted)
+
+// Activation labels
+if i_show_labels and is_activated and not is_activated[1]
+    label.new(bar_index, ras + 3, "▲ ACTIVATE\nRAS " + str.tostring(ras),
+              color=color.new(color.green, 20), textcolor=color.white, 
+              style=label.style_label_down, size=size.small)
+
+if i_show_labels and not is_activated and is_activated[1]
+    label.new(bar_index, ras + 3, "▼ SUPPRESS\n" + suppression_reason,
+              color=color.new(color.red, 20), textcolor=color.white, 
+              style=label.style_label_down, size=size.small)
+
+// ─── COMPONENT TABLE ─────────────────────────────────────────────────────────
+if i_show_components and barstate.islast
+    var table t = table.new(position.top_right, 3, 12, 
+                            bgcolor=color.new(color.black, 80), 
+                            border_color=color.new(color.gray, 50), 
+                            border_width=1, frame_color=color.new(color.gray, 30), frame_width=1)
+    
+    // Header
+    table.cell(t, 0, 0, "COMPONENT",  text_color=color.new(color.gray, 20), text_size=size.small, bgcolor=color.new(color.navy, 60))
+    table.cell(t, 1, 0, "SCORE",      text_color=color.new(color.gray, 20), text_size=size.small, bgcolor=color.new(color.navy, 60))
+    table.cell(t, 2, 0, "MAX",        text_color=color.new(color.gray, 20), text_size=size.small, bgcolor=color.new(color.navy, 60))
+    
+    // Components
+    comp_names = array.from("C1 PD Range/ATR", "C2 PD Position", "C3 O/N Gap", "C4 CHOP", "C5 ATR Exp", "C6 VWAP Dist", "C7 EMA Slope", "C8 Dir Bias", "C9 Trend Pers")
+    comp_scores = array.from(c1_pts, c2_pts, c3_pts, c4_pts, c5_pts, c6_pts, c7_pts, c8_pts, c9_pts)
+    comp_maxes  = array.from(25, 20, 10, 15, 10, 8, 5, 4, 3)
+    
+    for i = 0 to 8
+        score = array.get(comp_scores, i)
+        maxv  = array.get(comp_maxes, i)
+        pct   = maxv > 0 ? score / maxv : 0.0
+        cell_color = pct >= 0.8 ? color.new(color.green, 70) :
+                     pct >= 0.5 ? color.new(color.blue, 70) :
+                     pct >= 0.2 ? color.new(color.orange, 80) :
+                     color.new(color.red, 80)
+        table.cell(t, 0, i + 1, array.get(comp_names, i), text_color=color.white, text_size=size.tiny, bgcolor=color.new(color.black, 80))
+        table.cell(t, 1, i + 1, str.tostring(score), text_color=color.white, text_size=size.tiny, bgcolor=cell_color)
+        table.cell(t, 2, i + 1, str.tostring(maxv), text_color=color.new(color.gray, 30), text_size=size.tiny, bgcolor=color.new(color.black, 80))
+    
+    // Total row
+    ras_color = ras >= i_ras_threshold ? color.new(color.green, 40) :
+                ras >= 30              ? color.new(color.orange, 50) :
+                color.new(color.red, 50)
+    table.cell(t, 0, 10, "TOTAL RAS", text_color=color.white, text_size=size.small, bgcolor=color.new(color.navy, 60))
+    table.cell(t, 1, 10, str.tostring(ras) + (is_suppressed ? " [SUPP]" : ""), text_color=color.white, text_size=size.small, bgcolor=ras_color)
+    table.cell(t, 2, 10, "100", text_color=color.new(color.gray, 30), text_size=size.small, bgcolor=color.new(color.navy, 60))
+    
+    // Status row
+    status_text = is_activated ? "✓ ACTIVATED" : (is_suppressed ? "✗ SUPPRESSED: " + suppression_reason : "✗ RAS < " + str.tostring(i_ras_threshold))
+    status_color = is_activated ? color.new(color.green, 30) : color.new(color.red, 40)
+    table.cell(t, 0, 11, "STATUS", text_color=color.white, text_size=size.small, bgcolor=color.new(color.navy, 60))
+    table.cell(t, 1, 11, status_text, text_color=color.white, text_size=size.tiny, bgcolor=status_color)
+    table.cell(t, 2, 11, "", bgcolor=color.new(color.navy, 60))
+
+// ─── ALERTS ──────────────────────────────────────────────────────────────────
+alertcondition(is_activated and not is_activated[1], 
+               title="SB1 RAS Activated", 
+               message="SB1 RAS ACTIVATED — Score: {{plot_0}} | Threshold: " + str.tostring(i_ras_threshold))
+
+alertcondition(not is_activated and is_activated[1], 
+               title="SB1 RAS Suppressed", 
+               message="SB1 RAS SUPPRESSED — Reason: " + suppression_reason)
+
+alertcondition(ras >= 70, 
+               title="SB1 RAS High Confidence", 
+               message="SB1 RAS HIGH CONFIDENCE — Score: {{plot_0}}")

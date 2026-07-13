@@ -2,28 +2,29 @@
 // ATLAS ARD OBSERVER — M-16
 // atlas_ard_observer_m16.pine
 // =============================================================================
-// Sprint:   089
-// Version:  1.0.0
+// Sprint:   089A
+// Version:  1.1.0
 // Module:   M-16
-// Purpose:  Transmits a compact BAR_OBSERVATION event to Atlas Nexus on every
-//           confirmed 5-minute MNQ candle.
+// Purpose:  ATLAS MEMORY — Emits one BAR_OBSERVATION for every confirmed
+//           five-minute MNQ candle. No candle is ever skipped.
 //
 // CONSTITUTIONAL BASIS:
 //   Atlas Constitution v1.0 — Law 5: Every Five-Minute Candle Is a Research Event.
-//   "On every confirmed MNQ five-minute candle, ARD must update the research
-//   feature store. This is a continuous, uninterrupted data collection obligation."
+//   Atlas Constitutional Amendment — ATLAS MEMORY:
+//     "Every confirmed five-minute candle represents one market observation.
+//      Every market observation becomes permanent Atlas memory."
 //
 // ARCHITECTURAL PRINCIPLE:
-//   M-16 is RESEARCH INFRASTRUCTURE ONLY.
+//   M-16 is ATLAS MEMORY INFRASTRUCTURE.
 //   It never generates execution alerts.
 //   It never influences model decisions, ARI, TVL, or the Kernel.
 //   It is completely isolated from M-14 (execution) and M-15 (observability).
 //   Failure of M-16 must never block or alter the Atlas pipeline.
 //
-// EVENT CLASS: BAR_OBSERVATION (compact market-state snapshot)
-//   Separate from DECISION_EVENT (M-15 OBSERVABILITY payloads).
-//   BAR_OBSERVATION is optimised for ARD pattern discovery and ORACLE calibration.
-//   DECISION_EVENT is optimised for live pipeline observability.
+// EVENT CLASS: BAR_OBSERVATION (continuous market-state snapshot)
+//   STREAM A: ATLAS MEMORY — every confirmed candle, always emitted, never skipped.
+//   STREAM B: ATLAS EVENTS (signals, entries, exits) — handled by M-14/M-15.
+//   The two streams are independent.
 //
 // PAYLOAD DESIGN:
 //   Compact flat JSON — all key market-state dimensions in one object.
@@ -31,7 +32,7 @@
 //   Idempotency key: symbol_bartime (enforced server-side).
 //   Failed delivery returns 200 to Pine — never affects Pine decisions.
 //
-// ATLAS NEXUS ENDPOINT: POST /api/webhook/bar-observation/<ATLAS_WEBHOOK_TOKEN>
+// ATLAS NEXUS ENDPOINT: POST /api/webhook/atlas-memory/<ATLAS_WEBHOOK_TOKEN>
 // AUTHENTICATION: Secret path segment in URL (same token as M-15).
 //
 // SETUP:
@@ -39,7 +40,7 @@
 //   2. Create a TradingView alert on this indicator:
 //      - Condition: "Atlas ARD Observer — M-16" → "Bar Observation Trigger"
 //      - Message: {{plot("BAR_OBS_TRIGGER")}} — NOT used; use alert() function
-//      - Webhook URL: https://atlasdash-j7nzp34b.manus.space/api/webhook/bar-observation/<TOKEN>
+//      - Webhook URL: https://atlasdash-j7nzp34b.manus.space/api/webhook/atlas-memory/<TOKEN>
 //      - Alert message: leave blank (alert() function sends the JSON payload)
 //   3. Frequency: Once Per Bar Close
 //   4. Expiry: Open-ended
@@ -61,11 +62,12 @@ indicator("Atlas ARD Observer — M-16", overlay=false, max_labels_count=10, max
 // ============================================================================
 // SECTION 1: CONSTANTS
 // ============================================================================
-var string SCHEMA_VERSION   = "1.0.0"
+var string SCHEMA_VERSION   = "1.1.0"
+var string ATLAS_VERSION    = "Sprint-089A"
 var string EVENT_TYPE       = "BAR_OBSERVATION"
 var string SYMBOL           = "MNQ1!"
 var string TIMEFRAME_STR    = "5"
-var string MODULE_VERSION   = "1.0.0"
+var string MODULE_VERSION   = "1.1.0"
 var int    SPRINT_NUMBER    = 89
 
 // ============================================================================
@@ -104,13 +106,17 @@ f_str(s) =>
 f_its(v) =>
     str.tostring(v)
 
-// Generate event_id: symbol_barindex_time
+// Generate event_id: M16_symbol_barindex_time
 f_event_id(bi, t) =>
-    SYMBOL + "_" + str.tostring(bi) + "_" + str.tostring(t)
+    "M16_" + SYMBOL + "_" + str.tostring(bi) + "_" + str.tostring(t)
 
 // Generate idempotency_key: symbol_bartime_utc
 f_idem_key(bi, t) =>
     SYMBOL + "_" + str.tostring(t)
+
+// Generate memory_id: MEM_symbol_time
+f_memory_id(t) =>
+    "MEM_" + SYMBOL + "_" + str.tostring(t)
 
 // ============================================================================
 // SECTION 4: MARKET STATE CALCULATIONS
@@ -157,6 +163,12 @@ volcomp_val = na(atr_mean20) or atr_mean20 <= 0 ? 1.0 : atr14_val / atr_mean20
 is_comp_val = volcomp_val < 0.85
 is_exp_val  = volcomp_val > 1.20
 vol_state_val = is_comp_val ? "COMPRESSED" : is_exp_val ? "EXPANDING" : "NORMAL"
+
+// ── ATR Percentile (rolling 20-bar rank)
+atr_pct_rank = ta.percentrank(atr14_val, 20)
+
+// ── Distance from VWAP
+dist_vwap = na(vwap_val) ? 0.0 : close - vwap_val
 
 // ── Compression/Expansion ────────────────────────────────────────────────────
 comp_state_val = is_comp_val ? "COMPRESSED" : is_exp_val ? "EXPANDING" : "NEUTRAL"
@@ -214,6 +226,10 @@ a3_eligible = adx_trending_val and is_rth_val
 b1_eligible = is_rth_val and not is_comp_val
 sb1_eligible = is_rth_val and adx_trending_val and (ema_bull_val or ema_bear_val)
 
+// ── Active Models string
+active_models_str = (a1_eligible ? "A1" : "") + (a3_eligible ? (a1_eligible ? ",A3" : "A3") : "") + (b1_eligible ? ((a1_eligible or a3_eligible) ? ",B1" : "B1") : "") + (sb1_eligible ? ((a1_eligible or a3_eligible or b1_eligible) ? ",SB1" : "SB1") : "")
+active_models_display = str.length(active_models_str) > 0 ? active_models_str : "NONE"
+
 // ============================================================================
 // SECTION 5: COUNTERS
 // ============================================================================
@@ -227,6 +243,7 @@ if barstate.isconfirmed
     v_obs_count := v_obs_count + 1
 
     // Generate keys
+    string mem_id   = f_memory_id(time)
     string evt_id   = f_event_id(bar_index, time)
     string idem_key = f_idem_key(bar_index, time)
 
@@ -237,7 +254,7 @@ if barstate.isconfirmed
                    str.tostring(h_et, "00") + ":" +
                    str.tostring(m_et, "00") + ":00"
 
-    // ── Build compact BAR_OBSERVATION JSON ────────────────────────────────────
+    // ── Build Atlas Memory BAR_OBSERVATION JSON — Sprint 089A ────────────────────────────────────
     // Design: flat JSON, all fields at top level, stays under 4000 chars.
     // Field naming: snake_case, consistent with Atlas Nexus schema.
 
@@ -246,10 +263,13 @@ if barstate.isconfirmed
     // ── Identity ──────────────────────────────────────────────────────────────
     j := j + "\"event_type\":\"" + EVENT_TYPE + "\","
     j := j + "\"schema_version\":\"" + SCHEMA_VERSION + "\","
+    j := j + "\"atlas_version\":\"" + ATLAS_VERSION + "\","
+    j := j + "\"memory_id\":\"" + mem_id + "\","
     j := j + "\"event_id\":\"" + evt_id + "\","
     j := j + "\"idempotency_key\":\"" + idem_key + "\","
     j := j + "\"symbol\":\"" + SYMBOL + "\","
     j := j + "\"timeframe\":\"" + TIMEFRAME_STR + "\","
+    j := j + "\"bar_index\":" + str.tostring(bar_index) + ","
     j := j + "\"pipeline_run_id\":\"" + idem_key + "\","
 
     // ── Timestamp ─────────────────────────────────────────────────────────────
@@ -271,10 +291,13 @@ if barstate.isconfirmed
     j := j + "\"atr\":" + f_fts(atr14_val, "#.####") + ","
     j := j + "\"atr5\":" + f_fts(atr5_val, "#.####") + ","
     j := j + "\"atr_expansion\":" + f_fts(volcomp_val, "#.####") + ","
+    j := j + "\"atr_percentile\":" + f_fts(atr_pct_rank, "#.##") + ","
     j := j + "\"adx\":" + f_fts(adx14_val, "#.##") + ","
+    j := j + "\"adx_trending\":" + f_bts(adx_trending_val) + ","
     j := j + "\"chop\":" + f_fts(chop_val, "#.##") + ","
     j := j + "\"rsi\":" + f_fts(rsi_val, "#.##") + ","
     j := j + "\"vwap\":" + f_fts(vwap_val, "#.00") + ","
+    j := j + "\"dist_vwap\":" + f_fts(dist_vwap, "#.00") + ","
 
     // ── EMAs ──────────────────────────────────────────────────────────────────
     j := j + "\"ema9\":" + f_fts(ema9_val, "#.00") + ","
@@ -290,8 +313,7 @@ if barstate.isconfirmed
     // ── Regime ────────────────────────────────────────────────────────────────
     j := j + "\"volatility_state\":\"" + vol_state_val + "\","
     j := j + "\"compression_state\":\"" + comp_state_val + "\","
-    j := j + "\"regime_classification\":\"" + regime_val + "\","
-    j := j + "\"adx_trending\":" + f_bts(adx_trending_val) + ","
+    j := j + "\"regime_classification\":\"" + regime_val + ","
 
     // ── Previous Day Structure ────────────────────────────────────────────────
     j := j + "\"prev_day_high\":" + f_fts(safe_pd_high, "#.00") + ","
@@ -306,8 +328,8 @@ if barstate.isconfirmed
     j := j + "\"a1_eligible\":" + f_bts(a1_eligible) + ","
     j := j + "\"a3_eligible\":" + f_bts(a3_eligible) + ","
     j := j + "\"b1_eligible\":" + f_bts(b1_eligible) + ","
-    j := j + "\"sb1_eligible\":" + f_bts(sb1_eligible) + ","
-
+        j := j + "\"sb1_eligible\":" + f_bts(sb1_eligible) + ","
+    j := j + "\"active_models\":\"" + active_models_display + "\","
     // ── SB1 RAS (from inputs — updated from Atlas Nexus) ──────────────────────
     j := j + "\"sb1_ras\":" + f_fts(i_sb1_ras, "#.##") + ","
     j := j + "\"sb1_ras_activated\":" + f_bts(i_sb1_activated) + ","
@@ -320,7 +342,7 @@ if barstate.isconfirmed
     j := j + "\"sprint\":" + str.tostring(SPRINT_NUMBER)
     j := j + "}"
 
-    // ── Transmit ──────────────────────────────────────────────────────────────
+    // ── Transmit — ATLAS MEMORY: unconditional, every confirmed candle ─────────
     if i_enable_webhook
         alert(j, alert.freq_once_per_bar_close)
 
@@ -330,13 +352,13 @@ if barstate.isconfirmed
 var table t_status = na
 if i_show_table and barstate.islast
     if na(t_status)
-        t_status := table.new(position.top_right, 2, 12, bgcolor=color.new(color.black, 10), border_width=1, border_color=color.new(color.gray, 60), frame_width=1, frame_color=color.new(color.gray, 40))
+        t_status := table.new(position.top_right, 2, 13, bgcolor=color.new(color.black, 10), border_width=1, border_color=color.new(color.gray, 60), frame_width=1, frame_color=color.new(color.gray, 40))
 
     f_row(idx, k, v, vc) =>
         table.cell(t_status, 0, idx, k, text_color=color.new(color.gray, 20), text_size=size.small, bgcolor=color.new(color.black, 20))
         table.cell(t_status, 1, idx, v, text_color=vc, text_size=size.small, bgcolor=color.new(color.black, 10))
 
-    f_row(0,  "M-16 ARD OBSERVER",  "v" + MODULE_VERSION,                                   color.new(color.cyan, 0))
+    f_row(0,  "ATLAS MEMORY M-16",  "v" + MODULE_VERSION + " [089A]",                                   color.new(color.cyan, 0))
     f_row(1,  "Webhook",            i_enable_webhook ? "ENABLED" : "DISABLED",              i_enable_webhook ? color.new(color.green, 0) : color.new(color.yellow, 0))
     f_row(2,  "Observations",       str.tostring(v_obs_count),                              color.new(color.white, 0))
     f_row(3,  "Errors",             str.tostring(v_error_count),                            v_error_count > 0 ? color.new(color.red, 0) : color.new(color.green, 0))
@@ -346,15 +368,16 @@ if i_show_table and barstate.islast
     f_row(7,  "CHOP",               str.tostring(chop_val, "#.#"),                          chop_val < 55 ? color.new(color.green, 0) : color.new(color.red, 0))
     f_row(8,  "EMA Align",          ema_struct,                                             ema_bull_val ? color.new(color.green, 0) : ema_bear_val ? color.new(color.red, 0) : color.new(color.yellow, 0))
     f_row(9,  "ATR Expansion",      str.tostring(volcomp_val, "#.###"),                     is_exp_val ? color.new(color.orange, 0) : is_comp_val ? color.new(color.blue, 0) : color.new(color.white, 0))
-    f_row(10, "SB1 RAS",            str.tostring(i_sb1_ras, "#.#") + (i_sb1_activated ? " ✓ ACTIVE" : " ✗ SUPPRESSED"), i_sb1_activated ? color.new(color.green, 0) : color.new(color.red, 0))
-    f_row(11, "Confirmed",          barstate.isconfirmed ? "YES" : "NO",                   barstate.isconfirmed ? color.new(color.green, 0) : color.new(color.yellow, 0))
+    f_row(10, "Active Models",      active_models_display,                                      color.new(color.cyan, 0))
+    f_row(11, "SB1 RAS",            str.tostring(i_sb1_ras, "#.#") + (i_sb1_activated ? " ✓ ACTIVE" : " ✗ SUPPRESSED"), i_sb1_activated ? color.new(color.green, 0) : color.new(color.red, 0))
+    f_row(12, "Confirmed",          barstate.isconfirmed ? "YES" : "NO",                   barstate.isconfirmed ? color.new(color.green, 0) : color.new(color.yellow, 0))
 
 // ============================================================================
 // SECTION 8: HEARTBEAT LABEL
 // ============================================================================
 if i_show_heartbeat and barstate.islast
     label.new(bar_index, high + atr14_val * 0.5,
-              "M-16 ARD | " + str.tostring(v_obs_count) + " obs | " + regime_val + " | " + (i_enable_webhook ? "LIVE" : "PREVIEW"),
+              "ATLAS MEMORY M-16 | " + str.tostring(v_obs_count) + " obs | " + regime_val + " | " + (i_enable_webhook ? "LIVE" : "PREVIEW"),
               style=label.style_label_down,
               color=color.new(color.purple, 20),
               textcolor=color.white,

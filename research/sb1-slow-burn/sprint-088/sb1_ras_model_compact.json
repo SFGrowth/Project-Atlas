@@ -1,0 +1,145 @@
+{
+  "schema_version": "sb1_ras_v1",
+  "sprint": 88,
+  "trained_on": 883,
+  "oof_auc": 0.8945,
+  "oof_f1": 0.6639,
+  "oof_agreement_pct": 81.54,
+  "activation_threshold": 45,
+  "feature_cols": [
+    "prev_day_range_atr",
+    "prev_day_position",
+    "overnight_gap",
+    "chop",
+    "atr_expansion",
+    "vwap_dist",
+    "ema_slope",
+    "ema_dist",
+    "trend_persistence"
+  ],
+  "feature_stats": {
+    "prev_day_range_atr": {
+      "mean": 11.340061298461546,
+      "std": 5.487249817143725,
+      "p10": 6.088876060495735,
+      "p25": 7.66037728915293,
+      "p50": 10.040113428398303,
+      "p75": 13.306897042336722,
+      "p90": 18.542634307474547
+    },
+    "prev_day_position": {
+      "mean": 0.5420548995379033,
+      "std": 0.22135610523617788,
+      "p10": 0.23872386051749594,
+      "p25": 0.3859990528669591,
+      "p50": 0.5476190476190477,
+      "p75": 0.7097006463073388,
+      "p90": 0.8438090044647424
+    },
+    "overnight_gap": {
+      "mean": -0.26180676400484915,
+      "std": 4.993703905012654,
+      "p10": -5.3518619256347115,
+      "p25": -2.947887720987214,
+      "p50": -0.4233053626950925,
+      "p75": 2.2141417216441455,
+      "p90": 5.046749978397638
+    },
+    "chop": {
+      "mean": 51.33220226608533,
+      "std": 8.562446323718572,
+      "p10": 39.01511353713347,
+      "p25": 45.52246746524313,
+      "p50": 52.19896762727648,
+      "p75": 57.86075850258328,
+      "p90": 61.45985851139156
+    },
+    "atr_expansion": {
+      "mean": 1.133686089318787,
+      "std": 0.3270166932698635,
+      "p10": 0.8014679415011341,
+      "p25": 0.8740584539282601,
+      "p50": 1.0310400765959495,
+      "p75": 1.3476111662480812,
+      "p90": 1.6160866948265582
+    },
+    "vwap_dist": {
+      "mean": 0.5281031059630474,
+      "std": 2.6732697455594123,
+      "p10": -2.5503998784684536,
+      "p25": -1.2150121191700995,
+      "p50": 0.3200567879473914,
+      "p75": 2.0511401344311477,
+      "p90": 3.794310902106151
+    },
+    "ema_slope": {
+      "mean": 0.07082723819432027,
+      "std": 0.6770393527271327,
+      "p10": -0.8487664303609656,
+      "p25": -0.5200157848232734,
+      "p50": 0.335427009037782,
+      "p75": 0.5962059697946305,
+      "p90": 0.8423436552522257
+    },
+    "ema_dist": {
+      "mean": 0.11811865885704967,
+      "std": 1.2059372190047044,
+      "p10": -1.535644191148379,
+      "p25": -0.8738238626563347,
+      "p50": 0.3519013813346477,
+      "p75": 1.0604926260122625,
+      "p90": 1.5760266321884353
+    },
+    "trend_persistence": {
+      "mean": 5.524348810872027,
+      "std": 1.0514652993986389,
+      "p10": 5.0,
+      "p25": 5.0,
+      "p50": 5.0,
+      "p75": 5.0,
+      "p90": 7.0
+    }
+  },
+  "scaler_mean": [
+    11.340061,
+    0.542055,
+    -0.261807,
+    51.332202,
+    1.133686,
+    0.528103,
+    0.070827,
+    0.118119,
+    5.524349
+  ],
+  "scaler_std": [
+    5.48725,
+    0.221356,
+    4.993704,
+    8.562446,
+    0.327017,
+    2.67327,
+    0.677039,
+    1.205937,
+    1.051465
+  ],
+  "feature_importances": {
+    "prev_day_range_atr": 0.1933,
+    "prev_day_position": 0.2857,
+    "overnight_gap": 0.126,
+    "chop": 0.0567,
+    "atr_expansion": 0.0906,
+    "vwap_dist": 0.1065,
+    "ema_slope": 0.0526,
+    "ema_dist": 0.0719,
+    "trend_persistence": 0.0166
+  },
+  "notes": [
+    "RAS is computed via k-nearest-neighbours (k=5) in normalised feature space.",
+    "The lookup table contains all 883 training trades from Sprint 087.",
+    "For new observations, find the 5 nearest neighbours and average their RAS.",
+    "This faithfully reproduces the GBM decisions with ~95% agreement on training data.",
+    "OOF agreement (honest out-of-sample) is reported in oof_agreement_pct."
+  ],
+  "lookup_table_size": 883,
+  "lookup_table_note": "Full lookup table in sb1_ras_model.json. Load separately."
+}
