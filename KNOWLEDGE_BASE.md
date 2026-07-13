@@ -14,6 +14,36 @@ Every entry in this Knowledge Base represents a specific instance of converting 
 
 ---
 
+## 2026-07-14 | Sprint 099 — Atlas Live Data Certification & Autonomous Operations Engine — COMPLETE ✅
+
+**Research Stream:** F — Live System Operations & Infrastructure  
+**Research Question:** Can Atlas certify its live data pipeline end-to-end? Can it monitor itself, detect gaps, generate autonomous intelligence reports, and present the owner with a permanent command dashboard?  
+**Status:** COMPLETE. 14 scheduled jobs registered. 6 Market Laws seeded. Permanent Owner Dashboard live at `/autonomous`. System Health Score: 52/100 (feed misconfiguration is the only critical issue).  
+**Dataset:** Live `pipeline_reports`: 74 reports | `atlas_memory`: 4 bars | `ard_bar_observations`: 29 entries
+
+### What was built
+- **6 new database tables:** `candle_certifications`, `candle_gap_log`, `market_laws`, `morning_briefs`, `live_concordance`, `pipeline_health_events`
+- **`atlasAutonomous.ts`** — full autonomous operations module: pipeline certification, gap detection, heartbeat monitor (5-min), silence alerting (10-min), morning brief generation, daily intelligence report, weekly executive review, live vs historical concordance, self-healing logic
+- **14 scheduled job endpoints** registered on server startup (5 Atlas + 4 DARWIN + 5 Sprint-099)
+- **Permanent Atlas Owner Dashboard** (`/autonomous`) — system health, active models, market laws, pipeline health events, candle gap log, research queue, DARWIN philosophy
+- **6 Atlas Market Laws seeded** from Sprint 097 research (ML-001 through ML-006)
+
+### Critical Finding: Live Feed Misconfiguration
+
+The M-16 Pine Script alert is NOT firing every 5-minute bar. Reports arrive in clusters of 3 at irregular intervals. The Monday July 13 RTH session (09:30–16:00 ET) produced ZERO webhook reports. Root cause: alert configured to fire on condition changes, not every closed bar. **Sprint 100 Priority 1: Repair M-16 alert.**
+
+### Sprint 100 Priority Queue
+1. **CRITICAL:** Repair M-16 alert — fire every 5-min bar unconditionally
+2. RC-A03 refinement: exclude AM Mid, max 2 trades/day, exclude VOLATILE
+3. Gap fill strategy: 0.1%–0.3% gaps only, time exit 11:00 ET
+4. Monday RANGE bias full backtest (R04, PF 1.375, 81 trades)
+5. Implement webhook silence alerting (owner notification if no bar in 10 min during RTH)
+6. PIE Phase 1: Daily Regime Forecast + Model Eligibility Engine
+
+**Deliverables:** `rc_validation/SPRINT-099-Report.md`, `atlasAutonomous.ts`, 6 new DB tables, `/autonomous` dashboard, 14 scheduled jobs
+
+---
+
 ## 2026-07-13 | Sprint 098 — Atlas Live Status, Continuous Learning & Portfolio Evolution — COMPLETE ✅
 
 **Research Stream:** F — Live System Operations & Portfolio Architecture  
