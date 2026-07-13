@@ -14,6 +14,43 @@ Every entry in this Knowledge Base represents a specific instance of converting 
 
 ---
 
+## 2026-07-13 | Sprint 096 — DARWIN Deep Market Discovery — COMPLETE ✅
+
+**Research Stream:** E — AI Discovery Engine / Market Intelligence  
+**Research Question:** What does MNQ actually do? Build a complete Behaviour Library, Conditional Probability Library, Sequence Library, Precursor Library, Session Library, and Regime Library from all 140,933 real bars.  
+**Status:** COMPLETE. 12 behaviours, 10 conditional relationships, 6 sequences, 7 precursor entries, 5 sessions, 3 regimes, 5 Research Candidates generated.  
+**Dataset:** MNQ 5-min | 140,933 bars | July 2024 – July 2026 | 625 trading days
+
+### Permanent Structural Truths Discovered
+
+1. **Single-indicator edges do not exist in MNQ at 5-min.** All 12 behaviours tested in isolation are within 2.5% of 50% base rate. Compound signals are required.
+2. **RANGE is the dominant regime (72.6% of days).** Atlas is underweight in RANGE-day strategies — the largest portfolio gap.
+3. **Compound signal SEQ-02 (VWAP Reclaim + EMA Alignment) is the strongest signal found: 62.0% continuation on 497 occurrences.** This is RC-A03 and the primary Sprint 097 certification candidate.
+4. **Gap fill is monotonically predictable by gap size.** Gaps <0.1% fill 98.6% of the time. Gaps >1% never fill (0 of 9 days).
+5. **TREND regime classifier needs redesign.** TREND days have only 44.4% up-day rate — lower than RANGE (59.9%) and the overall base rate (56.3%). The classifier captures range-expansion days, not directional days.
+6. **Overnight inventory alignment confirmed below-random** (34.7–40.8% across all regimes). Confirms Sprint 095A rejection.
+
+### Rejected Hypotheses (Sprint 096)
+- Compression predicts expansion ❌ (0.7x lift — below base rate)
+- High volume predicts continuation ❌ (49.5% at >3x volume — coin flip)
+- RSI extremes predict reversion ❌ (47.5–49.9% — below base rate)
+- VWAP extension predicts reversion ❌ (47.7–51.8% — marginal)
+- Lunch compression improves PM prediction ❌ (0% filter lift)
+- SEQ-01 and SEQ-04 (strict compression+expansion sequences) ❌ (0 occurrences in 140,933 bars)
+
+### Research Pipeline
+- **Sprint 097 Priority 1:** RC-A03 full backtest (VWAP Reclaim + EMA Alignment, TREND regime)
+- **Sprint 097 Priority 2:** RC-A01 full backtest (RANGE Day VWAP Reclaim)
+- **Sprint 097 Priority 3:** Redesign TREND regime classifier into TREND_UP / TREND_DOWN
+- **Sprint 098:** Gap fill strategy backtest | Monday bias investigation
+
+### DARWIN Philosophy (Encoded Sprint 096)
+DARWIN is not rewarded for finding strategies. DARWIN is rewarded for discovering truth. A rejected hypothesis is just as valuable as a certified strategy if it prevents Atlas from wasting future research. See: `Docs/darwin-philosophy-and-standing-questions.md`
+
+**Deliverables:** `rc_validation/SPRINT-096-Report.md`, `rc_validation/sprint096_darwin_knowledge_base.json`, `Docs/darwin-philosophy-and-standing-questions.md`
+
+---
+
 ## 2026-07-13 | Sprint 095A: Regime Recalibration & DARWIN Certification Pipeline — COMPLETE ✅
 
 **Research Stream:** A — Market Intelligence / B — Execution Intelligence / E — AI Discovery Engine  
