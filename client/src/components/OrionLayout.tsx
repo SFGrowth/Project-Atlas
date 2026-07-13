@@ -72,6 +72,12 @@ const NAV_GROUPS = [
       { icon: GitBranch, label: "Temporal Intelligence", path: "/tie" },
     ],
   },
+  {
+    label: "PORTFOLIO",
+    items: [
+      { icon: Layers, label: "Portfolio (PIE)", path: "/portfolio" },
+    ],
+  },
 ];
 
 const SIDEBAR_WIDTH_KEY = "orion-sidebar-width";
