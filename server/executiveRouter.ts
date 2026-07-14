@@ -671,7 +671,7 @@ export const executiveRouter = router({
       const { getLlcProgress, getRecentSessionReports } = await import("./monitor/sessionReporter");
 
       const [recentEvals, openTrades, llcProgress, sessionReports] = await Promise.all([
-        getRecentEvaluations(5),
+        getRecentEvaluations(20),
         getOpenMonitorTrades(),
         getLlcProgress(),
         getRecentSessionReports(5),
@@ -707,10 +707,23 @@ export const executiveRouter = router({
           barTimeEt: e.barTimeEt,
           session: e.session,
           regime: e.regimeClassification,
+          adx: e.adx ? Number(e.adx) : null,
           activeModels: e.activeModels,
           integrityOk: e.integrityOk,
           gapDetected: e.gapDetected,
+          gapMinutes: e.gapMinutes,
           signalModel: e.signalModel,
+          signalDirection: e.signalDirection,
+          a1Eligible: e.a1Eligible,
+          a3Eligible: e.a3Eligible,
+          b1Eligible: e.b1Eligible,
+          sb1Eligible: e.sb1Eligible,
+          orb1Eligible: e.orb1Eligible,
+          a1Reason: e.a1Reason,
+          a3Reason: e.a3Reason,
+          b1Reason: e.b1Reason,
+          sb1Reason: e.sb1Reason,
+          orb1Reason: e.orb1Reason,
         })),
         openTrades: Array.isArray(openTrades) ? { standard: [], sb1: [] } : {
           standard: (openTrades.standard ?? []).map((t: typeof openTrades.standard[0]) => ({
@@ -751,4 +764,60 @@ export const executiveRouter = router({
       return null;
     }
   }),
+
+  recentClosedTrades: publicProcedure
+    .input(z.object({ limit: z.number().min(1).max(50).default(10) }))
+    .query(async ({ input }) => {
+      try {
+        const { getRecentClosedTrades } = await import("./monitor/paperTradeEngine");
+        const trades = await getRecentClosedTrades(input.limit);
+        return trades.map((t: any) => ({
+          id: t.id,
+          model: t.modelName ?? t.model ?? "UNKNOWN",
+          direction: t.direction,
+          entry: Number(t.entry ?? 0),
+          stop: Number(t.stop ?? 0),
+          target: Number(t.target ?? 0),
+          exitPrice: t.exitPrice ? Number(t.exitPrice) : null,
+          exitReason: t.exitReason,
+          pnlDollars: t.pnl ? Number(t.pnl) : null,
+          rMultiple: (t.currentR ?? t.rMultiple) ? Number(t.currentR ?? t.rMultiple) : null,
+          mfe: t.mfe ? Number(t.mfe) : null,
+          mae: t.mae ? Number(t.mae) : null,
+          riskDollars: Number(t.riskDollars ?? 0),
+          contracts: t.contracts ?? 1,
+          openedAt: t.openedAt instanceof Date ? t.openedAt.getTime() : null,
+          closedAt: t.closedAt instanceof Date ? t.closedAt.getTime() : null,
+        }));
+      } catch (err) {
+        console.error("[executive.recentClosedTrades] Error:", err);
+        return [];
+      }
+    }),
+
+  tradeEvidence: publicProcedure
+    .input(z.object({ tradeId: z.string() }))
+    .query(async ({ input }) => {
+      try {
+        const { getTradeEvidenceReport } = await import("./monitor/paperTradeEngine");
+        const report = await getTradeEvidenceReport(input.tradeId);
+        if (!report) return null;
+        return {
+          ...report,
+          openedAt: report.openedAt instanceof Date ? report.openedAt.getTime() : null,
+          closedAt: report.closedAt instanceof Date ? report.closedAt.getTime() : null,
+          evaluation: report.evaluation ? {
+            barTimeEt: report.evaluation.barTimeEt,
+            session: report.evaluation.session,
+            regime: report.evaluation.regimeClassification,
+            adx: report.evaluation.adx ? Number(report.evaluation.adx) : null,
+            integrityOk: report.evaluation.integrityOk,
+            evaluatedAt: report.evaluation.evaluatedAt instanceof Date ? report.evaluation.evaluatedAt.getTime() : null,
+          } : null,
+        };
+      } catch (err) {
+        console.error("[executive.tradeEvidence] Error:", err);
+        return null;
+      }
+    }),
 });

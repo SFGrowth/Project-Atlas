@@ -632,3 +632,26 @@
 - [x] Expose monitor status via `executive.monitorStatus` tRPC procedure
 - [x] Display live eligibility status on Executive Portfolio dashboard (Live Feed section)
 - [x] GitHub commit after each material correction or completed certification report
+
+## Sprint 104D — Operational Verification Phase
+
+- [x] Session startup protocol: GitHub connector ENABLED, atlas_memory LIVE (156 bars in 24h)
+- [x] Backfill 158 pre-deployment atlas_memory bars into monitor_evaluations
+- [x] Audit: 3 gaps detected (2 legacy test-payload gaps, 1 real 1397-min gap at session boundary), 1 integrity failure (null OHLCV test row), 0 duplicates
+- [x] Build /pipeline-monitor page — regime, session, last bar, ADX, model eligibility grid, open positions, LLC progress, evaluation log, closed trades, session reports
+- [x] Add Pipeline Monitor nav entry to PIPELINE group in OrionLayout.tsx
+- [x] Register /pipeline-monitor route in App.tsx
+- [x] Expand monitorStatus to return 20 bars with per-model eligibility per bar
+- [x] Add getRecentClosedTrades() helper to paperTradeEngine.ts
+- [x] Add getTradeEvidenceReport() helper to paperTradeEngine.ts
+- [x] Add executive.recentClosedTrades tRPC procedure
+- [x] Add executive.tradeEvidence tRPC procedure
+- [x] TypeScript: 0 errors
+- [x] Tests: 77/77 passing
+- [ ] First valid RTH session received and evaluated (PENDING — awaiting market open)
+- [ ] First eligible model signal fires (PENDING — awaiting TRENDING regime in RTH)
+- [ ] First paper-trade lifecycle completed (entry → MFE/MAE tracking → exit → P&L)
+- [ ] Evidence report auto-generated for first signal
+- [ ] Session 1 of 5 LLC certification report generated and committed to GitHub
+- [ ] Sessions 2-5 LLC certification (PENDING — requires 5 clean RTH sessions)
+- [ ] LLC 5-session certificate earned

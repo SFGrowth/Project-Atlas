@@ -8,7 +8,7 @@ import { useIsMobile } from "@/hooks/useMobile";
 import {
   Activity, AlertTriangle, BadgeCheck, BarChart2, BarChart3, BookOpen, Brain, BrainCircuit, CalendarCheck, ChevronLeft, ChevronRight,
   Clock, Cpu, Database, Dna, FlaskConical, GitBranch, Home, LayoutDashboard, Layers, LineChart, Menu,
-  Radio, Settings, Shield, ShieldCheck, Star, Target, Telescope, TrendingUp, Zap,
+  Radio, Settings, Shield, ShieldCheck, ScanLine, Star, Target, Telescope, TrendingUp, Zap,
 } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
@@ -33,6 +33,7 @@ const NAV_GROUPS = [
       { icon: BadgeCheck, label: "Certification", path: "/certification" },
       { icon: Shield, label: "ARI", path: "/ari" },
       { icon: AlertTriangle, label: "TVL", path: "/tvl" },
+      { icon: ScanLine, label: "Pipeline Monitor", path: "/pipeline-monitor" },
     ],
   },
   {

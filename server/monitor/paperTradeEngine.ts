@@ -520,6 +520,130 @@ export async function processBar(
 }
 
 /**
+ * Get recently closed monitor paper trades (for dashboard display).
+ */
+export async function getRecentClosedTrades(limit = 10) {
+  const db = await getDb();
+  if (!db) return [];
+
+  const trades = await db
+    .select()
+    .from(paperTrades)
+    .where(and(eq(paperTrades.status, "CLOSED"), eq(paperTrades.account, "ATLAS_MONITOR_PAPER")))
+    .orderBy(desc(paperTrades.closedAt))
+    .limit(limit);
+
+  const sb1Trades = await db
+    .select()
+    .from(sb1PaperTrades)
+    .where(eq(sb1PaperTrades.status, "CLOSED"))
+    .orderBy(desc(sb1PaperTrades.closedAt))
+    .limit(limit);
+
+  // Merge and sort by closedAt
+  const merged = [
+    ...trades.map((t) => ({ ...t, modelName: t.model, isStandard: true })),
+    ...sb1Trades.map((t) => ({ ...t, modelName: "SB1", isStandard: false })),
+  ].sort((a, b) => {
+    const ta = a.closedAt instanceof Date ? a.closedAt.getTime() : 0;
+    const tb = b.closedAt instanceof Date ? b.closedAt.getTime() : 0;
+    return tb - ta;
+  });
+
+  return merged.slice(0, limit);
+}
+
+/**
+ * Get the first-signal evidence report for a given trade ID.
+ * Returns full provenance: model, signal bar, evaluation, entry/stop/target, P&L.
+ */
+export async function getTradeEvidenceReport(tradeId: string) {
+  const db = await getDb();
+  if (!db) return null;
+
+  // Try standard trades first
+  const trade = await db
+    .select()
+    .from(paperTrades)
+    .where(eq(paperTrades.id, tradeId))
+    .limit(1);
+
+  if (trade[0]) {
+    const t = trade[0];
+    // Find the evaluation row that recorded this signal
+    const evaluation = await db
+      .select()
+      .from(monitorEvaluations)
+      .where(eq(monitorEvaluations.signalModel, t.model ?? ""))
+      .orderBy(desc(monitorEvaluations.evaluatedAt))
+      .limit(1);
+
+    return {
+      tradeId: t.id,
+      model: t.model,
+      direction: t.direction,
+      entry: Number(t.entry ?? 0),
+      stop: Number(t.stop ?? 0),
+      target: Number(t.target ?? 0),
+      riskDollars: Number(t.riskDollars ?? 0),
+      contracts: t.contracts ?? 1,
+      status: t.status,
+      openedAt: t.openedAt,
+      closedAt: t.closedAt,
+      exitPrice: t.exitPrice ? Number(t.exitPrice) : null,
+      exitReason: t.exitReason,
+      pnlDollars: t.pnl ? Number(t.pnl) : null,
+      rMultiple: t.currentR ? Number(t.currentR) : null,
+      mfe: t.mfe ? Number(t.mfe) : null,
+      mae: t.mae ? Number(t.mae) : null,
+      pipelineRunId: t.pipelineRunId,
+      evaluation: evaluation[0] ?? null,
+    };
+  }
+
+  // Try SB1 trades
+  const sb1 = await db
+    .select()
+    .from(sb1PaperTrades)
+    .where(eq(sb1PaperTrades.id, tradeId))
+    .limit(1);
+
+  if (sb1[0]) {
+    const t = sb1[0];
+    const evaluation = await db
+      .select()
+      .from(monitorEvaluations)
+      .where(eq(monitorEvaluations.signalModel, "SB1"))
+      .orderBy(desc(monitorEvaluations.evaluatedAt))
+      .limit(1);
+
+    return {
+      tradeId: t.id,
+      model: "SB1",
+      direction: t.direction,
+      entry: Number(t.entry ?? 0),
+      stop: Number(t.stop ?? 0),
+      target: Number(t.target ?? 0),
+      riskDollars: Number(t.riskDollars ?? 0),
+      contracts: t.contracts ?? 1,
+      status: t.status,
+      openedAt: t.openedAt,
+      closedAt: t.closedAt,
+      exitPrice: t.exitPrice ? Number(t.exitPrice) : null,
+      exitReason: t.exitReason,
+      pnlDollars: t.pnl ? Number(t.pnl) : null,
+      rMultiple: t.rMultiple ? Number(t.rMultiple) : null,
+      mfe: t.mfe ? Number(t.mfe) : null,
+      mae: t.mae ? Number(t.mae) : null,
+      pipelineRunId: t.pipelineRunId,
+      evaluation: evaluation[0] ?? null,
+    };
+  }
+
+  return null;
+}
+
+/**
  * Get all open monitor paper trades (for dashboard display).
  */
 export async function getOpenMonitorTrades() {
