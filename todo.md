@@ -720,3 +720,16 @@
 - [x] Register 5 new DARWIN hypotheses: H001 CHOPPY_RANGE_MEAN_REVERSION, H002 TRANSITIONAL_BREAKOUT_FADE, H003 LUNCH_COMPRESSION_BREAKOUT, H004 VOLATILE_ORB_EXTENSION, H005 OV_SESSION_VWAP_ANCHOR
 - [x] Write Sprint 105 closure report with all 9 executive questions answered
 - [x] Commit to Project-Atlas (commit 8b9f7e6)
+
+## Sprint 106 — DARWIN Behavioural Discovery Engine
+
+- [x] Repository audit: git log, Behaviour Library, Market Laws, Sequence Library, Candidate Registry
+- [x] Behavioural clustering: classify all 286 live bars by behaviour type (21 behaviour classes)
+- [x] Sequence discovery: 12 statistically significant 3-bar sequences identified
+- [x] Market Law ML-010 admitted: Wick Rejection Continuation (76.0%, 25 obs, 77.8% confidence)
+- [x] 4 law candidates tested and not admitted (insufficient observations or below threshold)
+- [x] 7 DARWIN candidates generated: DARWIN-S106-001 through DARWIN-S106-007
+- [x] 8 Behaviour Library entries registered: BL-009 through BL-016
+- [x] 12 Sequence Library entries registered in tie_sequence_library
+- [x] Sprint 106 closure report written and committed to Project-Atlas (commit e4f8c35)
+- [x] All 8 executive questions answered with database evidence
