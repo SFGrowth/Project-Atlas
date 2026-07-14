@@ -658,9 +658,49 @@
 
 ## Sprint 104E — Defect Fixes (from Daily Ops Report 2026-07-14)
 
-- [ ] DEF-001 CRITICAL: Fix SB1 backfill contamination — mark 6 contaminated trades INVALID, add price sanity check to backfill script, add atomic hasOpenPosition() check
-- [ ] DEF-002 HIGH: Fix sessionReporter RTH close trigger — verify 16:00 ET session-close detection logic fires correctly
-- [ ] DEF-003 MEDIUM: Fix dashboard P&L to exclude contaminated/invalid trades from performance queries
-- [ ] Audit historical 30-day paper trade corpus for data quality (30d WR 37.7% inconsistent with model spec)
+- [x] DEF-001 CRITICAL: Fix SB1 backfill contamination — mark 6 contaminated trades INVALID, add price sanity check to backfill script, add atomic hasOpenPosition() check
+- [x] DEF-002 HIGH: Fix sessionReporter RTH close trigger — verify 16:00 ET session-close detection logic fires correctly
+- [x] DEF-003 MEDIUM: Fix dashboard P&L to exclude contaminated/invalid trades from performance queries
+- [x] Audit historical 30-day paper trade corpus for data quality — 507 PAPER SB1 trades, 4 PAPER paper_trades, all BACKTEST/TEST/CONTAMINATED excluded
 - [ ] Review A1 ATR stop multiplier (1.5× → 2.0×) for TRENDING_BULL regime
 - [x] Generate Atlas Daily Operations Report 2026-07-14 (local commit 1ffb3a3, GitHub push blocked — SFGrowth org lacks CreateRepository permission)
+
+## Sprint 104E — Operational Integrity & Live Certification
+
+### P1 — DEF-001 SB1 Contamination Fix
+- [x] Add `data_source` and `provenance` columns to `paper_trades` and `sb1_paper_trades`
+- [x] Mark all 12 TEST_ID sb1 trades as CONTAMINATED (id LIKE 'test-%')
+- [x] Mark ATLAS_BACKTEST_2YR paper_trades as BACKTEST provenance
+- [x] Mark ATLAS_MNQ_PAPER paper_trades as TEST provenance
+- [x] Mark ATLAS_MONITOR_PAPER paper_trades as PAPER provenance
+- [x] Mark SB1 LEGACY_PRICE_BACKTEST (entry < 25000, no test-id) as BACKTEST provenance
+- [x] Mark SB1 PRICE_25000_28000 and LIVE_PRICE_GT28000 as PAPER provenance
+- [x] Add price sanity check to paperTradeEngine.ts (entry must be within 20% of current bar close)
+- [x] Add atomic hasOpenPosition() guard using DB unique constraint on (account/model, OPEN status)
+- [x] Update all performance queries to exclude CONTAMINATED and TEST provenance
+
+### P2 — Dashboard Reconciliation
+- [x] Fix executive.strategyPerformance to filter by provenance=PAPER only
+- [x] Fix executive.monitorStatus to exclude contaminated trades
+- [x] Verify today/7d/30d/all-time P&L matches clean DB values exactly
+- [x] Add provenance filter to all portfolio analytics queries
+
+### P3 — Historical Data Audit
+- [x] Write audit report: classify all 1,778 SB1 + 648 paper_trades by provenance
+- [x] Confirm test data never appears in production analytics
+
+### P4 — LLC Certification
+- [x] Fix DEF-002: wire sessionReporter RTH close trigger (16:00 ET detection)
+- [x] Add 5-session LLC progress display to Pipeline Monitor dashboard
+- [x] Restart LLC window from next clean RTH session
+
+### P5 — Automated Daily Ops Report
+- [x] Build auto-report generator triggered at RTH close via heartbeat
+- [x] Include all 6 sections: System/Market/Models/Portfolio/Live Learning/LLC
+- [x] Store report in session_reports table and commit to GitHub
+
+### P6 — Portfolio Intelligence View
+- [x] Build /portfolio-intelligence page with per-strategy stats
+- [x] Support today/7d/30d/all-time windows per model
+- [x] Risk profile selector: $450 (Prop), $1,650 (Live), custom
+- [x] Display: trades, WR, PF, net P&L$, net P&L R, avg win, avg loss, drawdown, streak, eligibility

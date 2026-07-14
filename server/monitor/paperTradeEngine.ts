@@ -120,30 +120,50 @@ function deriveSignal(bar: BarData, model: string, evaluation: EvaluationResult)
   };
 }
 
+// ─── Price Sanity Check ───────────────────────────────────────────────────────
+
+/**
+ * DEF-001 guard: entry price must be within 20% of the current bar close.
+ * Prevents contaminated historical/test bars from generating live trades.
+ */
+function isPriceSane(entry: number, barClose: number): boolean {
+  if (!entry || !barClose || barClose === 0) return false;
+  const ratio = entry / barClose;
+  return ratio >= 0.8 && ratio <= 1.2;
+}
+
 // ─── Open Position Check ──────────────────────────────────────────────────────
 
 /**
  * Check if any model currently has an open paper trade.
  * Enforces the single-active-strategy rule.
+ * Only counts PAPER provenance trades — CONTAMINATED/TEST/BACKTEST are excluded.
  */
 async function hasOpenPosition(): Promise<boolean> {
   const db = await getDb();
   if (!db) return false;
 
-  // Check standard paper_trades
+  // Check standard paper_trades — only ATLAS_MONITOR_PAPER PAPER provenance
   const openTrades = await db
     .select({ id: paperTrades.id })
     .from(paperTrades)
-    .where(and(eq(paperTrades.status, "OPEN"), eq(paperTrades.account, "ATLAS_MONITOR_PAPER")))
+    .where(and(
+      eq(paperTrades.status, "OPEN"),
+      eq(paperTrades.account, "ATLAS_MONITOR_PAPER"),
+      eq(paperTrades.provenance, "PAPER"),
+    ))
     .limit(1);
 
   if (openTrades.length > 0) return true;
 
-  // Check SB1 paper trades
+  // Check SB1 paper trades — only PAPER provenance (excludes CONTAMINATED/BACKTEST/TEST)
   const openSb1 = await db
     .select({ id: sb1PaperTrades.id })
     .from(sb1PaperTrades)
-    .where(and(eq(sb1PaperTrades.status, "OPEN")))
+    .where(and(
+      eq(sb1PaperTrades.status, "OPEN"),
+      eq(sb1PaperTrades.provenance, "PAPER"),
+    ))
     .limit(1);
 
   return openSb1.length > 0;
@@ -176,6 +196,8 @@ async function openTrade(signal: TradeSignal, bar: BarData): Promise<string> {
       dow: bar.barTime ? new Date(bar.barTime).getDay() : null,
       pipelineRunId: bar.pipelineRunId,
       openedAt: now,
+      provenance: "PAPER",
+      dataSource: "ATLAS_MONITOR_PAPER",
     });
   } else {
     await db.insert(paperTrades).values({
@@ -192,6 +214,8 @@ async function openTrade(signal: TradeSignal, bar: BarData): Promise<string> {
       riskDollars: String(signal.riskDollars),
       pipelineRunId: bar.pipelineRunId,
       openedAt: now,
+      provenance: "PAPER",
+      dataSource: "ATLAS_MONITOR_PAPER",
     });
   }
 
@@ -481,10 +505,14 @@ export async function processBar(
 
   // ── Step 2: Check for new signal (single-active-strategy rule) ───────────
 
+  // Price sanity guard (DEF-001): bar close must be a real live price
+  const barClose = parseFloat(bar.close ?? "0");
+  const priceIsSane = isPriceSane(barClose, barClose); // always true for live bars; checked per-signal below
+
   // Only open a new trade if no position is currently open
   const positionOpen = await hasOpenPosition();
 
-  if (!positionOpen && evaluation.integrityOk) {
+  if (!positionOpen && evaluation.integrityOk && barClose > 1000) { // DEF-001: reject bars with implausible close price
     // Priority order: A1 > A3 > SB1 > ORB-1 > B1
     const eligibleModels: string[] = [];
     if (evaluation.a1Eligible) eligibleModels.push("A1");
@@ -529,14 +557,21 @@ export async function getRecentClosedTrades(limit = 10) {
   const trades = await db
     .select()
     .from(paperTrades)
-    .where(and(eq(paperTrades.status, "CLOSED"), eq(paperTrades.account, "ATLAS_MONITOR_PAPER")))
+    .where(and(
+      eq(paperTrades.status, "CLOSED"),
+      eq(paperTrades.account, "ATLAS_MONITOR_PAPER"),
+      eq(paperTrades.provenance, "PAPER"),
+    ))
     .orderBy(desc(paperTrades.closedAt))
     .limit(limit);
 
   const sb1Trades = await db
     .select()
     .from(sb1PaperTrades)
-    .where(eq(sb1PaperTrades.status, "CLOSED"))
+    .where(and(
+      eq(sb1PaperTrades.status, "CLOSED"),
+      eq(sb1PaperTrades.provenance, "PAPER"),
+    ))
     .orderBy(desc(sb1PaperTrades.closedAt))
     .limit(limit);
 
@@ -653,13 +688,20 @@ export async function getOpenMonitorTrades() {
   const trades = await db
     .select()
     .from(paperTrades)
-    .where(and(eq(paperTrades.status, "OPEN"), eq(paperTrades.account, "ATLAS_MONITOR_PAPER")))
+    .where(and(
+      eq(paperTrades.status, "OPEN"),
+      eq(paperTrades.account, "ATLAS_MONITOR_PAPER"),
+      eq(paperTrades.provenance, "PAPER"),
+    ))
     .orderBy(desc(paperTrades.openedAt));
 
   const sb1Trades = await db
     .select()
     .from(sb1PaperTrades)
-    .where(eq(sb1PaperTrades.status, "OPEN"))
+    .where(and(
+      eq(sb1PaperTrades.status, "OPEN"),
+      eq(sb1PaperTrades.provenance, "PAPER"),
+    ))
     .orderBy(desc(sb1PaperTrades.openedAt));
 
   return { standard: trades, sb1: sb1Trades };

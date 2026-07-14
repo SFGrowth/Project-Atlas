@@ -231,7 +231,7 @@ export const executiveRouter = router({
         holdTimeMs: number;
       }> = [];
 
-      // From paper_trades (A1, A2, A3, ORB-1) — uses openedAt/closedAt
+      // From paper_trades (A1, A2, A3, ORB-1) — PAPER provenance only (excludes BACKTEST/TEST/CONTAMINATED)
       const ptRows = await db.select({
         model: paperTrades.model,
         pnl: paperTrades.pnl,
@@ -239,7 +239,10 @@ export const executiveRouter = router({
         closedAt: paperTrades.closedAt,
         tradeDurationMs: paperTrades.tradeDurationMs,
         direction: paperTrades.direction,
-      }).from(paperTrades).where(eq(paperTrades.status, "CLOSED")).orderBy(desc(paperTrades.openedAt));
+      }).from(paperTrades).where(and(
+        eq(paperTrades.status, "CLOSED"),
+        eq(paperTrades.provenance, "PAPER"),
+      )).orderBy(desc(paperTrades.openedAt));
 
       for (const r of ptRows) {
         const pnl = Number(r.pnl ?? 0);
@@ -255,14 +258,17 @@ export const executiveRouter = router({
         });
       }
 
-      // From sb1_paper_trades (uses openedAt/closedAt timestamps, not entryTime/exitTime)
+      // From sb1_paper_trades — PAPER provenance only (excludes BACKTEST/CONTAMINATED/TEST)
       const sb1Rows = await db.select({
         pnl: sb1PaperTrades.pnl,
         openedAt: sb1PaperTrades.openedAt,
         closedAt: sb1PaperTrades.closedAt,
         holdingTimeMs: sb1PaperTrades.holdingTimeMs,
         direction: sb1PaperTrades.direction,
-      }).from(sb1PaperTrades).where(eq(sb1PaperTrades.status, "CLOSED")).orderBy(desc(sb1PaperTrades.openedAt));
+      }).from(sb1PaperTrades).where(and(
+        eq(sb1PaperTrades.status, "CLOSED"),
+        eq(sb1PaperTrades.provenance, "PAPER"),
+      )).orderBy(desc(sb1PaperTrades.openedAt));
 
       for (const r of sb1Rows) {
         const pnl = Number(r.pnl ?? 0);
@@ -817,6 +823,144 @@ export const executiveRouter = router({
         };
       } catch (err) {
         console.error("[executive.tradeEvidence] Error:", err);
+        return null;
+      }
+    }),
+
+  // ── Daily Ops Report ──────────────────────────────────────────────────────────────────────────
+
+  dailyOpsReport: publicProcedure
+    .input(z.object({ dateStr: z.string().optional() }))
+    .query(async ({ input }) => {
+      try {
+        const { generateDailyOpsReport } = await import("./monitor/dailyOpsReport");
+        return await generateDailyOpsReport(input.dateStr);
+      } catch (err) {
+        console.error("[executive.dailyOpsReport] Error:", err);
+        return null;
+      }
+    }),
+
+  // ── Portfolio Intelligence ───────────────────────────────────────────────────────────────────────
+
+  portfolioIntelligence: publicProcedure
+    .input(z.object({
+      strategyId: z.string().optional(),
+      riskPerTrade: z.number().default(450),
+    }))
+    .query(async ({ input }) => {
+      try {
+        const { getDb } = await import("./db");
+        const { paperTrades, sb1PaperTrades } = await import("../drizzle/schema");
+        const { desc, and, eq } = await import("drizzle-orm");
+        const db = await getDb();
+        if (!db) return null;
+
+        const now = Date.now();
+        const day1 = now - 86400000;
+        const day7 = now - 7 * 86400000;
+        const day30 = now - 30 * 86400000;
+
+        // PAPER provenance only — clean production data
+        const ptRows = await db.select({
+          model: paperTrades.model,
+          pnl: paperTrades.pnl,
+          openedAt: paperTrades.openedAt,
+          direction: paperTrades.direction,
+          tradeDurationMs: paperTrades.tradeDurationMs,
+        }).from(paperTrades).where(and(
+          eq(paperTrades.status, "CLOSED"),
+          eq(paperTrades.provenance, "PAPER"),
+        )).orderBy(desc(paperTrades.openedAt));
+
+        const sb1Rows = await db.select({
+          pnl: sb1PaperTrades.pnl,
+          openedAt: sb1PaperTrades.openedAt,
+          direction: sb1PaperTrades.direction,
+          holdingTimeMs: sb1PaperTrades.holdingTimeMs,
+        }).from(sb1PaperTrades).where(and(
+          eq(sb1PaperTrades.status, "CLOSED"),
+          eq(sb1PaperTrades.provenance, "PAPER"),
+        )).orderBy(desc(sb1PaperTrades.openedAt));
+
+        type TRow = { model: string; pnl: number; entryTime: number; direction: string; holdTimeMs: number };
+        const allTrades: TRow[] = [
+          ...ptRows.map(r => ({
+            model: r.model ?? "UNKNOWN",
+            pnl: Number(r.pnl ?? 0),
+            entryTime: r.openedAt instanceof Date ? r.openedAt.getTime() : Number(r.openedAt),
+            direction: r.direction ?? "LONG",
+            holdTimeMs: Number(r.tradeDurationMs ?? 0),
+          })),
+          ...sb1Rows.map(r => ({
+            model: "SB1",
+            pnl: Number(r.pnl ?? 0),
+            entryTime: r.openedAt instanceof Date ? r.openedAt.getTime() : Number(r.openedAt),
+            direction: r.direction ?? "LONG",
+            holdTimeMs: Number(r.holdingTimeMs ?? 0),
+          })),
+        ];
+
+        const filtered = input.strategyId ? allTrades.filter(t => t.model === input.strategyId) : allTrades;
+
+        const computeStats = (trades: TRow[], riskPerTrade: number) => {
+          if (trades.length === 0) return {
+            trades: 0, wins: 0, losses: 0, winRate: 0, profitFactor: 0,
+            netPnlDollar: 0, netPnlR: 0, grossProfit: 0, grossLoss: 0,
+            avgWin: 0, avgLoss: 0, largestWin: 0, largestLoss: 0,
+            maxDrawdown: 0, avgHoldTimeMin: 0, longTrades: 0, shortTrades: 0,
+            currentWinStreak: 0, currentLoseStreak: 0,
+          };
+          const wins = trades.filter(t => t.pnl > 0);
+          const losses = trades.filter(t => t.pnl <= 0);
+          const grossProfit = wins.reduce((s, t) => s + t.pnl, 0);
+          const grossLoss = Math.abs(losses.reduce((s, t) => s + t.pnl, 0));
+          const netPnl = trades.reduce((s, t) => s + t.pnl, 0);
+          let peak = 0, equity = 0, maxDD = 0;
+          for (const t of [...trades].sort((a, b) => a.entryTime - b.entryTime)) {
+            equity += t.pnl; if (equity > peak) peak = equity;
+            const dd = peak - equity; if (dd > maxDD) maxDD = dd;
+          }
+          let curWin = 0, curLose = 0;
+          for (const t of [...trades].sort((a, b) => b.entryTime - a.entryTime)) {
+            if (t.pnl > 0) { if (curLose === 0) curWin++; else break; }
+            else { if (curWin === 0) curLose++; else break; }
+          }
+          return {
+            trades: trades.length, wins: wins.length, losses: losses.length,
+            winRate: (wins.length / trades.length) * 100,
+            profitFactor: grossLoss > 0 ? grossProfit / grossLoss : wins.length > 0 ? 999 : 0,
+            netPnlDollar: netPnl, netPnlR: riskPerTrade > 0 ? netPnl / riskPerTrade : 0,
+            grossProfit, grossLoss: -grossLoss,
+            avgWin: wins.length > 0 ? grossProfit / wins.length : 0,
+            avgLoss: losses.length > 0 ? -(grossLoss / losses.length) : 0,
+            largestWin: wins.length > 0 ? Math.max(...wins.map(t => t.pnl)) : 0,
+            largestLoss: losses.length > 0 ? Math.min(...losses.map(t => t.pnl)) : 0,
+            maxDrawdown: -maxDD,
+            avgHoldTimeMin: trades.reduce((s, t) => s + t.holdTimeMs, 0) / trades.length / 60000,
+            longTrades: trades.filter(t => t.direction === "LONG").length,
+            shortTrades: trades.filter(t => t.direction === "SHORT").length,
+            currentWinStreak: curWin, currentLoseStreak: curLose,
+          };
+        };
+
+        const risk = input.riskPerTrade;
+        const perModel: Record<string, ReturnType<typeof computeStats>> = {};
+        for (const model of ["A1", "A3", "B1", "SB1", "ORB-1"]) {
+          perModel[model] = computeStats(filtered.filter(t => t.model === model), risk);
+        }
+
+        return {
+          last24h: computeStats(filtered.filter(t => t.entryTime >= day1), risk),
+          last7d: computeStats(filtered.filter(t => t.entryTime >= day7), risk),
+          last30d: computeStats(filtered.filter(t => t.entryTime >= day30), risk),
+          allTime: computeStats(filtered, risk),
+          perModel,
+          totalTradesInDB: filtered.length,
+          provenanceNote: "PAPER provenance only — BACKTEST/TEST/CONTAMINATED excluded",
+        };
+      } catch (err) {
+        console.error("[executive.portfolioIntelligence] Error:", err);
         return null;
       }
     }),

@@ -34,6 +34,7 @@ const NAV_GROUPS = [
       { icon: Shield, label: "ARI", path: "/ari" },
       { icon: AlertTriangle, label: "TVL", path: "/tvl" },
       { icon: ScanLine, label: "Pipeline Monitor", path: "/pipeline-monitor" },
+      { icon: BarChart3, label: "Portfolio Intelligence", path: "/portfolio-intelligence" },
     ],
   },
   {

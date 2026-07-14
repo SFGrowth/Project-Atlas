@@ -88,6 +88,10 @@ export const paperTrades = mysqlTable("paper_trades", {
   // Notes
   notes: text("notes"),
   replayBarIndex: int("replay_bar_index"),
+  // Provenance — data lineage classification
+  // PAPER=live paper trade, BACKTEST=historical simulation, LIVE=real money, TEST=test/dev data, CONTAMINATED=invalid
+  provenance: mysqlEnum("provenance", ["PAPER", "BACKTEST", "LIVE", "TEST", "CONTAMINATED"]).notNull().default("PAPER"),
+  dataSource: varchar("data_source", { length: 64 }), // e.g. ATLAS_MONITOR_PAPER, ATLAS_BACKTEST_2YR
 });
 
 export type PaperTrade = typeof paperTrades.$inferSelect;
@@ -293,6 +297,9 @@ export const sb1PaperTrades = mysqlTable("sb1_paper_trades", {
   pipelineRunId: varchar("pipeline_run_id", { length: 128 }),
   notes: text("notes"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
+  // Provenance — data lineage classification
+  provenance: mysqlEnum("provenance", ["PAPER", "BACKTEST", "LIVE", "TEST", "CONTAMINATED"]).notNull().default("PAPER"),
+  dataSource: varchar("data_source", { length: 64 }),
 });
 export type Sb1PaperTrade = typeof sb1PaperTrades.$inferSelect;
 export type InsertSb1PaperTrade = typeof sb1PaperTrades.$inferInsert;

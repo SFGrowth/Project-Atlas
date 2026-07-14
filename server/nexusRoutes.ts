@@ -1073,6 +1073,22 @@ export function registerNexusRoutes(router: Router) {
           };
           const evaluation = await evaluate(barRow);
           await processBar(barRow, evaluation);
+
+          // ── DEF-002 fix: RTH-close trigger for session report ──────────────
+          // Fire session report on the last bar of RTH (16:00 ET = 20:00 UTC EDT)
+          // Bar time is stored as Unix ms; the 16:00 ET close bar arrives at ~20:00 UTC
+          if (barTimeMs && mem.session === "PM_CLOSE") {
+            try {
+              const { generateSessionReport } = await import("./monitor/sessionReporter");
+              // Convert to ET date (UTC-4 EDT)
+              const etDate = new Date(barTimeMs - 4 * 3600 * 1000);
+              const etDateStr = etDate.toISOString().split("T")[0];
+              console.log(`[MONITOR] RTH close detected (PM_CLOSE) for ${etDateStr} — generating session report`);
+              await generateSessionReport(etDateStr);
+            } catch (repErr) {
+              console.error("[MONITOR] Session report generation error:", repErr);
+            }
+          }
         } catch (monErr) {
           console.error("[MONITOR] Bar evaluation error:", monErr);
         }
