@@ -39,6 +39,7 @@ const DarwinPage = lazy(() => import("./pages/Darwin"));
 const DarwinCROPage = lazy(() => import("./pages/DarwinCRO"));
 const AutonomousDashboardPage = lazy(() => import("./pages/AutonomousDashboard"));
 const LiveLearningPage = lazy(() => import("./pages/LiveLearningDashboard"));
+const ExecutivePortfolioPage = lazy(() => import("./pages/ExecutivePortfolio"));
 
 function PageLoader() {
   return (
@@ -87,6 +88,7 @@ function Router() {
           <Route path="/darwin-cro" component={DarwinCROPage} />
           <Route path="/autonomous" component={AutonomousDashboardPage} />
           <Route path="/live-learning" component={LiveLearningPage} />
+          <Route path="/executive-portfolio" component={ExecutivePortfolioPage} />
           <Route path="/404" component={NotFound} />
           <Route component={NotFound} />
         </Switch>

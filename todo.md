@@ -577,3 +577,45 @@
 - [x] Checkpoint saved (version: sprint-101)
 - [ ] Register darwin-cro-daily and darwin-cro-weekly Heartbeat cron jobs via /autonomous dashboard (requires owner login)
 - [ ] First daily CRO run will auto-populate research queue from existing DARWIN candidates
+
+## Sprint 102 — Portfolio Intelligence Audit
+- [x] AES-001: Read all institutional knowledge (ATLAS.md, KNOWLEDGE_BASE.md, PRODUCTION_FREEZE.md, sprint-051 branch, DARWIN schema)
+- [x] Repository Sync: Merged sprint-051 branch (56 commits, Sprints 051-100A) into main — governance violation resolved
+- [x] Created ATLAS_BEHAVIOUR_LIBRARY.md (8 behaviours documented)
+- [x] Created ATLAS_CANDIDATE_REGISTRY.md (7 candidates documented)
+- [x] Created ATLAS_REJECTION_REGISTRY.md (9 rejections archived)
+- [x] Created ATLAS_SEQUENCE_LIBRARY.md (3 sequences documented)
+- [x] Updated KNOWLEDGE_BASE.md with Sprint 100A and Sprint 101 entries
+- [x] Part 1: Complete Portfolio Audit — all 5 production models, ORB-1 paper, 7 DARWIN candidates queried from live DB
+- [x] Part 2: Gap Analysis — RANGE (53.3% of days), VOLATILE (19.6%) have zero certified coverage. PCS 66.1.
+- [x] Part 3: Two-year historical search (140,933 bars) — regime distribution, pre-market level respect (75.2%), VOLATILE ORB viability
+- [x] Part 4: Candidate Registry Review — 4 archived/rejected (RC-003, RC-004, RC-005, RC-007), 2 new registered (RC-NEW-001, RC-NEW-002)
+- [x] Part 5: Paper Trading Review — ORB-1 on track (84% WR, PF 6.26, PCS 91.2, ~50% through 60-day period)
+- [x] Part 6: Research Roadmap — 4 items in priority queue, path to PCS 80.0 mapped across 3-4 sprints
+- [x] Part 7: Autonomous Promotion Recommendations — RC-006 escalated to BACKTEST, ORB-1 continue paper
+- [x] Part 8: Executive Questions answered (scale capital, highest-leverage action, ORB-1 readiness, B1 status, RC-003/004/005/007 fate)
+- [x] Portfolio Intelligence dashboard rebuilt with live data (6 tabs: Overview, Gap Analysis, Research Queue, Candidates, Paper Trading, Roadmap)
+- [x] DB updates: RC-003 archived, RC-004/005/007 rejected, REJ-010/011/012 added to rejection registry, RC-NEW-001/002 registered, 4 research queue items added
+- [x] Sprint 102 report written: research/sprint-102-portfolio-intelligence-audit.md
+- [x] GitHub commit: a9c10dc — all outputs pushed to main
+- [x] Checkpoint saved (version: 7f92e82b)
+
+## Sprint 104A — Executive Portfolio Intelligence Dashboard
+
+- [x] Add `strategy_performance_snapshots` table to schema (per-model daily snapshots for historical charting)
+- [x] Add `risk_profiles` table to schema (configurable risk profiles: Prop $450, Live $1650, Custom)
+- [x] Apply DB migration via webdev_execute_sql
+- [x] Build `executive` tRPC router: homeStats, strategyPerformance, riskAnalytics, portfolioOverview, gapAnalysis, liveFeed
+- [x] Build ExecutivePortfolio.tsx page (/executive-portfolio) with 5 sections: Model Cards, Portfolio View, Gap Analysis, Risk Analytics, Live Feed
+- [x] Per-model cards: 30 fields (status, stage, confidence, risk profile, regime, session, today/7d/30d/all-time stats, streaks, PCS, promotion countdown, recommendation)
+- [x] Portfolio view: PCS, PF, WR, drawdown, health, capital allocation, active models, research priority, projection
+- [x] Gap analysis: gaps, severity, expected PCS improvement, research time, probability, progress
+- [x] Risk profile selector: Prop ($450) / Live ($1650) / Custom — instant recalculation of all P&L projections
+- [x] Live intelligence feed: auto-refresh every 30s + invalidate on trade close
+- [x] Add "Executive Portfolio" nav entry to PORTFOLIO group in OrionLayout.tsx
+- [x] Add /executive-portfolio lazy route to App.tsx
+- [x] Write vitest tests for executive router procedures
+- [x] TypeScript: 0 errors
+- [x] Checkpoint saved
+- [x] GitHub commit to main
+- [x] Sprint 104A report written and committed

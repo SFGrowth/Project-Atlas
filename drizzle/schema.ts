@@ -1488,3 +1488,50 @@ export const darwinPromotionGates = mysqlTable("darwin_promotion_gates", {
 });
 export type DarwinPromotionGate = typeof darwinPromotionGates.$inferSelect;
 export type InsertDarwinPromotionGate = typeof darwinPromotionGates.$inferInsert;
+
+// ── risk_profiles ─────────────────────────────────────────────────────────────
+export const riskProfiles = mysqlTable("risk_profiles", {
+  id: int("id").autoincrement().primaryKey(),
+  profileId: varchar("profile_id", { length: 32 }).notNull().unique(),
+  label: varchar("label", { length: 64 }).notNull(),
+  riskPerTrade: decimal("risk_per_trade", { precision: 10, scale: 2 }).notNull(),
+  isDefault: boolean("is_default").notNull().default(false),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+export type RiskProfile = typeof riskProfiles.$inferSelect;
+export type InsertRiskProfile = typeof riskProfiles.$inferInsert;
+
+// ── strategy_registry ─────────────────────────────────────────────────────────
+// Static registry of all known strategies — seeded from institutional knowledge
+export const strategyRegistry = mysqlTable("strategy_registry", {
+  id: int("id").autoincrement().primaryKey(),
+  strategyId: varchar("strategy_id", { length: 32 }).notNull().unique(),
+  name: varchar("name", { length: 128 }).notNull(),
+  stage: varchar("stage", { length: 32 }).notNull(), // PRODUCTION | PAPER | FORWARD_VALIDATION | BACKTEST | CANDIDATE | HYPOTHESIS | REJECTED | ARCHIVED
+  regime: varchar("regime", { length: 64 }),
+  session: varchar("session", { length: 64 }),
+  direction: varchar("direction", { length: 16 }).default("BOTH"),
+  behaviourType: varchar("behaviour_type", { length: 128 }),
+  historicalWinRate: decimal("historical_win_rate", { precision: 5, scale: 2 }),
+  historicalProfitFactor: decimal("historical_profit_factor", { precision: 6, scale: 3 }),
+  historicalMaxDrawdown: decimal("historical_max_drawdown", { precision: 10, scale: 2 }),
+  historicalTradeCount: int("historical_trade_count"),
+  historicalNetPnl: decimal("historical_net_pnl", { precision: 12, scale: 2 }),
+  pcsScore: decimal("pcs_score", { precision: 5, scale: 1 }),
+  confidenceScore: decimal("confidence_score", { precision: 5, scale: 1 }),
+  recommendation: varchar("recommendation", { length: 256 }),
+  certificationGatesPassed: int("certification_gates_passed").default(0),
+  certificationGatesTotal: int("certification_gates_total").default(8),
+  paperTradingStartDate: bigint("paper_trading_start_date", { mode: "number" }),
+  paperTradingTargetDays: int("paper_trading_target_days").default(60),
+  largestWinStreak: int("largest_win_streak").default(0),
+  largestLoseStreak: int("largest_lose_streak").default(0),
+  riskPerTrade: decimal("risk_per_trade", { precision: 10, scale: 2 }).default("450"),
+  notes: text("notes"),
+  rejectionReason: text("rejection_reason"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+export type StrategyRegistryEntry = typeof strategyRegistry.$inferSelect;
+export type InsertStrategyRegistryEntry = typeof strategyRegistry.$inferInsert;

@@ -1,0 +1,43 @@
+CREATE TABLE `risk_profiles` (
+	`id` int AUTO_INCREMENT NOT NULL,
+	`profile_id` varchar(32) NOT NULL,
+	`label` varchar(64) NOT NULL,
+	`risk_per_trade` decimal(10,2) NOT NULL,
+	`is_default` boolean NOT NULL DEFAULT false,
+	`created_at` timestamp NOT NULL DEFAULT (now()),
+	`updated_at` timestamp NOT NULL DEFAULT (now()),
+	CONSTRAINT `risk_profiles_id` PRIMARY KEY(`id`),
+	CONSTRAINT `risk_profiles_profile_id_unique` UNIQUE(`profile_id`)
+);
+--> statement-breakpoint
+CREATE TABLE `strategy_registry` (
+	`id` int AUTO_INCREMENT NOT NULL,
+	`strategy_id` varchar(32) NOT NULL,
+	`name` varchar(128) NOT NULL,
+	`stage` varchar(32) NOT NULL,
+	`regime` varchar(64),
+	`session` varchar(64),
+	`direction` varchar(16) DEFAULT 'BOTH',
+	`behaviour_type` varchar(128),
+	`historical_win_rate` decimal(5,2),
+	`historical_profit_factor` decimal(6,3),
+	`historical_max_drawdown` decimal(10,2),
+	`historical_trade_count` int,
+	`historical_net_pnl` decimal(12,2),
+	`pcs_score` decimal(5,1),
+	`confidence_score` decimal(5,1),
+	`recommendation` varchar(256),
+	`certification_gates_passed` int DEFAULT 0,
+	`certification_gates_total` int DEFAULT 8,
+	`paper_trading_start_date` bigint,
+	`paper_trading_target_days` int DEFAULT 60,
+	`largest_win_streak` int DEFAULT 0,
+	`largest_lose_streak` int DEFAULT 0,
+	`risk_per_trade` decimal(10,2) DEFAULT '450',
+	`notes` text,
+	`rejection_reason` text,
+	`created_at` timestamp NOT NULL DEFAULT (now()),
+	`updated_at` timestamp NOT NULL DEFAULT (now()),
+	CONSTRAINT `strategy_registry_id` PRIMARY KEY(`id`),
+	CONSTRAINT `strategy_registry_strategy_id_unique` UNIQUE(`strategy_id`)
+);

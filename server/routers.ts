@@ -4,6 +4,7 @@ import { desc, eq, sql } from "drizzle-orm";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
+import { executiveRouter } from "./executiveRouter";
 import {
   liveLearningCertSessions,
   behaviourLibrary,
@@ -1339,5 +1340,6 @@ export const appRouter = router({
       return runSessionCertification();
     }),
   }),
+  executive: executiveRouter,
 });
 export type AppRouter = typeof appRouter;

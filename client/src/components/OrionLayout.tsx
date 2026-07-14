@@ -6,9 +6,9 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
 import {
-  Activity, AlertTriangle, BadgeCheck, BarChart2, BookOpen, Brain, BrainCircuit, CalendarCheck, ChevronLeft, ChevronRight,
+  Activity, AlertTriangle, BadgeCheck, BarChart2, BarChart3, BookOpen, Brain, BrainCircuit, CalendarCheck, ChevronLeft, ChevronRight,
   Clock, Cpu, Database, Dna, FlaskConical, GitBranch, Home, LayoutDashboard, Layers, LineChart, Menu,
-  Radio, Settings, Shield, ShieldCheck, Target, Telescope, TrendingUp, Zap,
+  Radio, Settings, Shield, ShieldCheck, Star, Target, Telescope, TrendingUp, Zap,
 } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
@@ -75,6 +75,7 @@ const NAV_GROUPS = [
   {
     label: "PORTFOLIO",
     items: [
+      { icon: Star, label: "Executive Portfolio", path: "/executive-portfolio" },
       { icon: Layers, label: "Portfolio (PIE)", path: "/portfolio" },
       { icon: Dna, label: "DARWIN Research", path: "/darwin" },
       { icon: FlaskConical, label: "DARWIN CRO", path: "/darwin-cro" },
