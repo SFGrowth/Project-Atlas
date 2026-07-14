@@ -331,9 +331,11 @@ async function writeDarwinResearchMemory(bar: BarPayload): Promise<void> {
   });
 
   // Use INSERT IGNORE to avoid duplicate writes
+  // Columns match drizzle/schema.ts darwin_research_memory definition
+  const hypothesisDesc = `BAR_OBSERVATION: ${bar.symbol} @ ${bar.barTime}`;
   await db.execute(
-    sql`INSERT IGNORE INTO darwin_research_memory (memory_key, memory_type, content, confidence_score, source, sprint, created_at)
-        VALUES (${memoryKey}, 'BAR_OBSERVATION', ${content}, 1.0, 'live_learn_engine', 100, NOW())`
+    sql`INSERT IGNORE INTO darwin_research_memory (memory_id, hypothesis_description, supporting_evidence, final_outcome, lessons_learned)
+        VALUES (${memoryKey}, ${hypothesisDesc}, ${content}, 'OBSERVATION', 'live_learn_engine_v1')`
   );
 }
 

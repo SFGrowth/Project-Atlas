@@ -7,7 +7,7 @@ export default function HealthPage() {
   const { data: events } = trpc.health.events.useQuery({ limit: 200 }, { refetchInterval: 15000 });
   const { data: lastWebhook } = trpc.health.lastWebhook.useQuery(undefined, { refetchInterval: 15000 });
   const { data: stats } = trpc.nexus.stats.useQuery(undefined, { refetchInterval: 30000 });
-  const sevClass = (s: string) => s === "ERROR" ? "status-error" : s === "WARN" ? "status-warn" : "status-ok";
+  const sevClass = (s: string) => (s === "ERROR" || s === "CRITICAL") ? "status-error" : (s === "WARN" || s === "WARNING") ? "status-warn" : "status-ok";
   return (
     <PageWrapper>
       <div className="p-4">

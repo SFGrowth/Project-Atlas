@@ -403,8 +403,31 @@ export async function updateMarketLawsFromBar(params: {
 
   const { regime, session, atr, emaAlignment, distVwap } = params;
 
+  // Normalise M-16 regime values to canonical Atlas regime vocabulary
+  // M-16 sends: TRENDING_BULL, TRENDING_BEAR → TREND; CHOPPY → RANGE; TRANSITIONAL → TRANSITION
+  const regimeMap: Record<string, string> = {
+    TRENDING_BULL: "TREND",
+    TRENDING_BEAR: "TREND",
+    CHOPPY: "RANGE",
+    TRANSITIONAL: "TRANSITION",
+    VOLATILE: "VOLATILE",
+    RANGE: "RANGE",
+    TRANSITION: "TRANSITION",
+    TREND: "TREND",
+  };
+  const normalisedRegime = regime ? (regimeMap[regime] ?? null) : null;
+
+  // Normalise M-16 session values — OV (overnight) is not an RTH session
+  const sessionMap: Record<string, string> = {
+    AM_OPEN: "AM_OPEN",
+    AM_MID: "AM_MID",
+    LUNCH: "LUNCH",
+    PM: "PM",
+  };
+  const normalisedSession = session ? (sessionMap[session] ?? null) : null;
+
   // ML-002: Regime Dependence — every bar with a valid regime is consistent
-  if (regime && ["RANGE", "TRANSITION", "VOLATILE", "TREND"].includes(regime)) {
+  if (normalisedRegime && ["RANGE", "TRANSITION", "VOLATILE", "TREND"].includes(normalisedRegime)) {
     await db.execute(sql`
       UPDATE market_laws
       SET live_observations_consistent = live_observations_consistent + 1,
@@ -413,8 +436,8 @@ export async function updateMarketLawsFromBar(params: {
     `);
   }
 
-  // ML-006: Session Quality Hierarchy — every bar with a valid session is consistent
-  if (session && ["AM_OPEN", "AM_MID", "LUNCH", "PM"].includes(session)) {
+  // ML-006: Session Quality Hierarchy — every bar with a valid RTH session is consistent
+  if (normalisedSession && ["AM_OPEN", "AM_MID", "LUNCH", "PM"].includes(normalisedSession)) {
     await db.execute(sql`
       UPDATE market_laws
       SET live_observations_consistent = live_observations_consistent + 1,

@@ -541,3 +541,15 @@
 - [ ] Run 5-session Live Learning Certification
 - [ ] Produce Atlas Live Learning Certificate
 - [ ] Commit all Sprint 100B outputs to GitHub sprint-051
+
+## Atlas Dashboard Operational Audit — 2026-07-14
+- [x] BUG FIX: writeDarwinResearchMemory — wrong column names corrected to actual schema (memory_id, hypothesis_description, supporting_evidence, final_outcome, lessons_learned)
+- [x] BUG FIX: updateMarketLawsFromBar — added regime normalisation (TRENDING_BULL/BEAR→TREND, CHOPPY→RANGE, TRANSITIONAL→TRANSITION) and session normalisation (OV filtered out)
+- [x] BUG FIX: Health page sevClass — added CRITICAL and WARNING severity matching
+- [x] BUG FIX: LiveLearningDashboard M-16 warning — replaced hardcoded static warning with conditional display driven by recentGaps data
+- [ ] AUDIT FINDING: darwin_research_memory has 0 rows — will self-heal after MEMORY_WRITE_FAILURE fix deployed
+- [ ] AUDIT FINDING: ML-002/ML-006 live_observations_consistent = 0 — will self-heal after regime/session normalisation fix deployed
+- [ ] AUDIT FINDING: pipeline_reports contain only test payloads — model_a1/a3/b1 fields null (no real M-16 OBSERVABILITY schema bars yet)
+- [ ] AUDIT FINDING: DARWIN candidates missing hypothesisType/status/certificationStatus — schema mismatch between tieResearchCandidates and darwin_research_candidates tables
+- [ ] AUDIT FINDING: SB1 paper trades = 0, candle certifications = 0 — no live RTH session data yet
+- [ ] AUDIT FINDING: GitHub connector token had zero scopes — fixed with Atlas-Manus-Access PAT

@@ -290,25 +290,28 @@ export default function LiveLearningDashboard() {
         </Card>
       </div>
 
-      {/* M-16 Fix Notice */}
-      <Card className="border-red-500/30 bg-red-500/5">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-semibold text-red-400 uppercase tracking-wider">
-            ⚠ Critical: M-16 Pine Script Alert Misconfiguration
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-muted-foreground">
-            The M-16 Pine Script is currently firing in clusters of 3 bars at irregular intervals, not on every 5-minute
-            bar. The entire Monday July 13 RTH session produced zero candles in Atlas Memory. The Live Learning
-            Certification cannot be earned until this is fixed.
-          </p>
-          <p className="text-sm font-medium mt-2">
-            Required fix: In TradingView, edit the M-16 alert and set the condition to fire on <strong>every bar close</strong>,
-            not on condition changes. The webhook payload must be sent unconditionally on every 5-minute close.
-          </p>
-        </CardContent>
-      </Card>
+      {/* M-16 Fix Notice — only shown when open gaps exist */}
+      {recentGaps && recentGaps.filter((g: any) => !g.recovered).length > 0 && (
+        <Card className="border-red-500/30 bg-red-500/5">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-semibold text-red-400 uppercase tracking-wider">
+              ⚠ Pipeline Alert: {recentGaps.filter((g: any) => !g.recovered).length} Unrecovered Gap(s) Detected
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground">
+              {recentGaps.filter((g: any) => !g.recovered).map((g: any) => (
+                <span key={g.gapId} className="block">
+                  Gap at {new Date(g.gapStartTime).toISOString().slice(0,16)} UTC — {g.missingBars} missing bar(s) — Cause: {g.causeClassification}
+                </span>
+              ))}
+            </p>
+            <p className="text-sm font-medium mt-2">
+              If this is an RTH gap: check TradingView M-16 alert is set to fire on <strong>every bar close</strong>, not on condition changes.
+            </p>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
