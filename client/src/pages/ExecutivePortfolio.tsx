@@ -615,7 +615,7 @@ export default function ExecutivePortfolio() {
   const pcsColor = pcs >= 80 ? "var(--arc-green)" : pcs >= 70 ? "var(--stark-gold)" : "var(--arc-cyan)";
 
   return (
-    <div className="flex flex-col h-full min-h-0 overflow-hidden" style={{ background: "var(--color-background)" }}>
+    <div className="flex flex-col min-h-screen" style={{ background: "var(--color-background)" }}>
       {/* ── Header ── */}
       <div
         className="shrink-0 px-6 py-4 border-b"
@@ -723,7 +723,7 @@ export default function ExecutivePortfolio() {
       </div>
 
       {/* ── Content ── */}
-      <div className="flex-1 overflow-y-auto px-6 py-4">
+      <div className="flex-1 px-6 py-4">
 
         {/* ── MODELS SECTION ── */}
         {activeSection === "models" && (
