@@ -1043,6 +1043,41 @@ export function registerNexusRoutes(router: Router) {
         trend_direction: mem.trendDirection, active_models: mem.activeModels,
         schema_version: mem.schemaVersion, atlas_version: mem.atlasVersion,
       });
+      // ── Sprint 104C: Trigger Autonomous Pipeline Monitor (non-blocking) ──────────
+      const monitorBarId = result.id!;
+      setImmediate(async () => {
+        try {
+          const { evaluate } = await import("./monitor/barEvaluator");
+          const { processBar } = await import("./monitor/paperTradeEngine");
+          const barRow = {
+            id: monitorBarId,
+            barTime: barTimeMs,
+            barTimeEt: mem.barTimeEt ?? null,
+            session: mem.session ?? null,
+            isRth: mem.isRth ?? false,
+            open: mem.open ?? null,
+            high: mem.high ?? null,
+            low: mem.low ?? null,
+            close: mem.close ?? null,
+            volume: mem.volume != null ? Number(mem.volume) : null,
+            adx: mem.adx ?? null,
+            regimeClassification: mem.regimeClassification ?? null,
+            a1Eligible: mem.a1Eligible ?? false,
+            a3Eligible: mem.a3Eligible ?? false,
+            b1Eligible: mem.b1Eligible ?? false,
+            sb1Eligible: mem.sb1Eligible ?? false,
+            activeModels: mem.activeModels ?? null,
+            atr: mem.atr ?? null,
+            atr5: mem.atr5 ?? null,
+            pipelineRunId: mem.pipelineRunId ?? null,
+          };
+          const evaluation = await evaluate(barRow);
+          await processBar(barRow, evaluation);
+        } catch (monErr) {
+          console.error("[MONITOR] Bar evaluation error:", monErr);
+        }
+      });
+
       // ── Sprint 100A: Trigger Live Learning Engine (non-blocking) ──────────────
       const receivedAtMs = Date.now();
       setImmediate(async () => {

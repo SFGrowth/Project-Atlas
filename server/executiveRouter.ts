@@ -660,4 +660,95 @@ export const executiveRouter = router({
         .sort((a, b) => b.timestamp - a.timestamp)
         .slice(0, input.limit);
     }),
+
+  // ── Sprint 104C: Monitor Status ─────────────────────────────────────────────
+  // Returns the latest bar evaluation, open positions, LLC progress, and
+  // per-model eligibility status for the Executive Portfolio Live Feed.
+  monitorStatus: publicProcedure.query(async () => {
+    try {
+      const { getRecentEvaluations } = await import("./monitor/barEvaluator");
+      const { getOpenMonitorTrades } = await import("./monitor/paperTradeEngine");
+      const { getLlcProgress, getRecentSessionReports } = await import("./monitor/sessionReporter");
+
+      const [recentEvals, openTrades, llcProgress, sessionReports] = await Promise.all([
+        getRecentEvaluations(5),
+        getOpenMonitorTrades(),
+        getLlcProgress(),
+        getRecentSessionReports(5),
+      ]);
+
+      const latestEval = recentEvals[0] ?? null;
+
+      return {
+        latestEvaluation: latestEval ? {
+          barTimeEt: latestEval.barTimeEt,
+          session: latestEval.session,
+          isRth: latestEval.isRth,
+          adx: latestEval.adx ? Number(latestEval.adx) : null,
+          regime: latestEval.regimeClassification,
+          integrityOk: latestEval.integrityOk,
+          gapDetected: latestEval.gapDetected,
+          gapMinutes: latestEval.gapMinutes,
+          duplicateDetected: latestEval.duplicateDetected,
+          integrityNotes: latestEval.integrityNotes,
+          models: {
+            A1: { eligible: latestEval.a1Eligible, reason: latestEval.a1Reason },
+            A3: { eligible: latestEval.a3Eligible, reason: latestEval.a3Reason },
+            B1: { eligible: latestEval.b1Eligible, reason: latestEval.b1Reason },
+            SB1: { eligible: latestEval.sb1Eligible, reason: latestEval.sb1Reason },
+            "ORB-1": { eligible: latestEval.orb1Eligible, reason: latestEval.orb1Reason },
+          },
+          activeModels: latestEval.activeModels,
+          signalModel: latestEval.signalModel,
+          signalDirection: latestEval.signalDirection,
+          evaluatedAt: latestEval.evaluatedAt instanceof Date ? latestEval.evaluatedAt.getTime() : null,
+        } : null,
+        recentEvaluations: recentEvals.map((e) => ({
+          barTimeEt: e.barTimeEt,
+          session: e.session,
+          regime: e.regimeClassification,
+          activeModels: e.activeModels,
+          integrityOk: e.integrityOk,
+          gapDetected: e.gapDetected,
+          signalModel: e.signalModel,
+        })),
+        openTrades: Array.isArray(openTrades) ? { standard: [], sb1: [] } : {
+          standard: (openTrades.standard ?? []).map((t: typeof openTrades.standard[0]) => ({
+            id: t.id,
+            model: t.model,
+            direction: t.direction,
+            entry: Number(t.entry ?? 0),
+            stop: Number(t.stop ?? 0),
+            target: Number(t.target ?? 0),
+            riskDollars: Number(t.riskDollars ?? 0),
+            openedAt: t.openedAt instanceof Date ? t.openedAt.getTime() : null,
+          })),
+          sb1: (openTrades.sb1 ?? []).map((t: typeof openTrades.sb1[0]) => ({
+            id: t.id,
+            model: "SB1",
+            direction: t.direction,
+            entry: Number(t.entry ?? 0),
+            stop: Number(t.stop ?? 0),
+            target: Number(t.target ?? 0),
+            riskDollars: Number(t.riskDollars ?? 0),
+            openedAt: t.openedAt instanceof Date ? t.openedAt.getTime() : null,
+          })),
+        },
+        llcProgress,
+        recentSessionReports: sessionReports.map((r) => ({
+          sessionDate: r.sessionDate instanceof Date ? r.sessionDate.toISOString().split("T")[0] : String(r.sessionDate),
+          status: r.status,
+          certificationStatus: r.certificationStatus,
+          barsReceived: r.barsReceived,
+          barsExpected: r.barsExpected,
+          sessionPnl: Number(r.sessionPnl ?? 0),
+          ownerActionRequired: r.ownerActionRequired,
+          generatedAt: r.generatedAt instanceof Date ? r.generatedAt.getTime() : null,
+        })),
+      };
+    } catch (err) {
+      console.error("[executive.monitorStatus] Error:", err);
+      return null;
+    }
+  }),
 });

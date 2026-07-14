@@ -619,3 +619,16 @@
 - [x] Checkpoint saved
 - [x] GitHub commit to main
 - [x] Sprint 104A report written and committed
+
+## Sprint 104C — Autonomous Pipeline Monitor
+
+- [x] Build `server/monitor/barEvaluator.ts` — per-bar integrity check, model eligibility engine, gap/duplicate detection
+- [x] Build `server/monitor/paperTradeEngine.ts` — full paper-trade lifecycle: entry, tracking, exit, P&L calculation
+- [x] Build `server/monitor/sessionReporter.ts` — end-of-RTH-session report: bars, models, signals, trades, P&L, certification status
+- [x] Wire monitor into nexusRoutes.ts — called on every successful atlas-memory write
+- [x] Add `monitor_evaluations` DB table — per-bar evaluation log with model eligibility reasons
+- [x] Add `live_learning_sessions` DB table — certification session tracking (5-session LLC)
+- [x] Add `session_reports` DB table — end-of-session report storage
+- [x] Expose monitor status via `executive.monitorStatus` tRPC procedure
+- [x] Display live eligibility status on Executive Portfolio dashboard (Live Feed section)
+- [x] GitHub commit after each material correction or completed certification report

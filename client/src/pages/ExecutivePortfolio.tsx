@@ -567,6 +567,7 @@ export default function ExecutivePortfolio() {
   const { data: projections } = trpc.executive.portfolioProjections.useQuery(undefined, { refetchInterval: 60000 });
   const { data: riskAnalytics } = trpc.executive.riskAnalytics.useQuery({ riskPerTrade }, { refetchInterval: 30000 });
   const { data: liveFeed } = trpc.executive.liveFeed.useQuery({ limit: 20 }, { refetchInterval: 15000 });
+  const { data: monitorStatus } = trpc.executive.monitorStatus.useQuery(undefined, { refetchInterval: 5000 });
   const { data: homeStats } = trpc.executive.homeStats.useQuery(undefined, { refetchInterval: 30000 });
 
   const updateCustomRisk = trpc.executive.updateCustomRisk.useMutation();
@@ -980,8 +981,139 @@ export default function ExecutivePortfolio() {
 
         {/* ── LIVE FEED SECTION ── */}
         {activeSection === "feed" && (
-          <div className="space-y-2">
-            <div className="text-[9px] text-[var(--color-muted-foreground)] tracking-widest mb-3">
+          <div className="space-y-4">
+
+            {/* ── Monitor Status Panel ── */}
+            {monitorStatus && (
+              <div className="rounded border p-4" style={{ borderColor: "var(--arc-cyan)30", background: "oklch(0.08 0.03 220 / 0.9)" }}>
+                <div className="text-[9px] text-[var(--arc-cyan)] tracking-widest font-bold mb-3">AUTONOMOUS MONITOR — LATEST BAR EVALUATION</div>
+                {monitorStatus.latestEvaluation ? (
+                  <div className="space-y-3">
+                    {/* Bar context */}
+                    <div className="flex flex-wrap gap-4 text-[10px]">
+                      <div>
+                        <span className="text-[var(--color-muted-foreground)]">BAR TIME: </span>
+                        <span className="text-[var(--arc-cyan)] font-mono">{monitorStatus.latestEvaluation.barTimeEt ?? "—"}</span>
+                      </div>
+                      <div>
+                        <span className="text-[var(--color-muted-foreground)]">SESSION: </span>
+                        <span className="text-white font-mono">{monitorStatus.latestEvaluation.session ?? "—"}</span>
+                      </div>
+                      <div>
+                        <span className="text-[var(--color-muted-foreground)]">REGIME: </span>
+                        <span className="font-mono" style={{ color: monitorStatus.latestEvaluation.regime?.includes("TRENDING") ? "var(--stark-gold)" : monitorStatus.latestEvaluation.regime?.includes("VOLATILE") ? "var(--danger-red)" : "oklch(0.7 0.05 220)" }}>
+                          {monitorStatus.latestEvaluation.regime ?? "UNKNOWN"}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-[var(--color-muted-foreground)]">ADX: </span>
+                        <span className="text-white font-mono">{monitorStatus.latestEvaluation.adx?.toFixed(1) ?? "—"}</span>
+                      </div>
+                      <div>
+                        <span className="text-[var(--color-muted-foreground)]">RTH: </span>
+                        <span style={{ color: monitorStatus.latestEvaluation.isRth ? "var(--arc-cyan)" : "oklch(0.5 0.05 220)" }}>
+                          {monitorStatus.latestEvaluation.isRth ? "YES" : "NO"}
+                        </span>
+                      </div>
+                      {monitorStatus.latestEvaluation.gapDetected && (
+                        <div className="flex items-center gap-1">
+                          <span className="w-1.5 h-1.5 rounded-full" style={{ background: "var(--danger-red)" }} />
+                          <span style={{ color: "var(--danger-red)" }}>GAP: {monitorStatus.latestEvaluation.gapMinutes}min</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Model eligibility grid */}
+                    <div className="grid grid-cols-5 gap-2">
+                      {Object.entries(monitorStatus.latestEvaluation.models).map(([model, info]) => {
+                        const eligible = (info as { eligible: boolean | null; reason: string | null }).eligible;
+                        const reason = (info as { eligible: boolean | null; reason: string | null }).reason;
+                        return (
+                          <div key={model} className="rounded p-2 text-center" style={{ background: eligible ? "oklch(0.15 0.08 160 / 0.5)" : "oklch(0.10 0.03 220 / 0.6)", border: `1px solid ${eligible ? "oklch(0.5 0.18 160 / 0.4)" : "oklch(0.3 0.03 220 / 0.3)"}` }}>
+                            <div className="text-[9px] font-bold tracking-widest mb-1" style={{ color: eligible ? "oklch(0.75 0.18 160)" : "oklch(0.5 0.05 220)" }}>{model}</div>
+                            <div className="text-[8px]" style={{ color: eligible ? "oklch(0.75 0.18 160)" : "oklch(0.45 0.05 220)" }}>
+                              {eligible ? "ELIGIBLE" : "INELIGIBLE"}
+                            </div>
+                            {reason && (
+                              <div className="text-[7px] mt-1 leading-tight" style={{ color: "oklch(0.5 0.05 220)" }} title={reason}>
+                                {reason.length > 30 ? reason.slice(0, 30) + "…" : reason}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Signal fired */}
+                    {monitorStatus.latestEvaluation.signalModel && (
+                      <div className="flex items-center gap-2 p-2 rounded" style={{ background: "oklch(0.15 0.12 60 / 0.4)", border: "1px solid oklch(0.6 0.18 60 / 0.4)" }}>
+                        <span className="w-2 h-2 rounded-full" style={{ background: "var(--stark-gold)" }} />
+                        <span className="text-[10px] font-bold" style={{ color: "var(--stark-gold)" }}>
+                          SIGNAL: {monitorStatus.latestEvaluation.signalModel} {monitorStatus.latestEvaluation.signalDirection}
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Integrity issues */}
+                    {!monitorStatus.latestEvaluation.integrityOk && monitorStatus.latestEvaluation.integrityNotes && (
+                      <div className="p-2 rounded text-[10px]" style={{ background: "oklch(0.12 0.08 20 / 0.5)", border: "1px solid oklch(0.5 0.18 20 / 0.4)", color: "var(--danger-red)" }}>
+                        ⚠ INTEGRITY: {monitorStatus.latestEvaluation.integrityNotes}
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="text-xs text-[var(--color-muted-foreground)]">No evaluations yet — waiting for first bar…</div>
+                )}
+
+                {/* Open positions */}
+                {monitorStatus.openTrades && !Array.isArray(monitorStatus.openTrades) && (
+                  (monitorStatus.openTrades.standard.length > 0 || monitorStatus.openTrades.sb1.length > 0) && (
+                    <div className="mt-3 pt-3 border-t" style={{ borderColor: "var(--arc-cyan)20" }}>
+                      <div className="text-[9px] text-[var(--arc-cyan)] tracking-widest mb-2">OPEN POSITIONS</div>
+                      {[...monitorStatus.openTrades.standard, ...monitorStatus.openTrades.sb1].map((t) => (
+                        <div key={t.id} className="flex items-center gap-3 text-[10px] py-1">
+                          <span className="font-bold" style={{ color: "var(--stark-gold)" }}>{t.model}</span>
+                          <span style={{ color: t.direction === "LONG" ? "oklch(0.75 0.18 160)" : "var(--danger-red)" }}>{t.direction}</span>
+                          <span className="text-[var(--color-muted-foreground)]">entry {t.entry.toFixed(2)}</span>
+                          <span className="text-[var(--color-muted-foreground)]">stop {t.stop.toFixed(2)}</span>
+                          <span className="text-[var(--color-muted-foreground)]">target {t.target.toFixed(2)}</span>
+                          <span style={{ color: "var(--arc-cyan)" }}>risk ${t.riskDollars}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )
+                )}
+
+                {/* LLC Progress */}
+                {monitorStatus.llcProgress && (
+                  <div className="mt-3 pt-3 border-t" style={{ borderColor: "var(--arc-cyan)20" }}>
+                    <div className="text-[9px] text-[var(--arc-cyan)] tracking-widest mb-2">LLC CERTIFICATION PROGRESS</div>
+                    <div className="flex items-center gap-3">
+                      <div className="flex gap-1">
+                        {Array.from({ length: 5 }).map((_, i) => (
+                          <div key={i} className="w-6 h-6 rounded flex items-center justify-center text-[9px] font-bold"
+                            style={{
+                              background: i < (monitorStatus.llcProgress?.sessionsCompleted ?? 0) ? "oklch(0.15 0.18 160 / 0.6)" : "oklch(0.10 0.03 220 / 0.6)",
+                              border: `1px solid ${i < (monitorStatus.llcProgress?.sessionsCompleted ?? 0) ? "oklch(0.5 0.18 160 / 0.5)" : "oklch(0.3 0.03 220 / 0.3)"}`,
+                              color: i < (monitorStatus.llcProgress?.sessionsCompleted ?? 0) ? "oklch(0.75 0.18 160)" : "oklch(0.4 0.05 220)",
+                            }}
+                          >
+                            {i + 1}
+                          </div>
+                        ))}
+                      </div>
+                      <div className="text-[10px]" style={{ color: monitorStatus.llcProgress.currentStatus === "CERTIFIED" ? "oklch(0.75 0.18 160)" : "var(--color-muted-foreground)" }}>
+                        {monitorStatus.llcProgress.sessionsCompleted}/5 clean sessions
+                        {monitorStatus.llcProgress.currentStatus === "CERTIFIED" && " — CERTIFIED"}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* ── Standard Live Feed ── */}
+            <div className="text-[9px] text-[var(--color-muted-foreground)] tracking-widest">
               LIVE INTELLIGENCE FEED — auto-refreshing every 15s
             </div>
             {liveFeed && liveFeed.length > 0 ? liveFeed.map((e, i) => {
