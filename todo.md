@@ -655,3 +655,12 @@
 - [ ] Session 1 of 5 LLC certification report generated and committed to GitHub
 - [ ] Sessions 2-5 LLC certification (PENDING — requires 5 clean RTH sessions)
 - [ ] LLC 5-session certificate earned
+
+## Sprint 104E — Defect Fixes (from Daily Ops Report 2026-07-14)
+
+- [ ] DEF-001 CRITICAL: Fix SB1 backfill contamination — mark 6 contaminated trades INVALID, add price sanity check to backfill script, add atomic hasOpenPosition() check
+- [ ] DEF-002 HIGH: Fix sessionReporter RTH close trigger — verify 16:00 ET session-close detection logic fires correctly
+- [ ] DEF-003 MEDIUM: Fix dashboard P&L to exclude contaminated/invalid trades from performance queries
+- [ ] Audit historical 30-day paper trade corpus for data quality (30d WR 37.7% inconsistent with model spec)
+- [ ] Review A1 ATR stop multiplier (1.5× → 2.0×) for TRENDING_BULL regime
+- [x] Generate Atlas Daily Operations Report 2026-07-14 (local commit 1ffb3a3, GitHub push blocked — SFGrowth org lacks CreateRepository permission)
