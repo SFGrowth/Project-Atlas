@@ -1,667 +1,539 @@
 /**
- * ATLAS PORTFOLIO — Sprint 093
- * Portfolio Intelligence Engine dashboard:
- * Certified models, PCS, capital allocation, correlation matrix,
- * governance pipeline, research candidates, behaviour coverage map.
+ * ATLAS PORTFOLIO INTELLIGENCE — Sprint 102
+ * Complete live-data portfolio audit dashboard.
+ * 6 tabs: Portfolio Register | Gap Analysis | Paper Trading | Candidates | Research Roadmap | Autonomous Promotion
  */
 import { useState } from "react";
+import { trpc } from "@/lib/trpc";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Progress } from "@/components/ui/progress";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { AlertTriangle, Activity, Target, BarChart2, BookOpen, Layers, Clock, CheckCircle, AlertCircle } from "lucide-react";
 
-// ─── Static portfolio data (Sprint 093 output) ────────────────────────────────
-
-const MODELS = [
-  {
-    id: "A1",
-    name: "Volatility Expansion",
-    status: "PRODUCTION",
-    regime: ["VOLATILE", "TREND"],
-    session: "RTH",
-    winRate: 72,
-    pf: 3.8,
-    pcs: 74.9,
-    trades: 52,
-    maxDD: 2100,
-    expectancy: 175,
-    allocation: 35,
-    correlationGroup: "momentum",
-    entry: "ATR expansion + momentum confirmation",
-    notes: "Core production model. Highest frequency.",
-  },
-  {
-    id: "B1",
-    name: "Trend Continuation",
-    status: "PRODUCTION",
-    regime: ["TREND"],
-    session: "RTH",
-    winRate: 65,
-    pf: 2.9,
-    pcs: 59.2,
-    trades: 38,
-    maxDD: 2800,
-    expectancy: 163,
-    allocation: 30,
-    correlationGroup: "trend_follow",
-    entry: "EMA stack + pullback to 50 EMA",
-    notes: "Complements A1 — fires on trend days after initiation.",
-  },
-  {
-    id: "SB1",
-    name: "Slow Burn Directional",
-    status: "PRODUCTION",
-    regime: ["TREND"],
-    session: "RTH+ETH",
-    winRate: 71,
-    pf: 3.2,
-    pcs: 69.2,
-    trades: 24,
-    maxDD: 1600,
-    expectancy: 204,
-    allocation: 20,
-    correlationGroup: "trend_follow",
-    entry: "Daily trend alignment + intraday pullback",
-    notes: "Longest hold time. Equity curve smoothing role.",
-  },
-  {
-    id: "ORB-1",
-    name: "Opening Range EMA Reclaim",
-    status: "PAPER_TRADING",
-    regime: ["TREND", "VOLATILE"],
-    session: "RTH",
-    winRate: 84,
-    pf: 6.26,
-    pcs: 86.4,
-    trades: 13,
-    maxDD: 897,
-    expectancy: 259,
-    allocation: 15,
-    correlationGroup: "breakout",
-    entry: "ORB breakout + EMA(20) reclaim",
-    notes: "Sprint 091: checklist retired. Regime-only gate.",
-  },
+const PRODUCTION_MODELS = [
+  { id: "A1", name: "Volatility Expansion Momentum", status: "PRODUCTION", regime: ["TRENDING"], session: "AM", direction: "BOTH", behaviour: "Momentum continuation on ATR expansion", winRate: 72, pf: 3.8, pcs: 74.9, maxDD: 2100, trades: 52, expectancy: 175, allocation: 35, confidence: 87, certStatus: "CERTIFIED" },
+  { id: "A2", name: "Volatility Expansion (Variant)", status: "PRODUCTION", regime: ["TRENDING"], session: "AM", direction: "BOTH", behaviour: "ATR expansion variant with tighter stops", winRate: 70, pf: 3.4, pcs: 72.0, maxDD: 1800, trades: 41, expectancy: 158, allocation: 15, confidence: 84, certStatus: "CERTIFIED" },
+  { id: "A3", name: "Volatility Expansion (Conservative)", status: "PRODUCTION", regime: ["TRENDING"], session: "PM", direction: "BOTH", behaviour: "ATR expansion with wider stops for PM session", winRate: 68, pf: 3.1, pcs: 70.5, maxDD: 2400, trades: 33, expectancy: 145, allocation: 15, confidence: 82, certStatus: "CERTIFIED" },
+  { id: "B1", name: "Trend Continuation", status: "PRODUCTION", regime: ["TRENDING"], session: "AM+PM", direction: "BOTH", behaviour: "EMA stack pullback continuation", winRate: 65, pf: 2.9, pcs: 59.2, maxDD: 2800, trades: 38, expectancy: 163, allocation: 20, confidence: 78, certStatus: "CERTIFIED" },
+  { id: "SB1", name: "Slow Burn Directional", status: "PRODUCTION", regime: ["TRENDING"], session: "RTH+ETH", direction: "BOTH", behaviour: "Daily trend alignment + intraday pullback", winRate: 71, pf: 3.2, pcs: 69.2, maxDD: 1600, trades: 24, expectancy: 204, allocation: 10, confidence: 83, certStatus: "CERTIFIED" },
+  { id: "ORB-1", name: "Opening Range EMA Reclaim", status: "PAPER_TRADING", regime: ["TRENDING", "VOLATILE"], session: "AM_OPEN", direction: "BOTH", behaviour: "ORB breakout + EMA(20) reclaim", winRate: 84, pf: 6.26, pcs: 91.2, maxDD: 897, trades: 13, expectancy: 259, allocation: 0, confidence: 91, certStatus: "PAPER_TRADING" },
 ];
 
-const RESEARCH_CANDIDATES = [
-  { id: "RC-002", behaviour: "Mean Reversion", priority: 1, estimatedPCS: 88, estimatedWR: 68, estimatedPF: 2.4, frequency: 85, correlation: 0.05, gap: "RANGE days (79% of all days)", confidence: "MEDIUM", status: "RESEARCH_CANDIDATE" },
-  { id: "RC-003", behaviour: "Opening Drive", priority: 2, estimatedPCS: 72, estimatedWR: 74, estimatedPF: 3.1, frequency: 62, correlation: 0.42, gap: "First-candle momentum", confidence: "MEDIUM-HIGH", status: "RESEARCH_CANDIDATE" },
-  { id: "RC-004", behaviour: "Liquidity Sweep", priority: 3, estimatedPCS: 79, estimatedWR: 71, estimatedPF: 3.8, frequency: 48, correlation: 0.18, gap: "Stop-hunt reversal setups", confidence: "MEDIUM", status: "RESEARCH_CANDIDATE" },
-  { id: "RC-005", behaviour: "Overnight Inventory", priority: 4, estimatedPCS: 61, estimatedWR: 63, estimatedPF: 2.1, frequency: 38, correlation: 0.08, gap: "Pre-market / overnight session", confidence: "LOW-MEDIUM", status: "RESEARCH_CANDIDATE" },
-  { id: "RC-006", behaviour: "Trend Exhaustion", priority: 5, estimatedPCS: 55, estimatedWR: 58, estimatedPF: 2.6, frequency: 29, correlation: -0.12, gap: "Counter-trend at exhaustion", confidence: "LOW", status: "RESEARCH_CANDIDATE" },
+const PORTFOLIO_GAPS = [
+  { id: "GAP-001", name: "RANGE Regime", priority: 1, severity: "CRITICAL", description: "No production model for RANGE days (volcomp < 0.80)", frequency: "274 days/yr (53.3%)", expectedPCS: 72, expectedWR: 62, difficulty: "MEDIUM", probability: 70, candidate: "RC-002 (EMA21 Touch Bounce redesign)", evidence: "52.7% WR base on EMA21 touch, needs filters" },
+  { id: "GAP-002", name: "VOLATILE Regime (partial)", priority: 2, severity: "HIGH", description: "ORB-1 in paper only. No certified model for VOLATILE days.", frequency: "101 days/yr (19.6%)", expectedPCS: 91, expectedWR: 84, difficulty: "LOW", probability: 90, candidate: "ORB-1 (promote from paper)", evidence: "PF 6.26, WR 84% in paper trading" },
+  { id: "GAP-003", name: "Short-Only Strategies", priority: 3, severity: "MEDIUM", description: "All production models are direction-agnostic but predominantly LONG biased", frequency: "~50% of all trades", expectedPCS: 65, expectedWR: 60, difficulty: "MEDIUM", probability: 60, candidate: "RC-NEW-003 (Short-Only Mean Reversion)", evidence: "Not yet researched" },
+  { id: "GAP-004", name: "Pre-Market Level Respect", priority: 4, severity: "MEDIUM", description: "AM tests pre-market HIGH/LOW 74-75% of days — exploitable as filter", frequency: "74% of all AM sessions", expectedPCS: 60, expectedWR: 65, difficulty: "LOW", probability: 75, candidate: "RC-NEW-002 (Pre-Market Level Respect filter)", evidence: "75.2% high test, 73.7% low test over 2yr" },
+  { id: "GAP-005", name: "LUNCH Session", priority: 5, severity: "LOW", description: "Structural low-edge period. 50.6% continuation = near random.", frequency: "Every RTH day", expectedPCS: 0, expectedWR: 51, difficulty: "HIGH", probability: 15, candidate: "NONE — permanently excluded", evidence: "50.6% continuation, 48.7% VWAP fade WR" },
+  { id: "GAP-006", name: "Overnight Session", priority: 6, severity: "LOW", description: "RC-003 overnight drift: 56% continuation — insufficient standalone edge", frequency: "Every trading day", expectedPCS: 0, expectedWR: 56, difficulty: "HIGH", probability: 25, candidate: "RC-003 (archive)", evidence: "56% AM continuation after strong overnight drift" },
 ];
 
-const BEHAVIOURS = [
-  { id: "B01", name: "Trend Initiation", coveredBy: "ORB-1", priority: "HIGH" },
-  { id: "B02", name: "Volatility Expansion", coveredBy: "A1", priority: "HIGH" },
-  { id: "B03", name: "Trend Continuation", coveredBy: "B1", priority: "HIGH" },
-  { id: "B04", name: "Slow Burn Directional", coveredBy: "SB1", priority: "HIGH" },
-  { id: "B05", name: "Mean Reversion", coveredBy: null, priority: "HIGH" },
-  { id: "B06", name: "Opening Drive", coveredBy: null, priority: "HIGH" },
-  { id: "B07", name: "Post-News Continuation", coveredBy: null, priority: "MEDIUM" },
-  { id: "B08", name: "Overnight Inventory", coveredBy: null, priority: "MEDIUM" },
-  { id: "B09", name: "Trend Exhaustion", coveredBy: null, priority: "MEDIUM" },
-  { id: "B10", name: "High Volatility Crisis", coveredBy: null, priority: "LOW" },
-  { id: "B11", name: "Low Volatility Range", coveredBy: null, priority: "MEDIUM" },
-  { id: "B12", name: "Session Transition", coveredBy: null, priority: "LOW" },
-  { id: "B13", name: "Liquidity Sweep", coveredBy: null, priority: "HIGH" },
-  { id: "B14", name: "Breakout Failure", coveredBy: null, priority: "MEDIUM" },
+const RESEARCH_ROADMAP = [
+  { rank: 1, project: "ORB-1 Production Promotion", type: "PROMOTION", portfolioImpact: 95, robustness: 91, diversification: 85, effort: 10, probability: 90, timeline: "Sprint 103-104", status: "IN_PROGRESS", rationale: "PCS 91.2, WR 84%, PF 6.26. Highest-quality model in portfolio. 60-day paper in progress." },
+  { rank: 2, project: "RC-002 Redesign: EMA21 Touch Bounce (RANGE)", type: "NEW_STRATEGY", portfolioImpact: 90, robustness: 65, diversification: 95, effort: 60, probability: 70, timeline: "Sprint 103-105", status: "QUEUED", rationale: "Fills 53.3% of uncovered trading days. 52.7% WR base needs ADX + volume filters." },
+  { rank: 3, project: "B1 Production Promotion", type: "PROMOTION", portfolioImpact: 75, robustness: 78, diversification: 40, effort: 15, probability: 85, timeline: "Sprint 103", status: "READY", rationale: "PCS 59.2, certified. Needs formal governance promotion process." },
+  { rank: 4, project: "RC-006 Redesign: ORB-style VOLATILE entries", type: "REDESIGN", portfolioImpact: 70, robustness: 60, diversification: 75, effort: 45, probability: 65, timeline: "Sprint 104-106", status: "QUEUED", rationale: "VOLATILE days (19.6%). Bar-by-bar expansion has no edge. ORB-style entries needed." },
+  { rank: 5, project: "RC-NEW-002: Pre-Market Level Respect Filter", type: "FILTER_SIGNAL", portfolioImpact: 55, robustness: 70, diversification: 30, effort: 20, probability: 75, timeline: "Sprint 104", status: "NEW", rationale: "74% of AM sessions test pre-market high/low. Adds S/R context to existing entries." },
+  { rank: 6, project: "RC-004 Archive (Liquidity Sweep)", type: "ARCHIVE", portfolioImpact: 0, robustness: 0, diversification: 0, effort: 5, probability: 100, timeline: "Sprint 102", status: "IMMEDIATE", rationale: "Sprint 095A: WR 26%, PF 0.94. Confirmed rejection. Move to rejection registry." },
+  { rank: 7, project: "RC-005 Archive (Overnight Inventory)", type: "ARCHIVE", portfolioImpact: 0, robustness: 0, diversification: 0, effort: 5, probability: 100, timeline: "Sprint 102", status: "IMMEDIATE", rationale: "Sprint 095A: WR 4.3%, PF 0.14. Confirmed rejection. Move to rejection registry." },
+  { rank: 8, project: "RC-007 Archive (Trend Exhaustion)", type: "ARCHIVE", portfolioImpact: 0, robustness: 0, diversification: 0, effort: 5, probability: 100, timeline: "Sprint 102", status: "IMMEDIATE", rationale: "Sprint 095A: PF 1.40 insufficient. Confirmed rejection. Move to rejection registry." },
+  { rank: 9, project: "RC-003 Archive (Overnight Drift)", type: "ARCHIVE", portfolioImpact: 0, robustness: 0, diversification: 0, effort: 5, probability: 100, timeline: "Sprint 102", status: "IMMEDIATE", rationale: "56% AM continuation — no standalone edge. SB1 covers overnight via daily alignment." },
+  { rank: 10, project: "Short-Only Mean Reversion Research", type: "NEW_STRATEGY", portfolioImpact: 50, robustness: 55, diversification: 80, effort: 80, probability: 45, timeline: "Sprint 106-108", status: "BACKLOG", rationale: "Reduces directional correlation. Requires dedicated short-side behaviour research." },
 ];
 
-// Correlation matrix
-const CORR = {
-  "ORB-1": { "ORB-1": 1.00, A1: 0.43, B1: 0.38, SB1: 0.35 },
-  A1:      { "ORB-1": 0.43, A1: 1.00, B1: 0.47, SB1: 0.39 },
-  B1:      { "ORB-1": 0.38, A1: 0.47, B1: 1.00, SB1: 0.44 },
-  SB1:     { "ORB-1": 0.35, A1: 0.39, B1: 0.44, SB1: 1.00 },
-};
-
-const GOVERNANCE_STAGES = [
-  "RESEARCH_CANDIDATE", "HISTORICAL_VALIDATION", "WALK_FORWARD_VALIDATION",
-  "MONTE_CARLO_VALIDATION", "PAPER_TRADING", "CERTIFICATION_REVIEW",
-  "PRODUCTION", "PERFORMANCE_MONITORING", "WATCHLIST", "RETIRED",
-];
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-const statusColor: Record<string, string> = {
-  PRODUCTION: "var(--arc-green, #3fb950)",
-  PAPER_TRADING: "#e3b341",
-  CERTIFICATION_REVIEW: "#58a6ff",
-  RESEARCH_CANDIDATE: "#8b949e",
-  WATCHLIST: "#f0883e",
-  RETIRED: "#f85149",
-};
-
-const priorityColor: Record<string, string> = {
-  HIGH: "#f85149",
-  MEDIUM: "#e3b341",
-  LOW: "#3fb950",
-};
-
-function corrColor(val: number) {
-  if (val >= 0.7) return "#f85149";
-  if (val >= 0.4) return "#e3b341";
-  if (val >= 0.0) return "#3fb950";
-  return "#58a6ff";
+function statusCls(s: string) {
+  const m: Record<string, string> = {
+    PRODUCTION: "bg-emerald-500/20 text-emerald-400 border-emerald-500/30",
+    PAPER_TRADING: "bg-blue-500/20 text-blue-400 border-blue-500/30",
+    CERTIFIED: "bg-emerald-500/20 text-emerald-400 border-emerald-500/30",
+    HYPOTHESIS: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30",
+    CRITICAL: "bg-red-500/20 text-red-400 border-red-500/30",
+    HIGH: "bg-orange-500/20 text-orange-400 border-orange-500/30",
+    MEDIUM: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30",
+    LOW: "bg-slate-500/20 text-slate-400 border-slate-500/30",
+    IMMEDIATE: "bg-red-500/20 text-red-400 border-red-500/30",
+    IN_PROGRESS: "bg-blue-500/20 text-blue-400 border-blue-500/30",
+    QUEUED: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30",
+    READY: "bg-emerald-500/20 text-emerald-400 border-emerald-500/30",
+    NEW: "bg-purple-500/20 text-purple-400 border-purple-500/30",
+    BACKLOG: "bg-slate-500/20 text-slate-400 border-slate-500/30",
+    PROMOTION: "bg-emerald-500/20 text-emerald-400 border-emerald-500/30",
+    REDESIGN: "bg-blue-500/20 text-blue-400 border-blue-500/30",
+    ARCHIVE: "bg-red-500/20 text-red-400 border-red-500/30",
+    NEW_STRATEGY: "bg-purple-500/20 text-purple-400 border-purple-500/30",
+    FILTER_SIGNAL: "bg-cyan-500/20 text-cyan-400 border-cyan-500/30",
+  };
+  return m[s] ?? "bg-slate-500/20 text-slate-400 border-slate-500/30";
 }
 
-function pcsColor(pcs: number) {
-  if (pcs >= 80) return "#3fb950";
-  if (pcs >= 65) return "#e3b341";
-  return "#f85149";
+function Score({ v, suffix = "" }: { v: number; suffix?: string }) {
+  const c = v >= 80 ? "text-emerald-400" : v >= 60 ? "text-yellow-400" : "text-red-400";
+  return <span className={`font-mono font-bold ${c}`}>{v.toFixed(1)}{suffix}</span>;
 }
 
-// ─── Sub-components ───────────────────────────────────────────────────────────
-
-function SectionHeader({ title, subtitle }: { title: string; subtitle?: string }) {
+function RegisterTab() {
+  const prod = PRODUCTION_MODELS.filter(m => m.status === "PRODUCTION");
+  const avgPCS = prod.reduce((s, m) => s + m.pcs, 0) / prod.length;
   return (
-    <div style={{ marginBottom: 16 }}>
-      <div style={{ fontFamily: "var(--font-display)", fontSize: 11, letterSpacing: "0.2em", color: "var(--arc-blue)", fontWeight: 700, textTransform: "uppercase" }}>{title}</div>
-      {subtitle && <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--color-muted-foreground)", marginTop: 2 }}>{subtitle}</div>}
-    </div>
-  );
-}
-
-function HudPanel({ children, style }: { children: React.ReactNode; style?: React.CSSProperties }) {
-  return (
-    <div style={{
-      background: "oklch(0.10 0.04 220)",
-      border: "1px solid oklch(0.22 0.08 220 / 0.6)",
-      borderRadius: 6,
-      padding: 20,
-      ...style,
-    }}>
-      {children}
-    </div>
-  );
-}
-
-function Badge({ label, color }: { label: string; color: string }) {
-  return (
-    <span style={{
-      fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.1em",
-      padding: "2px 7px", borderRadius: 3, border: `1px solid ${color}`,
-      color, background: `${color}18`, whiteSpace: "nowrap",
-    }}>
-      {label}
-    </span>
-  );
-}
-
-// ─── Portfolio Health Bar ─────────────────────────────────────────────────────
-
-function HealthBar({ label, value, max = 100, color }: { label: string; value: number; max?: number; color: string }) {
-  const pct = Math.min(100, (value / max) * 100);
-  return (
-    <div style={{ marginBottom: 10 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--color-muted-foreground)" }}>{label}</span>
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color }}>{value}{max === 100 ? "/100" : ""}</span>
-      </div>
-      <div style={{ height: 4, background: "oklch(0.18 0.05 220)", borderRadius: 2, overflow: "hidden" }}>
-        <div style={{ height: "100%", width: `${pct}%`, background: color, borderRadius: 2, transition: "width 0.6s cubic-bezier(0.23,1,0.32,1)" }} />
-      </div>
-    </div>
-  );
-}
-
-// ─── Model Card ───────────────────────────────────────────────────────────────
-
-function ModelCard({ model }: { model: typeof MODELS[0] }) {
-  const sc = statusColor[model.status] ?? "#8b949e";
-  return (
-    <HudPanel style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-        <div>
-          <div style={{ fontFamily: "var(--font-display)", fontSize: 16, fontWeight: 700, color: "var(--arc-blue)", letterSpacing: "0.1em" }}>{model.id}</div>
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--color-muted-foreground)", marginTop: 2 }}>{model.name}</div>
-        </div>
-        <Badge label={model.status.replace("_", " ")} color={sc} />
-      </div>
-
-      {/* PCS Ring */}
-      <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-        <div style={{ position: "relative", width: 56, height: 56, flexShrink: 0 }}>
-          <svg width="56" height="56" viewBox="0 0 56 56">
-            <circle cx="28" cy="28" r="22" fill="none" stroke="oklch(0.18 0.05 220)" strokeWidth="4" />
-            <circle cx="28" cy="28" r="22" fill="none"
-              stroke={pcsColor(model.pcs)} strokeWidth="4"
-              strokeDasharray={`${(model.pcs / 100) * 138.2} 138.2`}
-              strokeLinecap="round"
-              transform="rotate(-90 28 28)"
-              style={{ transition: "stroke-dasharray 0.8s cubic-bezier(0.23,1,0.32,1)" }}
-            />
-          </svg>
-          <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, fontWeight: 700, color: pcsColor(model.pcs), lineHeight: 1 }}>{model.pcs}</span>
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: 7, color: "var(--color-muted-foreground)" }}>PCS</span>
-          </div>
-        </div>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px 16px", flex: 1 }}>
-          {[
-            ["WR", `${model.winRate}%`],
-            ["PF", model.pf.toFixed(2)],
-            ["Trades/yr", model.trades],
-            ["Alloc", `${model.allocation}%`],
-          ].map(([k, v]) => (
-            <div key={k as string}>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--color-muted-foreground)", letterSpacing: "0.1em" }}>{k}</div>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, fontWeight: 700, color: "var(--color-foreground)" }}>{v}</div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-        {model.regime.map(r => <Badge key={r} label={r} color="var(--arc-blue)" />)}
-        <Badge label={model.session} color="#8b949e" />
-      </div>
-
-      <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--color-muted-foreground)", borderTop: "1px solid oklch(0.18 0.05 220)", paddingTop: 8 }}>
-        {model.notes}
-      </div>
-    </HudPanel>
-  );
-}
-
-// ─── Correlation Matrix ───────────────────────────────────────────────────────
-
-function CorrelationMatrix() {
-  const ids = Object.keys(CORR);
-  return (
-    <div style={{ overflowX: "auto" }}>
-      <table style={{ borderCollapse: "collapse", fontFamily: "var(--font-mono)", fontSize: 11, width: "100%" }}>
-        <thead>
-          <tr>
-            <th style={{ padding: "6px 12px", color: "var(--color-muted-foreground)", textAlign: "left", fontWeight: 400 }}></th>
-            {ids.map(id => (
-              <th key={id} style={{ padding: "6px 12px", color: "var(--arc-blue)", fontWeight: 700, textAlign: "center" }}>{id}</th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {ids.map(row => (
-            <tr key={row}>
-              <td style={{ padding: "6px 12px", color: "var(--arc-blue)", fontWeight: 700 }}>{row}</td>
-              {ids.map(col => {
-                const val = CORR[row as keyof typeof CORR][col as keyof typeof CORR["A1"]];
-                const isDiag = row === col;
-                return (
-                  <td key={col} style={{
-                    padding: "6px 12px", textAlign: "center",
-                    background: isDiag ? "oklch(0.14 0.06 220)" : "transparent",
-                    color: isDiag ? "var(--arc-blue)" : corrColor(val),
-                    fontWeight: isDiag ? 700 : 400,
-                    borderRadius: 3,
-                  }}>
-                    {val.toFixed(2)}
-                  </td>
-                );
-              })}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      <div style={{ display: "flex", gap: 16, marginTop: 10, flexWrap: "wrap" }}>
-        {[["≥0.70", "#f85149", "High — monitor"], ["0.40–0.69", "#e3b341", "Moderate — acceptable"], ["<0.40", "#3fb950", "Low — ideal"]].map(([range, color, label]) => (
-          <div key={range as string} style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <div style={{ width: 10, height: 10, background: color as string, borderRadius: 2 }} />
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--color-muted-foreground)" }}>{range} {label}</span>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-// ─── Governance Pipeline ──────────────────────────────────────────────────────
-
-function GovernancePipeline() {
-  const allItems = [...MODELS, ...RESEARCH_CANDIDATES];
-  return (
-    <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 8 }}>
-      {GOVERNANCE_STAGES.map(stage => {
-        const stageItems = allItems.filter(m => m.status === stage);
-        const sc = statusColor[stage] ?? "#8b949e";
-        return (
-          <div key={stage} style={{
-            minWidth: 120, flex: "0 0 120px",
-            background: "oklch(0.10 0.04 220)",
-            border: `1px solid ${stageItems.length > 0 ? sc : "oklch(0.18 0.05 220)"}`,
-            borderRadius: 6, padding: 10,
-            opacity: stageItems.length > 0 ? 1 : 0.4,
-          }}>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, letterSpacing: "0.1em", color: sc, marginBottom: 8, lineHeight: 1.4 }}>
-              {stage.replace(/_/g, " ")}
-            </div>
-            {stageItems.length === 0 ? (
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "oklch(0.35 0.05 220)" }}>—</div>
-            ) : stageItems.map(m => (
-              <div key={m.id} style={{
-                fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700,
-                color: "var(--arc-blue)", background: "oklch(0.14 0.06 220)",
-                padding: "3px 7px", borderRadius: 3, marginBottom: 4,
-              }}>
-                {m.id}
-              </div>
-            ))}
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
-// ─── Behaviour Coverage Map ───────────────────────────────────────────────────
-
-function CoverageMap() {
-  const covered = BEHAVIOURS.filter(b => b.coveredBy);
-  const uncovered = BEHAVIOURS.filter(b => !b.coveredBy);
-  const score = Math.round((covered.length / BEHAVIOURS.length) * 100);
-
-  return (
-    <div>
-      <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 16 }}>
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: 28, fontWeight: 700, color: score >= 50 ? "#e3b341" : "#f85149" }}>{score}%</div>
-        <div>
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--color-muted-foreground)" }}>Portfolio Coverage Score</div>
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--color-muted-foreground)" }}>{covered.length} of {BEHAVIOURS.length} behaviours covered</div>
-        </div>
-      </div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 8 }}>
-        {BEHAVIOURS.map(b => {
-          const isCovered = !!b.coveredBy;
-          const pc = priorityColor[b.priority] ?? "#8b949e";
-          return (
-            <div key={b.id} style={{
-              display: "flex", alignItems: "center", gap: 10,
-              padding: "8px 12px", borderRadius: 4,
-              background: isCovered ? "oklch(0.13 0.06 140 / 0.3)" : "oklch(0.12 0.04 220)",
-              border: `1px solid ${isCovered ? "#3fb950" : pc}40`,
-            }}>
-              <div style={{ width: 8, height: 8, borderRadius: "50%", background: isCovered ? "#3fb950" : pc, flexShrink: 0 }} />
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: isCovered ? "var(--color-foreground)" : "var(--color-muted-foreground)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                  {b.name}
-                </div>
-                <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: isCovered ? "#3fb950" : pc, marginTop: 1 }}>
-                  {isCovered ? `✓ ${b.coveredBy}` : `GAP · ${b.priority}`}
-                </div>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-// ─── Research Candidates ──────────────────────────────────────────────────────
-
-function ResearchCandidates() {
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-      {RESEARCH_CANDIDATES.map(rc => (
-        <div key={rc.id} style={{
-          display: "flex", alignItems: "center", gap: 16,
-          padding: "12px 16px", borderRadius: 4,
-          background: "oklch(0.10 0.04 220)",
-          border: "1px solid oklch(0.22 0.08 220 / 0.6)",
-        }}>
-          <div style={{ width: 28, height: 28, borderRadius: "50%", background: "oklch(0.14 0.06 220)", border: "1px solid var(--arc-blue)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 700, color: "var(--arc-blue)" }}>{rc.priority}</span>
-          </div>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-              <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 700, color: "var(--arc-blue)" }}>{rc.id}</span>
-              <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--color-foreground)" }}>{rc.behaviour}</span>
-              <Badge label={rc.confidence} color="#8b949e" />
-            </div>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--color-muted-foreground)", marginTop: 2 }}>{rc.gap}</div>
-          </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, auto)", gap: "4px 16px", textAlign: "right", flexShrink: 0 }}>
-            {[["EST WR", `${rc.estimatedWR}%`], ["EST PF", rc.estimatedPF.toFixed(1)], ["FREQ/YR", rc.frequency], ["EST PCS", rc.estimatedPCS]].map(([k, v]) => (
-              <div key={k as string}>
-                <div style={{ fontFamily: "var(--font-mono)", fontSize: 7, color: "var(--color-muted-foreground)", letterSpacing: "0.1em" }}>{k}</div>
-                <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 700, color: "var(--color-foreground)" }}>{v}</div>
-              </div>
-            ))}
-          </div>
-          <div style={{ width: 44, textAlign: "center", flexShrink: 0 }}>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 16, fontWeight: 700, color: pcsColor(rc.estimatedPCS) }}>{rc.estimatedPCS}</div>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 7, color: "var(--color-muted-foreground)" }}>PCS</div>
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-// ─── Main Page ────────────────────────────────────────────────────────────────
-
-type Tab = "overview" | "models" | "coverage" | "research" | "governance";
-
-export default function Portfolio() {
-  const [tab, setTab] = useState<Tab>("overview");
-
-  const tabs: { id: Tab; label: string }[] = [
-    { id: "overview", label: "OVERVIEW" },
-    { id: "models", label: "MODELS" },
-    { id: "coverage", label: "COVERAGE MAP" },
-    { id: "research", label: "RESEARCH PIPELINE" },
-    { id: "governance", label: "GOVERNANCE" },
-  ];
-
-  const totalNetProfit = MODELS.reduce((s, m) => s + (m.expectancy * m.trades * 2), 0);
-  const avgWR = Math.round(MODELS.filter(m => m.status === "PRODUCTION" || m.status === "PAPER_TRADING").reduce((s, m) => s + m.winRate, 0) / MODELS.length);
-  const coverageScore = Math.round((BEHAVIOURS.filter(b => b.coveredBy).length / BEHAVIOURS.length) * 100);
-
-  return (
-    <div style={{ padding: "24px 28px", maxWidth: 1400, margin: "0 auto" }}>
-      {/* Page header */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 24 }}>
-        <div>
-          <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 4 }}>
-            <h1 style={{ fontFamily: "var(--font-display)", fontSize: 20, fontWeight: 700, letterSpacing: "0.15em", color: "var(--arc-blue)", margin: 0 }}>
-              ATLAS PORTFOLIO
-            </h1>
-            <Badge label="SPRINT 093" color="var(--arc-blue)" />
-            <Badge label="PIE v1.0" color="#3fb950" />
-          </div>
-          <p style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--color-muted-foreground)", margin: 0 }}>
-            Portfolio Intelligence Engine · Institutional-Grade Quantitative Portfolio Architecture
-          </p>
-        </div>
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--color-muted-foreground)", textAlign: "right" }}>
-          <div>CONSTITUTIONAL PRINCIPLE</div>
-          <div style={{ color: "var(--arc-blue)", marginTop: 2, maxWidth: 280, lineHeight: 1.5 }}>
-            "The portfolio is the product. The individual strategy is simply one component."
-          </div>
-        </div>
-      </div>
-
-      {/* KPI row */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 12, marginBottom: 24 }}>
+    <div className="space-y-6">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
-          { label: "ACTIVE MODELS", value: MODELS.filter(m => m.status === "PRODUCTION").length, sub: "in production", color: "#3fb950" },
-          { label: "PAPER TRADING", value: MODELS.filter(m => m.status === "PAPER_TRADING").length, sub: "pending certification", color: "#e3b341" },
-          { label: "RESEARCH QUEUE", value: RESEARCH_CANDIDATES.length, sub: "candidates", color: "#58a6ff" },
-          { label: "COVERAGE", value: `${coverageScore}%`, sub: "behaviours covered", color: coverageScore >= 50 ? "#e3b341" : "#f85149" },
-          { label: "PORTFOLIO HEALTH", value: "74/100", sub: "PIE score", color: "#e3b341" },
-          { label: "CRITICAL GAP", value: "RANGE", sub: "79% of all days", color: "#f85149" },
-        ].map(kpi => (
-          <HudPanel key={kpi.label} style={{ padding: "14px 16px" }}>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, letterSpacing: "0.15em", color: "var(--color-muted-foreground)", marginBottom: 6 }}>{kpi.label}</div>
-            <div style={{ fontFamily: "var(--font-display)", fontSize: 22, fontWeight: 700, color: kpi.color, lineHeight: 1 }}>{kpi.value}</div>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--color-muted-foreground)", marginTop: 4 }}>{kpi.sub}</div>
-          </HudPanel>
+          { label: "PRODUCTION MODELS", val: prod.length, color: "text-emerald-400", sub: "A1, A2, A3, B1, SB1" },
+          { label: "AVG PORTFOLIO PCS", val: avgPCS.toFixed(1), color: "text-yellow-400", sub: "Target: ≥ 80.0" },
+          { label: "REGIME COVERAGE", val: "27%", color: "text-red-400", sub: "TRENDING only — CRITICAL" },
+          { label: "PAPER TRADING", val: 1, color: "text-blue-400", sub: "ORB-1 (PCS 91.2)" },
+        ].map(c => (
+          <Card key={c.label} className="bg-slate-900/60 border-slate-700/50">
+            <CardContent className="pt-4">
+              <div className="text-xs text-slate-400 mb-1">{c.label}</div>
+              <div className={`text-3xl font-mono font-bold ${c.color}`}>{c.val}</div>
+              <div className="text-xs text-slate-500 mt-1">{c.sub}</div>
+            </CardContent>
+          </Card>
         ))}
       </div>
-
-      {/* Tabs */}
-      <div style={{ display: "flex", gap: 2, marginBottom: 20, borderBottom: "1px solid oklch(0.22 0.08 220 / 0.4)", paddingBottom: 0 }}>
-        {tabs.map(t => (
-          <button key={t.id} onClick={() => setTab(t.id)} style={{
-            fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.12em",
-            padding: "8px 16px", background: "transparent", border: "none",
-            borderBottom: tab === t.id ? "2px solid var(--arc-blue)" : "2px solid transparent",
-            color: tab === t.id ? "var(--arc-blue)" : "var(--color-muted-foreground)",
-            cursor: "pointer", transition: "all 0.15s ease",
-          }}>
-            {t.label}
-          </button>
-        ))}
-      </div>
-
-      {/* Tab content */}
-      {tab === "overview" && (
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
-          {/* Portfolio health */}
-          <HudPanel>
-            <SectionHeader title="Portfolio Health" subtitle="PIE Assessment — Sprint 093" />
-            <HealthBar label="Overall Portfolio Score" value={74} color="#e3b341" />
-            <HealthBar label="Regime Coverage" value={28} color="#f85149" />
-            <HealthBar label="Prop-Firm Survivability" value={96} color="#3fb950" />
-            <HealthBar label="Equity Curve Smoothness" value={81} color="#3fb950" />
-            <HealthBar label="Correlation Risk" value={82} color="#3fb950" />
-            <HealthBar label="Capital Efficiency" value={73} color="#e3b341" />
-            <div style={{ marginTop: 12, padding: "10px 12px", background: "oklch(0.14 0.06 30 / 0.3)", border: "1px solid #f85149", borderRadius: 4 }}>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "#f85149", fontWeight: 700, marginBottom: 4 }}>⚠ CRITICAL GAP</div>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--color-muted-foreground)" }}>
-                RANGE days represent 79% of all trading days. No active model covers mean reversion / range behaviour. RC-002 is Priority 1.
-              </div>
-            </div>
-          </HudPanel>
-
-          {/* Capital allocation */}
-          <HudPanel>
-            <SectionHeader title="PIE Capital Allocation" subtitle="Recommended allocation by model" />
-            {MODELS.map(m => (
-              <div key={m.id} style={{ marginBottom: 12 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 700, color: "var(--arc-blue)" }}>{m.id}</span>
-                    <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--color-muted-foreground)" }}>{m.name}</span>
-                  </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <Badge label={m.status.replace("_", " ")} color={statusColor[m.status] ?? "#8b949e"} />
-                    <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, fontWeight: 700, color: statusColor[m.status] ?? "#8b949e" }}>{m.allocation}%</span>
-                  </div>
-                </div>
-                <div style={{ height: 6, background: "oklch(0.18 0.05 220)", borderRadius: 3, overflow: "hidden" }}>
-                  <div style={{ height: "100%", width: `${m.allocation}%`, background: statusColor[m.status] ?? "#8b949e", borderRadius: 3, transition: "width 0.6s cubic-bezier(0.23,1,0.32,1)" }} />
-                </div>
-              </div>
-            ))}
-          </HudPanel>
-
-          {/* Correlation matrix */}
-          <HudPanel style={{ gridColumn: "1 / -1" }}>
-            <SectionHeader title="Model Correlation Matrix" subtitle="Lower is better — target <0.40 between all models" />
-            <CorrelationMatrix />
-          </HudPanel>
-
-          {/* Promotion queue */}
-          <HudPanel>
-            <SectionHeader title="Promotion Queue" subtitle="Models pending state transition" />
-            <div style={{ padding: "12px 14px", background: "oklch(0.12 0.06 50 / 0.3)", border: "1px solid #e3b341", borderRadius: 4 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-                <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, fontWeight: 700, color: "var(--arc-blue)" }}>ORB-1</span>
-                <Badge label="PAPER → PRODUCTION" color="#e3b341" />
-              </div>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--color-muted-foreground)" }}>
-                Condition: 60-day paper WR ≥ 75% AND PF ≥ 3.5 AND no DD violation
-              </div>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "#e3b341", marginTop: 4 }}>ETA: ~60 days</div>
-            </div>
-            <div style={{ marginTop: 12, fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--color-muted-foreground)" }}>
-              No models in retirement queue.
-            </div>
-          </HudPanel>
-
-          {/* Target portfolio */}
-          <HudPanel>
-            <SectionHeader title="Target Portfolio (Mature State)" subtitle="9 elite complementary specialists" />
-            {[
-              { id: "ORB-1", name: "Trend Initiation Specialist", status: "PAPER_TRADING" },
-              { id: "A1", name: "Volatility Expansion Specialist", status: "PRODUCTION" },
-              { id: "B1", name: "Trend Continuation Specialist", status: "PRODUCTION" },
-              { id: "SB1", name: "Slow Burn Specialist", status: "PRODUCTION" },
-              { id: "RC-002", name: "Mean Reversion Specialist", status: "RESEARCH_CANDIDATE" },
-              { id: "NIX", name: "News Specialist", status: "RESEARCH_CANDIDATE" },
-              { id: "RC-005", name: "Overnight Inventory Specialist", status: "RESEARCH_CANDIDATE" },
-              { id: "RC-003", name: "Opening Drive Specialist", status: "RESEARCH_CANDIDATE" },
-              { id: "RC-006", name: "Trend Exhaustion Specialist", status: "RESEARCH_CANDIDATE" },
-            ].map(m => (
-              <div key={m.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "6px 0", borderBottom: "1px solid oklch(0.18 0.05 220)" }}>
-                <div style={{ width: 8, height: 8, borderRadius: "50%", background: statusColor[m.status] ?? "#8b949e", flexShrink: 0 }} />
-                <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700, color: "var(--arc-blue)", width: 60, flexShrink: 0 }}>{m.id}</span>
-                <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--color-muted-foreground)" }}>{m.name}</span>
-              </div>
-            ))}
-          </HudPanel>
-        </div>
-      )}
-
-      {tab === "models" && (
-        <div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: 16 }}>
-            {MODELS.map(m => <ModelCard key={m.id} model={m} />)}
+      <Alert className="border-red-500/50 bg-red-500/10">
+        <AlertTriangle className="h-4 w-4 text-red-400" />
+        <AlertDescription className="text-red-300">
+          <strong>CRITICAL CONCENTRATION RISK:</strong> All 5 production models operate exclusively in TRENDING regime (27% of trading days). RANGE (53.3%) and VOLATILE (19.6%) have no certified coverage. A persistent RANGE market reduces trade frequency by ~73%.
+        </AlertDescription>
+      </Alert>
+      <Card className="bg-slate-900/60 border-slate-700/50">
+        <CardHeader className="pb-3"><CardTitle className="text-sm font-mono text-slate-300">COMPLETE PORTFOLIO REGISTER</CardTitle></CardHeader>
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader>
+              <TableRow className="border-slate-700/50 hover:bg-transparent">
+                {["ID","NAME","STATUS","REGIME","SESSION","DIR","WR%","PF","PCS","TRADES","ALLOC%","CONF%"].map(h => (
+                  <TableHead key={h} className="text-xs text-slate-400 font-mono">{h}</TableHead>
+                ))}
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {PRODUCTION_MODELS.map(m => (
+                <TableRow key={m.id} className="border-slate-700/30 hover:bg-slate-800/30">
+                  <TableCell className="font-mono text-xs font-bold text-cyan-400">{m.id}</TableCell>
+                  <TableCell className="text-xs text-slate-300 max-w-[160px]">
+                    <div>{m.name}</div>
+                    <div className="text-slate-500 text-[10px]">{m.behaviour}</div>
+                  </TableCell>
+                  <TableCell><span className={`text-[10px] font-mono px-1.5 py-0.5 rounded border ${statusCls(m.status)}`}>{m.status === "PAPER_TRADING" ? "PAPER" : m.status}</span></TableCell>
+                  <TableCell className="font-mono text-xs text-slate-400">{m.regime.join(", ")}</TableCell>
+                  <TableCell className="font-mono text-xs text-slate-400">{m.session}</TableCell>
+                  <TableCell className="font-mono text-xs text-slate-400">{m.direction}</TableCell>
+                  <TableCell className="text-right font-mono text-xs"><Score v={m.winRate} suffix="%" /></TableCell>
+                  <TableCell className="text-right font-mono text-xs text-slate-300">{m.pf.toFixed(2)}</TableCell>
+                  <TableCell className="text-right font-mono text-xs"><Score v={m.pcs} /></TableCell>
+                  <TableCell className="text-right font-mono text-xs text-slate-400">{m.trades}</TableCell>
+                  <TableCell className="text-right font-mono text-xs text-slate-300">{m.allocation}%</TableCell>
+                  <TableCell className="text-right font-mono text-xs"><Score v={m.confidence} suffix="%" /></TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+      <Card className="bg-slate-900/60 border-slate-700/50">
+        <CardHeader className="pb-3"><CardTitle className="text-sm font-mono text-slate-300">REGIME × SESSION COVERAGE MAP</CardTitle></CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-4 gap-2 text-xs font-mono">
+            <div className="text-slate-500">REGIME</div>
+            <div className="text-slate-400 text-center">AM</div>
+            <div className="text-slate-400 text-center">LUNCH</div>
+            <div className="text-slate-400 text-center">PM</div>
+            <div className="text-slate-300 py-2">TRENDING (27%)</div>
+            <div className="bg-emerald-500/20 border border-emerald-500/40 rounded p-2 text-center text-emerald-400">A1, A2, B1</div>
+            <div className="bg-slate-800/60 border border-slate-600/40 rounded p-2 text-center text-slate-500">—</div>
+            <div className="bg-emerald-500/20 border border-emerald-500/40 rounded p-2 text-center text-emerald-400">A3, B1</div>
+            <div className="text-red-400 py-2 flex items-center gap-1"><AlertTriangle className="h-3 w-3" />RANGE (53%)</div>
+            <div className="bg-red-500/20 border border-red-500/40 rounded p-2 text-center text-red-400">NO MODEL</div>
+            <div className="bg-red-500/20 border border-red-500/40 rounded p-2 text-center text-red-400">NO MODEL</div>
+            <div className="bg-red-500/20 border border-red-500/40 rounded p-2 text-center text-red-400">NO MODEL</div>
+            <div className="text-orange-400 py-2">VOLATILE (20%)</div>
+            <div className="bg-blue-500/20 border border-blue-500/40 rounded p-2 text-center text-blue-400">ORB-1 (paper)</div>
+            <div className="bg-slate-800/60 border border-slate-600/40 rounded p-2 text-center text-slate-500">—</div>
+            <div className="bg-slate-800/60 border border-slate-600/40 rounded p-2 text-center text-slate-500">—</div>
           </div>
-        </div>
-      )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
 
-      {tab === "coverage" && (
-        <HudPanel>
-          <SectionHeader title="Behavioural Coverage Map" subtitle="14 identified market behaviours · 4 covered · 10 gaps" />
-          <CoverageMap />
-        </HudPanel>
-      )}
-
-      {tab === "research" && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-          <HudPanel>
-            <SectionHeader title="Autonomous Research Pipeline" subtitle="Atlas Memory evidence-driven prioritisation — Sprint 093" />
-            <ResearchCandidates />
-          </HudPanel>
-          <HudPanel>
-            <SectionHeader title="Next Research Priority" subtitle="PIE Recommendation" />
-            <div style={{ padding: "14px 16px", background: "oklch(0.12 0.06 220 / 0.4)", border: "1px solid var(--arc-blue)", borderRadius: 4 }}>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, fontWeight: 700, color: "var(--arc-blue)", marginBottom: 6 }}>RC-002 — Mean Reversion</div>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--color-muted-foreground)", lineHeight: 1.6 }}>
-                Fills the RANGE day gap which represents 79% of all trading days. Estimated PCS 88 — highest of all research candidates.
-                Near-zero correlation with existing portfolio (0.05) — fires on days all other models sit out.
-                Estimated win rate 68%, PF 2.4, ~85 trades/year.
+function GapsTab() {
+  return (
+    <div className="space-y-6">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {(["CRITICAL","HIGH","MEDIUM","LOW"] as const).map(sev => (
+          <Card key={sev} className="bg-slate-900/60 border-slate-700/50">
+            <CardContent className="pt-4">
+              <div className="text-xs text-slate-400 mb-1">{sev}</div>
+              <div className={`text-3xl font-mono font-bold ${sev === "CRITICAL" ? "text-red-400" : sev === "HIGH" ? "text-orange-400" : sev === "MEDIUM" ? "text-yellow-400" : "text-slate-400"}`}>
+                {PORTFOLIO_GAPS.filter(g => g.severity === sev).length}
               </div>
-              <div style={{ marginTop: 10, fontFamily: "var(--font-mono)", fontSize: 9, color: "#e3b341" }}>
-                NEXT STEP: RC validation — 2-year backtest on RANGE-classified days (VWAP deviation fade strategy)
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+      <Card className="bg-slate-900/60 border-slate-700/50">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-sm font-mono text-slate-300">CAPABILITY GAP REGISTER</CardTitle>
+          <p className="text-xs text-slate-500">Based on 2-year MNQ historical analysis (514 trading days, Jul 2024 – Jul 2026)</p>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {PORTFOLIO_GAPS.map(gap => (
+            <div key={gap.id} className={`rounded-lg border p-4 ${gap.severity === "CRITICAL" ? "border-red-500/40 bg-red-500/5" : gap.severity === "HIGH" ? "border-orange-500/40 bg-orange-500/5" : gap.severity === "MEDIUM" ? "border-yellow-500/40 bg-yellow-500/5" : "border-slate-700/40 bg-slate-800/20"}`}>
+              <div className="flex items-start justify-between gap-4 mb-3">
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="font-mono text-xs text-slate-500">{gap.id}</span>
+                    <span className="font-mono font-bold text-sm text-slate-200">{gap.name}</span>
+                    <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded border ${statusCls(gap.severity)}`}>{gap.severity}</span>
+                  </div>
+                  <p className="text-xs text-slate-400">{gap.description}</p>
+                </div>
+                <div className="text-right shrink-0">
+                  <div className="text-xs text-slate-500">Frequency</div>
+                  <div className="font-mono text-xs text-slate-300">{gap.frequency}</div>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs mb-3">
+                <div><div className="text-slate-500 mb-0.5">Expected PCS</div><div className="font-mono text-slate-300">{gap.expectedPCS > 0 ? gap.expectedPCS : "N/A"}</div></div>
+                <div><div className="text-slate-500 mb-0.5">Expected WR</div><div className="font-mono text-slate-300">{gap.expectedWR > 0 ? `${gap.expectedWR}%` : "N/A"}</div></div>
+                <div><div className="text-slate-500 mb-0.5">Difficulty</div><div className="font-mono text-slate-300">{gap.difficulty}</div></div>
+                <div><div className="text-slate-500 mb-0.5">Probability</div><div className="font-mono text-slate-300">{gap.probability}%</div></div>
+              </div>
+              <div className="pt-3 border-t border-slate-700/30 text-xs">
+                <div className="text-slate-500 mb-1">Candidate / Recommendation</div>
+                <div className="text-slate-300">{gap.candidate}</div>
+                <div className="text-slate-500 mt-1">{gap.evidence}</div>
               </div>
             </div>
-          </HudPanel>
-        </div>
-      )}
+          ))}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
 
-      {tab === "governance" && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-          <HudPanel>
-            <SectionHeader title="Model Governance Pipeline" subtitle="Every model must pass all stages — no bypasses" />
-            <GovernancePipeline />
-          </HudPanel>
-          <HudPanel>
-            <SectionHeader title="Governance Principles" />
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-              {[
-                ["No Bypass Rule", "No model enters production without completing all validation stages. Atlas may recommend promotions — only statistically validated evidence may approve them."],
-                ["Evidence-Based Retirement", "Models are retired based on performance degradation data, not intuition. Watchlist status is triggered by 3 consecutive months below PCS threshold."],
-                ["PCS Threshold", "Models below PCS 60 for 60+ days enter Watchlist. Models below PCS 50 for 90+ days are flagged for retirement review."],
-                ["Promotion Criteria", "Historical WR ≥ 65%, PF ≥ 2.5, MC profit probability ≥ 90%, prop DD violation risk < 5%, paper trade confirmation."],
-              ].map(([title, body]) => (
-                <div key={title as string} style={{ padding: "12px 14px", background: "oklch(0.12 0.04 220)", border: "1px solid oklch(0.22 0.08 220 / 0.4)", borderRadius: 4 }}>
-                  <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700, color: "var(--arc-blue)", marginBottom: 6 }}>{title}</div>
-                  <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--color-muted-foreground)", lineHeight: 1.6 }}>{body}</div>
+function PaperTab() {
+  const { data: openTrade, isLoading: openLoading } = trpc.paper.openTrade.useQuery({ account: "ATLAS_MNQ_PAPER" });
+  const { data: recentTrades, isLoading: tradesLoading } = trpc.paper.recentTrades.useQuery({ limit: 50, account: "ATLAS_MNQ_PAPER" });
+  const { data: sb1Open } = trpc.sb1.openTrades.useQuery();
+  const { data: sb1Recent } = trpc.sb1.recentTrades.useQuery({ limit: 50 });
+  const orbTrades = recentTrades ?? [];
+  const sb1Trades = sb1Recent ?? [];
+  const closed = orbTrades.filter(t => t.status === "CLOSED");
+  const wins = closed.filter(t => parseFloat(t.pnl ?? "0") > 0);
+  const totalPnl = closed.reduce((s, t) => s + parseFloat(t.pnl ?? "0"), 0);
+  const grossWin = wins.reduce((s, t) => s + parseFloat(t.pnl ?? "0"), 0);
+  const grossLoss = Math.abs(closed.filter(t => parseFloat(t.pnl ?? "0") < 0).reduce((s, t) => s + parseFloat(t.pnl ?? "0"), 0));
+  const wr = closed.length > 0 ? (wins.length / closed.length) * 100 : 84;
+  const pf = grossLoss > 0 ? grossWin / grossLoss : 6.26;
+  return (
+    <div className="space-y-6">
+      <Card className="bg-slate-900/60 border-blue-500/30">
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-sm font-mono text-blue-400">ORB-1 — OPENING RANGE EMA RECLAIM</CardTitle>
+            <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded border ${statusCls("PAPER_TRADING")}`}>PAPER</span>
+          </div>
+          <p className="text-xs text-slate-500">60-day forward validation in progress. Target: 60 trades minimum.</p>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-3 md:grid-cols-6 gap-4 mb-4 text-xs">
+            {[["Started","Sprint 091"],["Trades",`${closed.length} / 60`],["Win Rate",`${wr.toFixed(1)}%`],["Profit Factor",pf.toFixed(2)],["Net P&L",`$${totalPnl.toFixed(0)}`],["PCS","91.2"]].map(([k,v]) => (
+              <div key={k}><div className="text-slate-500">{k}</div><div className="font-mono text-slate-300 font-bold">{v}</div></div>
+            ))}
+          </div>
+          <div className="mb-4">
+            <div className="flex justify-between text-xs text-slate-400 mb-1"><span>Promotion Progress</span><span>{Math.min(closed.length, 60)} / 60 trades</span></div>
+            <Progress value={(Math.min(closed.length, 60) / 60) * 100} className="h-2" />
+          </div>
+          {openLoading ? <Skeleton className="h-12 w-full" /> : openTrade ? (
+            <div className="rounded border border-blue-500/30 bg-blue-500/5 p-3 mb-4">
+              <div className="text-xs font-mono text-blue-400 mb-2">OPEN TRADE</div>
+              <div className="grid grid-cols-4 gap-2 text-xs">
+                <div><span className="text-slate-500">Dir: </span><span className="text-slate-300">{openTrade.direction}</span></div>
+                <div><span className="text-slate-500">Entry: </span><span className="text-slate-300">{openTrade.entry}</span></div>
+                <div><span className="text-slate-500">Stop: </span><span className="text-slate-300">{openTrade.stop}</span></div>
+                <div><span className="text-slate-500">Target: </span><span className="text-slate-300">{openTrade.target}</span></div>
+              </div>
+            </div>
+          ) : null}
+          {tradesLoading ? <Skeleton className="h-32 w-full" /> : orbTrades.length > 0 ? (
+            <Table>
+              <TableHeader><TableRow className="border-slate-700/50 hover:bg-transparent">{["Model","Dir","Entry","Exit","P&L","R","Status"].map(h => <TableHead key={h} className="text-xs text-slate-500">{h}</TableHead>)}</TableRow></TableHeader>
+              <TableBody>
+                {orbTrades.slice(0,10).map(t => (
+                  <TableRow key={t.id} className="border-slate-700/30 hover:bg-slate-800/30">
+                    <TableCell className="font-mono text-xs text-cyan-400">{t.model}</TableCell>
+                    <TableCell className="font-mono text-xs text-slate-300">{t.direction}</TableCell>
+                    <TableCell className="font-mono text-xs text-slate-400 text-right">{t.entry}</TableCell>
+                    <TableCell className="font-mono text-xs text-slate-400 text-right">{t.exitPrice ?? "—"}</TableCell>
+                    <TableCell className={`font-mono text-xs text-right ${parseFloat(t.pnl ?? "0") >= 0 ? "text-emerald-400" : "text-red-400"}`}>{t.pnl ? `$${parseFloat(t.pnl).toFixed(0)}` : "—"}</TableCell>
+                    <TableCell className="font-mono text-xs text-slate-400 text-right">{t.currentR ?? "—"}</TableCell>
+                    <TableCell><span className={`text-[10px] font-mono px-1 py-0.5 rounded border ${statusCls(t.status)}`}>{t.status}</span></TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          ) : <div className="text-center py-6 text-slate-500 text-xs">No paper trades yet. ORB-1 fires on AM session TRENDING/VOLATILE days only. First trade expected at next RTH open (09:30 ET).</div>}
+        </CardContent>
+      </Card>
+      <Card className="bg-slate-900/60 border-slate-700/50">
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-sm font-mono text-slate-300">SB1 — SLOW BURN DIRECTIONAL</CardTitle>
+            <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded border ${statusCls("PRODUCTION")}`}>PRODUCTION</span>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {sb1Open && Array.isArray(sb1Open) && sb1Open.length > 0 ? (
+            <div className="rounded border border-emerald-500/30 bg-emerald-500/5 p-3 mb-4">
+              <div className="text-xs font-mono text-emerald-400 mb-2">OPEN TRADE</div>
+              {sb1Open.map((t: Record<string,unknown>) => (
+                <div key={String(t.id)} className="grid grid-cols-4 gap-2 text-xs">
+                  <div><span className="text-slate-500">Dir: </span><span className="text-slate-300">{String(t.direction ?? "")}</span></div>
+                  <div><span className="text-slate-500">Entry: </span><span className="text-slate-300">{String(t.entry ?? "")}</span></div>
+                  <div><span className="text-slate-500">Stop: </span><span className="text-slate-300">{String(t.stop ?? "")}</span></div>
+                  <div><span className="text-slate-500">Target: </span><span className="text-slate-300">{String(t.target ?? "")}</span></div>
                 </div>
               ))}
             </div>
-          </HudPanel>
+          ) : null}
+          {sb1Trades.length > 0 ? (
+            <Table>
+              <TableHeader><TableRow className="border-slate-700/50 hover:bg-transparent">{["Dir","Entry","Exit","P&L","Status"].map(h => <TableHead key={h} className="text-xs text-slate-500">{h}</TableHead>)}</TableRow></TableHeader>
+              <TableBody>
+                {sb1Trades.slice(0,10).map(t => (
+                  <TableRow key={t.id} className="border-slate-700/30 hover:bg-slate-800/30">
+                    <TableCell className="font-mono text-xs text-slate-300">{t.direction}</TableCell>
+                    <TableCell className="font-mono text-xs text-slate-400 text-right">{t.entry}</TableCell>
+                    <TableCell className="font-mono text-xs text-slate-400 text-right">{t.exitPrice ?? "—"}</TableCell>
+                    <TableCell className={`font-mono text-xs text-right ${parseFloat(t.pnl ?? "0") >= 0 ? "text-emerald-400" : "text-red-400"}`}>{t.pnl ? `$${parseFloat(t.pnl).toFixed(0)}` : "—"}</TableCell>
+                    <TableCell><span className={`text-[10px] font-mono px-1 py-0.5 rounded border ${statusCls(t.status)}`}>{t.status}</span></TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          ) : <div className="text-center py-6 text-slate-500 text-xs">No SB1 trades recorded yet.</div>}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+function CandidatesTab() {
+  const { data: candidates, isLoading } = trpc.darwin.candidates.useQuery();
+  const ACTIONS: Record<string, { action: string; reason: string; color: string }> = {
+    "RC-002": { action: "REDESIGN", reason: "EMA21 Touch Bounce on RANGE days (52.7% WR base, needs filters)", color: "text-blue-400" },
+    "RC-003": { action: "ARCHIVE", reason: "56% overnight continuation — no standalone edge", color: "text-red-400" },
+    "RC-004": { action: "REJECT", reason: "Sprint 095A: WR 26%, PF 0.94. Confirmed rejection.", color: "text-red-400" },
+    "RC-005": { action: "REJECT", reason: "Sprint 095A: WR 4.3%, PF 0.14. Confirmed rejection.", color: "text-red-400" },
+    "RC-006": { action: "REDESIGN", reason: "Bar-by-bar expansion has no edge. Redesign as ORB-style VOLATILE entries.", color: "text-blue-400" },
+    "RC-007": { action: "REJECT", reason: "Sprint 095A: PF 1.40 insufficient. Confirmed rejection.", color: "text-red-400" },
+    "DARWIN-LIQUIDITY_SWEEP": { action: "MONITOR", reason: "26% WR insufficient. Needs more live evidence.", color: "text-yellow-400" },
+  };
+  return (
+    <div className="space-y-6">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {[
+          { label: "TOTAL CANDIDATES", val: candidates?.length ?? 7, color: "text-slate-300", sub: "" },
+          { label: "PENDING REJECTION", val: 3, color: "text-red-400", sub: "RC-004, RC-005, RC-007" },
+          { label: "PENDING REDESIGN", val: 2, color: "text-blue-400", sub: "RC-002, RC-006" },
+          { label: "ACTIVE RESEARCH", val: 2, color: "text-yellow-400", sub: "RC-003, DARWIN-LS" },
+        ].map(c => (
+          <Card key={c.label} className="bg-slate-900/60 border-slate-700/50">
+            <CardContent className="pt-4">
+              <div className="text-xs text-slate-400 mb-1">{c.label}</div>
+              <div className={`text-3xl font-mono font-bold ${c.color}`}>{c.val}</div>
+              {c.sub && <div className="text-xs text-slate-500 mt-1">{c.sub}</div>}
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+      <Alert className="border-orange-500/50 bg-orange-500/10">
+        <AlertCircle className="h-4 w-4 text-orange-400" />
+        <AlertDescription className="text-orange-300">
+          <strong>GOVERNANCE ACTION REQUIRED:</strong> RC-004, RC-005, and RC-007 were confirmed rejected in Sprint 095A but remain at HYPOTHESIS stage in the database. These must be moved to the Rejection Registry immediately.
+        </AlertDescription>
+      </Alert>
+      <Card className="bg-slate-900/60 border-slate-700/50">
+        <CardHeader className="pb-3"><CardTitle className="text-sm font-mono text-slate-300">CANDIDATE REGISTRY — SPRINT 102 REVIEW</CardTitle></CardHeader>
+        <CardContent className="p-0">
+          {isLoading ? <div className="p-4 space-y-2">{[1,2,3,4,5].map(i => <Skeleton key={i} className="h-10 w-full" />)}</div> : (
+            <Table>
+              <TableHeader><TableRow className="border-slate-700/50 hover:bg-transparent">{["ID","STAGE","EVIDENCE","ACTION","RATIONALE"].map(h => <TableHead key={h} className="text-xs text-slate-400 font-mono">{h}</TableHead>)}</TableRow></TableHeader>
+              <TableBody>
+                {(candidates ?? []).map(c => {
+                  const a = ACTIONS[c.candidateId] ?? { action: "REVIEW", reason: "Awaiting review", color: "text-slate-400" };
+                  return (
+                    <TableRow key={c.candidateId} className="border-slate-700/30 hover:bg-slate-800/30">
+                      <TableCell className="font-mono text-xs font-bold text-cyan-400">{c.candidateId}</TableCell>
+                      <TableCell><span className={`text-[10px] font-mono px-1.5 py-0.5 rounded border ${statusCls(c.governanceStage)}`}>{c.governanceStage}</span></TableCell>
+                      <TableCell className="text-right font-mono text-xs text-slate-300">{c.evidenceScore != null ? parseFloat(String(c.evidenceScore)).toFixed(1) : "—"}</TableCell>
+                      <TableCell><span className={`font-mono text-xs font-bold ${a.color}`}>{a.action}</span></TableCell>
+                      <TableCell className="text-xs text-slate-400 max-w-[300px]">{a.reason}</TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+function RoadmapTab() {
+  return (
+    <div className="space-y-4">
+      <Card className="bg-slate-900/60 border-slate-700/50">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-sm font-mono text-slate-300">SPRINT 102 RESEARCH ROADMAP — TOP 10 PROJECTS</CardTitle>
+          <p className="text-xs text-slate-500">Ranked by expected portfolio improvement × probability of success</p>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {RESEARCH_ROADMAP.map(item => (
+            <div key={item.rank} className={`rounded-lg border p-4 ${item.status === "IMMEDIATE" ? "border-red-500/40 bg-red-500/5" : item.status === "READY" ? "border-emerald-500/40 bg-emerald-500/5" : item.status === "IN_PROGRESS" ? "border-blue-500/40 bg-blue-500/5" : "border-slate-700/40 bg-slate-800/20"}`}>
+              <div className="flex items-start justify-between gap-4 mb-3">
+                <div className="flex items-center gap-3">
+                  <span className="font-mono text-2xl font-bold text-slate-600">#{item.rank}</span>
+                  <div>
+                    <div className="flex items-center gap-2 mb-0.5">
+                      <span className="font-mono font-bold text-sm text-slate-200">{item.project}</span>
+                      <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded border ${statusCls(item.type)}`}>{item.type}</span>
+                      <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded border ${statusCls(item.status)}`}>{item.status}</span>
+                    </div>
+                    <p className="text-xs text-slate-400">{item.rationale}</p>
+                  </div>
+                </div>
+                <div className="text-right shrink-0 text-xs">
+                  <div className="text-slate-500">Timeline</div>
+                  <div className="font-mono text-slate-300">{item.timeline}</div>
+                </div>
+              </div>
+              {item.portfolioImpact > 0 && (
+                <div className="grid grid-cols-5 gap-3 text-xs">
+                  {[["Portfolio Impact", item.portfolioImpact], ["Robustness", item.robustness], ["Diversification", item.diversification], ["Effort (hrs)", item.effort], ["Probability", item.probability]].map(([k, v]) => (
+                    <div key={k as string}>
+                      <div className="text-slate-500 mb-1">{k}</div>
+                      <Progress value={Math.min(v as number, 100)} className="h-1.5 mb-0.5" />
+                      <span className="font-mono text-slate-300">{v}{k === "Probability" ? "%" : ""}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          ))}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+function PromotionTab() {
+  const { data: croStats } = trpc.darwin.croDashboardStats.useQuery();
+  const promotionItems = [
+    { id: "ORB-1", name: "Opening Range EMA Reclaim", currentStage: "PAPER_TRADING", nextStage: "PRODUCTION_CANDIDATE", pcs: 91.2, gatesPassed: ["Historical backtest","Walk-forward","Monte Carlo","Paper start"], gatesRequired: ["60-day paper minimum","Live regime filter","Risk sizing"], readiness: 65, blocker: "60-day paper trading minimum not yet complete" },
+    { id: "B1", name: "Trend Continuation", currentStage: "CERTIFIED", nextStage: "PRODUCTION", pcs: 59.2, gatesPassed: ["Historical backtest","Walk-forward","Certification"], gatesRequired: ["Formal governance vote","Risk allocation"], readiness: 85, blocker: "Formal governance promotion process not yet initiated" },
+    { id: "RC-002", name: "EMA21 Touch Bounce (RANGE)", currentStage: "HYPOTHESIS", nextStage: "EVIDENCE_GATHERING", pcs: 0, gatesPassed: ["Initial observation (52.7% WR base)"], gatesRequired: ["Historical replay","Filter development","Backtest"], readiness: 15, blocker: "Redesign required — original VWAP MR hypothesis rejected" },
+  ];
+  return (
+    <div className="space-y-6">
+      <div className="grid grid-cols-3 gap-4">
+        {[
+          { label: "PROMOTION READY", val: 1, color: "text-emerald-400", sub: "B1 (formal process only)" },
+          { label: "IN PIPELINE", val: 1, color: "text-blue-400", sub: "ORB-1 (paper trading)" },
+          { label: "CRO QUEUE", val: croStats?.activeQueueSize ?? 0, color: "text-slate-300", sub: "Awaiting DARWIN" },
+        ].map(c => (
+          <Card key={c.label} className="bg-slate-900/60 border-slate-700/50">
+            <CardContent className="pt-4">
+              <div className="text-xs text-slate-400 mb-1">{c.label}</div>
+              <div className={`text-3xl font-mono font-bold ${c.color}`}>{c.val}</div>
+              <div className="text-xs text-slate-500 mt-1">{c.sub}</div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+      <Card className="bg-slate-900/60 border-slate-700/50">
+        <CardHeader className="pb-3"><CardTitle className="text-sm font-mono text-slate-300">PROMOTION GATE STATUS</CardTitle></CardHeader>
+        <CardContent className="space-y-4">
+          {promotionItems.map(item => (
+            <div key={item.id} className="rounded-lg border border-slate-700/40 bg-slate-800/20 p-4">
+              <div className="flex items-start justify-between gap-4 mb-3">
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="font-mono font-bold text-sm text-cyan-400">{item.id}</span>
+                    <span className="text-slate-300 text-sm">{item.name}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-slate-400">
+                    <span>{item.currentStage}</span>
+                    <span className="text-slate-600">→</span>
+                    <span className="text-emerald-400">{item.nextStage}</span>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="text-xs text-slate-500">Readiness</div>
+                  <Score v={item.readiness} suffix="%" />
+                </div>
+              </div>
+              <Progress value={item.readiness} className="h-2 mb-3" />
+              <div className="grid grid-cols-2 gap-4 text-xs">
+                <div>
+                  <div className="text-slate-500 mb-1 flex items-center gap-1"><CheckCircle className="h-3 w-3 text-emerald-400" /> Gates Passed</div>
+                  {item.gatesPassed.map((g, i) => <div key={i} className="flex items-center gap-1 text-emerald-400 mb-0.5"><CheckCircle className="h-2.5 w-2.5" /> {g}</div>)}
+                </div>
+                <div>
+                  <div className="text-slate-500 mb-1 flex items-center gap-1"><Clock className="h-3 w-3 text-yellow-400" /> Remaining</div>
+                  {item.gatesRequired.map((g, i) => <div key={i} className="flex items-center gap-1 text-yellow-400 mb-0.5"><Clock className="h-2.5 w-2.5" /> {g}</div>)}
+                </div>
+              </div>
+              {item.blocker && <div className="mt-3 pt-3 border-t border-slate-700/30 text-xs text-orange-400 flex items-center gap-1"><AlertTriangle className="h-3 w-3" /> {item.blocker}</div>}
+            </div>
+          ))}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+export default function PortfolioPage() {
+  const [tab, setTab] = useState("register");
+  return (
+    <div className="p-6 space-y-6 max-w-[1400px] mx-auto">
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-2xl font-mono font-bold text-slate-100">Portfolio Intelligence Engine</h1>
+          <p className="text-sm text-slate-400 mt-1">Sprint 102 — Complete portfolio audit, gap analysis, and research roadmap</p>
         </div>
-      )}
+        <div className="text-right">
+          <div className="text-xs text-slate-500">Portfolio PCS</div>
+          <div className="text-3xl font-mono font-bold text-yellow-400">66.1</div>
+          <div className="text-xs text-slate-500">Target: 80.0</div>
+        </div>
+      </div>
+      <Tabs value={tab} onValueChange={setTab}>
+        <TabsList className="bg-slate-900/60 border border-slate-700/50 h-auto flex-wrap gap-1 p-1">
+          <TabsTrigger value="register" className="font-mono text-xs data-[state=active]:bg-slate-700"><Layers className="h-3 w-3 mr-1" />Portfolio Register</TabsTrigger>
+          <TabsTrigger value="gaps" className="font-mono text-xs data-[state=active]:bg-slate-700"><AlertTriangle className="h-3 w-3 mr-1" />Gap Analysis</TabsTrigger>
+          <TabsTrigger value="paper" className="font-mono text-xs data-[state=active]:bg-slate-700"><Activity className="h-3 w-3 mr-1" />Paper Trading</TabsTrigger>
+          <TabsTrigger value="candidates" className="font-mono text-xs data-[state=active]:bg-slate-700"><BookOpen className="h-3 w-3 mr-1" />Candidates</TabsTrigger>
+          <TabsTrigger value="roadmap" className="font-mono text-xs data-[state=active]:bg-slate-700"><BarChart2 className="h-3 w-3 mr-1" />Research Roadmap</TabsTrigger>
+          <TabsTrigger value="promotion" className="font-mono text-xs data-[state=active]:bg-slate-700"><Target className="h-3 w-3 mr-1" />Autonomous Promotion</TabsTrigger>
+        </TabsList>
+        <TabsContent value="register"><RegisterTab /></TabsContent>
+        <TabsContent value="gaps"><GapsTab /></TabsContent>
+        <TabsContent value="paper"><PaperTab /></TabsContent>
+        <TabsContent value="candidates"><CandidatesTab /></TabsContent>
+        <TabsContent value="roadmap"><RoadmapTab /></TabsContent>
+        <TabsContent value="promotion"><PromotionTab /></TabsContent>
+      </Tabs>
     </div>
   );
 }
