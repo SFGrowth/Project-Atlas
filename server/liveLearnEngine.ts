@@ -187,6 +187,23 @@ export async function processLiveBar(bar: BarPayload): Promise<LearningResult> {
     result.errors.push(`updatePortfolioIntelligenceInputs: ${String(e)}`);
   }
 
+  // Step 8: Recursive Learning — trigger CRO queue re-prioritisation when knowledge base changes
+  // Runs every 20th bar (fire-and-forget, never blocks the pipeline)
+  try {
+    if (result.behaviourUpdates > 0 || result.marketLawEvaluations > 0) {
+      const db2 = await getDb();
+      if (db2) {
+        const [{ cnt }] = await db2.select({ cnt: sql<number>`COUNT(*)` }).from(atlasMemory);
+        const totalBars = Number(cnt ?? 0);
+        if (totalBars % 20 === 0) {
+          import("./darwinCroEngine").then(({ reprioritiseQueue }) => {
+            reprioritiseQueue().catch(() => { /* silent */ });
+          }).catch(() => { /* silent */ });
+        }
+      }
+    }
+  } catch (_) { /* recursive learning hook is non-blocking */ }
+
   result.latencyMs = Date.now() - startMs;
 
   // Log any errors as pipeline health events

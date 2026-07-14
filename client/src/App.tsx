@@ -36,6 +36,7 @@ const AtlasMemoryPage = lazy(() => import("./pages/AtlasMemory"));
 const TemporalIntelligencePage = lazy(() => import("./pages/TemporalIntelligence"));
 const PortfolioPage = lazy(() => import("./pages/Portfolio"));
 const DarwinPage = lazy(() => import("./pages/Darwin"));
+const DarwinCROPage = lazy(() => import("./pages/DarwinCRO"));
 const AutonomousDashboardPage = lazy(() => import("./pages/AutonomousDashboard"));
 const LiveLearningPage = lazy(() => import("./pages/LiveLearningDashboard"));
 
@@ -83,6 +84,7 @@ function Router() {
           <Route path="/tie" component={TemporalIntelligencePage} />
           <Route path="/portfolio" component={PortfolioPage} />
           <Route path="/darwin" component={DarwinPage} />
+          <Route path="/darwin-cro" component={DarwinCROPage} />
           <Route path="/autonomous" component={AutonomousDashboardPage} />
           <Route path="/live-learning" component={LiveLearningPage} />
           <Route path="/404" component={NotFound} />

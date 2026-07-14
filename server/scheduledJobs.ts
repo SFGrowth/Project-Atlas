@@ -39,6 +39,10 @@ import {
   generateWeeklyExecutiveReview,
   updateLiveConcordance,
 } from "./atlasAutonomous";
+import {
+  runDailyAutonomousWork,
+  generateCroReport,
+} from "./darwinCroEngine";
 
 // ─── Utility ─────────────────────────────────────────────────────────────────
 
@@ -462,5 +466,32 @@ export function registerScheduledJobs(app: Router): void {
     }
   });
 
-  console.log("[Scheduler] Registered 14 scheduled job endpoints (5 Atlas + 4 DARWIN + 5 Sprint-099)");
+  // ─── Sprint 101 DARWIN CRO Jobs ──────────────────────────────────────────
+  // DARWIN CRO Daily Work — 5:00 PM ET (22:00 UTC) weekdays
+  app.post("/api/scheduled/darwin-cro-daily", async (req, res) => {
+    try {
+      const auth = await sdk.authenticateRequest(req);
+      if (!auth.isCron) { res.status(403).json({ error: "Forbidden" }); return; }
+      const result = await runDailyAutonomousWork();
+      res.json({ ok: true, job: "darwin-cro-daily", result, timestamp: new Date().toISOString() });
+    } catch (err) {
+      console.error("[DARWIN CRO] Daily work error:", err);
+      if (!res.headersSent) res.status(500).json({ error: String(err) });
+    }
+  });
+
+  // DARWIN CRO Weekly Report — Sundays 20:00 ET (00:00 UTC Monday)
+  app.post("/api/scheduled/darwin-cro-weekly", async (req, res) => {
+    try {
+      const auth = await sdk.authenticateRequest(req);
+      if (!auth.isCron) { res.status(403).json({ error: "Forbidden" }); return; }
+      const reportId = await generateCroReport();
+      res.json({ ok: true, job: "darwin-cro-weekly", reportId, timestamp: new Date().toISOString() });
+    } catch (err) {
+      console.error("[DARWIN CRO] Weekly report error:", err);
+      if (!res.headersSent) res.status(500).json({ error: String(err) });
+    }
+  });
+
+  console.log("[Scheduler] Registered 16 scheduled job endpoints (5 Atlas + 4 DARWIN + 5 Sprint-099 + 2 Sprint-101 CRO)");
 }

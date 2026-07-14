@@ -1029,6 +1029,134 @@ export const appRouter = router({
       await startHistoricalReplay();
       return { ok: true, timestamp: Date.now() };
     }),
+
+    // ── Sprint 101 DARWIN CRO Engine ─────────────────────────────────────────
+    croDashboardStats: publicProcedure.query(async () => {
+      const { getCroDashboardStats } = await import("./darwinCroEngine");
+      return getCroDashboardStats();
+    }),
+
+    croResearchQueue: publicProcedure
+      .input(z.object({ status: z.string().optional(), limit: z.number().default(50) }))
+      .query(async ({ input }) => {
+        const { getResearchQueue } = await import("./darwinCroEngine");
+        const rows = await getResearchQueue({ status: input.status, limit: input.limit });
+        return rows.map(r => ({
+          ...r,
+          evidenceScore: String(r.evidenceScore ?? "0"),
+          confidence: String(r.confidence ?? "0"),
+          portfolioValue: String(r.portfolioValue ?? "0"),
+          expectedResearchValue: String(r.expectedResearchValue ?? "0"),
+          estimatedCorrelation: r.estimatedCorrelation ? String(r.estimatedCorrelation) : null,
+          noveltyScore: String(r.noveltyScore ?? "50"),
+          createdAt: r.createdAt.toISOString(),
+          updatedAt: r.updatedAt.toISOString(),
+        }));
+      }),
+
+    croRejectionRegistry: publicProcedure
+      .input(z.object({ limit: z.number().default(20) }))
+      .query(async ({ input }) => {
+        const { getRejectionRegistry } = await import("./darwinCroEngine");
+        const rows = await getRejectionRegistry(input.limit);
+        return rows.map(r => ({
+          ...r,
+          evidenceAtRejection: r.evidenceAtRejection ? String(r.evidenceAtRejection) : null,
+          confidenceAtRejection: r.confidenceAtRejection ? String(r.confidenceAtRejection) : null,
+          computeHoursSpent: r.computeHoursSpent ? String(r.computeHoursSpent) : null,
+          createdAt: r.createdAt.toISOString(),
+        }));
+      }),
+
+    croCroReports: publicProcedure
+      .input(z.object({ limit: z.number().default(10) }))
+      .query(async ({ input }) => {
+        const { getCroReports } = await import("./darwinCroEngine");
+        const rows = await getCroReports(input.limit);
+        return rows.map(r => ({
+          ...r,
+          portfolioImprovementScore: r.portfolioImprovementScore ? String(r.portfolioImprovementScore) : null,
+          regimeCoverageScore: r.regimeCoverageScore ? String(r.regimeCoverageScore) : null,
+          sessionCoverageScore: r.sessionCoverageScore ? String(r.sessionCoverageScore) : null,
+          correlationReductionScore: r.correlationReductionScore ? String(r.correlationReductionScore) : null,
+          darwinEfficiencyScore: r.darwinEfficiencyScore ? String(r.darwinEfficiencyScore) : null,
+          computeUtilisationPct: r.computeUtilisationPct ? String(r.computeUtilisationPct) : null,
+          createdAt: r.createdAt.toISOString(),
+        }));
+      }),
+
+    croWorkLog: publicProcedure
+      .input(z.object({ limit: z.number().default(50) }))
+      .query(async ({ input }) => {
+        const { getWorkLog } = await import("./darwinCroEngine");
+        const rows = await getWorkLog(input.limit);
+        return rows.map(r => ({
+          ...r,
+          createdAt: r.createdAt.toISOString(),
+        }));
+      }),
+
+    croPromotionGates: publicProcedure
+      .input(z.object({ researchId: z.string().optional(), limit: z.number().default(20) }))
+      .query(async ({ input }) => {
+        const { getPromotionGates } = await import("./darwinCroEngine");
+        const rows = await getPromotionGates(input.researchId, input.limit);
+        return rows.map(r => ({
+          ...r,
+          evidenceScore: r.evidenceScore ? String(r.evidenceScore) : null,
+          confidenceScore: r.confidenceScore ? String(r.confidenceScore) : null,
+          portfolioValue: r.portfolioValue ? String(r.portfolioValue) : null,
+          winRate: r.winRate ? String(r.winRate) : null,
+          profitFactor: r.profitFactor ? String(r.profitFactor) : null,
+          mcPassRate: r.mcPassRate ? String(r.mcPassRate) : null,
+          minEvidenceRequired: r.minEvidenceRequired ? String(r.minEvidenceRequired) : null,
+          minConfidenceRequired: r.minConfidenceRequired ? String(r.minConfidenceRequired) : null,
+          createdAt: r.createdAt.toISOString(),
+        }));
+      }),
+
+    triggerCroDaily: publicProcedure.mutation(async () => {
+      const { runDailyAutonomousWork } = await import("./darwinCroEngine");
+      const result = await runDailyAutonomousWork();
+      return { ok: true, result, timestamp: Date.now() };
+    }),
+
+    triggerCroReport: publicProcedure.mutation(async () => {
+      const { generateCroReport } = await import("./darwinCroEngine");
+      const reportId = await generateCroReport();
+      return { ok: true, reportId, timestamp: Date.now() };
+    }),
+
+    enqueueResearch: publicProcedure
+      .input(z.object({
+        hypothesis: z.string(),
+        behaviourClass: z.string().optional(),
+        targetRegimes: z.string().optional(),
+        targetSessions: z.string().optional(),
+        noveltyScore: z.number().optional(),
+        computationalCost: z.number().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const { enqueueResearch } = await import("./darwinCroEngine");
+        const researchId = await enqueueResearch({ ...input, origin: "MANUAL" });
+        return { ok: true, researchId, timestamp: Date.now() };
+      }),
+
+    rejectResearch: publicProcedure
+      .input(z.object({
+        researchId: z.string(),
+        reason: z.string(),
+        reasonCode: z.string().optional(),
+        lessonLearned: z.string().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const { rejectResearch } = await import("./darwinCroEngine");
+        await rejectResearch(input.researchId, input.reason, {
+          reasonCode: input.reasonCode,
+          lessonLearned: input.lessonLearned,
+        });
+        return { ok: true, timestamp: Date.now() };
+      }),
   }),
 
   // ── Sprint 099 Autonomous Operations ───────────────────────────────────────────────────────────────────────────────

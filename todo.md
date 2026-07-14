@@ -553,3 +553,27 @@
 - [ ] AUDIT FINDING: DARWIN candidates missing hypothesisType/status/certificationStatus — schema mismatch between tieResearchCandidates and darwin_research_candidates tables
 - [ ] AUDIT FINDING: SB1 paper trades = 0, candle certifications = 0 — no live RTH session data yet
 - [ ] AUDIT FINDING: GitHub connector token had zero scopes — fixed with Atlas-Manus-Access PAT
+
+## Sprint 101 — DARWIN Autonomous Research Orchestration Engine (CRO)
+
+- [x] AES-001: Read all institutional knowledge (ATLAS.md, KNOWLEDGE_BASE.md, PRODUCTION_FREEZE.md, existing DARWIN schema, darwinAutonomous.ts, darwinEngine.ts, scheduled jobs)
+- [x] Schema migration: darwin_research_queue table (14 fields, ERV-based prioritisation)
+- [x] Schema migration: darwin_rejection_registry table (permanent hypothesis archive)
+- [x] Schema migration: darwin_cro_reports table (weekly CRO reports)
+- [x] Schema migration: darwin_work_log table (per-session autonomous work diary)
+- [x] Schema migration: darwin_promotion_gates table (8-stage gate decisions)
+- [x] DB migration 0012 applied via webdev_execute_sql
+- [x] Build darwinCroEngine.ts: getCroDashboardStats, getResearchQueue, getPromotionGates, getRejectionRegistry, getWorkLog, getCroReports, enqueueResearch, rejectResearch, reprioritiseQueue, runDailyCroWork, generateWeeklyCroReport
+- [x] Add darwin-cro-daily scheduled job (5PM ET weekdays) to scheduledJobs.ts
+- [x] Add darwin-cro-weekly scheduled job (Sunday 8PM ET) to scheduledJobs.ts
+- [x] Add 8 CRO tRPC procedures to darwin router in routers.ts (croDashboardStats, croResearchQueue, croPromotionGates, croRejectionRegistry, croWorkLog, croCroReports, enqueueResearch, rejectResearch, triggerCroDaily, triggerCroReport)
+- [x] Build DarwinCRO.tsx page (/darwin-cro) with 10 panels: Stats, Research Queue, Promotion Gates, Rejection Registry, Work Log, CRO Reports, Portfolio Gaps, ERV Chart, Manual Enqueue, Trigger Controls
+- [x] Add DARWIN CRO nav entry to PORTFOLIO section in OrionLayout.tsx
+- [x] Add /darwin-cro lazy route to App.tsx
+- [x] Wire recursive learning hook in processLiveBar() — reprioritiseQueue() fires every 20th bar (fire-and-forget)
+- [x] Write darwinCroEngine.test.ts — 17 new tests (ERV calculation, promotion gate thresholds, portfolio gap analysis, rejection reason codes, work log structure)
+- [x] All 53 tests pass (5 test files)
+- [x] TypeScript: 0 errors
+- [x] Checkpoint saved (version: sprint-101)
+- [ ] Register darwin-cro-daily and darwin-cro-weekly Heartbeat cron jobs via /autonomous dashboard (requires owner login)
+- [ ] First daily CRO run will auto-populate research queue from existing DARWIN candidates

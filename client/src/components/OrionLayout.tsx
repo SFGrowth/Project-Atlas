@@ -77,6 +77,7 @@ const NAV_GROUPS = [
     items: [
       { icon: Layers, label: "Portfolio (PIE)", path: "/portfolio" },
       { icon: Dna, label: "DARWIN Research", path: "/darwin" },
+      { icon: FlaskConical, label: "DARWIN CRO", path: "/darwin-cro" },
       { icon: Cpu, label: "Autonomous Ops", path: "/autonomous" },
       { icon: ShieldCheck, label: "Live Learning Cert", path: "/live-learning" },
     ],
