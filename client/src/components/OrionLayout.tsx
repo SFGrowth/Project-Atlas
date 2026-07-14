@@ -35,6 +35,8 @@ const NAV_GROUPS = [
       { icon: AlertTriangle, label: "TVL", path: "/tvl" },
       { icon: ScanLine, label: "Pipeline Monitor", path: "/pipeline-monitor" },
       { icon: BarChart3, label: "Portfolio Intelligence", path: "/portfolio-intelligence" },
+      { icon: Target, label: "Portfolio Coverage", path: "/portfolio-coverage" },
+      { icon: FlaskConical, label: "DARWIN Discovery", path: "/darwin-discovery" },
     ],
   },
   {

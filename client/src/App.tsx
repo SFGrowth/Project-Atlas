@@ -42,6 +42,8 @@ const LiveLearningPage = lazy(() => import("./pages/LiveLearningDashboard"));
 const ExecutivePortfolioPage = lazy(() => import("./pages/ExecutivePortfolio"));
 const PipelineMonitorPage = lazy(() => import("./pages/PipelineMonitor"));
 const PortfolioIntelligencePage = lazy(() => import("./pages/PortfolioIntelligence"));
+const PortfolioCoveragePage = lazy(() => import("./pages/PortfolioCoverage"));
+const DarwinDiscoveryPage = lazy(() => import("./pages/DarwinDiscovery"));
 
 function PageLoader() {
   return (
@@ -93,6 +95,8 @@ function Router() {
           <Route path="/executive-portfolio" component={ExecutivePortfolioPage} />
           <Route path="/pipeline-monitor" component={PipelineMonitorPage} />
           <Route path="/portfolio-intelligence" component={PortfolioIntelligencePage} />
+          <Route path="/portfolio-coverage" component={PortfolioCoveragePage} />
+          <Route path="/darwin-discovery" component={DarwinDiscoveryPage} />
           <Route path="/404" component={NotFound} />
           <Route component={NotFound} />
         </Switch>

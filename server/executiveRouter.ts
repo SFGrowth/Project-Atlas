@@ -5,6 +5,9 @@
 
 import { z } from "zod";
 import { publicProcedure, router } from "./_core/trpc";
+import { getDb } from "./db";
+import { strategyRegistry, darwinCandidates, ardCandidates, marketLaws, behaviourLibrary, atlasMemory } from "../drizzle/schema";
+import { eq, desc, sql, and, gte, isNotNull } from "drizzle-orm";
 
 // ── Gap coverage data (static from Sprint 103 institutional knowledge) ─────────
 const GAP_COVERAGE = [
@@ -964,4 +967,305 @@ export const executiveRouter = router({
         return null;
       }
     }),
+
+  // ── Sprint 105: Live Portfolio Coverage ──────────────────────────────────
+  portfolioCoverage: publicProcedure.query(async () => {
+    try {
+      const db = await getDb();
+      if (!db) return null;
+      // Get live regime distribution from atlas_memory
+      const regimeRows = await db.execute(
+        sql`SELECT regime_classification as regime, COUNT(*) as cnt FROM atlas_memory WHERE bar_time > 1000000000000 GROUP BY regime_classification`
+      ) as unknown as Array<{regime: string; cnt: number}>;
+      const total = regimeRows.reduce((s, r) => s + Number(r.cnt), 0);
+      const regimeMap: Record<string, number> = {};
+      for (const r of regimeRows) regimeMap[r.regime || 'NULL'] = Number(r.cnt);
+
+      const trending = (regimeMap['TRENDING_BULL'] || 0) + (regimeMap['TRENDING_BEAR'] || 0) + (regimeMap['TRENDING'] || 0);
+      const choppy = (regimeMap['CHOPPY'] || 0) + (regimeMap['RANGE'] || 0) + (regimeMap['COMPRESSED'] || 0);
+      const volatile = regimeMap['VOLATILE'] || 0;
+      const transitional = (regimeMap['TRANSITION'] || 0) + (regimeMap['TRANSITIONAL'] || 0);
+      const uncovered = choppy + transitional;
+
+      return {
+        totalBars: total,
+        regimeDistribution: regimeMap,
+        coverage: [
+          { regime: 'TRENDING', bars: trending, pct: total > 0 ? (trending/total*100) : 0, covered: true, models: ['A1','A3','B1','SB1'] },
+          { regime: 'VOLATILE', bars: volatile, pct: total > 0 ? (volatile/total*100) : 0, covered: true, models: ['ORB-1'] },
+          { regime: 'CHOPPY/RANGE', bars: choppy, pct: total > 0 ? (choppy/total*100) : 0, covered: false, models: [], candidates: ['RC-002 (REDESIGN)', 'RC-006 (REFINEMENT)'] },
+          { regime: 'TRANSITIONAL', bars: transitional, pct: total > 0 ? (transitional/total*100) : 0, covered: false, models: [], candidates: ['RC-NEW-003 (HYPOTHESIS)'] },
+        ],
+        coveredBars: trending + volatile,
+        uncoveredBars: uncovered,
+        coveragePct: total > 0 ? ((trending + volatile) / total * 100) : 0,
+        portfolioGapSeverity: uncovered / total > 0.6 ? 'CRITICAL' : uncovered / total > 0.4 ? 'HIGH' : 'MODERATE',
+      };
+    } catch (err) {
+      console.error('[executive.portfolioCoverage] Error:', err);
+      return null;
+    }
+  }),
+
+  // ── Sprint 105: Candidate Registry ───────────────────────────────────────
+  candidateRegistry: publicProcedure.query(async () => {
+    try {
+      const db = await getDb();
+      if (!db) return null;
+      const srRows = await db.select({
+        strategyId: strategyRegistry.strategyId,
+        name: strategyRegistry.name,
+        stage: strategyRegistry.stage,
+        regime: strategyRegistry.regime,
+        session: strategyRegistry.session,
+        historicalWinRate: strategyRegistry.historicalWinRate,
+        historicalProfitFactor: strategyRegistry.historicalProfitFactor,
+        historicalTradeCount: strategyRegistry.historicalTradeCount,
+        pcsScore: strategyRegistry.pcsScore,
+        confidenceScore: strategyRegistry.confidenceScore,
+        recommendation: strategyRegistry.recommendation,
+        notes: strategyRegistry.notes,
+      }).from(strategyRegistry).orderBy(desc(strategyRegistry.pcsScore));
+
+      const dcRows = await db.select({
+        candidateId: darwinCandidates.candidateId,
+        behaviourClass: darwinCandidates.behaviourClass,
+        behaviourDescription: darwinCandidates.behaviourDescription,
+        occurrenceCount: darwinCandidates.occurrenceCount,
+        confidence: darwinCandidates.confidence,
+        estimatedWinRate: darwinCandidates.estimatedWinRate,
+        estimatedPf: darwinCandidates.estimatedPf,
+        estimatedPcs: darwinCandidates.estimatedPcs,
+        governanceStage: darwinCandidates.governanceStage,
+        researchPriority: darwinCandidates.researchPriority,
+        supportingRegimes: darwinCandidates.supportingRegimes,
+        supportingSessions: darwinCandidates.supportingSessions,
+      }).from(darwinCandidates).orderBy(darwinCandidates.researchPriority);
+
+      const mlRows = await db.select({
+        lawId: marketLaws.lawId,
+        title: marketLaws.title,
+        confidenceScore: marketLaws.confidenceScore,
+        admissionStatus: marketLaws.admissionStatus,
+        liveObservationsConsistent: marketLaws.liveObservationsConsistent,
+        liveObservationsContradicting: marketLaws.liveObservationsContradicting,
+      }).from(marketLaws).orderBy(desc(marketLaws.confidenceScore));
+
+      const blRows = await db.select({
+        behaviourId: behaviourLibrary.behaviourId,
+        behaviourName: behaviourLibrary.behaviourName,
+        totalObservations: behaviourLibrary.totalObservations,
+        continuationRate: behaviourLibrary.continuationRate,
+        regimeBreakdown: behaviourLibrary.regimeBreakdown,
+      }).from(behaviourLibrary).orderBy(desc(behaviourLibrary.totalObservations));
+
+      const production = srRows.filter(r => r.stage === 'PRODUCTION');
+      const paper = srRows.filter(r => r.stage === 'PAPER');
+      const candidates = srRows.filter(r => r.stage === 'CANDIDATE');
+      const hypotheses = srRows.filter(r => r.stage === 'HYPOTHESIS');
+      const rejected = srRows.filter(r => r.stage === 'REJECTED' || r.stage === 'ARCHIVED');
+
+      return {
+        summary: {
+          production: production.length,
+          paper: paper.length,
+          candidates: candidates.length,
+          hypotheses: hypotheses.length,
+          rejected: rejected.length,
+          darwinHypotheses: dcRows.filter(r => r.governanceStage === 'HYPOTHESIS').length,
+          marketLaws: mlRows.length,
+          behaviours: blRows.length,
+        },
+        production,
+        paper,
+        candidates,
+        hypotheses,
+        rejected,
+        darwinCandidates: dcRows,
+        marketLaws: mlRows,
+        behaviourLibrary: blRows,
+      };
+    } catch (err) {
+      console.error('[executive.candidateRegistry] Error:', err);
+      return null;
+    }
+  }),
+
+  // ── Sprint 105: DARWIN Discovery Status ──────────────────────────────────
+  darwinDiscovery: publicProcedure.query(async () => {
+    try {
+      const db = await getDb();
+      if (!db) return null;
+      const dcRows = await db.select().from(darwinCandidates).orderBy(darwinCandidates.researchPriority);
+      const mlRows = await db.select().from(marketLaws).orderBy(desc(marketLaws.confidenceScore));
+      const blRows = await db.select().from(behaviourLibrary).orderBy(desc(behaviourLibrary.totalObservations));
+
+      // Compute live law validation from atlas_memory
+      const [lawValidation] = await db.execute(
+        sql`SELECT COUNT(*) as total_bars, SUM(CASE WHEN a1_eligible OR a3_eligible OR b1_eligible OR sb1_eligible THEN 1 ELSE 0 END) as compound_signal_bars FROM atlas_memory WHERE bar_time > 1000000000000`
+      ) as unknown as Array<{total_bars: number; compound_signal_bars: number}>;
+
+      return {
+        darwinCandidates: dcRows.map(c => ({
+          ...c,
+          confidence: c.confidence ? Number(c.confidence) : null,
+          estimatedPcs: c.estimatedPcs ? Number(c.estimatedPcs) : null,
+          estimatedWinRate: c.estimatedWinRate ? Number(c.estimatedWinRate) : null,
+          estimatedPf: c.estimatedPf ? Number(c.estimatedPf) : null,
+        })),
+        marketLaws: mlRows.map(l => ({
+          ...l,
+          confidenceScore: Number(l.confidenceScore),
+        })),
+        behaviourLibrary: blRows.map(b => ({
+          ...b,
+          continuationRate: b.continuationRate ? Number(b.continuationRate) : null,
+        })),
+        liveValidation: {
+          totalBars: lawValidation ? Number(lawValidation.total_bars) : 0,
+          compoundSignalBars: lawValidation ? Number(lawValidation.compound_signal_bars) : 0,
+          ml001LiveSupport: lawValidation && Number(lawValidation.total_bars) > 0
+            ? (Number(lawValidation.compound_signal_bars) / Number(lawValidation.total_bars) * 100).toFixed(1)
+            : '0',
+        },
+      };
+    } catch (err) {
+      console.error('[executive.darwinDiscovery] Error:', err);
+      return null;
+    }
+  }),
+
+  // ── Sprint 105: Weekly Executive Report ──────────────────────────────────
+  weeklyReport: publicProcedure.query(async () => {
+    try {
+      const db = await getDb();
+      if (!db) return null;
+      const now = Date.now();
+      const day7 = now - 7 * 24 * 60 * 60 * 1000;
+
+      const [ptRows] = await db.execute(
+        sql`SELECT model, pnl, opened_at, direction FROM paper_trades WHERE provenance = 'PAPER' AND opened_at >= ${new Date(day7)}`
+      ) as unknown as [Array<{model: string; pnl: number; opened_at: Date; direction: string}>];
+
+      const [sb1Rows] = await db.execute(
+        sql`SELECT pnl, opened_at, direction FROM sb1_paper_trades WHERE provenance = 'PAPER' AND opened_at >= ${new Date(day7)}`
+      ) as unknown as [Array<{pnl: number; opened_at: Date; direction: string}>];
+
+      const allTrades = [
+        ...ptRows.map(r => ({ model: r.model, pnl: Number(r.pnl), direction: r.direction })),
+        ...sb1Rows.map(r => ({ model: 'SB1', pnl: Number(r.pnl), direction: r.direction })),
+      ];
+
+      const wins = allTrades.filter(t => t.pnl > 0);
+      const losses = allTrades.filter(t => t.pnl <= 0);
+      const netPnl = allTrades.reduce((s, t) => s + t.pnl, 0);
+      const grossProfit = wins.reduce((s, t) => s + t.pnl, 0);
+      const grossLoss = Math.abs(losses.reduce((s, t) => s + t.pnl, 0));
+
+      // Bar stats for the week
+      const [barStats] = await db.execute(
+        sql`SELECT COUNT(*) as total_bars, SUM(CASE WHEN regime_classification = 'CHOPPY' OR regime_classification = 'COMPRESSED' THEN 1 ELSE 0 END) as choppy_bars, SUM(CASE WHEN regime_classification LIKE 'TRENDING%' THEN 1 ELSE 0 END) as trending_bars FROM atlas_memory WHERE bar_time >= ${day7} AND bar_time > 1000000000000`
+      ) as unknown as [Array<{total_bars: number; choppy_bars: number; trending_bars: number}>];
+
+      const bs = barStats[0] || { total_bars: 0, choppy_bars: 0, trending_bars: 0 };
+
+      return {
+        period: '7d',
+        generatedAt: now,
+        trades: {
+          total: allTrades.length,
+          wins: wins.length,
+          losses: losses.length,
+          winRate: allTrades.length > 0 ? (wins.length / allTrades.length * 100) : 0,
+          netPnl,
+          profitFactor: grossLoss > 0 ? grossProfit / grossLoss : wins.length > 0 ? 999 : 0,
+        },
+        bars: {
+          total: Number(bs.total_bars),
+          choppy: Number(bs.choppy_bars),
+          trending: Number(bs.trending_bars),
+        },
+        perModel: ['A1', 'A3', 'B1', 'SB1', 'ORB-1'].map(model => {
+          const mt = allTrades.filter(t => t.model === model);
+          const mw = mt.filter(t => t.pnl > 0);
+          return {
+            model,
+            trades: mt.length,
+            wins: mw.length,
+            netPnl: mt.reduce((s, t) => s + t.pnl, 0),
+          };
+        }),
+      };
+    } catch (err) {
+      console.error('[executive.weeklyReport] Error:', err);
+      return null;
+    }
+  }),
+
+  // ── Sprint 105: Monthly Executive Report ─────────────────────────────────
+  monthlyReport: publicProcedure.query(async () => {
+    try {
+      const db = await getDb();
+      if (!db) return null;
+      const now = Date.now();
+      const day30 = now - 30 * 24 * 60 * 60 * 1000;
+
+      const [ptRows] = await db.execute(
+        sql`SELECT model, pnl, opened_at, direction FROM paper_trades WHERE provenance = 'PAPER' AND opened_at >= ${new Date(day30)}`
+      ) as unknown as [Array<{model: string; pnl: number; opened_at: Date; direction: string}>];
+
+      const [sb1Rows] = await db.execute(
+        sql`SELECT pnl, opened_at, direction FROM sb1_paper_trades WHERE provenance = 'PAPER' AND opened_at >= ${new Date(day30)}`
+      ) as unknown as [Array<{pnl: number; opened_at: Date; direction: string}>];
+
+      const allTrades = [
+        ...ptRows.map(r => ({ model: r.model, pnl: Number(r.pnl), direction: r.direction })),
+        ...sb1Rows.map(r => ({ model: 'SB1', pnl: Number(r.pnl), direction: r.direction })),
+      ];
+
+      const wins = allTrades.filter(t => t.pnl > 0);
+      const losses = allTrades.filter(t => t.pnl <= 0);
+      const netPnl = allTrades.reduce((s, t) => s + t.pnl, 0);
+      const grossProfit = wins.reduce((s, t) => s + t.pnl, 0);
+      const grossLoss = Math.abs(losses.reduce((s, t) => s + t.pnl, 0));
+
+      const [barStats] = await db.execute(
+        sql`SELECT COUNT(*) as total_bars, SUM(CASE WHEN regime_classification = 'CHOPPY' OR regime_classification = 'COMPRESSED' THEN 1 ELSE 0 END) as choppy_bars, SUM(CASE WHEN regime_classification LIKE 'TRENDING%' THEN 1 ELSE 0 END) as trending_bars, SUM(CASE WHEN regime_classification = 'VOLATILE' THEN 1 ELSE 0 END) as volatile_bars FROM atlas_memory WHERE bar_time >= ${day30} AND bar_time > 1000000000000`
+      ) as unknown as [Array<{total_bars: number; choppy_bars: number; trending_bars: number; volatile_bars: number}>];
+
+      const bs = barStats[0] || { total_bars: 0, choppy_bars: 0, trending_bars: 0, volatile_bars: 0 };
+
+      return {
+        period: '30d',
+        generatedAt: now,
+        trades: {
+          total: allTrades.length,
+          wins: wins.length,
+          losses: losses.length,
+          winRate: allTrades.length > 0 ? (wins.length / allTrades.length * 100) : 0,
+          netPnl,
+          profitFactor: grossLoss > 0 ? grossProfit / grossLoss : wins.length > 0 ? 999 : 0,
+        },
+        bars: {
+          total: Number(bs.total_bars),
+          choppy: Number(bs.choppy_bars),
+          trending: Number(bs.trending_bars),
+          volatile: Number(bs.volatile_bars),
+        },
+        perModel: ['A1', 'A3', 'B1', 'SB1', 'ORB-1'].map(model => {
+          const mt = allTrades.filter(t => t.model === model);
+          const mw = mt.filter(t => t.pnl > 0);
+          return {
+            model,
+            trades: mt.length,
+            wins: mw.length,
+            netPnl: mt.reduce((s, t) => s + t.pnl, 0),
+          };
+        }),
+      };
+    } catch (err) {
+      console.error('[executive.monthlyReport] Error:', err);
+      return null;
+    }
+  }),
 });

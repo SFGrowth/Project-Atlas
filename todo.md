@@ -704,3 +704,19 @@
 - [x] Support today/7d/30d/all-time windows per model
 - [x] Risk profile selector: $450 (Prop), $1,650 (Live), custom
 - [x] Display: trades, WR, PF, net P&L$, net P&L R, avg win, avg loss, drawdown, streak, eligibility
+
+## Sprint 105 — Portfolio Intelligence & DARWIN Expansion
+
+- [x] Institutional knowledge audit: strategy registry, market laws, behaviour library, DARWIN candidates
+- [x] Portfolio gap analysis against 280 live bars: regime distribution, session distribution, coverage %
+- [x] Candidate registry review: promotion assessment for all active candidates
+- [x] Add `executive.portfolioCoverage` tRPC procedure — live regime distribution vs coverage
+- [x] Add `executive.candidateRegistry` tRPC procedure — full registry + DARWIN + laws + behaviours
+- [x] Add `executive.darwinDiscovery` tRPC procedure — DARWIN research status + live ML-001 validation
+- [x] Add `executive.weeklyReport` tRPC procedure — 7d performance (PAPER provenance only)
+- [x] Add `executive.monthlyReport` tRPC procedure — 30d performance (PAPER provenance only)
+- [x] Build `/portfolio-coverage` page — live coverage map, regime distribution, strategy pipeline
+- [x] Build `/darwin-discovery` page — DARWIN research status, behaviour library, market laws
+- [x] Register 5 new DARWIN hypotheses: H001 CHOPPY_RANGE_MEAN_REVERSION, H002 TRANSITIONAL_BREAKOUT_FADE, H003 LUNCH_COMPRESSION_BREAKOUT, H004 VOLATILE_ORB_EXTENSION, H005 OV_SESSION_VWAP_ANCHOR
+- [x] Write Sprint 105 closure report with all 9 executive questions answered
+- [x] Commit to Project-Atlas (commit 8b9f7e6)
