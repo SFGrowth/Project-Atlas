@@ -410,11 +410,11 @@ export default function TradersPost() {
               TRADERSPOST
             </h1>
             <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.15em", color: "var(--color-muted-foreground)", border: "1px solid oklch(0.30 0.05 220)", borderRadius: 3, padding: "2px 6px" }}>
-              SPRINT 113
+              SPRINT 114
             </span>
           </div>
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--color-muted-foreground)", letterSpacing: "0.05em" }}>
-            Multi-strategy alert dispatch — A1 · A3 · B1 · S109-001
+            Unified ADE portfolio dispatch — A1 · A3 · B1 · SB1 · ORB-1 · S109-001
           </div>
         </div>
         <button
@@ -464,8 +464,8 @@ export default function TradersPost() {
         <Shield size={13} style={{ color: "var(--arc-blue)", flexShrink: 0, marginTop: 1 }} />
         <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--color-muted-foreground)", lineHeight: 1.6 }}>
           <strong style={{ color: "oklch(0.75 0.10 220)" }}>Safety gates active on all dispatches:</strong>{" "}
-          Single-active-strategy rule · Safety lockout check · S109-001 requires PRE_LIVE_GATE pass.
-          Disarmed strategies are silently bypassed — no alert is sent to TradersPost.
+          Single-active-strategy rule · Safety lockout check · Armed gate (DISARMED = silent bypass).
+          All 6 strategies compete through the unified ADE ranking — only the highest-scoring eligible strategy dispatches per bar.
         </div>
       </div>
 

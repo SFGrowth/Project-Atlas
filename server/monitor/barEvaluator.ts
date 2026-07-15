@@ -15,6 +15,7 @@
 import { getDb } from "../db.js";
 import { monitorEvaluations, atlasMemory } from "../../drizzle/schema.js";
 import { desc, eq, lt, and, gt } from "drizzle-orm";
+import { evaluateS109001Signal } from "../wfDb.js";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -38,6 +39,11 @@ export interface BarRow {
   activeModels: string | null;
   atr: string | null;
   atr5: string | null;
+  // S109-001 fields
+  vwap: string | null;
+  rsi: string | null;
+  trendDirection: string | null;  // BULLISH/BEARISH/NEUTRAL — used as OV inventory proxy for S109-001
+  ema9Slope: string | null;
 }
 
 export interface EvaluationResult {
@@ -65,6 +71,9 @@ export interface EvaluationResult {
   b1Eligible: boolean;
   b1Reason: string;
   activeModels: string;
+  // S109-001 eligibility (evaluated server-side from bar data)
+  s109Eligible: boolean;
+  s109Reason: string;
   // Signal (populated by paperTradeEngine if a signal fires)
   signalModel: string | null;
   signalDirection: string | null;
@@ -311,6 +320,36 @@ export async function evaluate(bar: BarRow): Promise<EvaluationResult> {
   const sb1 = evaluateSB1(bar);
   const orb1 = evaluateORB1(bar);
 
+  // Evaluate S109-001 using the frozen DARWIN signal logic
+  const close109 = parseFloat(bar.close ?? "0");
+  const vwap109 = parseFloat(bar.vwap ?? "0");
+  const atr109 = parseFloat(bar.atr ?? "0");
+  const rsi109 = parseFloat(bar.rsi ?? "0");
+  const ema9Slope109 = parseFloat(bar.ema9Slope ?? "0");
+  // Derive ovInventory from trendDirection (same proxy used in the legacy S109-001 pipeline)
+  const ovInv109: "LONG" | "SHORT" | "NEUTRAL" =
+    bar.trendDirection === "BULLISH" ? "LONG" :
+    bar.trendDirection === "BEARISH" ? "SHORT" : "NEUTRAL";
+  const session109 = bar.session ?? "OV";
+  let s109Eligible = false;
+  let s109Reason = "NOT_EVALUATED";
+  if (close109 > 0 && vwap109 > 0 && atr109 > 0) {
+    const s109 = evaluateS109001Signal({
+      barTimeEt: bar.barTimeEt ?? "",
+      tradeDate: "",
+      session: session109,
+      regime: bar.regimeClassification ?? "UNKNOWN",
+      close: close109,
+      vwap: vwap109,
+      atr14: atr109,
+      vwapSlope3Bar: ema9Slope109,
+      rsi14: rsi109,
+      ovInventory: ovInv109,
+    });
+    s109Eligible = s109.hasSignal;
+    s109Reason = s109.reason;
+  }
+
   // Build active models list
   const activeList: string[] = [];
   if (a1.eligible) activeList.push("A1");
@@ -318,6 +357,7 @@ export async function evaluate(bar: BarRow): Promise<EvaluationResult> {
   if (b1.eligible) activeList.push("B1");
   if (sb1.eligible) activeList.push("SB1");
   if (orb1.eligible) activeList.push("ORB-1");
+  if (s109Eligible) activeList.push("S109-001");
 
   const result: EvaluationResult = {
     barTime: bar.barTime ?? 0,
@@ -342,6 +382,8 @@ export async function evaluate(bar: BarRow): Promise<EvaluationResult> {
     b1Eligible: b1.eligible,
     b1Reason: b1.reason,
     activeModels: activeList.join(","),
+    s109Eligible,
+    s109Reason,
     signalModel: null,
     signalDirection: null,
     atlasMemoryId: bar.id,
@@ -377,6 +419,10 @@ export async function evaluate(bar: BarRow): Promise<EvaluationResult> {
     signalDirection: null,
     atlasMemoryId: result.atlasMemoryId,
   });
+
+  // Attach S109 fields to result after insert
+  result.s109Eligible = s109Eligible;
+  result.s109Reason = s109Reason;
 
   return result;
 }

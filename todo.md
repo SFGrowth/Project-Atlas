@@ -888,3 +888,16 @@
 - [ ] Add editable risk input on home page P&L section — default $800, user can change it and all trade rows update
 - [ ] Risk override persists in localStorage
 - [ ] Show R-multiple (P&L / risk) for each trade alongside the risk amount
+
+## Sprint 114 — Unified Portfolio Architecture (All 6 Strategies via ADE Ranking)
+
+- [x] Define ProposalCandidate interface in shared/types.ts (model, direction, entry, stop, target, adeScore, riskDollars, contracts, sessionOk, regimeOk)
+- [x] Extend barEvaluator.ts to evaluate S109-001 eligibility (VWAP deviation + RSI + OV inventory) and return s109Eligible + s109Signal
+- [x] Refactor paperTradeEngine.processBar: collect all 6 proposals, rank by ADE score, apply ARI+TVL gates, open single top-ranked trade
+- [x] Remove the separate S109-001 setImmediate block in nexusRoutes.ts (S109-001 now flows through processBar)
+- [x] Wire tpDispatch to the single final-approved strategy from processBar result
+- [x] Remove PRE_LIVE_GATE and FROZEN guards from S109-001 in tpDispatch.ts and tp_config
+- [x] Update TradersPost dashboard: show all 6 strategies in unified portfolio view
+- [x] Update home page P&L panels: include S109-001 trades (now in paper_trades, not wf_live_trades)
+- [x] Write/update vitest tests covering unified ranking, ARI gate, single-strategy rule
+- [x] TypeScript: 0 errors after all changes

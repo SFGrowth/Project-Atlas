@@ -22,6 +22,7 @@ import {
 } from "../../drizzle/schema.js";
 import { eq, and, isNull, desc } from "drizzle-orm";
 import { recordSignal, EvaluationResult } from "./barEvaluator.js";
+import { evaluateS109001Signal } from "../wfDb.js";
 import { v4 as uuidv4 } from "uuid";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -59,6 +60,11 @@ export interface BarData {
   atr: string | null;
   atr5: string | null;
   pipelineRunId: string | null;
+  // S109-001 fields (from atlas_memory)
+  vwap?: string | null;
+  rsi?: string | null;
+  trendDirection?: string | null;
+  ema9Slope?: string | null;
 }
 
 export interface TradeSignal {
@@ -521,38 +527,116 @@ export async function processBar(
   const positionOpen = await hasOpenPosition();
 
   if (!positionOpen && evaluation.integrityOk && barClose > 1000) { // DEF-001: reject bars with implausible close price
-    // Priority order: A1 > A3 > SB1 > ORB-1 > B1
-    const eligibleModels: string[] = [];
-    if (evaluation.a1Eligible) eligibleModels.push("A1");
-    if (evaluation.a3Eligible) eligibleModels.push("A3");
-    if (evaluation.sb1Eligible) eligibleModels.push("SB1");
-    if (evaluation.orb1Eligible) eligibleModels.push("ORB-1");
-    if (evaluation.b1Eligible) eligibleModels.push("B1");
+    // ── ADE Unified Ranking ───────────────────────────────────────────────────
+    // Build proposals for all eligible models. Score each on conviction.
+    // Highest score wins — no hard-coded priority.
+    interface Proposal {
+      model: string;
+      signal: TradeSignal;
+      adeScore: number;
+    }
+    const proposals: Proposal[] = [];
 
-    if (eligibleModels.length > 0) {
-      // Take the highest-priority eligible model
-      const chosenModel = eligibleModels[0];
+    const adx = parseFloat(bar.adx ?? "0");
+
+    // A1 — ADX-based score (trend strength)
+    if (evaluation.a1Eligible) {
+      const sig = deriveSignal(bar, "A1", evaluation);
+      if (sig) proposals.push({ model: "A1", signal: sig, adeScore: adx });
+    }
+
+    // A3 — ADX-based score (same regime, slightly lower base)
+    if (evaluation.a3Eligible) {
+      const sig = deriveSignal(bar, "A3", evaluation);
+      if (sig) proposals.push({ model: "A3", signal: sig, adeScore: adx * 0.95 });
+    }
+
+    // SB1 — RAS activation score (sb1Ras from evaluation, default 50)
+    if (evaluation.sb1Eligible) {
+      const sig = deriveSignal(bar, "SB1", evaluation);
+      if (sig) proposals.push({ model: "SB1", signal: sig, adeScore: 50 });
+    }
+
+    // ORB-1 — volatility expansion score (ATR expansion proxy)
+    if (evaluation.orb1Eligible) {
+      const sig = deriveSignal(bar, "ORB-1", evaluation);
+      if (sig) proposals.push({ model: "ORB-1", signal: sig, adeScore: 45 });
+    }
+
+    // B1 — baseline (lowest priority, score 1.0)
+    if (evaluation.b1Eligible) {
+      const sig = deriveSignal(bar, "B1", evaluation);
+      if (sig) proposals.push({ model: "B1", signal: sig, adeScore: 1.0 });
+    }
+
+    // S109-001 — VWAP deviation magnitude as ADE score
+    if (evaluation.s109Eligible) {
+      const close109 = parseFloat(bar.close ?? "0");
+      const vwap109 = parseFloat(bar.vwap ?? "0");
+      const atr109 = parseFloat(bar.atr ?? "0");
+      const rsi109 = parseFloat(bar.rsi ?? "0");
+      const ema9Slope109 = parseFloat(bar.ema9Slope ?? "0");
+      const ovInv109: "LONG" | "SHORT" | "NEUTRAL" =
+        bar.trendDirection === "BULLISH" ? "LONG" :
+        bar.trendDirection === "BEARISH" ? "SHORT" : "NEUTRAL";
+      if (close109 > 0 && vwap109 > 0 && atr109 > 0) {
+        const s109 = evaluateS109001Signal({
+          barTimeEt: bar.barTimeEt ?? "",
+          tradeDate: "",
+          session: bar.session ?? "OV",
+          regime: bar.regimeClassification ?? "UNKNOWN",
+          close: close109,
+          vwap: vwap109,
+          atr14: atr109,
+          vwapSlope3Bar: ema9Slope109,
+          rsi14: rsi109,
+          ovInventory: ovInv109,
+        });
+        if (s109.hasSignal && s109.direction && s109.entryPrice != null) {
+          const stopDist = Math.abs(s109.entryPrice - (s109.stopPrice ?? s109.entryPrice));
+          const contracts = Math.max(1, Math.floor(DEFAULT_RISK / (stopDist * MNQ_POINT_VALUE)));
+          const s109Signal: TradeSignal = {
+            model: "S109-001",
+            direction: s109.direction,
+            entry: s109.entryPrice,
+            stop: s109.stopPrice ?? s109.entryPrice - atr109 * 2.5,
+            target: s109.targetPrice ?? s109.entryPrice + atr109 * 2.0,
+            riskDollars: DEFAULT_RISK,
+            contracts,
+          };
+          // ADE score = VWAP deviation in ATR units (higher deviation = higher conviction)
+          const adeScore = Math.abs(s109.vwapDeviation) / atr109 * 100;
+          proposals.push({ model: "S109-001", signal: s109Signal, adeScore });
+        }
+      }
+    }
+
+    if (proposals.length > 0) {
+      // Sort by ADE score descending — highest conviction wins
+      proposals.sort((a, b) => b.adeScore - a.adeScore);
+      const winner = proposals[0];
+      const chosenModel = winner.model;
+      const signal = winner.signal;
+
       signalFired = true;
       signalModel = chosenModel;
+      signalDirection = signal.direction;
+      signalEntry = signal.entry;
+      signalStop = signal.stop;
+      signalTarget = signal.target;
 
-      const signal = deriveSignal(bar, chosenModel, evaluation);
-      if (signal) {
-        signalDirection = signal.direction;
-        signalEntry = signal.entry;
-        signalStop = signal.stop;
-        signalTarget = signal.target;
-        const tradeId = await openTrade(signal, bar);
-        tradeOpened = true;
+      const tradeId = await openTrade(signal, bar);
+      tradeOpened = true;
 
-        // Record signal on the evaluation row
-        await recordSignal(bar.id, chosenModel, signal.direction);
+      // Record signal on the evaluation row
+      await recordSignal(bar.id, chosenModel, signal.direction);
 
-        console.log(
-          `[paperTradeEngine] SIGNAL: ${chosenModel} ${signal.direction} ` +
-          `entry=${signal.entry.toFixed(2)} stop=${signal.stop.toFixed(2)} ` +
-          `target=${signal.target.toFixed(2)} contracts=${signal.contracts}`
-        );
-      }
+      console.log(
+        `[paperTradeEngine] ADE WINNER: ${chosenModel} score=${winner.adeScore.toFixed(1)} ` +
+        `${signal.direction} entry=${signal.entry.toFixed(2)} stop=${signal.stop.toFixed(2)} ` +
+        `target=${signal.target.toFixed(2)} contracts=${signal.contracts} ` +
+        `(${proposals.length} candidate${proposals.length > 1 ? 's' : ''})`
+      );
     }
   }
 

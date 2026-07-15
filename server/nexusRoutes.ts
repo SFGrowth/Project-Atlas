@@ -1070,6 +1070,11 @@ export function registerNexusRoutes(router: Router) {
             atr: mem.atr ?? null,
             atr5: mem.atr5 ?? null,
             pipelineRunId: mem.pipelineRunId ?? null,
+            // S109-001 fields
+            vwap: mem.vwap ?? null,
+            rsi: mem.rsi ?? null,
+            trendDirection: mem.trendDirection ?? null,
+            ema9Slope: mem.ema9Slope ?? null,
           };
           const evaluation = await evaluate(barRow);
           const processBarResult = await processBar(barRow, evaluation);
@@ -1216,106 +1221,9 @@ export function registerNexusRoutes(router: Router) {
           console.error("[LIVE LEARN] processLiveBar error:", leErr);
         }
       });
-      // ── Sprint 111: Trigger S109-001 Walk-Forward Signal Evaluation (non-blocking) ──
-      setImmediate(async () => {
-        try {
-          const { evaluateS109001Signal, evaluateOpenTradeExit, createWfLiveTrade, getOpenWfTrade, closeWfTrade, S109_BENCHMARK } = await import("./wfDb");
-          // Only evaluate RTH bars
-          if (mem.session !== "RTH" && mem.session !== "AM_OPEN" && mem.session !== "PM_CLOSE") return;
-          const close = mem.close != null ? Number(mem.close) : null;
-          const vwap = mem.vwap != null ? Number(mem.vwap) : null;
-          const atr14 = mem.atr != null ? Number(mem.atr) : null;
-          const rsi14 = mem.rsi != null ? Number(mem.rsi) : null;
-          if (close == null || vwap == null || atr14 == null || rsi14 == null) return;
-          // Derive VWAP slope from ema9 as proxy (slope = ema9 - close / atr)
-          const vwapSlope3Bar = mem.ema9 != null ? (Number(mem.ema9) - close) / atr14 : 0;
-          // Derive OV inventory from trendDirection
-          const ovInventory: "LONG" | "SHORT" | "NEUTRAL" =
-            mem.trendDirection === "BULLISH" ? "LONG" :
-            mem.trendDirection === "BEARISH" ? "SHORT" : "NEUTRAL";
-          const etDateStr = mem.barTimeEt ? mem.barTimeEt.split(" ")[0] : new Date(barTimeMs - 4 * 3600 * 1000).toISOString().split("T")[0];
-          const barData = {
-            barTimeEt: mem.barTimeEt ?? "",
-            tradeDate: etDateStr,
-            session: "RTH",
-            regime: mem.regimeClassification ?? "UNKNOWN",
-            close, vwap, atr14, vwapSlope3Bar, rsi14, ovInventory,
-            pipelineRunId: mem.pipelineRunId ?? undefined,
-            atlasMemoryBarId: typeof memoryId === "string" ? parseInt(memoryId, 10) : (memoryId as number),
-          };
-          // Check open trade exit first
-          const openTrade = await getOpenWfTrade();
-          if (openTrade) {
-            const openedAt = new Date(openTrade.openedAt).getTime();
-            const barsSinceEntry = Math.floor((barTimeMs - openedAt) / (5 * 60 * 1000));
-            const exitEval = evaluateOpenTradeExit(openTrade, barData, barsSinceEntry);
-            if (exitEval?.shouldClose) {
-              const entry = Number(openTrade.entryPrice ?? 0);
-              const stopDist = Math.abs(entry - Number(openTrade.stopPrice ?? entry));
-              const pnlPoints = openTrade.direction === "LONG" ? exitEval.exitPrice - entry : entry - exitEval.exitPrice;
-              const pnlDollar = stopDist > 0 ? (pnlPoints / stopDist) * Number(openTrade.riskDollars ?? 450) : 0;
-              const pnlR = stopDist > 0 ? pnlPoints / stopDist : 0;
-              await closeWfTrade(openTrade.id, {
-                exitPrice: String(exitEval.exitPrice.toFixed(4)),
-                exitReason: exitEval.exitReason as "TARGET_HIT" | "STOP_HIT" | "TIME_STOP" | "MANUAL",
-                outcome: exitEval.outcome,
-                pnlDollar: String(pnlDollar.toFixed(2)),
-                pnlR: String(pnlR.toFixed(4)),
-                mfe: String(Math.max(0, openTrade.direction === "LONG" ? close - entry : entry - close).toFixed(2)),
-                mae: String(Math.max(0, openTrade.direction === "LONG" ? entry - close : close - entry).toFixed(2)),
-                holdingBars: barsSinceEntry,
-                holdingMs: barTimeMs - openedAt,
-              });
-              console.log(`[WF-S111] Trade closed: ${openTrade.id} | ${exitEval.exitReason} | PnL $${pnlDollar.toFixed(0)}`);
-            } else {
-              return; // Trade still open, no new entry
-            }
-          }
-          // ── Sprint 112 Part 9: Safety lockout check ──────────────────────
-          const { getSafetyState: getSafety, resetDailyCounters: resetCounters, triggerHalt: safetyHalt } = await import("./execCertDb");
-          const safetyState = await getSafety();
-          if (safetyState?.isHalted) {
-            console.log(`[SAFETY-S112] Trading halted: ${safetyState.haltReason} — skipping signal evaluation`);
-            return;
-          }
-          // Reset daily counters at AM_OPEN bar
-          if (mem.session === "AM_OPEN") {
-            await resetCounters();
-          }
-          // Evaluate new signal
-          const signal = evaluateS109001Signal(barData);
-          if (signal.hasSignal && signal.direction && signal.entryPrice != null) {
-            const tradeId = await createWfLiveTrade({
-              tradeDate: etDateStr as unknown as Date,
-              barTimeEt: mem.barTimeEt ?? "",
-              session: "RTH",
-              regime: mem.regimeClassification ?? "UNKNOWN",
-              ovInventory,
-              vwapSlope: String(vwapSlope3Bar.toFixed(6)),
-              rsi14: String(rsi14.toFixed(4)),
-              atr14: String(atr14.toFixed(4)),
-              vwapDeviation: String(signal.vwapDeviation.toFixed(4)),
-              filterOvInventory: true,
-              filterVwapSlope: true,
-              filterRsi: true,
-              direction: signal.direction,
-              entryPrice: String(signal.entryPrice.toFixed(4)),
-              stopPrice: String(signal.stopPrice!.toFixed(4)),
-              targetPrice: String(signal.targetPrice!.toFixed(4)),
-              status: "OPEN",
-              riskDollars: "450",
-              pipelineRunId: mem.pipelineRunId ?? undefined,
-              atlasMemoryBarId: typeof memoryId === "string" ? parseInt(memoryId, 10) : (memoryId as number),
-              provenance: "PAPER",
-            });
-            console.log(`[WF-S111] Trade opened: ${tradeId} | ${signal.direction} @ ${signal.entryPrice.toFixed(2)} | Stop ${signal.stopPrice!.toFixed(2)} | Target ${signal.targetPrice!.toFixed(2)}`);
-          }
-        } catch (wfErr) {
-          console.error("[WF-S111] Signal evaluation error:", wfErr);
-        }
-      });
-
       // ── ARP-1 Program B: Continuous Discovery Engine (non-blocking) ─────────
+      // NOTE: Sprint 114 — S109-001 Walk-Forward block removed. S109-001 now flows
+      // through processBar() as a first-class ADE strategy alongside A1/A3/B1/SB1/ORB-1.
       setImmediate(async () => {
         try {
           const { recordDiscoveryEvent } = await import("./arp1Db");
