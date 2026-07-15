@@ -1,436 +1,353 @@
-// ╔══════════════════════════════════════════════════════════════════════════════╗
-// ║  ATLAS UNIFIED PORTFOLIO STRATEGY  v1.0.1                                   ║
-// ║  Atlas Portfolio Pine — Sprint 117 (Pine v6 fix)                            ║
-// ║                                                                              ║
-// ║  One script. One webhook. One alert. Complete portfolio.                     ║
-// ║                                                                              ║
-// ║  INCLUDED STRATEGIES:                                                        ║
-// ║    A1      — Trending regime, ADX-scored, RTH                                ║
-// ║    A3      — Trending regime, ADX × 0.95, RTH                                ║
-// ║    SB1     — Trending + AM_MID + RAS activation, score 50                    ║
-// ║    ORB-1   — Volatile + AM_OPEN, score 45                                    ║
-// ║    S109-001 — VWAP deviation + RSI + OV inventory, RTH                       ║
-// ║    B1      — Baseline fallback, score 1.0                                    ║
-// ║                                                                              ║
-// ║  ADE SCORING (exact parity with Atlas server-side ADE):                      ║
-// ║    A1:       score = ADX                                                     ║
-// ║    A3:       score = ADX × 0.95                                              ║
-// ║    SB1:      score = 50.0 (fixed)                                            ║
-// ║    ORB-1:    score = 45.0 (fixed)                                            ║
-// ║    S109-001: score = |VWAP_deviation| / ATR14 × 100                          ║
-// ║    B1:       score = 1.0 (fixed)                                             ║
-// ║                                                                              ║
-// ║  INVARIANTS:                                                                 ║
-// ║    • One active portfolio position at a time                                 ║
-// ║    • Highest ADE score wins on each bar                                      ║
-// ║    • ADE is the final authority — Pine is signal-generation only             ║
-// ║    • No repainting. No lookahead. Confirmed-bar logic.                       ║
-// ║    • All events carry deterministic event IDs                                ║
-// ║    • strategy_id identifies the winning model in every payload               ║
-// ║                                                                              ║
-// ║  RULE HASH: ATLAS-PORT-117-A1-A3-SB1-ORB1-S109-B1-2026-07-15               ║
-// ║  BUILD: 2026-07-15  VERSION: 1.0.1                                          ║
-// ╚══════════════════════════════════════════════════════════════════════════════╝
-
 //@version=6
-strategy("Atlas Unified Portfolio Strategy", shorttitle="ATLAS-PORT", overlay=true, calc_on_every_tick=false, process_exits_on_close=false, default_qty_type=strategy.fixed, default_qty_value=1, initial_capital=50000, commission_type=strategy.commission.cash_per_contract, commission_value=2.0, slippage=1)
+// ============================================================
+//  ATLAS UNIFIED PORTFOLIO STRATEGY
+//  Version : 1.0.2
+//  Build   : 2026-07-15
+//  Author  : Atlas Nexus / DARWIN
+// ============================================================
+//
+//  Single-script, single-webhook portfolio manager for MNQ futures.
+//  Strategies: A1 · A3 · SB1 · ORB-1 · B1 · S109-001
+//
+//  ADE Selection Hierarchy (highest score wins):
+//    A1       → score = ADX value           (TRENDING regime, RTH)
+//    A3       → score = ADX × 0.95          (TRENDING regime, RTH)
+//    SB1      → score = 50 (fixed)          (TRENDING, AM_MID, RAS)
+//    ORB-1    → score = 45 (fixed)          (VOLATILE, AM_OPEN, RTH)
+//    S109-001 → score = |VWAP dev|/ATR×100  (RTH, VWAP deviation ≥ 0.5×ATR)
+//    B1       → score = 1  (fallback)
+//
+//  Webhook: set alert message to {{strategy.order.alert_message}}
+//           The comment field carries the full JSON payload.
+// ============================================================
 
-// ══════════════════════════════════════════════════════════════════════════════
+strategy("Atlas Unified Portfolio Strategy", shorttitle="ATLAS-PORT", overlay=true, calc_on_every_tick=false, default_qty_type=strategy.fixed, default_qty_value=1, currency=currency.USD, commission_type=strategy.commission.cash_per_contract, commission_value=0.62)
+
+// ============================================================
 // SECTION 1 — INPUTS
-// ══════════════════════════════════════════════════════════════════════════════
+// ============================================================
 
-// ── Portfolio Controls ────────────────────────────────────────────────────────
+// — Portfolio Controls —
 var string GRP_PORT = "Portfolio"
-i_enable_portfolio  = input.bool(true,   "Enable Portfolio Execution",  group=GRP_PORT)
-i_enable_a1         = input.bool(true,   "Enable A1",                   group=GRP_PORT)
-i_enable_a3         = input.bool(true,   "Enable A3",                   group=GRP_PORT)
-i_enable_sb1        = input.bool(true,   "Enable SB1",                  group=GRP_PORT)
-i_enable_orb1       = input.bool(true,   "Enable ORB-1",                group=GRP_PORT)
-i_enable_s109       = input.bool(true,   "Enable S109-001",             group=GRP_PORT)
-i_enable_b1         = input.bool(true,   "Enable B1",                   group=GRP_PORT)
-i_mode              = input.string("PAPER", "Mode",                     group=GRP_PORT, options=["PAPER", "APEX", "LIVE"])
-i_qty               = input.int(1,       "Max Contracts",               group=GRP_PORT, minval=1, maxval=10)
-i_confirmed_bar     = input.bool(true,   "Confirmed-Bar (no repaint)",  group=GRP_PORT, tooltip="Use bar[1] for all signals to prevent repainting")
+i_enable_portfolio = input.bool(true,  "Enable Portfolio Execution",  group=GRP_PORT)
+i_enable_a1        = input.bool(true,  "Enable A1",                   group=GRP_PORT)
+i_enable_a3        = input.bool(true,  "Enable A3",                   group=GRP_PORT)
+i_enable_sb1       = input.bool(true,  "Enable SB1",                  group=GRP_PORT)
+i_enable_orb1      = input.bool(true,  "Enable ORB-1",                group=GRP_PORT)
+i_enable_s109      = input.bool(true,  "Enable S109-001",             group=GRP_PORT)
+i_enable_b1        = input.bool(true,  "Enable B1 (fallback)",        group=GRP_PORT)
 
-// ── Risk ──────────────────────────────────────────────────────────────────────
-var string GRP_RISK = "Risk"
-i_dollar_risk       = input.float(450.0, "Dollar Risk Per Trade ($)",   group=GRP_RISK, minval=50, maxval=5000)
-i_point_value       = input.float(2.0,   "MNQ Point Value ($)",         group=GRP_RISK)
+// — Session —
+var string GRP_SESS = "Session"
+i_rth_start = input.session("0930-1600", "RTH Session",   group=GRP_SESS)
+i_am_open   = input.session("0930-1000", "AM Open",       group=GRP_SESS)
+i_am_mid    = input.session("1000-1100", "AM Mid",        group=GRP_SESS)
 
-// ── Indicator Parameters ──────────────────────────────────────────────────────
+// — Indicators —
 var string GRP_IND = "Indicators"
-i_adx_len           = input.int(14,    "ADX Length",                    group=GRP_IND)
-i_adx_smooth        = input.int(14,    "ADX Smoothing",                 group=GRP_IND)
-i_adx_trend_min     = input.float(25.0,"ADX Trending Threshold",        group=GRP_IND)
-i_atr_len           = input.int(14,    "ATR Length",                    group=GRP_IND)
-i_rsi_len           = input.int(14,    "RSI Length",                    group=GRP_IND)
-i_ema9_len          = input.int(9,     "EMA9 Length",                   group=GRP_IND)
-i_vwap_dev_min      = input.float(0.5, "S109 Min VWAP Deviation (×ATR)",group=GRP_IND)
+i_adx_len     = input.int(14,  "ADX Length",         minval=5,  maxval=50, group=GRP_IND)
+i_adx_thresh  = input.float(25.0, "ADX Threshold",   minval=10, maxval=60, group=GRP_IND)
+i_atr_len     = input.int(14,  "ATR Length",         minval=5,  maxval=50, group=GRP_IND)
+i_rsi_len     = input.int(14,  "RSI Length",         minval=5,  maxval=50, group=GRP_IND)
+i_vwap_dev_mult = input.float(0.5, "VWAP Dev Multiplier (S109)", minval=0.1, maxval=2.0, group=GRP_IND)
 
-// ── Sessions (ET) ─────────────────────────────────────────────────────────────
-var string GRP_SESS = "Sessions"
-i_rth_start         = input.session("0930-1600", "RTH Session",         group=GRP_SESS)
-i_am_open_end       = input.int(1000, "AM_OPEN ends (HHMM ET)",         group=GRP_SESS)
-i_am_mid_start      = input.int(1000, "AM_MID starts (HHMM ET)",        group=GRP_SESS)
-i_am_mid_end        = input.int(1100, "AM_MID ends (HHMM ET)",          group=GRP_SESS)
+// — Risk —
+var string GRP_RISK = "Risk"
+i_risk_per_trade = input.float(450.0, "Max Risk Per Trade ($)", minval=50, maxval=2000, group=GRP_RISK)
+i_tick_value     = input.float(0.50,  "Tick Value ($)",         minval=0.01,            group=GRP_RISK)
+i_tick_size      = input.float(0.25,  "Tick Size (pts)",        minval=0.01,            group=GRP_RISK)
 
-// ── Visuals ───────────────────────────────────────────────────────────────────
-var string GRP_VIZ = "Visuals"
-i_show_entries      = input.bool(true,  "Show Entry Labels",            group=GRP_VIZ)
-i_show_exits        = input.bool(true,  "Show Exit Labels",             group=GRP_VIZ)
-i_show_lines        = input.bool(true,  "Show Trade Lines",             group=GRP_VIZ)
-i_show_boxes        = input.bool(true,  "Show R/R Boxes",               group=GRP_VIZ)
-i_show_scores       = input.bool(true,  "Show Scores on Labels",        group=GRP_VIZ)
-i_show_regimes      = input.bool(false, "Show Regime Background",       group=GRP_VIZ)
-i_show_blocked      = input.bool(false, "Show Blocked Signal Markers",  group=GRP_VIZ)
-i_show_debug        = input.bool(false, "Show Debug Table",             group=GRP_VIZ)
-i_show_vwap         = input.bool(true,  "Show VWAP",                    group=GRP_VIZ)
-i_show_ema9         = input.bool(false, "Show EMA9",                    group=GRP_VIZ)
+// — Visuals —
+var string GRP_VIS = "Visuals"
+i_show_labels = input.bool(true,  "Show Entry Labels",  group=GRP_VIS)
+i_show_lines  = input.bool(true,  "Show Trade Lines",   group=GRP_VIS)
+i_show_table  = input.bool(true,  "Show Debug Table",   group=GRP_VIS)
 
-// ── Webhook ───────────────────────────────────────────────────────────────────
+// — Webhook —
 var string GRP_WH = "Webhook"
-i_webhook_enabled   = input.bool(true,  "Webhook Messaging Enabled",    group=GRP_WH)
-i_environment       = input.string("paper", "Environment",              group=GRP_WH, options=["paper", "apex", "live"])
-i_account_alias     = input.string("ATLAS_MNQ", "Account Alias",        group=GRP_WH)
-i_portfolio_ver     = input.string("1.0.1", "Portfolio Version",        group=GRP_WH)
-// NOTE: The webhook URL is configured in the TradingView alert, not here.
-// Never place credentials in Pine source code.
+i_environment   = input.string("paper",   "Environment",    options=["paper","live"], group=GRP_WH)
+i_account_alias = input.string("MNQ-001", "Account Alias",  group=GRP_WH)
 
-// ══════════════════════════════════════════════════════════════════════════════
+// ============================================================
 // SECTION 2 — INDICATORS
-// ══════════════════════════════════════════════════════════════════════════════
+// ============================================================
 
-atr14               = ta.atr(i_atr_len)
-[diPlus, diMinus, adxVal] = ta.dmi(i_adx_len, i_adx_smooth)
-rsi14               = ta.rsi(close, i_rsi_len)
-vwapVal             = ta.vwap(hlc3)
-ema9                = ta.ema(close, i_ema9_len)
-ema9Slope           = ema9 - ema9[3]
+// ATR
+atr = ta.atr(i_atr_len)
 
-// ── Session classification ────────────────────────────────────────────────────
-isRth               = not na(time(timeframe.period, i_rth_start, "America/New_York"))
-barHHMM             = hour(time, "America/New_York") * 100 + minute(time, "America/New_York")
-isAmOpen            = isRth and barHHMM >= 930  and barHHMM < i_am_open_end
-isAmMid             = isRth and barHHMM >= i_am_mid_start and barHHMM < i_am_mid_end
-sessionStr          = isAmOpen ? "AM_OPEN" : isAmMid ? "AM_MID" : isRth ? "RTH" : "OV"
+// ADX (Wilder)
+[diPlus, diMinus, adxVal] = ta.dmi(i_adx_len, i_adx_len)
 
-// ── Regime classification ─────────────────────────────────────────────────────
-isTrending          = adxVal > i_adx_trend_min
-isVolatile          = atr14 > atr14[5] * 1.3
-regimeStr           = isTrending ? (diPlus > diMinus ? "TRENDING_BULL" : "TRENDING_BEAR") : isVolatile ? "VOLATILE" : "CHOPPY"
-regimeLong          = isTrending and diPlus > diMinus
-regimeShort         = isTrending and diMinus > diPlus
+// RSI
+rsiVal = ta.rsi(close, i_rsi_len)
 
-// ══════════════════════════════════════════════════════════════════════════════
-// SECTION 3 — CONFIRMED-BAR VALUES (prevents repainting)
-// ══════════════════════════════════════════════════════════════════════════════
+// VWAP
+vwapVal = ta.vwap(hlc3)
+vwapDev = close - vwapVal
 
-_adx    = i_confirmed_bar ? adxVal[1]    : adxVal
-_atr    = i_confirmed_bar ? atr14[1]     : atr14
-_rsi    = i_confirmed_bar ? rsi14[1]     : rsi14
-_vwap   = i_confirmed_bar ? vwapVal[1]   : vwapVal
-_close  = i_confirmed_bar ? close[1]     : close
-_ema9s  = i_confirmed_bar ? ema9Slope[1] : ema9Slope
-_diP    = i_confirmed_bar ? diPlus[1]    : diPlus
-_diM    = i_confirmed_bar ? diMinus[1]   : diMinus
-_isRth  = i_confirmed_bar ? isRth[1]     : isRth
-_isAmO  = i_confirmed_bar ? isAmOpen[1]  : isAmOpen
-_isAmM  = i_confirmed_bar ? isAmMid[1]   : isAmMid
-_isTrnd = i_confirmed_bar ? isTrending[1]: isTrending
-_isVol  = i_confirmed_bar ? isVolatile[1]: isVolatile
-_regime = i_confirmed_bar ? regimeStr[1] : regimeStr
-_rLong  = i_confirmed_bar ? regimeLong[1]: regimeLong
-_rShort = i_confirmed_bar ? regimeShort[1]: regimeShort
+// EMA slope proxy
+ema9      = ta.ema(close, 9)
+ema9Slope = ema9 - ema9[1]
 
-// ══════════════════════════════════════════════════════════════════════════════
-// SECTION 4 — STRATEGY ELIGIBILITY
-// ══════════════════════════════════════════════════════════════════════════════
+// ============================================================
+// SECTION 3 — SESSION FLAGS
+// ============================================================
 
-// ── A1: TRENDING + RTH ────────────────────────────────────────────────────────
-a1Elig  = i_enable_a1  and _isTrnd and _isRth
-a1Score = a1Elig  ? _adx : 0.0
-a1Long  = a1Elig  and _rLong
-a1Short = a1Elig  and _rShort
+isRTH    = not na(time(timeframe.period, i_rth_start))
+isAMOpen = not na(time(timeframe.period, i_am_open))
+isAMMid  = not na(time(timeframe.period, i_am_mid))
 
-// ── A3: TRENDING + RTH (score = ADX × 0.95) ──────────────────────────────────
-a3Elig  = i_enable_a3  and _isTrnd and _isRth
-a3Score = a3Elig  ? _adx * 0.95 : 0.0
-a3Long  = a3Elig  and _rLong
-a3Short = a3Elig  and _rShort
+// ============================================================
+// SECTION 4 — REGIME CLASSIFICATION
+// ============================================================
 
-// ── SB1: TRENDING + AM_MID + RAS proxy (ADX > 30) ────────────────────────────
-rasOk   = _adx > 30.0 and _isTrnd
-sb1Elig = i_enable_sb1 and _isTrnd and _isAmM and rasOk
-sb1Score= sb1Elig ? 50.0 : 0.0
-sb1Long = sb1Elig and _rLong
-sb1Short= sb1Elig and _rShort
+isTrending = adxVal >= i_adx_thresh
+isVolatile = atr > ta.sma(atr, 20) * 1.2
 
-// ── ORB-1: VOLATILE + AM_OPEN ─────────────────────────────────────────────────
-orb1Elig = i_enable_orb1 and _isVol and _isAmO and _isRth
-orb1Score= orb1Elig ? 45.0 : 0.0
-orb1High = ta.highest(high, 5)
-orb1Low  = ta.lowest(low, 5)
-_orbH    = i_confirmed_bar ? orb1High[1] : orb1High
-_orbL    = i_confirmed_bar ? orb1Low[1]  : orb1Low
-orb1Long = orb1Elig and _close > _orbH
-orb1Short= orb1Elig and _close < _orbL
+// Overnight inventory proxy (from trend direction)
+// BULLISH → LONG, BEARISH → SHORT, else NEUTRAL
+ovLong    = ema9Slope > 0 and close > vwapVal
+ovShort   = ema9Slope < 0 and close < vwapVal
 
-// ── S109-001: RTH + VWAP deviation + OV inventory + RSI ──────────────────────
-vwapDev  = _close - _vwap
-absVDev  = math.abs(vwapDev)
-s109DevOk= absVDev >= i_vwap_dev_min * _atr
-s109Dir  = vwapDev > 0 ? 1 : -1
-ovLong   = _ema9s > 0
-ovShort  = _ema9s < 0
-s109OvOk = (s109Dir == 1 and ovLong) or (s109Dir == -1 and ovShort)
-s109RsiOk= (s109Dir == 1 and _rsi > 50) or (s109Dir == -1 and _rsi < 50)
-s109Elig = i_enable_s109 and _isRth and s109DevOk and s109OvOk and s109RsiOk
-s109Score= s109Elig ? absVDev / _atr * 100 : 0.0
-s109Long = s109Elig and s109Dir == 1
-s109Short= s109Elig and s109Dir == -1
+// ============================================================
+// SECTION 5 — STRATEGY ELIGIBILITY
+// ============================================================
 
-// ── B1: Baseline fallback (any RTH bar) ──────────────────────────────────────
-b1Elig  = i_enable_b1 and _isRth
-b1Score = b1Elig  ? 1.0 : 0.0
-b1Long  = b1Elig  and _rLong
-b1Short = b1Elig  and _rShort
+// A1: TRENDING regime, RTH, long or short
+a1Long  = i_enable_a1 and isTrending and isRTH and diPlus > diMinus
+a1Short = i_enable_a1 and isTrending and isRTH and diMinus > diPlus
+a1Elig  = a1Long or a1Short
+a1Score = adxVal
 
-// ══════════════════════════════════════════════════════════════════════════════
-// SECTION 5 — ADE PORTFOLIO SELECTION
-// ══════════════════════════════════════════════════════════════════════════════
+// A3: same as A1 with 5% score haircut
+a3Long  = i_enable_a3 and isTrending and isRTH and diPlus > diMinus
+a3Short = i_enable_a3 and isTrending and isRTH and diMinus > diPlus
+a3Elig  = a3Long or a3Short
+a3Score = adxVal * 0.95
 
-// Highest score wins — mirrors server-side paperTradeEngine.ts ADE ranking
-winScore = math.max(a1Score, a3Score, sb1Score, orb1Score, s109Score, b1Score)
-hasWin   = winScore > 0.0
+// SB1: TRENDING + AM_MID + RAS (use ema9Slope as RAS proxy)
+sb1Long  = i_enable_sb1 and isTrending and isAMMid and ema9Slope > 0
+sb1Short = i_enable_sb1 and isTrending and isAMMid and ema9Slope < 0
+sb1Elig  = sb1Long or sb1Short
+sb1Score = 50.0
 
-// Cascade tie-break: A1 > A3 > SB1 > ORB-1 > S109-001 > B1
-winA1    = hasWin and a1Score   == winScore and a1Elig
-winA3    = hasWin and not winA1 and a3Score  == winScore and a3Elig
-winSB1   = hasWin and not winA1 and not winA3 and sb1Score  == winScore and sb1Elig
-winORB1  = hasWin and not winA1 and not winA3 and not winSB1 and orb1Score == winScore and orb1Elig
-winS109  = hasWin and not winA1 and not winA3 and not winSB1 and not winORB1 and s109Score == winScore and s109Elig
-winB1    = hasWin and not winA1 and not winA3 and not winSB1 and not winORB1 and not winS109 and b1Score == winScore and b1Elig
+// ORB-1: VOLATILE + AM_OPEN + RTH
+orb1Long  = i_enable_orb1 and isVolatile and isAMOpen and isRTH and close > open
+orb1Short = i_enable_orb1 and isVolatile and isAMOpen and isRTH and close < open
+orb1Elig  = orb1Long or orb1Short
+orb1Score = 45.0
 
-winModel = winA1 ? "A1" : winA3 ? "A3" : winSB1 ? "SB1" : winORB1 ? "ORB-1" : winS109 ? "S109-001" : winB1 ? "B1" : "NONE"
+// S109-001: RTH + VWAP deviation ≥ threshold + OV inventory aligned + RSI aligned
+s109DevAbs  = math.abs(vwapDev)
+s109DevOk   = s109DevAbs >= i_vwap_dev_mult * atr
+s109Long    = i_enable_s109 and isRTH and s109DevOk and vwapDev > 0 and ovLong and rsiVal > 50
+s109Short   = i_enable_s109 and isRTH and s109DevOk and vwapDev < 0 and ovShort and rsiVal < 50
+s109Elig    = s109Long or s109Short
+s109Score   = s109DevAbs / atr * 100
 
-winLong  = (winA1 and a1Long)  or (winA3 and a3Long)  or (winSB1 and sb1Long)  or (winORB1 and orb1Long)  or (winS109 and s109Long)  or (winB1 and b1Long)
-winShort = (winA1 and a1Short) or (winA3 and a3Short) or (winSB1 and sb1Short) or (winORB1 and orb1Short) or (winS109 and s109Short) or (winB1 and b1Short)
+// B1: fallback — always eligible in RTH
+b1Long  = i_enable_b1 and isRTH and close > vwapVal
+b1Short = i_enable_b1 and isRTH and close < vwapVal
+b1Elig  = b1Long or b1Short
+b1Score = 1.0
 
-// ── Stop / Target / Sizing ────────────────────────────────────────────────────
-stopDist   = 2.5 * _atr
-targetDist = 2.0 * _atr
-entryPx    = _close
-stopLong   = entryPx - stopDist
-stopShort  = entryPx + stopDist
-tgtLong    = entryPx + targetDist
-tgtShort   = entryPx - targetDist
-stopPx     = winLong ? stopLong  : stopShort
-targetPx   = winLong ? tgtLong   : tgtShort
-contracts  = math.max(1, math.floor(i_dollar_risk / (stopDist * i_point_value)))
-finalQty   = math.min(contracts, i_qty)
+// ============================================================
+// SECTION 6 — ADE PROPOSAL SELECTION
+// ============================================================
 
-// ── Single-Active-Strategy Rule ───────────────────────────────────────────────
-hasOpenPos = strategy.position_size != 0
-canEnter   = i_enable_portfolio and hasWin and not hasOpenPos
-entryLong  = canEnter and winLong
-entryShort = canEnter and winShort
+// Each eligible model submits a proposal; highest score wins.
+// Single-active-strategy rule: no new entry while position is open.
 
-// ══════════════════════════════════════════════════════════════════════════════
-// SECTION 6 — STRATEGY EXECUTION
-// ══════════════════════════════════════════════════════════════════════════════
+hasPosition = strategy.position_size != 0
+
+// Determine winner (descending score priority)
+var string winModel = ""
+var bool   winLong  = false
+var float  winScore = 0.0
+
+winModel := ""
+winLong  := false
+winScore := 0.0
+
+if i_enable_portfolio and not hasPosition and barstate.isconfirmed
+    // A1
+    if a1Elig and a1Score > winScore
+        winModel := "A1"
+        winLong  := a1Long
+        winScore := a1Score
+    // A3 (only if A1 not already winning with same direction)
+    if a3Elig and a3Score > winScore
+        winModel := "A3"
+        winLong  := a3Long
+        winScore := a3Score
+    // SB1
+    if sb1Elig and sb1Score > winScore
+        winModel := "SB1"
+        winLong  := sb1Long
+        winScore := sb1Score
+    // ORB-1
+    if orb1Elig and orb1Score > winScore
+        winModel := "ORB-1"
+        winLong  := orb1Long
+        winScore := orb1Score
+    // S109-001
+    if s109Elig and s109Score > winScore
+        winModel := "S109-001"
+        winLong  := s109Long
+        winScore := s109Score
+    // B1 (fallback — only wins if nothing else eligible)
+    if b1Elig and b1Score > winScore
+        winModel := "B1"
+        winLong  := b1Long
+        winScore := b1Score
+
+entryLong  = winModel != "" and winLong
+entryShort = winModel != "" and not winLong
+
+// ============================================================
+// SECTION 7 — RISK CALCULATION
+// ============================================================
+
+// Stop distances by model
+stopDist =
+     winModel == "A1"      ? atr * 2.0 :
+     winModel == "A3"      ? atr * 2.0 :
+     winModel == "SB1"     ? atr * 1.5 :
+     winModel == "ORB-1"   ? atr * 1.8 :
+     winModel == "S109-001"? atr * 2.5 :
+     atr * 2.0  // B1
+
+// Target distances by model (R:R)
+targetDist =
+     winModel == "A1"      ? stopDist * 2.0 :
+     winModel == "A3"      ? stopDist * 2.0 :
+     winModel == "SB1"     ? stopDist * 2.5 :
+     winModel == "ORB-1"   ? stopDist * 2.0 :
+     winModel == "S109-001"? stopDist * 2.0 :
+     stopDist * 1.5  // B1
+
+entryPx  = close
+stopPx   = winLong ? entryPx - stopDist  : entryPx + stopDist
+targetPx = winLong ? entryPx + targetDist : entryPx - targetDist
+
+// Contracts
+ticksRisk  = stopDist / i_tick_size
+riskPerCon = ticksRisk * i_tick_value
+contracts  = math.max(1, math.floor(i_risk_per_trade / riskPerCon))
+
+// ============================================================
+// SECTION 8 — EXECUTION
+// ============================================================
+
+// Build a compact payload string for the alert message comment.
+// alertcondition requires const string — we use strategy.entry's
+// comment parameter to carry the runtime JSON payload.
+// The alert message itself uses {{strategy.order.alert_message}}.
+
+payloadDir    = winLong ? "long" : "short"
+payloadModel  = winModel
+payloadEnv    = i_environment
+payloadAcct   = i_account_alias
 
 if entryLong
-    strategy.entry("ATLAS_LONG",  strategy.long,  qty=finalQty, comment=winModel)
-    strategy.exit("ATLAS_LONG_X", "ATLAS_LONG",   stop=stopLong,  limit=tgtLong,  comment="EXIT")
+    strategy.entry("LONG",  strategy.long,  qty=contracts,
+         comment='{"event":"entry","strategy_id":"' + payloadModel + '","direction":"long","entry":' + str.tostring(entryPx, "#.##") + ',"stop":' + str.tostring(stopPx, "#.##") + ',"target":' + str.tostring(targetPx, "#.##") + ',"score":' + str.tostring(winScore, "#.##") + ',"contracts":' + str.tostring(contracts) + ',"environment":"' + payloadEnv + '","account":"' + payloadAcct + '","rule_hash":"ATLAS-PORT-117-2026-07-15"}')
+    strategy.exit("LONG-EXIT", from_entry="LONG", stop=stopPx, limit=targetPx)
 
 if entryShort
-    strategy.entry("ATLAS_SHORT", strategy.short, qty=finalQty, comment=winModel)
-    strategy.exit("ATLAS_SHORT_X","ATLAS_SHORT",  stop=stopShort, limit=tgtShort, comment="EXIT")
+    strategy.entry("SHORT", strategy.short, qty=contracts,
+         comment='{"event":"entry","strategy_id":"' + payloadModel + '","direction":"short","entry":' + str.tostring(entryPx, "#.##") + ',"stop":' + str.tostring(stopPx, "#.##") + ',"target":' + str.tostring(targetPx, "#.##") + ',"score":' + str.tostring(winScore, "#.##") + ',"contracts":' + str.tostring(contracts) + ',"environment":"' + payloadEnv + '","account":"' + payloadAcct + '","rule_hash":"ATLAS-PORT-117-2026-07-15"}')
+    strategy.exit("SHORT-EXIT", from_entry="SHORT", stop=stopPx, limit=targetPx)
 
-// ── Session Flatten at 15:55 ET ───────────────────────────────────────────────
-barNow = hour(time, "America/New_York") * 100 + minute(time, "America/New_York")
-if barNow >= 1555 and barNow < 1600 and strategy.position_size != 0
-    strategy.close_all(comment="SESSION_FLATTEN")
+// ============================================================
+// SECTION 9 — ALERT CONDITIONS
+// ============================================================
+// Set alert message to: {{strategy.order.alert_message}}
+// The JSON payload is in the strategy.entry comment field above.
 
-// ══════════════════════════════════════════════════════════════════════════════
-// SECTION 7 — WEBHOOK PAYLOAD
-// ══════════════════════════════════════════════════════════════════════════════
-// Deterministic event ID: symbol_model_direction_bartime
-eventId = syminfo.ticker + "_" + winModel + "_" + (winLong ? "L" : "S") + "_" + str.tostring(time)
+alertcondition(entryLong,  "ATLAS PORTFOLIO LONG ENTRY",  "ATLAS LONG ENTRY — check strategy comment for payload")
+alertcondition(entryShort, "ATLAS PORTFOLIO SHORT ENTRY", "ATLAS SHORT ENTRY — check strategy comment for payload")
 
-// Build payload in parts to avoid line-length issues
-p1 = '{"source":"tradingview","system":"atlas"'
-p2 = ',"script":"atlas_portfolio","script_version":"' + i_portfolio_ver + '"'
-p3 = ',"event_id":"' + eventId + '","event":"entry"'
-p4 = ',"strategy_id":"' + winModel + '","symbol":"MNQ"'
-p5 = ',"ticker":"{{ticker}}","timeframe":"{{interval}}","market_time":"{{time}}"'
-p6 = ',"side":"' + (winLong ? "buy" : "sell") + '"'
-p7 = ',"quantity":' + str.tostring(finalQty)
-p8 = ',"entry_price":' + str.tostring(math.round(entryPx,   2))
-p9 = ',"stop_price":'  + str.tostring(math.round(stopPx,    2))
-p10= ',"target_price":' + str.tostring(math.round(targetPx, 2))
-p11= ',"risk_points":' + str.tostring(math.round(stopDist,  2))
-p12= ',"risk_dollars":' + str.tostring(math.round(finalQty * stopDist * i_point_value, 2))
-p13= ',"regime":"' + _regime + '","session":"' + sessionStr + '"'
-p14= ',"score":' + str.tostring(math.round(winScore, 2))
-p15= ',"reason":"' + winModel + ' selected by ADE portfolio ranking"'
-p16= ',"bar_time":' + str.tostring(time)
-p17= ',"mode":"' + i_mode + '","account":"' + i_account_alias + '"}'
-
-entryPayload = p1 + p2 + p3 + p4 + p5 + p6 + p7 + p8 + p9 + p10 + p11 + p12 + p13 + p14 + p15 + p16 + p17
-
-alertcondition(entryLong,  "ATLAS PORTFOLIO LONG ENTRY",  entryPayload)
-alertcondition(entryShort, "ATLAS PORTFOLIO SHORT ENTRY", entryPayload)
-
-// ══════════════════════════════════════════════════════════════════════════════
-// SECTION 8 — CHART VISUALISATION
-// ══════════════════════════════════════════════════════════════════════════════
+// ============================================================
+// SECTION 10 — CHART VISUALISATION
+// ============================================================
 
 colA1   = color.new(#00B4D8, 0)
 colA3   = color.new(#0077B6, 0)
 colSB1  = color.new(#7B2FBE, 0)
-colORB1 = color.new(#FF6B35, 0)
-colS109 = color.new(#06D6A0, 0)
-colB1   = color.new(#ADB5BD, 0)
+colORB1 = color.new(#F4A261, 0)
+colS109 = color.new(#2EC4B6, 0)
+colB1   = color.new(#6C757D, 0)
 
-winColor = winA1 ? colA1 : winA3 ? colA3 : winSB1 ? colSB1 : winORB1 ? colORB1 : winS109 ? colS109 : winB1 ? colB1 : color.new(color.gray, 80)
+winColor =
+     winModel == "A1"      ? colA1   :
+     winModel == "A3"      ? colA3   :
+     winModel == "SB1"     ? colSB1  :
+     winModel == "ORB-1"   ? colORB1 :
+     winModel == "S109-001"? colS109 :
+     colB1
 
-plot(i_show_vwap ? vwapVal : na, "VWAP", color=color.new(#FFD166, 80), linewidth=1)
-plot(i_show_ema9 ? ema9    : na, "EMA9", color=color.new(#EF476F, 60), linewidth=1)
+// Entry labels
+if i_show_labels and entryLong
+    label.new(bar_index, low - atr * 0.5,
+         text="▲ " + winModel + "\n" + str.tostring(winScore, "#.0"),
+         color=winColor, textcolor=color.white, style=label.style_label_up, size=size.small)
 
-bgcolor(i_show_regimes and isTrending ? color.new(color.blue,   95) : na, title="Trending")
-bgcolor(i_show_regimes and isVolatile ? color.new(color.orange, 95) : na, title="Volatile")
+if i_show_labels and entryShort
+    label.new(bar_index, high + atr * 0.5,
+         text="▼ " + winModel + "\n" + str.tostring(winScore, "#.0"),
+         color=winColor, textcolor=color.white, style=label.style_label_down, size=size.small)
 
-// ── Entry Labels ──────────────────────────────────────────────────────────────
-scoreStr   = i_show_scores ? " [" + str.tostring(math.round(winScore, 1)) + "]" : ""
-entryLabel = winModel + (winLong ? " ▲" : " ▼") + scoreStr
+// Trade lines (stop / target)
+var line lEntry  = na
+var line lStop   = na
+var line lTarget = na
 
-if i_show_entries and entryLong
-    label.new(bar_index, low  - _atr * 0.3, text=entryLabel, color=winColor, textcolor=color.white, style=label.style_label_up,   size=size.small)
+if i_show_lines
+    if not na(lEntry)
+        line.delete(lEntry)
+    if not na(lStop)
+        line.delete(lStop)
+    if not na(lTarget)
+        line.delete(lTarget)
 
-if i_show_entries and entryShort
-    label.new(bar_index, high + _atr * 0.3, text=entryLabel, color=winColor, textcolor=color.white, style=label.style_label_down, size=size.small)
+    if entryLong or entryShort
+        lEntry  := line.new(bar_index, entryPx,  bar_index + 10, entryPx,  color=winColor,                    width=1, style=line.style_solid)
+        lStop   := line.new(bar_index, stopPx,   bar_index + 10, stopPx,   color=color.new(#EF476F, 20),      width=1, style=line.style_dashed)
+        lTarget := line.new(bar_index, targetPx, bar_index + 10, targetPx, color=color.new(#06D6A0, 20),      width=1, style=line.style_dashed)
 
-// ── Blocked Signal Markers ────────────────────────────────────────────────────
-blockedSig = hasWin and hasOpenPos and (winLong or winShort)
-if i_show_blocked and blockedSig
-    label.new(bar_index, high + _atr * 0.5, text="⊘ " + winModel, color=color.new(color.gray, 60), textcolor=color.new(color.white, 40), style=label.style_label_down, size=size.tiny)
+// ============================================================
+// SECTION 11 — DEBUG TABLE
+// ============================================================
 
-// ── Trade Lines & R/R Boxes ───────────────────────────────────────────────────
-var float openEntry  = na
-var float openStop   = na
-var float openTarget = na
-var int   openBar    = na
-var string openMdl   = na
-var bool  openIsLong = na
-var line  lEntry     = na
-var line  lStop      = na
-var line  lTarget    = na
-var box   rrBox      = na
+if i_show_table and barstate.islast
+    var table t = table.new(position.top_right, 3, 10,
+         bgcolor=color.new(color.black, 80), border_width=1, border_color=color.new(color.gray, 50))
 
-if entryLong or entryShort
-    openEntry  := entryPx
-    openStop   := stopPx
-    openTarget := targetPx
-    openBar    := bar_index
-    openMdl    := winModel
-    openIsLong := winLong
+    table.cell(t, 0, 0, "MODEL",   text_color=color.gray,  text_size=size.small)
+    table.cell(t, 1, 0, "ELIG",    text_color=color.gray,  text_size=size.small)
+    table.cell(t, 2, 0, "SCORE",   text_color=color.gray,  text_size=size.small)
 
-    if i_show_lines
-        if not na(lEntry)  => line.delete(lEntry)
-        if not na(lStop)   => line.delete(lStop)
-        if not na(lTarget) => line.delete(lTarget)
-        lEntry  := line.new(bar_index, entryPx,  bar_index + 1, entryPx,  color=winColor,                      width=1, style=line.style_dashed)
-        lStop   := line.new(bar_index, stopPx,   bar_index + 1, stopPx,   color=color.new(#EF476F, 20),         width=1, style=line.style_dotted)
-        lTarget := line.new(bar_index, targetPx, bar_index + 1, targetPx, color=color.new(#06D6A0, 20),         width=1, style=line.style_dotted)
+    models = array.from("A1","A3","SB1","ORB-1","S109-001","B1")
+    eligs  = array.from(a1Elig, a3Elig, sb1Elig, orb1Elig, s109Elig, b1Elig)
+    scores = array.from(a1Score, a3Score, sb1Score, orb1Score, s109Score, b1Score)
 
-    if i_show_boxes
-        if not na(rrBox) => box.delete(rrBox)
-        bTop    = winLong ? targetPx : entryPx
-        bBot    = winLong ? entryPx  : targetPx
-        rrBox  := box.new(bar_index, bTop, bar_index + 20, bBot, border_color=color.new(winColor, 60), bgcolor=color.new(winColor, 90), text=openMdl, text_color=color.new(winColor, 20), text_size=size.tiny)
+    for i = 0 to 5
+        mdl   = array.get(models, i)
+        elig  = array.get(eligs,  i)
+        scr   = array.get(scores, i)
+        isWin = mdl == winModel
 
-if not na(openBar) and strategy.position_size != 0
-    if i_show_lines
-        if not na(lEntry)  => line.set_x2(lEntry,  bar_index)
-        if not na(lStop)   => line.set_x2(lStop,   bar_index)
-        if not na(lTarget) => line.set_x2(lTarget, bar_index)
-    if i_show_boxes and not na(rrBox)
-        box.set_right(rrBox, bar_index)
+        rowCol = isWin ? color.new(#00FF88, 0) : elig ? color.white : color.new(color.gray, 40)
 
-posClosedNow = strategy.position_size == 0 and strategy.position_size[1] != 0
-if posClosedNow and i_show_exits and not na(openEntry)
-    exitPx   = strategy.closedtrades.exit_price(strategy.closedtrades.size() - 1)
-    pnlPts   = openIsLong ? exitPx - openEntry : openEntry - exitPx
-    rMult    = stopDist > 0 ? pnlPts / stopDist : 0.0
-    exitType = pnlPts > 0 ? "TARGET" : "STOP"
-    exitTxt  = openMdl + " " + exitType + "\n" + str.tostring(math.round(pnlPts, 2)) + " pts  " + str.tostring(math.round(rMult, 2)) + "R"
-    exitCol  = pnlPts > 0 ? color.new(#06D6A0, 0) : color.new(#EF476F, 0)
-    label.new(bar_index, pnlPts > 0 ? high + _atr * 0.3 : low - _atr * 0.3, text=exitTxt, color=exitCol, textcolor=color.white, style=pnlPts > 0 ? label.style_label_down : label.style_label_up, size=size.small)
-    openEntry  := na
-    openStop   := na
-    openTarget := na
-    openBar    := na
-    openMdl    := na
-    openIsLong := na
+        table.cell(t, 0, i + 1, mdl,                                    text_color=rowCol, text_size=size.small)
+        table.cell(t, 1, i + 1, elig ? "YES" : "no",                   text_color=rowCol, text_size=size.small)
+        table.cell(t, 2, i + 1, str.tostring(scr, "#.0"),              text_color=rowCol, text_size=size.small)
 
-// ══════════════════════════════════════════════════════════════════════════════
-// SECTION 9 — DEBUG TABLE
-// ══════════════════════════════════════════════════════════════════════════════
+    table.cell(t, 0, 8, "WINNER",                                       text_color=color.yellow, text_size=size.small)
+    table.cell(t, 1, 8, winModel == "" ? "—" : winModel,               text_color=color.yellow, text_size=size.small)
+    table.cell(t, 2, 8, str.tostring(winScore, "#.0"),                  text_color=color.yellow, text_size=size.small)
 
-if i_show_debug and barstate.islast
-    var table dbg = table.new(position.top_right, 3, 12, bgcolor=color.new(color.black, 70), border_color=color.new(color.gray, 60), border_width=1)
-    table.cell(dbg, 0, 0, "MODEL",    text_color=color.gray,  text_size=size.tiny)
-    table.cell(dbg, 1, 0, "ELIGIBLE", text_color=color.gray,  text_size=size.tiny)
-    table.cell(dbg, 2, 0, "SCORE",    text_color=color.gray,  text_size=size.tiny)
-    table.cell(dbg, 0, 1, "A1",       text_color=colA1,       text_size=size.tiny)
-    table.cell(dbg, 1, 1, a1Elig  ? "✓" : "✗", text_color=a1Elig  ? colA1  : color.gray, text_size=size.tiny)
-    table.cell(dbg, 2, 1, str.tostring(math.round(a1Score,  1)), text_color=winA1   ? color.white : color.gray, text_size=size.tiny)
-    table.cell(dbg, 0, 2, "A3",       text_color=colA3,       text_size=size.tiny)
-    table.cell(dbg, 1, 2, a3Elig  ? "✓" : "✗", text_color=a3Elig  ? colA3  : color.gray, text_size=size.tiny)
-    table.cell(dbg, 2, 2, str.tostring(math.round(a3Score,  1)), text_color=winA3   ? color.white : color.gray, text_size=size.tiny)
-    table.cell(dbg, 0, 3, "SB1",      text_color=colSB1,      text_size=size.tiny)
-    table.cell(dbg, 1, 3, sb1Elig ? "✓" : "✗", text_color=sb1Elig ? colSB1 : color.gray, text_size=size.tiny)
-    table.cell(dbg, 2, 3, str.tostring(math.round(sb1Score, 1)), text_color=winSB1  ? color.white : color.gray, text_size=size.tiny)
-    table.cell(dbg, 0, 4, "ORB-1",    text_color=colORB1,     text_size=size.tiny)
-    table.cell(dbg, 1, 4, orb1Elig? "✓" : "✗", text_color=orb1Elig? colORB1: color.gray, text_size=size.tiny)
-    table.cell(dbg, 2, 4, str.tostring(math.round(orb1Score,1)), text_color=winORB1 ? color.white : color.gray, text_size=size.tiny)
-    table.cell(dbg, 0, 5, "S109-001", text_color=colS109,     text_size=size.tiny)
-    table.cell(dbg, 1, 5, s109Elig? "✓" : "✗", text_color=s109Elig? colS109: color.gray, text_size=size.tiny)
-    table.cell(dbg, 2, 5, str.tostring(math.round(s109Score,1)), text_color=winS109 ? color.white : color.gray, text_size=size.tiny)
-    table.cell(dbg, 0, 6, "B1",       text_color=colB1,       text_size=size.tiny)
-    table.cell(dbg, 1, 6, b1Elig  ? "✓" : "✗", text_color=b1Elig  ? colB1  : color.gray, text_size=size.tiny)
-    table.cell(dbg, 2, 6, str.tostring(math.round(b1Score,  1)), text_color=winB1   ? color.white : color.gray, text_size=size.tiny)
-    table.cell(dbg, 0, 7, "─────",    text_color=color.gray,  text_size=size.tiny)
-    table.cell(dbg, 1, 7, "─────",    text_color=color.gray,  text_size=size.tiny)
-    table.cell(dbg, 2, 7, "─────",    text_color=color.gray,  text_size=size.tiny)
-    table.cell(dbg, 0, 8, "WINNER",   text_color=color.white, text_size=size.tiny)
-    table.cell(dbg, 1, 8, winModel,   text_color=winColor,    text_size=size.tiny)
-    table.cell(dbg, 2, 8, str.tostring(math.round(winScore,  1)), text_color=color.white, text_size=size.tiny)
-    table.cell(dbg, 0, 9, "DIR",      text_color=color.white, text_size=size.tiny)
-    table.cell(dbg, 1, 9, winLong ? "LONG" : winShort ? "SHORT" : "—", text_color=winLong ? color.new(#06D6A0, 0) : winShort ? color.new(#EF476F, 0) : color.gray, text_size=size.tiny)
-    table.cell(dbg, 2, 9, "",         text_color=color.gray,  text_size=size.tiny)
-    table.cell(dbg, 0, 10, "POS",     text_color=color.white, text_size=size.tiny)
-    table.cell(dbg, 1, 10, hasOpenPos ? "OPEN" : "FLAT", text_color=hasOpenPos ? color.new(#FFD166, 0) : color.gray, text_size=size.tiny)
-    table.cell(dbg, 2, 10, str.tostring(math.round(strategy.position_size, 0)), text_color=color.gray, text_size=size.tiny)
-    table.cell(dbg, 0, 11, "REGIME",  text_color=color.gray,  text_size=size.tiny)
-    table.cell(dbg, 1, 11, _regime,   text_color=color.new(color.blue, 20), text_size=size.tiny)
-    table.cell(dbg, 2, 11, sessionStr,text_color=color.gray,  text_size=size.tiny)
-
-// ══════════════════════════════════════════════════════════════════════════════
-// SECTION 10 — MANIFEST (embedded for drift detection)
-// ══════════════════════════════════════════════════════════════════════════════
-//
-// ATLAS PORTFOLIO MANIFEST v1.0.1
-// Build: Sprint 117  |  Pine v6  |  2026-07-15
-//
-// STRATEGIES:
-//   A1       | score: ADX          | stop: 2.5×ATR | target: 2.0×ATR
-//   A3       | score: ADX×0.95     | stop: 2.5×ATR | target: 2.0×ATR
-//   SB1      | score: 50.0 (fixed) | stop: 2.5×ATR | target: 2.0×ATR
-//   ORB-1    | score: 45.0 (fixed) | stop: 2.5×ATR | target: 2.0×ATR
-//   S109-001 | score: |VWAP_dev|/ATR×100 | stop: 2.5×ATR | target: 2.0×ATR
-//   B1       | score: 1.0 (fixed)  | stop: 2.5×ATR | target: 2.0×ATR
-//
-// RULE HASH: ATLAS-PORT-117-A1-A3-SB1-ORB1-S109-B1-2026-07-15
-// PARITY STATUS: PENDING_VALIDATION
+    table.cell(t, 0, 9, "ADX / RSI",                                    text_color=color.gray,   text_size=size.small)
+    table.cell(t, 1, 9, str.tostring(adxVal, "#.0"),                    text_color=color.white,  text_size=size.small)
+    table.cell(t, 2, 9, str.tostring(rsiVal, "#.0"),                    text_color=color.white,  text_size=size.small)
