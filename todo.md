@@ -861,3 +861,20 @@
 - [x] client/src/App.tsx: /traderspost route registered
 - [x] client/src/components/OrionLayout.tsx: TradersPost nav item added to EXECUTION group
 - [x] server/tp.test.ts: 17 new vitest tests — all 95 tests pass (0 failures)
+
+## Sprint 113b — Home Page Paper Trading + RUN DEMO Animation
+
+- [x] Fix Paper Trading panel: pull real stats from DB (total trades, win rate, P&L per model, open trades)
+- [x] Rebuild RUN DEMO: 14-stage sequential pipeline animation showing bar arriving → criteria checks → final_approved → trade fires
+- [x] RUN DEMO: each stage lights up with pass/fail colour as it evaluates
+- [x] RUN DEMO: final stage shows trade card (model, direction, entry, stop, target) when approved
+
+## Sprint 113c — Home Page Redesign (Command Centre Summary)
+
+- [x] Add getPaperSummaryStats DB helper: today/week/month P&L, win rate, trade count — provenance=PAPER only
+- [x] Add paper.summaryStats tRPC procedure
+- [x] Redesign Home.tsx: market state strip (regime, session, ADE, ARI, TVL, circuit breaker)
+- [x] Home.tsx: P&L panels — Today / This Week / This Month with win rate, trade count, per-model breakdown
+- [x] Home.tsx: open trade card (if any trade is currently OPEN)
+- [x] Home.tsx: keep pipeline orb + RUN DEMO but make it secondary below the summary
+- [x] RUN DEMO: animate with stage labels and final trade-fire card

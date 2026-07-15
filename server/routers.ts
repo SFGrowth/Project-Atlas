@@ -24,6 +24,7 @@ import {
   getPipelineReportById,
   getOpenPaperTrade,
   getRecentPaperTrades,
+  getPaperSummaryStats,
   getPaperTradeById,
   updatePaperTrade,
   getJournalDays,
@@ -131,6 +132,11 @@ export const appRouter = router({
 
   // ─── Paper Trading ───────────────────────────────────────────────────────────
   paper: router({
+    summaryStats: publicProcedure
+      .input(z.object({ account: z.string().default("ATLAS_MONITOR_PAPER") }))
+      .query(async ({ input }) => {
+        return getPaperSummaryStats(input.account);
+      }),
     openTrade: publicProcedure
       .input(z.object({ account: z.string().default("ATLAS_MNQ_PAPER") }))
       .query(async ({ input }) => {

@@ -450,3 +450,71 @@ export async function getAdeTradeStats(): Promise<{ model: string; count: number
   }
   return Object.entries(counts).map(([model, count]) => ({ model, count }));
 }
+
+// ─── Paper Trading Summary Stats (provenance=PAPER only) ─────────────────────
+export async function getPaperSummaryStats(account = "ATLAS_MONITOR_PAPER") {
+  const db = await getDb();
+  if (!db) return null;
+  const now = new Date();
+  const todayStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+  const dow = now.getUTCDay();
+  const daysToMon = dow === 0 ? 6 : dow - 1;
+  const weekStart = new Date(todayStart.getTime() - daysToMon * 86400000);
+  const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+  const allClosed = await db
+    .select()
+    .from(paperTrades)
+    .where(and(eq(paperTrades.account, account), eq(paperTrades.status, "CLOSED"), eq(paperTrades.provenance, "PAPER")))
+    .orderBy(desc(paperTrades.closedAt));
+  const openRows = await db
+    .select()
+    .from(paperTrades)
+    .where(and(eq(paperTrades.account, account), eq(paperTrades.status, "OPEN"), eq(paperTrades.provenance, "PAPER")))
+    .limit(1);
+  function bucket(trades: typeof allClosed, since: Date) {
+    const t = trades.filter((tr) => tr.closedAt && tr.closedAt >= since);
+    const wins = t.filter((tr) => Number(tr.pnl ?? 0) > 0).length;
+    const losses = t.filter((tr) => Number(tr.pnl ?? 0) < 0).length;
+    const pnl = t.reduce((s, tr) => s + Number(tr.pnl ?? 0), 0);
+    const winRate = t.length > 0 ? (wins / t.length) * 100 : null;
+    const models: Record<string, { trades: number; wins: number; pnl: number }> = {};
+    for (const tr of t) {
+      const m = tr.model ?? "UNKNOWN";
+      if (!models[m]) models[m] = { trades: 0, wins: 0, pnl: 0 };
+      models[m].trades++;
+      if (Number(tr.pnl ?? 0) > 0) models[m].wins++;
+      models[m].pnl += Number(tr.pnl ?? 0);
+    }
+    return {
+      trades: t.length,
+      wins,
+      losses,
+      pnl: parseFloat(pnl.toFixed(2)),
+      winRate: winRate !== null ? parseFloat(winRate.toFixed(1)) : null,
+      models: Object.entries(models).map(([model, s]) => ({
+        model,
+        trades: s.trades,
+        wins: s.wins,
+        pnl: parseFloat(s.pnl.toFixed(2)),
+        winRate: s.trades > 0 ? parseFloat(((s.wins / s.trades) * 100).toFixed(1)) : null,
+      })),
+    };
+  }
+  const open = openRows.length > 0 ? {
+    id: openRows[0].id,
+    model: openRows[0].model,
+    direction: openRows[0].direction,
+    entry: openRows[0].entry ? String(openRows[0].entry) : null,
+    stop: openRows[0].stop ? String(openRows[0].stop) : null,
+    target: openRows[0].target ? String(openRows[0].target) : null,
+    riskDollars: openRows[0].riskDollars ? String(openRows[0].riskDollars) : null,
+    openedAt: openRows[0].openedAt.toISOString(),
+  } : null;
+  return {
+    today: bucket(allClosed, todayStart),
+    week: bucket(allClosed, weekStart),
+    month: bucket(allClosed, monthStart),
+    allTime: bucket(allClosed, new Date(0)),
+    open,
+  };
+}

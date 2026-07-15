@@ -1,73 +1,195 @@
 import { useNexusSSE } from "@/hooks/useNexusSSE";
 import { trpc } from "@/lib/trpc";
-import { OverviewStrip, HudPanel, DataRow, StateBadge, SignalBadge, ApprovalBadge, PassFailBadge, PageWrapper, fmt, fmtDateTime, fmtTime } from "@/components/HudComponents";
+import {
+  OverviewStrip,
+  HudPanel,
+  DataRow,
+  StateBadge,
+  SignalBadge,
+  ApprovalBadge,
+  PassFailBadge,
+  PageWrapper,
+  fmt,
+  fmtTime,
+} from "@/components/HudComponents";
 import PipelineOrb from "@/components/PipelineOrb";
 import { useEffect, useRef, useState } from "react";
 
-// ─── Pipeline Orb Live Wrapper ───────────────────────────────────────────────
+// ─── Types ────────────────────────────────────────────────────────────────────
+interface BucketStats {
+  trades: number;
+  wins: number;
+  losses: number;
+  pnl: number;
+  winRate: number | null;
+  models: { model: string; trades: number; wins: number; pnl: number; winRate: number | null }[];
+}
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+function pnlClass(v: number) {
+  return v > 0 ? "pnl-positive" : v < 0 ? "pnl-negative" : "data-value";
+}
+function pnlStr(v: number) {
+  return `${v >= 0 ? "+" : ""}$${Math.abs(v).toFixed(2)}`;
+}
+
+// ─── P&L Bucket Panel ─────────────────────────────────────────────────────────
+function PnlBucket({ label, data }: { label: string; data: BucketStats | undefined }) {
+  if (!data) {
+    return (
+      <div className="hud-panel hud-panel-br flex flex-col gap-2 p-3">
+        <div className="hud-header text-[10px]"><span className="hud-header-dot" />{label}</div>
+        <div className="text-[var(--color-muted-foreground)] text-xs text-center py-4">No data</div>
+      </div>
+    );
+  }
+  const { trades, wins, losses, pnl, winRate, models } = data;
+  return (
+    <div className="hud-panel hud-panel-br flex flex-col gap-0">
+      <div className="hud-header"><span className="hud-header-dot" />{label}</div>
+      <div className="p-3 flex flex-col gap-2">
+        {/* Main stats row */}
+        <div className="grid grid-cols-3 gap-2 text-center">
+          <div>
+            <div className={`text-lg font-bold font-['Orbitron'] ${pnlClass(pnl)}`} style={{ textShadow: pnl > 0 ? "0 0 8px #4ade80" : pnl < 0 ? "0 0 8px #f87171" : "none" }}>
+              {trades > 0 ? pnlStr(pnl) : "—"}
+            </div>
+            <div className="text-[9px] text-[var(--color-muted-foreground)] tracking-wider mt-0.5">P&L</div>
+          </div>
+          <div>
+            <div className="text-lg font-bold font-['Orbitron'] text-[var(--arc-cyan)]" style={{ textShadow: "0 0 6px var(--arc-cyan)" }}>
+              {trades > 0 ? `${winRate?.toFixed(0) ?? "—"}%` : "—"}
+            </div>
+            <div className="text-[9px] text-[var(--color-muted-foreground)] tracking-wider mt-0.5">WIN RATE</div>
+          </div>
+          <div>
+            <div className="text-lg font-bold font-['Orbitron'] text-[var(--arc-blue)]">
+              {trades}
+            </div>
+            <div className="text-[9px] text-[var(--color-muted-foreground)] tracking-wider mt-0.5">TRADES</div>
+          </div>
+        </div>
+        {/* W/L bar */}
+        {trades > 0 && (
+          <div className="flex items-center gap-1 text-[9px]">
+            <span className="text-green-400">{wins}W</span>
+            <div className="flex-1 h-1.5 rounded-full bg-[oklch(0.18_0.06_220)] overflow-hidden">
+              <div
+                className="h-full rounded-full bg-green-400"
+                style={{ width: `${(wins / trades) * 100}%`, boxShadow: "0 0 4px #4ade80" }}
+              />
+            </div>
+            <span className="text-red-400">{losses}L</span>
+          </div>
+        )}
+        {/* Per-model breakdown */}
+        {models.length > 0 && (
+          <div className="border-t border-[oklch(0.22_0.06_220/0.4)] pt-2 space-y-1">
+            {models.map((m) => (
+              <div key={m.model} className="flex items-center justify-between text-[10px]">
+                <div className="flex items-center gap-1.5">
+                  <span className="font-mono font-bold text-[var(--arc-blue)] w-6">{m.model}</span>
+                  <span className="text-[var(--color-muted-foreground)]">{m.trades}t</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  {m.winRate !== null && (
+                    <span className="text-[var(--arc-cyan)] text-[9px]">{m.winRate.toFixed(0)}%</span>
+                  )}
+                  <span className={pnlClass(m.pnl)}>{pnlStr(m.pnl)}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+        {trades === 0 && (
+          <div className="text-[var(--color-muted-foreground)] text-[10px] text-center py-1">No trades this period</div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── Open Trade Card ──────────────────────────────────────────────────────────
+function OpenTradeCard({ trade }: { trade: { model: string | null; direction: string | null; entry: string | null; stop: string | null; target: string | null; riskDollars: string | null; openedAt: string } | null }) {
+  if (!trade) return null;
+  const dirColor = trade.direction === "LONG" ? "#4ade80" : "#f87171";
+  const dirGlow = trade.direction === "LONG" ? "0 0 8px #4ade80" : "0 0 8px #f87171";
+  return (
+    <div className="hud-panel hud-panel-br border border-[oklch(0.55_0.22_145/0.4)]" style={{ boxShadow: "0 0 16px oklch(0.55 0.22 145 / 0.15)" }}>
+      <div className="hud-header">
+        <span className="hud-header-dot" style={{ background: "#4ade80", boxShadow: "0 0 6px #4ade80" }} />
+        OPEN TRADE — LIVE
+        <span className="ml-2 text-[9px] font-mono text-green-400 animate-pulse">●</span>
+      </div>
+      <div className="p-3 grid grid-cols-4 gap-3">
+        <div className="text-center">
+          <div className="text-lg font-bold font-['Orbitron'] text-[var(--arc-blue)]">{trade.model ?? "—"}</div>
+          <div className="text-[9px] text-[var(--color-muted-foreground)] tracking-wider">MODEL</div>
+        </div>
+        <div className="text-center">
+          <div className="text-lg font-bold font-['Orbitron']" style={{ color: dirColor, textShadow: dirGlow }}>{trade.direction ?? "—"}</div>
+          <div className="text-[9px] text-[var(--color-muted-foreground)] tracking-wider">DIRECTION</div>
+        </div>
+        <div className="text-center">
+          <div className="text-sm font-bold font-['Orbitron'] text-[var(--arc-cyan)]">{trade.entry ?? "—"}</div>
+          <div className="text-[9px] text-[var(--color-muted-foreground)] tracking-wider">ENTRY</div>
+        </div>
+        <div className="text-center">
+          <div className="text-sm font-bold font-['Orbitron'] text-[var(--stark-gold)]">{trade.riskDollars ? `$${parseFloat(trade.riskDollars).toFixed(0)}` : "—"}</div>
+          <div className="text-[9px] text-[var(--color-muted-foreground)] tracking-wider">RISK</div>
+        </div>
+      </div>
+      <div className="px-3 pb-3 grid grid-cols-2 gap-2 text-[10px]">
+        <div className="flex justify-between border border-[oklch(0.22_0.06_220/0.3)] rounded px-2 py-1">
+          <span className="text-[var(--color-muted-foreground)]">STOP</span>
+          <span className="text-red-400 font-mono">{trade.stop ?? "—"}</span>
+        </div>
+        <div className="flex justify-between border border-[oklch(0.22_0.06_220/0.3)] rounded px-2 py-1">
+          <span className="text-[var(--color-muted-foreground)]">TARGET</span>
+          <span className="text-green-400 font-mono">{trade.target ?? "—"}</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Pipeline Orb Live Wrapper ────────────────────────────────────────────────
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function PipelineOrbLive({ payload }: { payload: any }) {
-  // Derive stagesPassed from pipeline payload fields.
-  // Strategy: walk forward through stages using presence of key fields.
-  // Only mark a stage as FAILED when the pipeline explicitly reports a rejection
-  // (e.g. ari_rejection, tvl_status=FAIL, ade_decision=NO_TRADE).
-  // Missing fields from old/partial payloads are treated as "not yet reached" (idle).
+function PipelineOrbLive({ payload, animStage, animRunId }: { payload: any; animStage: number | null; animRunId: string | null }) {
   const p = payload;
   let stages = 0;
   let failed: number | null = null;
 
-  if (p) {
-    // Stage 1: Config — payload received at all
+  if (animStage !== null) {
+    // Demo / live-animation mode: use animated stage count
+    stages = animStage;
+  } else if (p) {
     stages = 1;
-
-    // Stage 2: State — master_state present
     if (p.master_state) stages = 2;
-
-    // Stage 3: Market — session or market_regime present
     if (stages >= 2 && (p.market_regime || p.session)) stages = 3;
-
-    // Stage 4-6: Model evaluations — any model signal present
     if (stages >= 3 && p.a1_signal !== undefined) stages = 4;
     if (stages >= 4 && p.a3_signal !== undefined) stages = 5;
     if (stages >= 5 && p.b1_signal !== undefined) stages = 6;
-
-    // Stage 7: ADE — ade_decision present
     if (stages >= 6 && p.ade_decision) stages = 7;
-
-    // Stage 8: ARI — ari_approved present (even if false = ARI ran and rejected)
     if (stages >= 7 && p.ari_approved !== undefined) stages = 8;
-
-    // Stage 9: TVL — tvl_status present
     if (stages >= 8 && p.tvl_status) stages = 9;
-
-    // Stage 10: Execution — ari_contracts present
     if (stages >= 9 && p.ari_contracts !== undefined) stages = 10;
-
-    // Stage 11: Observatory — pipeline_run_id present
     if (stages >= 10 && p.pipeline_run_id) stages = 11;
-
-    // Stage 12: Brain — brain_view present (even empty string counts)
     if (stages >= 11 && p.brain_view !== undefined) stages = 12;
-
-    // Stage 13: Mission Control — bar_time present
     if (stages >= 12 && p.bar_time) stages = 13;
-
-    // Stage 14: Heartbeat — always passes if we got this far
     if (stages >= 13) stages = 14;
-
-    // Detect explicit failures
-    // ARI rejection: stage 8 ran but rejected
     if (stages >= 8 && p.ari_approved === false && p.ari_rejection) failed = 8;
-    // TVL failure: stage 9 ran but failed
     if (failed === null && stages >= 9 && p.tvl_status === "FAIL") failed = 9;
-    // ADE no-trade: stage 7 ran but no candidate
     if (failed === null && stages >= 7 && p.ade_decision === "NO_TRADE") failed = 7;
   }
 
   const tradeApproved =
-    p?.ari_approved === true &&
-    p?.tvl_status === "PASS" &&
-    (p?.ade_decision === "LONG" || p?.ade_decision === "SHORT");
+    animStage === 14 ||
+    (p?.ari_approved === true &&
+      p?.tvl_status === "PASS" &&
+      (p?.ade_decision === "LONG" || p?.ade_decision === "SHORT"));
+
+  const runId = animRunId ?? p?.pipeline_run_id ?? null;
 
   return (
     <PipelineOrb
@@ -75,12 +197,13 @@ function PipelineOrbLive({ payload }: { payload: any }) {
       failedStage={failed}
       running={stages > 0 && stages < 14 && failed === null}
       tradeApproved={tradeApproved}
-      lastRun={p?.pipeline_run_id ?? null}
+      lastRun={runId}
       size={480}
     />
   );
 }
 
+// ─── ArcReactor ───────────────────────────────────────────────────────────────
 function ArcReactor({ size = 80 }: { size?: number }) {
   return (
     <div className="relative flex items-center justify-center" style={{ width: size, height: size }}>
@@ -98,183 +221,255 @@ function ArcReactor({ size = 80 }: { size?: number }) {
   );
 }
 
+// ─── Main Home Component ──────────────────────────────────────────────────────
 export default function Home() {
   const { sseStatus, backendStatus, dataFreshness, latestReport } = useNexusSSE();
   const { data: stats } = trpc.nexus.stats.useQuery(undefined, { refetchInterval: 30000 });
-  const { data: recentTrades } = trpc.paper.recentTrades.useQuery({ limit: 5 });
-  // Fetch latest report via tRPC on mount so the dashboard shows data immediately
-  // (SSE catchup is async and may arrive after first render)
+  const { data: summaryStats } = trpc.paper.summaryStats.useQuery({}, { refetchInterval: 60000 });
   const { data: initialReport } = trpc.nexus.latestReport.useQuery(undefined, { refetchInterval: 30000 });
+
+  // Clock tick
   const [tick, setTick] = useState(0);
-
-  // ── Demo mode ──────────────────────────────────────────────────────────────
-  const [demoStages, setDemoStages] = useState<number | null>(null);
-  const [demoRunId, setDemoRunId] = useState<string | null>(null);
-  const demoTimers = useRef<ReturnType<typeof setTimeout>[]>([]);
-
-  const runDemo = () => {
-    demoTimers.current.forEach(clearTimeout);
-    demoTimers.current = [];
-    setDemoStages(0);
-    setDemoRunId(null);
-    // Each stage lights up with a realistic delay — fast at start, slower at ARI/TVL
-    const DELAYS = [0, 280, 380, 480, 580, 680, 780, 1020, 1380, 1720, 1980, 2200, 2420, 2680, 3050];
-    DELAYS.forEach((delay, i) => {
-      const t = setTimeout(() => {
-        setDemoStages(i);
-        if (i === 14) setDemoRunId(`demo-${Date.now()}`);
-      }, delay);
-      demoTimers.current.push(t);
-    });
-    // Reset back to live view after explosion animation
-    const reset = setTimeout(() => { setDemoStages(null); setDemoRunId(null); }, 7500);
-    demoTimers.current.push(reset);
-  };
-
   useEffect(() => {
     const t = setInterval(() => setTick((n) => n + 1), 1000);
     return () => clearInterval(t);
   }, []);
+
+  // ── Demo / live animation mode ─────────────────────────────────────────────
+  // animStage: null = show live payload state; 0..14 = animated progression
+  const [animStage, setAnimStage] = useState<number | null>(null);
+  const [animRunId, setAnimRunId] = useState<string | null>(null);
+  const [isDemo, setIsDemo] = useState(false);
+  const demoTimers = useRef<ReturnType<typeof setTimeout>[]>([]);
+
+  // When a new real pipeline report arrives, animate the orb from 0→14
+  const lastReportId = useRef<string | null>(null);
+  const liveReport = latestReport ?? initialReport;
+  useEffect(() => {
+    if (!liveReport?.id || liveReport.id === lastReportId.current) return;
+    if (isDemo) return; // don't interrupt demo
+    lastReportId.current = liveReport.id;
+    // Animate live progression
+    demoTimers.current.forEach(clearTimeout);
+    demoTimers.current = [];
+    const DELAYS = [0, 180, 260, 340, 420, 500, 580, 780, 1050, 1350, 1580, 1780, 1960, 2180, 2500];
+    DELAYS.forEach((delay, i) => {
+      const t = setTimeout(() => {
+        setAnimStage(i);
+        if (i === 14) setAnimRunId(liveReport.id);
+      }, delay);
+      demoTimers.current.push(t);
+    });
+    // After animation settle, return to static live state
+    const reset = setTimeout(() => {
+      setAnimStage(null);
+      setAnimRunId(null);
+    }, 8000);
+    demoTimers.current.push(reset);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [liveReport?.id]);
+
+  const runDemo = () => {
+    demoTimers.current.forEach(clearTimeout);
+    demoTimers.current = [];
+    setIsDemo(true);
+    setAnimStage(0);
+    setAnimRunId(null);
+    const DELAYS = [0, 280, 380, 480, 580, 680, 780, 1020, 1380, 1720, 1980, 2200, 2420, 2680, 3050];
+    DELAYS.forEach((delay, i) => {
+      const t = setTimeout(() => {
+        setAnimStage(i);
+        if (i === 14) setAnimRunId(`demo-${Date.now()}`);
+      }, delay);
+      demoTimers.current.push(t);
+    });
+    const reset = setTimeout(() => {
+      setAnimStage(null);
+      setAnimRunId(null);
+      setIsDemo(false);
+    }, 7500);
+    demoTimers.current.push(reset);
+  };
 
   const now = new Date();
   const NY_TZ = "America/New_York";
   const timeStr = now.toLocaleTimeString("en-US", { hour12: false, hour: "2-digit", minute: "2-digit", second: "2-digit", timeZone: NY_TZ });
   const dateStr = now.toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "2-digit", timeZone: NY_TZ });
 
-  // SSE latestReport takes priority (live updates); fall back to tRPC-fetched initial report
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const p = latestReport?.payload ?? (initialReport?.payload as any) ?? null;
   const reportCount = stats?.totalReports ?? 0;
 
-  const closedTrades = recentTrades?.filter((t) => t.status === "CLOSED") ?? [];
-  const wins = closedTrades.filter((t) => parseFloat(t.pnl ?? "0") > 0).length;
-  const winRate = closedTrades.length > 0 ? ((wins / closedTrades.length) * 100).toFixed(0) : "—";
-  const totalPnl = closedTrades.reduce((sum, t) => sum + parseFloat(t.pnl ?? "0"), 0);
+  // Suppress unused tick warning
+  void tick;
 
   return (
     <PageWrapper>
       <OverviewStrip payload={p} sseStatus={sseStatus} backendStatus={backendStatus} dataFreshness={dataFreshness} reportCount={reportCount} />
-      <div className="p-4 grid gap-4" style={{ gridTemplateColumns: "1fr 1fr 1fr" }}>
-        {/* Identity Panel */}
-        <div className="hud-panel hud-panel-br flex flex-col items-center justify-center py-8 gap-4">
-          <ArcReactor size={100} />
-          <div className="text-center">
-            <div className="text-2xl font-bold tracking-[0.3em] text-[var(--arc-blue)] font-['Orbitron'] glow-blue">ORION</div>
-            <div className="text-xs tracking-[0.2em] text-[var(--color-muted-foreground)] mt-1">QUANTITATIVE TRADING OS</div>
-            <div className="text-[10px] tracking-[0.15em] text-[var(--arc-cyan)] mt-2 glow-cyan">ATLAS NEXUS v1.0</div>
-          </div>
-          <div className="text-center mt-2">
-            <div className="text-[var(--arc-cyan)] font-bold text-3xl font-['Orbitron'] tracking-widest glow-cyan" style={{ fontVariantNumeric: "tabular-nums" }}>{timeStr}</div>
-            <div className="text-[10px] tracking-[0.1em] text-[var(--color-muted-foreground)] mt-1">{dateStr}</div>
-          </div>
-        </div>
-        {/* Live Pipeline Status */}
-        <HudPanel title="Live Pipeline Status">
-          <DataRow label="Master State" value={<StateBadge value={p?.master_state} />} />
-          <DataRow label="Symbol" value={<span className="data-value glow-cyan font-['Orbitron']">{p?.symbol ?? "—"}</span>} />
-          <DataRow label="Timeframe" value={p?.timeframe ? `${p.timeframe}m` : "—"} />
-          <DataRow label="ADE Decision" value={<SignalBadge value={p?.ade_decision} />} />
-          <DataRow label="ARI Approval" value={<ApprovalBadge value={p?.ari_approved} />} />
-          <DataRow label="TVL Status" value={<PassFailBadge value={p?.tvl_status} />} />
-          <DataRow label="Circuit Breaker" value={
-            p?.ari_circuit_breaker
-              ? <span className={`status-badge ${p.ari_circuit_breaker === "OPEN" ? "status-error" : "status-live"}`}>{p.ari_circuit_breaker}</span>
-              : <span className="text-[var(--color-muted-foreground)]">—</span>
-          } />
-          <DataRow label="Last Bar" value={<span className="text-[var(--arc-cyan)] text-xs">{fmtTime(p?.bar_time)}</span>} />
-          <DataRow label="Pipeline Run" value={<span className="text-[var(--arc-blue)] text-xs">{p?.pipeline_run_id?.slice(-8) ?? "—"}</span>} />
-        </HudPanel>
-        {/* System Health */}
-        <HudPanel title="System Health">
-          <div className="space-y-1 py-1">
-            {[
-              { label: "SSE Stream", status: sseStatus, ok: sseStatus === "CONNECTED", warn: sseStatus === "CONNECTING" },
-              { label: "Backend API", status: backendStatus, ok: backendStatus === "OK", warn: false },
-              { label: "Data Freshness", status: dataFreshness, ok: dataFreshness === "LIVE", warn: dataFreshness === "UNKNOWN" },
-            ].map(({ label, status, ok, warn }) => (
-              <div key={label} className="flex items-center justify-between py-2 border-b border-[oklch(0.22_0.06_220/0.3)]">
-                <span className="data-label">{label}</span>
-                <div className="flex items-center gap-2">
-                  <div className={`w-2 h-2 rounded-full ${ok ? "bg-[var(--arc-cyan)]" : warn ? "bg-[var(--stark-gold)]" : "bg-[var(--danger-red)]"}`}
-                    style={{ boxShadow: ok ? "0 0 6px var(--arc-cyan)" : warn ? "0 0 6px var(--stark-gold)" : "0 0 6px var(--danger-red)" }} />
-                  <span className={`status-badge ${ok ? "status-live" : warn ? "status-warn" : "status-error"}`}>{status}</span>
-                </div>
-              </div>
-            ))}
-            <DataRow label="Total Reports" value={<span className="data-value-lg glow-blue font-['Orbitron']">{reportCount}</span>} />
-            <DataRow label="Last Received" value={<span className="text-xs text-[var(--arc-cyan)]">{fmtDateTime(stats?.lastReceivedAt)}</span>} />
-          </div>
-        </HudPanel>
-        {/* Brain View */}
-        <div className="hud-panel hud-panel-br flex flex-col" style={{ gridColumn: "1 / 3" }}>
-          <div className="hud-header"><span className="hud-header-dot" />Atlas Brain View</div>
-          <div className="flex-1 p-3">
-            <div className="text-xs text-[var(--arc-cyan)] leading-relaxed font-['JetBrains_Mono'] min-h-[60px]">
-              {p?.brain_view
-                ? <span className="glow-cyan jarvis-flicker">{p.brain_view}</span>
-                : <span className="text-[var(--color-muted-foreground)] italic">Awaiting pipeline signal…</span>}
+
+      <div className="p-4 flex flex-col gap-4">
+
+        {/* ── Row 1: Identity + Market State + System Health ── */}
+        <div className="grid gap-4" style={{ gridTemplateColumns: "220px 1fr 260px" }}>
+
+          {/* Identity */}
+          <div className="hud-panel hud-panel-br flex flex-col items-center justify-center py-6 gap-3">
+            <ArcReactor size={80} />
+            <div className="text-center">
+              <div className="text-xl font-bold tracking-[0.3em] text-[var(--arc-blue)] font-['Orbitron'] glow-blue">ORION</div>
+              <div className="text-[9px] tracking-[0.2em] text-[var(--color-muted-foreground)] mt-0.5">QUANTITATIVE TRADING OS</div>
+              <div className="text-[9px] tracking-[0.15em] text-[var(--arc-cyan)] mt-1 glow-cyan">ATLAS NEXUS v1.0</div>
             </div>
+            <div className="text-center">
+              <div className="text-[var(--arc-cyan)] font-bold text-2xl font-['Orbitron'] tracking-widest glow-cyan" style={{ fontVariantNumeric: "tabular-nums" }}>{timeStr}</div>
+              <div className="text-[9px] tracking-[0.08em] text-[var(--color-muted-foreground)] mt-0.5">{dateStr}</div>
+            </div>
+          </div>
+
+          {/* Market State — the main command-centre summary */}
+          <div className="hud-panel hud-panel-br flex flex-col">
+            <div className="hud-header"><span className="hud-header-dot" />Market State</div>
+            <div className="p-3 grid grid-cols-2 gap-x-6 gap-y-0 flex-1">
+              <div>
+                <DataRow label="Master State" value={<StateBadge value={p?.master_state} />} />
+                <DataRow label="Market Regime" value={p?.market_regime ? <span className="data-value text-[var(--arc-cyan)]">{p.market_regime}</span> : "—"} />
+                <DataRow label="Session" value={p?.session ? <span className="data-value">{p.session}</span> : "—"} />
+                <DataRow label="Symbol" value={<span className="data-value glow-cyan font-['Orbitron'] text-[var(--arc-cyan)]">{p?.symbol ?? "—"}</span>} />
+                <DataRow label="Bar Time" value={<span className="text-[var(--arc-cyan)] text-xs">{fmtTime(p?.bar_time)}</span>} />
+              </div>
+              <div>
+                <DataRow label="ADE Decision" value={<SignalBadge value={p?.ade_decision} />} />
+                <DataRow label="ARI Approval" value={<ApprovalBadge value={p?.ari_approved} />} />
+                <DataRow label="TVL Status" value={<PassFailBadge value={p?.tvl_status} />} />
+                <DataRow label="Circuit Breaker" value={
+                  p?.ari_circuit_breaker
+                    ? <span className={`status-badge ${p.ari_circuit_breaker === "OPEN" ? "status-error" : "status-live"}`}>{p.ari_circuit_breaker}</span>
+                    : <span className="text-[var(--color-muted-foreground)]">—</span>
+                } />
+                <DataRow label="Pipeline Run" value={<span className="text-[var(--arc-blue)] text-xs">{p?.pipeline_run_id?.slice(-8) ?? "—"}</span>} />
+              </div>
+            </div>
+            {/* Indicator strip */}
             {p && (
-              <div className="mt-3 pt-2 border-t border-[var(--hud-border)] grid grid-cols-3 gap-4 text-[10px] text-[var(--color-muted-foreground)]">
-                <div><span className="text-[var(--arc-blue)]">ADX</span> {fmt(p.adx)}</div>
-                <div><span className="text-[var(--arc-blue)]">RSI</span> {fmt(p.rsi)}</div>
-                <div><span className="text-[var(--arc-blue)]">ATR</span> {fmt(p.atr)}</div>
-                <div><span className="text-[var(--arc-blue)]">EMA9</span> {fmt(p.ema9)}</div>
-                <div><span className="text-[var(--arc-blue)]">EMA21</span> {fmt(p.ema21)}</div>
-                <div><span className="text-[var(--arc-blue)]">VWAP</span> {fmt(p.vwap)}</div>
+              <div className="px-3 pb-3 pt-1 border-t border-[var(--hud-border)] grid grid-cols-6 gap-2 text-[10px] text-[var(--color-muted-foreground)]">
+                <div><span className="text-[var(--arc-blue)]">ADX </span>{fmt(p.adx)}</div>
+                <div><span className="text-[var(--arc-blue)]">RSI </span>{fmt(p.rsi)}</div>
+                <div><span className="text-[var(--arc-blue)]">ATR </span>{fmt(p.atr)}</div>
+                <div><span className="text-[var(--arc-blue)]">EMA9 </span>{fmt(p.ema9)}</div>
+                <div><span className="text-[var(--arc-blue)]">EMA21 </span>{fmt(p.ema21)}</div>
+                <div><span className="text-[var(--arc-blue)]">VWAP </span>{fmt(p.vwap)}</div>
               </div>
             )}
+            {!p && (
+              <div className="px-3 pb-3 text-[var(--color-muted-foreground)] text-xs italic">Awaiting pipeline signal…</div>
+            )}
+          </div>
+
+          {/* System Health */}
+          <HudPanel title="System Health">
+            <div className="space-y-0 py-1">
+              {[
+                { label: "SSE Stream", status: sseStatus, ok: sseStatus === "CONNECTED", warn: sseStatus === "CONNECTING" },
+                { label: "Backend API", status: backendStatus, ok: backendStatus === "OK", warn: false },
+                { label: "Data Freshness", status: dataFreshness, ok: dataFreshness === "LIVE", warn: dataFreshness === "UNKNOWN" },
+              ].map(({ label, status, ok, warn }) => (
+                <div key={label} className="flex items-center justify-between py-2 border-b border-[oklch(0.22_0.06_220/0.3)]">
+                  <span className="data-label">{label}</span>
+                  <div className="flex items-center gap-2">
+                    <div className={`w-2 h-2 rounded-full ${ok ? "bg-[var(--arc-cyan)]" : warn ? "bg-[var(--stark-gold)]" : "bg-[var(--danger-red)]"}`}
+                      style={{ boxShadow: ok ? "0 0 6px var(--arc-cyan)" : warn ? "0 0 6px var(--stark-gold)" : "0 0 6px var(--danger-red)" }} />
+                    <span className={`status-badge ${ok ? "status-live" : warn ? "status-warn" : "status-error"}`}>{status}</span>
+                  </div>
+                </div>
+              ))}
+              <DataRow label="Total Reports" value={<span className="data-value-lg glow-blue font-['Orbitron']">{reportCount}</span>} />
+              <DataRow label="Last Bar" value={<span className="text-xs text-[var(--arc-cyan)]">{fmtTime(p?.bar_time)}</span>} />
+            </div>
+          </HudPanel>
+        </div>
+
+        {/* ── Row 2: Open Trade (if any) ── */}
+        {summaryStats?.open && <OpenTradeCard trade={summaryStats.open} />}
+
+        {/* ── Row 3: P&L Summary — Today / Week / Month / All-Time ── */}
+        <div>
+          <div className="text-[10px] tracking-[0.2em] text-[var(--color-muted-foreground)] mb-2 font-mono uppercase">Paper Trading Performance — PAPER provenance only</div>
+          <div className="grid grid-cols-4 gap-3">
+            <PnlBucket label="Today" data={summaryStats?.today} />
+            <PnlBucket label="This Week" data={summaryStats?.week} />
+            <PnlBucket label="This Month" data={summaryStats?.month} />
+            <PnlBucket label="All Time" data={summaryStats?.allTime} />
           </div>
         </div>
-        {/* Pipeline Orb — full width */}
-        <div className="hud-panel hud-panel-br flex flex-col" style={{ gridColumn: "1 / 4" }}>
+
+        {/* ── Row 4: Pipeline Orb — full width ── */}
+        <div className="hud-panel hud-panel-br flex flex-col">
           <div className="hud-header" style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <div className="flex items-center gap-2"><span className="hud-header-dot" />ORION Pipeline — 14-Stage Execution Sequence</div>
+            <div className="flex items-center gap-2">
+              <span className="hud-header-dot" />
+              ORION Pipeline — 14-Stage Execution Sequence
+              {animStage !== null && !isDemo && (
+                <span className="text-[9px] font-mono text-[var(--arc-cyan)] animate-pulse ml-2">● LIVE SIGNAL</span>
+              )}
+            </div>
             <button
               onClick={runDemo}
-              disabled={demoStages !== null}
+              disabled={animStage !== null}
               className="text-[10px] font-mono tracking-widest px-3 py-1 rounded border transition-all mr-1"
               style={{
-                borderColor: demoStages !== null ? "oklch(0.35 0.08 220)" : "var(--arc-cyan)",
-                color: demoStages !== null ? "oklch(0.45 0.08 220)" : "var(--arc-cyan)",
+                borderColor: animStage !== null ? "oklch(0.35 0.08 220)" : "var(--arc-cyan)",
+                color: animStage !== null ? "oklch(0.45 0.08 220)" : "var(--arc-cyan)",
                 background: "transparent",
-                cursor: demoStages !== null ? "not-allowed" : "pointer",
-                boxShadow: demoStages !== null ? "none" : "0 0 8px oklch(0.72 0.22 210 / 0.3)",
+                cursor: animStage !== null ? "not-allowed" : "pointer",
+                boxShadow: animStage !== null ? "none" : "0 0 8px oklch(0.72 0.22 210 / 0.3)",
               }}
             >
-              {demoStages !== null ? "RUNNING…" : "▶ RUN DEMO"}
+              {animStage !== null ? (isDemo ? "DEMO RUNNING…" : "SIGNAL ACTIVE…") : "▶ RUN DEMO"}
             </button>
           </div>
-          <div className="flex flex-col items-center py-6 gap-2">
-            {demoStages !== null ? (
-              <PipelineOrb
-                stagesPassed={demoStages}
-                failedStage={null}
-                running={demoStages > 0 && demoStages < 14}
-                tradeApproved={demoStages === 14}
-                lastRun={demoRunId}
-                size={480}
-              />
-            ) : (
-              <PipelineOrbLive payload={p} />
-            )}
-          </div>
-        </div>
-        {/* Paper Trading Summary */}
-        <HudPanel title="Paper Trading">
-          <DataRow label="Win Rate" value={<span className={winRate !== "—" ? "pnl-positive" : "data-value"}>{winRate !== "—" ? `${winRate}%` : "—"}</span>} />
-          <DataRow label="Total P&L" value={<span className={totalPnl >= 0 ? "pnl-positive" : "pnl-negative"}>{closedTrades.length > 0 ? `$${totalPnl.toFixed(2)}` : "—"}</span>} />
-          <DataRow label="Trades (5)" value={closedTrades.length} />
-          {closedTrades.slice(0, 3).map((t) => (
-            <div key={t.id} className="flex items-center justify-between py-1 border-b border-[oklch(0.22_0.06_220/0.3)] text-[10px]">
-              <span className="text-[var(--color-muted-foreground)]">{t.model ?? "—"}</span>
-              <span className={parseFloat(t.pnl ?? "0") >= 0 ? "pnl-positive" : "pnl-negative"}>
-                {t.pnl ? `$${parseFloat(t.pnl).toFixed(2)}` : "—"}
-              </span>
+          {/* Stage progress bar */}
+          {animStage !== null && (
+            <div className="px-4 pt-2">
+              <div className="flex items-center gap-1">
+                {Array.from({ length: 14 }, (_, i) => {
+                  const stageNum = i + 1;
+                  const passed = animStage >= stageNum;
+                  const active = animStage === stageNum - 1;
+                  return (
+                    <div
+                      key={stageNum}
+                      className="flex-1 h-1.5 rounded-sm transition-all duration-300"
+                      style={{
+                        background: passed ? "#4ade80" : active ? "#fb923c" : "oklch(0.18 0.06 220)",
+                        boxShadow: passed ? "0 0 4px #4ade80" : active ? "0 0 4px #fb923c" : "none",
+                      }}
+                    />
+                  );
+                })}
+              </div>
+              <div className="flex justify-between text-[8px] font-mono text-[var(--color-muted-foreground)] mt-0.5 px-0.5">
+                <span>CFG</span><span>STA</span><span>MKT</span><span>A1</span><span>A3</span><span>B1</span>
+                <span>ADE</span><span>ARI</span><span>TVL</span><span>EXE</span><span>OBS</span><span>BRN</span><span>MIS</span><span>HBT</span>
+              </div>
             </div>
-          ))}
-          {closedTrades.length === 0 && <div className="text-[var(--color-muted-foreground)] text-xs text-center py-3">No trades yet</div>}
-        </HudPanel>
+          )}
+          <div className="flex flex-col items-center py-4 gap-2">
+            <PipelineOrbLive payload={p} animStage={animStage} animRunId={animRunId} />
+          </div>
+          {/* Trade fired card */}
+          {animStage === 14 && (
+            <div className="mx-4 mb-4 p-3 rounded border border-green-500/40 bg-green-950/20 text-center"
+              style={{ boxShadow: "0 0 20px oklch(0.55 0.22 145 / 0.2)" }}>
+              <div className="text-green-400 font-bold font-['Orbitron'] tracking-widest text-sm glow-green">
+                ✓ TRADE APPROVED — ALL 14 STAGES PASSED
+              </div>
+              <div className="text-[10px] text-[var(--color-muted-foreground)] mt-1">
+                {isDemo ? "Demo simulation complete" : `Pipeline run ${animRunId?.slice(-8) ?? ""} — paper trade opened`}
+              </div>
+            </div>
+          )}
+        </div>
+
       </div>
     </PageWrapper>
   );
