@@ -45,6 +45,7 @@ const PortfolioIntelligencePage = lazy(() => import("./pages/PortfolioIntelligen
 const PortfolioCoveragePage = lazy(() => import("./pages/PortfolioCoverage"));
 const DarwinDiscoveryPage = lazy(() => import("./pages/DarwinDiscovery"));
 const WalkForwardPage = lazy(() => import("./pages/WalkForward"));
+const ApexEvaluationPage = lazy(() => import("./pages/ApexEvaluation"));
 
 function PageLoader() {
   return (
@@ -99,6 +100,7 @@ function Router() {
           <Route path="/portfolio-coverage" component={PortfolioCoveragePage} />
           <Route path="/darwin-discovery" component={DarwinDiscoveryPage} />
           <Route path="/walk-forward" component={WalkForwardPage} />
+          <Route path="/apex-evaluation" component={ApexEvaluationPage} />
           <Route path="/404" component={NotFound} />
           <Route component={NotFound} />
         </Switch>

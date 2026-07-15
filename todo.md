@@ -809,3 +809,12 @@
 - [x] Walk-Forward dashboard at /walk-forward: promotion gate, KPIs, live vs benchmark, drift alerts, trade log, sessions
 - [x] Daily executive report generator: auto-fires on PM_CLOSE bar, writes wf_sessions + wf_daily_reports
 - [x] Registry updates, Sprint 111 closure report, commit 69321b9 pushed to SFGrowth/Project-Atlas
+
+## Sprint 112 — Apex 50K Evaluation Validation Plan (2026-07-15)
+
+- [x] Repository audit: git log, load all registries, Sprint 111 closure, Apex/Tradovate docs
+- [x] Part 1: Apex 50K risk analysis — 99.6% pass probability, 0.4% ruin, median 5 trades to pass
+- [x] Part 2+3: APEX-EXECUTION-WORKFLOW.md + divergence engine (NONE/EXPECTED/ELEVATED/OUTCOME/ERROR)
+- [x] Part 4: apex_trades + apex_account_snapshots tables, apexRouter.ts, ApexEvaluation.tsx at /apex-evaluation
+- [x] Part 5+6: APEX-CAPITAL-SCALING-ROADMAP.md — 4 phases, $450→$5,100 daily exposure scaling
+- [x] Part 7: Sprint 112 closure report, commit f8b9a71 pushed to SFGrowth/Project-Atlas

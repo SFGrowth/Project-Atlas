@@ -86,6 +86,7 @@ const NAV_GROUPS = [
       { icon: Cpu, label: "Autonomous Ops", path: "/autonomous" },
       { icon: ShieldCheck, label: "Live Learning Cert", path: "/live-learning" },
       { icon: Activity, label: "Walk-Forward S111", path: "/walk-forward" },
+      { icon: Activity, label: "Apex Evaluation S112", path: "/apex-evaluation" },
     ],
   },
 ];

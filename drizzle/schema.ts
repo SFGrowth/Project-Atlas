@@ -1867,3 +1867,104 @@ export const wfDailyReports = mysqlTable("wf_daily_reports", {
 });
 export type WfDailyReport = typeof wfDailyReports.$inferSelect;
 export type InsertWfDailyReport = typeof wfDailyReports.$inferInsert;
+
+// ── Sprint 112: Apex Evaluation Tables ────────────────────────────────────────
+
+/**
+ * apex_trades — manual Apex Evaluation trade records.
+ * Each row mirrors a wf_live_trades signal with actual Tradovate execution data.
+ */
+export const apexTrades = mysqlTable("apex_trades", {
+  id: int("id").autoincrement().primaryKey(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+
+  // Link to Walk-Forward signal
+  wfTradeId: int("wf_trade_id"),            // FK to wf_live_trades.id (nullable — manual entry)
+  hypothesisId: varchar("hypothesis_id", { length: 32 }).notNull().default("DARWIN-S109-001"),
+  hypothesisVersion: varchar("hypothesis_version", { length: 16 }).notNull().default("1.0"),
+
+  // Trade identity
+  tradeDate: date("trade_date").notNull(),
+  direction: mysqlEnum("direction", ["LONG", "SHORT"]).notNull(),
+  instrument: varchar("instrument", { length: 16 }).notNull().default("MNQ"),
+  contracts: int("contracts").notNull().default(1),
+
+  // Atlas signal prices (theoretical)
+  atlasSignalBarTime: bigint("atlas_signal_bar_time", { mode: "number" }),
+  atlasEntryPrice: decimal("atlas_entry_price", { precision: 10, scale: 2 }),
+  atlasStopPrice: decimal("atlas_stop_price", { precision: 10, scale: 2 }),
+  atlasTargetPrice: decimal("atlas_target_price", { precision: 10, scale: 2 }),
+  atlasAtr14: decimal("atlas_atr14", { precision: 10, scale: 4 }),
+
+  // Apex actual execution prices
+  apexEntryPrice: decimal("apex_entry_price", { precision: 10, scale: 2 }).notNull(),
+  apexEntryTime: bigint("apex_entry_time", { mode: "number" }),
+  apexStopPrice: decimal("apex_stop_price", { precision: 10, scale: 2 }).notNull(),
+  apexTargetPrice: decimal("apex_target_price", { precision: 10, scale: 2 }).notNull(),
+
+  // Exit data (filled after trade closes)
+  apexExitPrice: decimal("apex_exit_price", { precision: 10, scale: 2 }),
+  apexExitTime: bigint("apex_exit_time", { mode: "number" }),
+  apexExitReason: mysqlEnum("apex_exit_reason", ["TARGET", "STOP", "TIME_STOP", "MANUAL"]),
+  apexPnl: decimal("apex_pnl", { precision: 10, scale: 2 }),
+  apexHoldingBars: int("apex_holding_bars"),
+
+  // Comparison metrics (computed on close)
+  entrySlippagePts: decimal("entry_slippage_pts", { precision: 8, scale: 4 }),
+  exitSlippagePts: decimal("exit_slippage_pts", { precision: 8, scale: 4 }),
+  pnlDifference: decimal("pnl_difference", { precision: 10, scale: 2 }),  // apex_pnl - atlas_pnl
+  outcomeMatch: boolean("outcome_match"),                                    // true if same W/L
+  divergenceFlag: mysqlEnum("divergence_flag", [
+    "NONE", "EXPECTED_SLIPPAGE", "ELEVATED_SLIPPAGE",
+    "EXECUTION_ERROR", "OUTCOME_DIVERGENCE", "MISSING_TRADE", "EXTRA_TRADE"
+  ]).default("NONE"),
+  divergenceNotes: text("divergence_notes"),
+
+  // Trade status
+  status: mysqlEnum("status", ["OPEN", "CLOSED"]).notNull().default("OPEN"),
+  isWin: boolean("is_win"),
+});
+
+export type ApexTrade = typeof apexTrades.$inferSelect;
+export type InsertApexTrade = typeof apexTrades.$inferInsert;
+
+/**
+ * apex_account_snapshots — daily Apex account state snapshots.
+ * Manually entered after each RTH session close.
+ */
+export const apexAccountSnapshots = mysqlTable("apex_account_snapshots", {
+  id: int("id").autoincrement().primaryKey(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  snapshotDate: date("snapshot_date").notNull().unique(),
+
+  // Account balances
+  startingBalance: decimal("starting_balance", { precision: 12, scale: 2 }).notNull().default("50000.00"),
+  currentBalance: decimal("current_balance", { precision: 12, scale: 2 }).notNull(),
+  currentEquity: decimal("current_equity", { precision: 12, scale: 2 }).notNull(),
+  unrealisedPnl: decimal("unrealised_pnl", { precision: 10, scale: 2 }).notNull().default("0.00"),
+  dailyPnl: decimal("daily_pnl", { precision: 10, scale: 2 }).notNull(),
+
+  // Apex evaluation metrics
+  profitTarget: decimal("profit_target", { precision: 10, scale: 2 }).notNull().default("3000.00"),
+  trailingDdLimit: decimal("trailing_dd_limit", { precision: 10, scale: 2 }).notNull().default("2000.00"),
+  peakBalance: decimal("peak_balance", { precision: 12, scale: 2 }).notNull(),
+  trailingThreshold: decimal("trailing_threshold", { precision: 12, scale: 2 }).notNull(),
+  remainingTrailingDd: decimal("remaining_trailing_dd", { precision: 10, scale: 2 }).notNull(),
+  currentDrawdown: decimal("current_drawdown", { precision: 10, scale: 2 }).notNull(),
+
+  // Progress
+  totalProfit: decimal("total_profit", { precision: 10, scale: 2 }).notNull(),
+  passProgress: decimal("pass_progress", { precision: 5, scale: 2 }).notNull(),  // 0–100%
+  tradesToday: int("trades_today").notNull().default(0),
+  totalTrades: int("total_trades").notNull().default(0),
+
+  // Status
+  evaluationStatus: mysqlEnum("evaluation_status", [
+    "ACTIVE", "PASSED", "FAILED", "SUSPENDED"
+  ]).notNull().default("ACTIVE"),
+  notes: text("notes"),
+});
+
+export type ApexAccountSnapshot = typeof apexAccountSnapshots.$inferSelect;
+export type InsertApexAccountSnapshot = typeof apexAccountSnapshots.$inferInsert;

@@ -127,6 +127,13 @@
       "when": 1784087485545,
       "tag": "0017_fat_trauma",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "5",
+      "when": 1784089259205,
+      "tag": "0018_talented_terrax",
+      "breakpoints": true
     }
   ]
 }
