@@ -456,11 +456,32 @@ export async function getPaperSummaryStats(account = "ATLAS_MONITOR_PAPER") {
   const db = await getDb();
   if (!db) return null;
   const now = new Date();
-  const todayStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
-  const dow = now.getUTCDay();
-  const daysToMon = dow === 0 ? 6 : dow - 1;
+  // All boundaries use New York (ET) midnight, not UTC midnight.
+  // We derive "today NY" by formatting now in ET and rebuilding as UTC.
+  const NY = 'America/New_York';
+  const nyParts = new Intl.DateTimeFormat('en-US', {
+    timeZone: NY, year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false,
+  }).formatToParts(now);
+  const nyGet = (t: string) => parseInt(nyParts.find((p) => p.type === t)?.value ?? '0', 10);
+  // NY midnight as a UTC Date
+  const nyMidnightLocal = new Date(
+    nyGet('year'), nyGet('month') - 1, nyGet('day'), 0, 0, 0, 0
+  );
+  // Convert local-midnight to UTC by subtracting the NY offset
+  const nyOffset = now.getTime() - new Date(
+    nyGet('year'), nyGet('month') - 1, nyGet('day'),
+    nyGet('hour') === 24 ? 0 : nyGet('hour'), nyGet('minute'), nyGet('second')
+  ).getTime();
+  const todayStart = new Date(nyMidnightLocal.getTime() + nyOffset);
+  // Week start: Monday NY midnight
+  const nyDow = todayStart.getDay(); // 0=Sun
+  const daysToMon = nyDow === 0 ? 6 : nyDow - 1;
   const weekStart = new Date(todayStart.getTime() - daysToMon * 86400000);
-  const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+  // Month start: 1st of current NY month at NY midnight
+  const monthStart = new Date(
+    new Date(nyGet('year'), nyGet('month') - 1, 1, 0, 0, 0, 0).getTime() + nyOffset
+  );
   const allClosed = await db
     .select()
     .from(paperTrades)
