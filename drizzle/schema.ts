@@ -2237,3 +2237,70 @@ export const tpDispatchLog = mysqlTable("tp_dispatch_log", {
 });
 export type TpDispatchLog = typeof tpDispatchLog.$inferSelect;
 export type InsertTpDispatchLog = typeof tpDispatchLog.$inferInsert;
+
+// ══════════════════════════════════════════════════════════════════════════════
+// SPRINT 114A — UNIFIED PORTFOLIO EXECUTION
+// ══════════════════════════════════════════════════════════════════════════════
+
+/**
+ * portfolio_execution_config — singleton row (id=1) controlling the master
+ * execution state for the entire Atlas portfolio.
+ *
+ * executionState:
+ *   PAPER_ONLY       — paper trades only; no TradersPost dispatch
+ *   APEX_EVAL_ACTIVE — live dispatch to TradersPost → Apex 50K Evaluation
+ *   HALTED           — all dispatch blocked (manual or safety-triggered)
+ *
+ * One webhook URL serves all six strategies.
+ * The selected_strategy_id in each payload preserves per-model reporting.
+ */
+export const portfolioExecutionConfig = mysqlTable("portfolio_execution_config", {
+  id:                  int("id").primaryKey().default(1),
+  executionState:      mysqlEnum("execution_state", ["PAPER_ONLY", "APEX_EVAL_ACTIVE", "HALTED"]).notNull().default("PAPER_ONLY"),
+  webhookUrl:          varchar("webhook_url", { length: 512 }),          // single TradersPost webhook for all strategies
+  accountLabel:        varchar("account_label", { length: 64 }).default("APEX_50K_EVAL"), // routing label in payload
+  ticker:              varchar("ticker", { length: 16 }).notNull().default("MNQ1!"),
+  quantity:            int("quantity").notNull().default(1),
+  riskDollars:         decimal("risk_dollars", { precision: 10, scale: 2 }).notNull().default("450.00"),
+  // Activation audit trail
+  activatedAt:         bigint("activated_at", { mode: "number" }),        // when APEX_EVAL_ACTIVE was last set
+  activatedByOwner:    boolean("activated_by_owner").notNull().default(false),
+  haltReason:          text("halt_reason"),                               // populated when HALTED
+  haltedAt:            bigint("halted_at", { mode: "number" }),
+  // Dispatch stats (denormalised for fast dashboard reads)
+  lastApprovedModel:   varchar("last_approved_model", { length: 32 }),
+  lastDispatchAt:      bigint("last_dispatch_at", { mode: "number" }),
+  lastDispatchStatus:  varchar("last_dispatch_status", { length: 32 }),
+  lastTpResponse:      text("last_tp_response"),
+  notes:               text("notes"),
+  updatedAt:           timestamp("updated_at").defaultNow().notNull(),
+});
+export type PortfolioExecutionConfig = typeof portfolioExecutionConfig.$inferSelect;
+export type InsertPortfolioExecutionConfig = typeof portfolioExecutionConfig.$inferInsert;
+
+/**
+ * portfolio_strategy_controls — one row per strategy.
+ * Controls whether a strategy may submit proposals to ADE.
+ * Does NOT control dispatch (that is the portfolioExecutionConfig).
+ *
+ * strategyStatus:
+ *   ENABLED  — strategy participates in ADE ranking every bar
+ *   PAUSED   — temporarily excluded from proposals (engineering/fault)
+ *   RETIRED  — permanently excluded; kept for historical reporting
+ *   FAULTED  — auto-set when a strategy produces invalid signals
+ */
+export const portfolioStrategyControls = mysqlTable("portfolio_strategy_controls", {
+  id:              int("id").autoincrement().primaryKey(),
+  strategyId:      varchar("strategy_id", { length: 32 }).notNull().unique(), // A1|A3|B1|SB1|ORB-1|S109-001
+  strategyStatus:  mysqlEnum("strategy_status", ["ENABLED", "PAUSED", "RETIRED", "FAULTED"]).notNull().default("ENABLED"),
+  pauseReason:     text("pause_reason"),
+  lastProposalAt:  bigint("last_proposal_at", { mode: "number" }),
+  lastSelectedAt:  bigint("last_selected_at", { mode: "number" }),
+  lastAdeScore:    decimal("last_ade_score", { precision: 8, scale: 4 }),
+  lastDirection:   varchar("last_direction", { length: 8 }),
+  lastNoTradeReason: text("last_no_trade_reason"),
+  createdAt:       timestamp("created_at").defaultNow().notNull(),
+  updatedAt:       timestamp("updated_at").defaultNow().notNull(),
+});
+export type PortfolioStrategyControl = typeof portfolioStrategyControls.$inferSelect;
+export type InsertPortfolioStrategyControl = typeof portfolioStrategyControls.$inferInsert;

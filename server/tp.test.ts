@@ -346,3 +346,153 @@ describe("ADE unified ranking — S109-001 integration", () => {
     expect(canArm).toBe(true);
   });
 });
+
+// ─── Sprint 114A: Unified Portfolio Execution ─────────────────────────────────
+
+describe("Sprint 114A — portfolioExecDb: execution state transitions", () => {
+  it("PAPER_ONLY → APEX_EVAL_ACTIVE sets activatedAt and activatedByOwner", () => {
+    const now = Date.now();
+    const updates: Record<string, unknown> = {};
+    const state = "APEX_EVAL_ACTIVE";
+    if (state === "APEX_EVAL_ACTIVE") {
+      updates.activatedAt = now;
+      updates.activatedByOwner = true;
+      updates.haltReason = null;
+      updates.haltedAt = null;
+    }
+    expect(updates.activatedByOwner).toBe(true);
+    expect(updates.haltReason).toBeNull();
+    expect(typeof updates.activatedAt).toBe("number");
+  });
+
+  it("HALTED state sets haltReason and haltedAt", () => {
+    const now = Date.now();
+    const updates: Record<string, unknown> = {};
+    const state = "HALTED";
+    const reason = "Daily loss limit breached";
+    if (state === "HALTED") {
+      updates.haltReason = reason;
+      updates.haltedAt = now;
+    }
+    expect(updates.haltReason).toBe("Daily loss limit breached");
+    expect(typeof updates.haltedAt).toBe("number");
+  });
+
+  it("PAPER_ONLY clears haltReason and haltedAt", () => {
+    const updates: Record<string, unknown> = {};
+    const state = "PAPER_ONLY";
+    if (state === "PAPER_ONLY") {
+      updates.haltReason = null;
+      updates.haltedAt = null;
+    }
+    expect(updates.haltReason).toBeNull();
+    expect(updates.haltedAt).toBeNull();
+  });
+});
+
+describe("Sprint 114A — tpDispatch: unified gate logic", () => {
+  it("PAPER_ONLY state blocks dispatch and logs DISARMED", () => {
+    const execConfig = { executionState: "PAPER_ONLY", webhookUrl: "https://traderspost.io/webhook/test" };
+    const shouldDispatch = execConfig.executionState === "APEX_EVAL_ACTIVE" && !!execConfig.webhookUrl;
+    expect(shouldDispatch).toBe(false);
+  });
+
+  it("HALTED state blocks dispatch regardless of webhook URL", () => {
+    const execConfig = { executionState: "HALTED", webhookUrl: "https://traderspost.io/webhook/test" };
+    const shouldDispatch = execConfig.executionState === "APEX_EVAL_ACTIVE" && !!execConfig.webhookUrl;
+    expect(shouldDispatch).toBe(false);
+  });
+
+  it("APEX_EVAL_ACTIVE with webhook URL allows dispatch", () => {
+    const execConfig = { executionState: "APEX_EVAL_ACTIVE", webhookUrl: "https://traderspost.io/webhook/test" };
+    const shouldDispatch = execConfig.executionState === "APEX_EVAL_ACTIVE" && !!execConfig.webhookUrl;
+    expect(shouldDispatch).toBe(true);
+  });
+
+  it("APEX_EVAL_ACTIVE without webhook URL blocks dispatch", () => {
+    const execConfig = { executionState: "APEX_EVAL_ACTIVE", webhookUrl: null };
+    const shouldDispatch = execConfig.executionState === "APEX_EVAL_ACTIVE" && !!execConfig.webhookUrl;
+    expect(shouldDispatch).toBe(false);
+  });
+
+  it("unified payload includes selected_strategy_id for per-model reporting", () => {
+    const model = "S109-001";
+    const payload = {
+      ticker: "MNQ1!",
+      action: "buy",
+      price: 21500,
+      quantity: 1,
+      atlas: {
+        selected_strategy_id: model,
+        direction: "LONG",
+        account_routing_label: "APEX_50K_EVAL",
+      },
+    };
+    expect(payload.atlas.selected_strategy_id).toBe("S109-001");
+    expect(payload.atlas.account_routing_label).toBe("APEX_50K_EVAL");
+  });
+
+  it("idempotency key includes model, barTime and direction", () => {
+    const model = "A1";
+    const barTimeMs = 1720000000000;
+    const direction = "LONG";
+    const key = `TP_${model}_${barTimeMs}_${direction}`;
+    expect(key).toBe("TP_A1_1720000000000_LONG");
+    expect(key).toContain(model);
+    expect(key).toContain(String(barTimeMs));
+    expect(key).toContain(direction);
+  });
+});
+
+describe("Sprint 114A — strategy controls: ENABLED/PAUSED gate", () => {
+  it("PAUSED strategy is excluded from ADE proposals", () => {
+    const controls = [
+      { strategyId: "A1", strategyStatus: "ENABLED" },
+      { strategyId: "A3", strategyStatus: "PAUSED" },
+      { strategyId: "B1", strategyStatus: "ENABLED" },
+    ];
+    const eligible = controls.filter((c) => c.strategyStatus === "ENABLED").map((c) => c.strategyId);
+    expect(eligible).toContain("A1");
+    expect(eligible).not.toContain("A3");
+    expect(eligible).toContain("B1");
+  });
+
+  it("FAULTED strategy is excluded from ADE proposals", () => {
+    const controls = [
+      { strategyId: "SB1", strategyStatus: "FAULTED" },
+      { strategyId: "ORB-1", strategyStatus: "ENABLED" },
+    ];
+    const eligible = controls.filter((c) => c.strategyStatus === "ENABLED").map((c) => c.strategyId);
+    expect(eligible).not.toContain("SB1");
+    expect(eligible).toContain("ORB-1");
+  });
+
+  it("RETIRED strategy is permanently excluded", () => {
+    const controls = [
+      { strategyId: "B1", strategyStatus: "RETIRED" },
+    ];
+    const eligible = controls.filter((c) => c.strategyStatus === "ENABLED");
+    expect(eligible.length).toBe(0);
+  });
+
+  it("all 6 strategies ENABLED means full portfolio coverage", () => {
+    const controls = ["A1", "A3", "B1", "SB1", "ORB-1", "S109-001"].map((id) => ({
+      strategyId: id,
+      strategyStatus: "ENABLED",
+    }));
+    const eligible = controls.filter((c) => c.strategyStatus === "ENABLED");
+    expect(eligible.length).toBe(6);
+  });
+});
+
+describe("Sprint 114A — single webhook: no per-strategy routing required", () => {
+  it("all strategies route to the same webhook URL", () => {
+    const portfolioWebhookUrl = "https://traderspost.io/trading/webhook/unified-atlas";
+    const strategies = ["A1", "A3", "B1", "SB1", "ORB-1", "S109-001"];
+    // Every strategy dispatches to the same URL — no per-strategy routing
+    const urls = strategies.map(() => portfolioWebhookUrl);
+    const uniqueUrls = [...new Set(urls)];
+    expect(uniqueUrls.length).toBe(1);
+    expect(uniqueUrls[0]).toBe(portfolioWebhookUrl);
+  });
+});

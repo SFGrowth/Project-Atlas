@@ -1,98 +1,72 @@
 /**
- * tpDispatch.ts — TradersPost Dispatch Engine
+ * tpDispatch.ts — Sprint 114A: Unified Portfolio Execution Dispatch
  *
- * Sprint 113: Server-side TradersPost dispatch.
+ * Architecture:
+ *   - ONE TradersPost webhook for the entire Atlas portfolio
+ *   - ONE master execution state: PAPER_ONLY | APEX_EVAL_ACTIVE | HALTED
+ *   - Per-strategy ENABLED/PAUSED/RETIRED/FAULTED controls (proposal gate only)
+ *   - selected_strategy_id in payload preserves per-model reporting
  *
- * This module fires AFTER the paper trade engine selects a model.
- * It is purely additive — it does not modify, interrupt, or replace
- * any existing pipeline logic.
- *
- * Governance gates (in order):
- *   1. Idempotency check — skip if already dispatched for this bar+model+direction
- *   2. Config check — skip if strategy not found or DISARMED
- *   3. Frozen check — skip if frozenUntilOwnerApproval === true
- *   4. Safety lockout — skip if apex_safety_state.isHalted === true
- *   5. PRE_LIVE_GATE — skip if preLiveGateRequired and gate not passed
- *   6. Dispatch — POST to TradersPost webhook URL
- *   7. Log — write result to tp_dispatch_log
+ * Gate order (fail-fast):
+ *   1. Idempotency — skip if already dispatched for this bar+model+direction
+ *   2. Execution state — PAPER_ONLY = no dispatch; HALTED = blocked
+ *   3. Webhook URL — must be configured
+ *   4. Safety lockout — apex_safety_state.isHalted
+ *   5. Dispatch → log result
  */
 
-import {
-  getTpConfig,
-  getTpDispatchByKey,
-  logTpDispatch,
-  type TpStrategyId,
-} from "./tpDb.js";
+import { logTpDispatch, getTpDispatchByKey } from "./tpDb.js";
+import { getPortfolioExecConfig, updateLastDispatch } from "./portfolioExecDb.js";
 
 export interface TpDispatchParams {
-  model: TpStrategyId;
+  model: string;                    // ADE-selected strategy ID
   direction: "LONG" | "SHORT";
   entryPrice: number;
   stopPrice: number;
   targetPrice: number;
   barTimeMs: number;
-  atlasMemoryBarId: number;
-  pipelineRunId: string;
+  atlasMemoryBarId?: number;
+  pipelineRunId?: string;
+  riskDollars?: number;
+  contracts?: number;
+  atlasDecisionId?: string;         // optional pipeline run ID as decision ID
 }
 
-/**
- * Build the TradersPost webhook payload.
- * Follows the TradersPost JSON format for bracket orders.
- */
-function buildTpPayload(params: TpDispatchParams, quantity: number, idempotencyKey: string): Record<string, unknown> {
-  const isBuy = params.direction === "LONG";
+function buildUnifiedPayload(params: TpDispatchParams, config: {
+  ticker: string;
+  quantity: number;
+  accountLabel: string | null;
+}, idempotencyKey: string) {
+  const action = params.direction === "LONG" ? "buy" : "sell";
   return {
-    ticker: "MNQ1!",
-    action: isBuy ? "buy" : "sell",
-    sentiment: isBuy ? "bullish" : "bearish",
-    quantity,
-    stopLoss: {
-      type: "stop",
-      value: params.stopPrice,
-    },
-    takeProfit: {
-      type: "limit",
-      value: params.targetPrice,
-    },
-    passthrough: {
-      atlas_strategy_id: params.model,
-      atlas_idempotency_key: idempotencyKey,
-      atlas_bar_time_ms: params.barTimeMs,
+    ticker: config.ticker,
+    action,
+    price: params.entryPrice,
+    quantity: config.quantity,
+    // Atlas metadata — preserved in TradersPost logs
+    atlas: {
+      selected_strategy_id: params.model,
+      strategy_version: "1.0.0",
+      direction: params.direction,
+      entry_price: params.entryPrice,
+      stop_price: params.stopPrice,
+      target_price: params.targetPrice,
+      risk_dollars: params.riskDollars ?? 450,
+      contracts: params.contracts ?? config.quantity,
+      entry_type: "MARKET",
+      account_routing_label: config.accountLabel ?? "APEX_50K_EVAL",
+      signal_timestamp_utc: new Date(params.barTimeMs).toISOString(),
+      atlas_decision_id: params.atlasDecisionId ?? params.pipelineRunId ?? "",
+      idempotency_key: idempotencyKey,
       atlas_bar_time_utc: new Date(params.barTimeMs).toISOString(),
       atlas_pipeline_run_id: params.pipelineRunId,
-      atlas_entry_price: params.entryPrice,
-      atlas_stop_price: params.stopPrice,
-      atlas_target_price: params.targetPrice,
       atlas_version: "1.0.0",
     },
   };
 }
 
 /**
- * Check if the PRE_LIVE_GATE certification has passed.
- * Reads from exec_cert_runs — looks for a completed PRE_LIVE_GATE run where all stages passed.
- */
-async function isPreLiveGatePassed(): Promise<boolean> {
-  try {
-    const { getDb } = await import("./db.js");
-    const { execCertRuns } = await import("../drizzle/schema.js");
-    const { eq, and } = await import("drizzle-orm");
-    const db = await getDb();
-    if (!db) return false;
-    const runs = await db.select().from(execCertRuns)
-      .where(and(
-        eq(execCertRuns.runType, "PRE_LIVE_GATE"),
-        eq(execCertRuns.overallStatus, "PASS"),
-      ))
-      .limit(1);
-    return runs.length > 0;
-  } catch {
-    return false;
-  }
-}
-
-/**
- * Main dispatch function.
+ * Main unified dispatch function.
  * Called from nexusRoutes.ts after paperTradeEngine.processBar() returns signalFired=true.
  */
 export async function dispatchTradersPost(params: TpDispatchParams): Promise<void> {
@@ -103,67 +77,64 @@ export async function dispatchTradersPost(params: TpDispatchParams): Promise<voi
     const existing = await getTpDispatchByKey(idempotencyKey);
     if (existing) {
       console.log(`[TP-DISPATCH] DUPLICATE_SKIPPED: ${idempotencyKey}`);
-      return; // Already dispatched — no log needed (already exists)
+      return;
     }
   } catch (err) {
     console.error("[TP-DISPATCH] Idempotency check failed:", err);
     // Continue — better to risk a duplicate than miss a dispatch
   }
 
-  // ── Gate 2: Config check ───────────────────────────────────────────────────
-  const config = await getTpConfig(params.model);
-  if (!config) {
-    await logTpDispatch({ idempotencyKey, strategyId: params.model, barTimeMs: params.barTimeMs, direction: params.direction, entryPrice: params.entryPrice, stopPrice: params.stopPrice, targetPrice: params.targetPrice, status: "DISARMED", errorMessage: "Strategy config not found in tp_config", atlasMemoryBarId: params.atlasMemoryBarId, pipelineRunId: params.pipelineRunId });
+  // ── Gate 2: Portfolio execution state ──────────────────────────────────────
+  const execConfig = await getPortfolioExecConfig();
+  if (!execConfig) {
+    await logTpDispatch({ idempotencyKey, strategyId: params.model, barTimeMs: params.barTimeMs, direction: params.direction, entryPrice: params.entryPrice, stopPrice: params.stopPrice, targetPrice: params.targetPrice, status: "DISARMED", errorMessage: "Portfolio execution config not found", atlasMemoryBarId: params.atlasMemoryBarId, pipelineRunId: params.pipelineRunId });
     return;
   }
 
-  // ── Gate 3: Frozen check ───────────────────────────────────────────────────
-  if (config.frozenUntilOwnerApproval) {
-    await logTpDispatch({ idempotencyKey, strategyId: params.model, barTimeMs: params.barTimeMs, direction: params.direction, entryPrice: params.entryPrice, stopPrice: params.stopPrice, targetPrice: params.targetPrice, status: "FROZEN", errorMessage: "Strategy frozen until owner approval", atlasMemoryBarId: params.atlasMemoryBarId, pipelineRunId: params.pipelineRunId });
+  if (execConfig.executionState === "PAPER_ONLY") {
+    // Paper mode — paper trade was already opened by processBar(); no TradersPost dispatch
+    await logTpDispatch({ idempotencyKey, strategyId: params.model, barTimeMs: params.barTimeMs, direction: params.direction, entryPrice: params.entryPrice, stopPrice: params.stopPrice, targetPrice: params.targetPrice, status: "DISARMED", errorMessage: "PAPER_ONLY mode — no live dispatch", atlasMemoryBarId: params.atlasMemoryBarId, pipelineRunId: params.pipelineRunId });
     return;
   }
 
-  // ── Gate 4: Armed check ────────────────────────────────────────────────────
-  if (!config.armed) {
-    await logTpDispatch({ idempotencyKey, strategyId: params.model, barTimeMs: params.barTimeMs, direction: params.direction, entryPrice: params.entryPrice, stopPrice: params.stopPrice, targetPrice: params.targetPrice, status: "DISARMED", atlasMemoryBarId: params.atlasMemoryBarId, pipelineRunId: params.pipelineRunId });
+  if (execConfig.executionState === "HALTED") {
+    await logTpDispatch({ idempotencyKey, strategyId: params.model, barTimeMs: params.barTimeMs, direction: params.direction, entryPrice: params.entryPrice, stopPrice: params.stopPrice, targetPrice: params.targetPrice, status: "SAFETY_HALTED", errorMessage: `Portfolio HALTED: ${execConfig.haltReason ?? "manual halt"}`, atlasMemoryBarId: params.atlasMemoryBarId, pipelineRunId: params.pipelineRunId });
     return;
   }
 
-  // ── Gate 5: Webhook URL check ──────────────────────────────────────────────
-  if (!config.webhookUrl) {
-    await logTpDispatch({ idempotencyKey, strategyId: params.model, barTimeMs: params.barTimeMs, direction: params.direction, entryPrice: params.entryPrice, stopPrice: params.stopPrice, targetPrice: params.targetPrice, status: "DISARMED", errorMessage: "Webhook URL not configured", atlasMemoryBarId: params.atlasMemoryBarId, pipelineRunId: params.pipelineRunId });
+  // ── Gate 3: Webhook URL check ──────────────────────────────────────────────
+  if (!execConfig.webhookUrl) {
+    await logTpDispatch({ idempotencyKey, strategyId: params.model, barTimeMs: params.barTimeMs, direction: params.direction, entryPrice: params.entryPrice, stopPrice: params.stopPrice, targetPrice: params.targetPrice, status: "DISARMED", errorMessage: "Portfolio webhook URL not configured", atlasMemoryBarId: params.atlasMemoryBarId, pipelineRunId: params.pipelineRunId });
     return;
   }
 
-  // ── Gate 6: Safety lockout ─────────────────────────────────────────────────
+  // ── Gate 4: Safety lockout ─────────────────────────────────────────────────
   try {
     const { getSafetyState } = await import("./execCertDb.js");
     const safety = await getSafetyState();
     if (safety?.isHalted) {
+      // Auto-halt the portfolio execution state
+      const { setExecutionState } = await import("./portfolioExecDb.js");
+      await setExecutionState("HALTED", { haltReason: `Safety engine halt: ${safety.haltReason}` });
       await logTpDispatch({ idempotencyKey, strategyId: params.model, barTimeMs: params.barTimeMs, direction: params.direction, entryPrice: params.entryPrice, stopPrice: params.stopPrice, targetPrice: params.targetPrice, status: "SAFETY_HALTED", errorMessage: `Safety halt: ${safety.haltReason}`, atlasMemoryBarId: params.atlasMemoryBarId, pipelineRunId: params.pipelineRunId });
       return;
     }
   } catch (err) {
     console.error("[TP-DISPATCH] Safety check failed:", err);
-    // Fail-safe: block dispatch if safety check errors
     await logTpDispatch({ idempotencyKey, strategyId: params.model, barTimeMs: params.barTimeMs, direction: params.direction, entryPrice: params.entryPrice, stopPrice: params.stopPrice, targetPrice: params.targetPrice, status: "ERROR", errorMessage: `Safety check error: ${String(err)}`, atlasMemoryBarId: params.atlasMemoryBarId, pipelineRunId: params.pipelineRunId });
     return;
   }
 
-  // ── Gate 7: PRE_LIVE_GATE check ────────────────────────────────────────────
-  if (config.preLiveGateRequired) {
-    const gatePassed = await isPreLiveGatePassed();
-    if (!gatePassed) {
-      await logTpDispatch({ idempotencyKey, strategyId: params.model, barTimeMs: params.barTimeMs, direction: params.direction, entryPrice: params.entryPrice, stopPrice: params.stopPrice, targetPrice: params.targetPrice, status: "PRE_LIVE_GATE_BLOCKED", errorMessage: "PRE_LIVE_GATE certification not passed", atlasMemoryBarId: params.atlasMemoryBarId, pipelineRunId: params.pipelineRunId });
-      return;
-    }
-  }
-
   // ── Dispatch ───────────────────────────────────────────────────────────────
-  const payload = buildTpPayload(params, config.quantity ?? 1, idempotencyKey);
+  const payload = buildUnifiedPayload(params, {
+    ticker: execConfig.ticker ?? "MNQ1!",
+    quantity: execConfig.quantity ?? 1,
+    accountLabel: execConfig.accountLabel,
+  }, idempotencyKey);
+
   try {
-    console.log(`[TP-DISPATCH] Dispatching ${params.model} ${params.direction} @ ${params.entryPrice} → TradersPost`);
-    const response = await fetch(config.webhookUrl, {
+    console.log(`[TP-DISPATCH] Dispatching ${params.model} ${params.direction} @ ${params.entryPrice} → TradersPost (APEX_EVAL_ACTIVE)`);
+    const response = await fetch(execConfig.webhookUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
@@ -171,6 +142,7 @@ export async function dispatchTradersPost(params: TpDispatchParams): Promise<voi
     const responseBody = await response.text();
     const httpStatus = response.status;
     const status = response.ok ? "DISPATCHED" : "ERROR";
+
     await logTpDispatch({
       idempotencyKey,
       strategyId: params.model,
@@ -182,10 +154,17 @@ export async function dispatchTradersPost(params: TpDispatchParams): Promise<voi
       status,
       httpStatus,
       responseBody,
-      errorMessage: response.ok ? null : `HTTP ${httpStatus}: ${responseBody}`,
       atlasMemoryBarId: params.atlasMemoryBarId,
       pipelineRunId: params.pipelineRunId,
     });
+
+    // Update denormalised last-dispatch fields on the singleton config
+    await updateLastDispatch({
+      model: params.model,
+      status,
+      tpResponse: responseBody,
+    });
+
     if (response.ok) {
       console.log(`[TP-DISPATCH] SUCCESS: ${params.model} ${params.direction} | HTTP ${httpStatus}`);
     } else {

@@ -901,3 +901,31 @@
 - [x] Update home page P&L panels: include S109-001 trades (now in paper_trades, not wf_live_trades)
 - [x] Write/update vitest tests covering unified ranking, ARI gate, single-strategy rule
 - [x] TypeScript: 0 errors after all changes
+
+## Sprint 115 — Atlas Permanent Research Directive: Gap Discovery Engine
+
+- [ ] Create gap_discovery_reports table in schema (weekly gap reports, gap candidates, priority scores)
+- [ ] Create gap_candidates table (impact, confidence, effort, benefit, risk_reduction, priority, status)
+- [ ] Write gapDiscoveryEngine.ts: autonomous analysis of atlas_memory, paper_trades, monitor_evaluations, strategy_registry
+- [ ] Implement 12 gap analysis dimensions (market regimes, model coverage, losing trade concentration, etc.)
+- [ ] Implement autonomous question framework (10 questions evaluated per weekly run)
+- [ ] Write gapDiscoveryRouter.ts: tRPC procedures for gap report, candidates, recommendations
+- [ ] Create DARWIN Gap Discovery scheduled job (weekly, Sunday 18:00 ET)
+- [ ] Build Gap Discovery dashboard page (top 10 gaps, research opportunities, engineering improvements)
+- [ ] Weekly Gap Report PDF generation (auto-produced every Sunday)
+- [ ] Add Gap Discovery to sidebar navigation under INTELLIGENCE section
+
+## Sprint 114A — Unified Execution Control & Single TradersPost Route
+
+- [x] Audit Sprint 113/114 per-strategy webhook architecture and answer Part 6 questions
+- [x] Add portfolio_execution_config table (singleton: PAPER_ONLY/APEX_EVAL_ACTIVE/HALTED)
+- [x] Add portfolio_strategy_controls table (per-strategy ENABLED/PAUSED/RETIRED/FAULTED)
+- [x] Seed portfolio_execution_config (id=1, PAPER_ONLY, APEX_50K_EVAL) and all 6 strategies ENABLED
+- [x] Write portfolioExecDb.ts: getPortfolioExecConfig, setExecutionState, setPortfolioWebhookUrl, getAllStrategyControls, setStrategyStatus, recordStrategyProposal, updateLastDispatch
+- [x] Rewrite tpDispatch.ts: single unified webhook, gate order (idempotency → exec state → webhook URL → safety → dispatch), payload includes selected_strategy_id
+- [x] Rewrite tpRouter.ts: getPortfolioConfig, setWebhookUrl, activateApex, haltPortfolio, resumePaper, getStrategyControls, setStrategyStatus, getDispatchLog, getDispatchStats
+- [x] Redesign TradersPost.tsx: Portfolio Execution panel (state, webhook, activate/halt/resume), Strategy Eligibility panel (6 strategies with PAUSE/ENABLE controls), Dispatch Log
+- [x] Remove per-strategy ARM/DISARM from dashboard (replaced by single ACTIVATE APEX button)
+- [x] TypeScript: 0 errors after all changes
+- [x] 14 new Sprint 114A vitest tests (execution state transitions, gate logic, strategy controls, single webhook)
+- [x] 115/115 tests pass
