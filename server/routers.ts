@@ -8,6 +8,7 @@ import { executiveRouter } from "./executiveRouter";
 import { wfRouter } from "./wfRouter";
 import { apexRouter } from "./apexRouter";
 import { execCertRouter } from "./execCertRouter";
+import { arp1Router } from "./arp1Router";
 import {
   liveLearningCertSessions,
   behaviourLibrary,
@@ -60,6 +61,7 @@ export const appRouter = router({
   wf: wfRouter,
   apex: apexRouter,
   execCert: execCertRouter,
+  arp1: arp1Router,
   auth: router({
     me: publicProcedure.query((opts) => opts.ctx.user),
     logout: publicProcedure.mutation(({ ctx }) => {
@@ -1286,6 +1288,9 @@ export const appRouter = router({
         { name: "atlas-daily-intelligence", cron: "15 20 * * 1-5", path: "/api/scheduled/atlas-daily-intelligence", description: "Atlas Daily Intelligence Report — 16:15 ET weekdays" },
         { name: "atlas-weekly-review", cron: "0 22 * * 0", path: "/api/scheduled/atlas-weekly-review", description: "Atlas Weekly Executive Review — Sunday 18:00 ET" },
         { name: "atlas-concordance", cron: "30 20 * * 1-5", path: "/api/scheduled/atlas-concordance", description: "Atlas Live Concordance — 16:30 ET weekdays" },
+        // ARP-1 Programs F and G
+        { name: "arp1-weekly-review", cron: "0 22 * * 0", path: "/api/scheduled/arp1-weekly-review", description: "ARP-1 Weekly Self-Review — Sunday 18:00 ET" },
+        { name: "arp1-daily-brief", cron: "0 12 * * 1-5", path: "/api/scheduled/arp1-daily-brief", description: "ARP-1 Daily Owner Brief — 08:00 ET weekdays" },
       ];
       const results: Array<{ name: string; taskUid?: string; error?: string }> = [];
       for (const job of jobs) {

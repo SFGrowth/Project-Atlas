@@ -818,3 +818,16 @@
 - [x] Part 4: apex_trades + apex_account_snapshots tables, apexRouter.ts, ApexEvaluation.tsx at /apex-evaluation
 - [x] Part 5+6: APEX-CAPITAL-SCALING-ROADMAP.md — 4 phases, $450→$5,100 daily exposure scaling
 - [x] Part 7: Sprint 112 closure report, commit f8b9a71 pushed to SFGrowth/Project-Atlas
+
+## ARP-1 — Atlas Autonomous Research Program 1
+
+- [ ] Repository audit: git log, verify canonical dataset, load all registries, Sprint 112 closure
+- [ ] Program A: Live operations continuity — verify all 9 live processes are wired and running
+- [ ] Program B: Continuous discovery engine — per-bar behaviour analysis, candidate generation, market law updates wired into webhook
+- [ ] Program C: Portfolio coverage tracker — current vs target coverage, underrepresented regions, research priority
+- [ ] Program D: Model lifecycle state machine — 9 states, auto-promotion rules, no manual promotion
+- [ ] Program E: Portfolio intelligence engine — PF, WR, DD, correlation matrix, diversification score, regime coverage, capital allocation
+- [ ] Program F: Weekly self-review generator — Sunday auto-run, 9-question report, Weekly Executive Research Report
+- [ ] Program G: Daily owner briefing — morning auto-run, 9-section brief, "Atlas is operating normally" default
+- [ ] ARP-1 Command Centre dashboard page at /arp1 — unified 7-program status view
+- [ ] ARP-1 closure report, registry updates, commit and push to SFGrowth/Project-Atlas

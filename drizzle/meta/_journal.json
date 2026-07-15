@@ -141,6 +141,13 @@
       "when": 1784091809734,
       "tag": "0019_secret_gamora",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "5",
+      "when": 1784093876762,
+      "tag": "0020_common_earthquake",
+      "breakpoints": true
     }
   ]
 }

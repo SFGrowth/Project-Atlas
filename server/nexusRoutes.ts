@@ -1292,6 +1292,98 @@ export function registerNexusRoutes(router: Router) {
         }
       });
 
+      // ── ARP-1 Program B: Continuous Discovery Engine (non-blocking) ─────────
+      setImmediate(async () => {
+        try {
+          const { recordDiscoveryEvent } = await import("./arp1Db");
+          // Record regime classification events
+          if (mem.regimeClassification) {
+            await recordDiscoveryEvent({
+              barTimestamp: barTimeMs ?? 0,
+              ticker: sym,
+              session: mem.session ?? null,
+              regime: mem.regimeClassification,
+              eventType: "REGIME_OBSERVATION",
+              eventCode: mem.regimeClassification,
+              description: `Regime: ${mem.regimeClassification} | ATR: ${mem.atr != null ? Number(mem.atr).toFixed(2) : 'N/A'} | ADX: ${mem.adx != null ? Number(mem.adx).toFixed(1) : 'N/A'} | RSI: ${mem.rsi != null ? Number(mem.rsi).toFixed(1) : 'N/A'}`,
+              confidence: mem.adxTrending ? "0.8000" : "0.5000",
+              payload: {
+                atr: mem.atr,
+                adx: mem.adx,
+                rsi: mem.rsi,
+                vwap: mem.vwap,
+                close: mem.close,
+                trendDirection: mem.trendDirection,
+                volatilityState: mem.volatilityState,
+                a1Eligible: mem.a1Eligible,
+                a3Eligible: mem.a3Eligible,
+                b1Eligible: mem.b1Eligible,
+              },
+            });
+          }
+          // Record model eligibility signals
+          const eligibleModels = [
+            mem.a1Eligible && "A1",
+            mem.a3Eligible && "A3",
+            mem.b1Eligible && "B1",
+            mem.sb1Eligible && "SB1",
+          ].filter(Boolean) as string[];
+          if (eligibleModels.length > 0) {
+            await recordDiscoveryEvent({
+              barTimestamp: barTimeMs ?? 0,
+              ticker: sym,
+              session: mem.session ?? null,
+              regime: mem.regimeClassification ?? null,
+              eventType: "BEHAVIOUR_MATCH",
+              eventCode: eligibleModels.join("+"),
+              description: `Models eligible: ${eligibleModels.join(", ")} | Session: ${mem.session} | Regime: ${mem.regimeClassification}`,
+              confidence: "0.9000",
+              payload: { eligibleModels, session: mem.session, regime: mem.regimeClassification },
+            });
+          }
+        } catch (arp1BErr) {
+          console.error("[ARP1-B] Discovery engine error:", arp1BErr);
+        }
+      });
+
+      // ── ARP-1 Program E: Portfolio Intelligence (fires on PM_CLOSE) ──────────
+      if (mem.session === "PM_CLOSE") {
+        setImmediate(async () => {
+          try {
+            const { recordPortfolioIntelligence, getAllModelLifecycles } = await import("./arp1Db");
+            const { computeWfStats } = await import("./wfDb");
+            const etDate = new Date((barTimeMs ?? Date.now()) - 4 * 3600 * 1000);
+            const etDateStr = etDate.toISOString().split("T")[0];
+            const models = await getAllModelLifecycles();
+            const wfStats = await computeWfStats();
+            const productionModels = models.filter(m => m.currentState === "PRODUCTION");
+            const paperModels = models.filter(m => m.currentState === "PAPER_TRADING");
+            const wfModels = models.filter(m => m.currentState === "WALK_FORWARD");
+            const modelSummaries = models.map(m => ({
+              id: m.modelId,
+              name: m.modelName,
+              state: m.currentState,
+              sprint: m.sprintOrigin,
+            }));
+            await recordPortfolioIntelligence({
+              sessionDate: etDateStr as unknown as Date,
+              activeSpecialists: productionModels.length + paperModels.length,
+              idleSpecialists: wfModels.length,
+              portfolioPf: wfStats.pf > 0 ? String(wfStats.pf.toFixed(4)) : null,
+              portfolioWr: wfStats.winRate > 0 ? String(wfStats.winRate.toFixed(4)) : null,
+              portfolioMaxDd: wfStats.maxDd > 0 ? String(wfStats.maxDd.toFixed(2)) : null,
+              diversificationScore: productionModels.length >= 3 ? "0.8500" : "0.5000",
+              regimeCoverage: "0.7500",
+              confidenceScore: wfStats.totalTrades >= 20 ? "0.9000" : "0.5000",
+              modelSummaries: JSON.stringify(modelSummaries),
+            });
+            console.log(`[ARP1-E] Portfolio intelligence recorded for ${etDateStr} — ${models.length} models, WF PF: ${wfStats.pf.toFixed(2)}`);
+          } catch (arp1EErr) {
+            console.error("[ARP1-E] Portfolio intelligence error:", arp1EErr);
+          }
+        });
+      }
+
       return res.status(201).json({ status: "ok", id: result.id, memory_id: memoryId });
     } catch (err) {
       console.error("[ATLAS MEMORY] Ingestion error:", err);

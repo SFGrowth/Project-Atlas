@@ -2062,3 +2062,119 @@ export const apexSafetyLog = mysqlTable("apex_safety_log", {
 
 export type ApexSafetyLog = typeof apexSafetyLog.$inferSelect;
 export type InsertApexSafetyLog = typeof apexSafetyLog.$inferInsert;
+
+// ─── ARP-1: Atlas Autonomous Research Program 1 ──────────────────────────────
+
+/**
+ * arp1_discovery_events — Program B continuous discovery log.
+ * One row per bar that triggered a discovery event.
+ */
+export const arp1DiscoveryEvents = mysqlTable("arp1_discovery_events", {
+  id:           int("id").primaryKey().autoincrement(),
+  barTimestamp: bigint("bar_timestamp", { mode: "number" }).notNull(),
+  ticker:       varchar("ticker", { length: 20 }).notNull(),
+  session:      varchar("session", { length: 20 }),
+  regime:       varchar("regime", { length: 50 }),
+  eventType:    varchar("event_type", { length: 50 }).notNull(), // BEHAVIOUR_MATCH|CANDIDATE_GENERATED|ML_UPDATE|DRIFT_SIGNAL
+  eventCode:    varchar("event_code", { length: 50 }),
+  description:  text("description"),
+  confidence:   decimal("confidence", { precision: 5, scale: 4 }),
+  payload:      json("payload"),
+  createdAt:    timestamp("created_at").defaultNow().notNull(),
+});
+export type Arp1DiscoveryEvent = typeof arp1DiscoveryEvents.$inferSelect;
+export type InsertArp1DiscoveryEvent = typeof arp1DiscoveryEvents.$inferInsert;
+
+/**
+ * arp1_model_lifecycle — Program D model lifecycle state machine.
+ * One row per model, tracks current state and promotion history.
+ */
+export const arp1ModelLifecycle = mysqlTable("arp1_model_lifecycle", {
+  id:                 int("id").primaryKey().autoincrement(),
+  modelId:            varchar("model_id", { length: 30 }).notNull().unique(),
+  modelName:          varchar("model_name", { length: 100 }),
+  currentState:       varchar("current_state", { length: 30 }).notNull(),
+  previousState:      varchar("previous_state", { length: 30 }),
+  stateEnteredAt:     timestamp("state_entered_at").defaultNow().notNull(),
+  promotionCriteria:  json("promotion_criteria"),
+  promotionEvidence:  json("promotion_evidence"),
+  autoPromoteEnabled: boolean("auto_promote_enabled").default(true).notNull(),
+  sprintOrigin:       varchar("sprint_origin", { length: 20 }),
+  notes:              text("notes"),
+  updatedAt:          timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+  createdAt:          timestamp("created_at").defaultNow().notNull(),
+});
+export type Arp1ModelLifecycle = typeof arp1ModelLifecycle.$inferSelect;
+export type InsertArp1ModelLifecycle = typeof arp1ModelLifecycle.$inferInsert;
+
+/**
+ * arp1_portfolio_intelligence — Program E portfolio-level metrics snapshot.
+ */
+export const arp1PortfolioIntelligence = mysqlTable("arp1_portfolio_intelligence", {
+  id:                   int("id").primaryKey().autoincrement(),
+  calculatedAt:         timestamp("calculated_at").defaultNow().notNull(),
+  sessionDate:          date("session_date").notNull(),
+  portfolioPf:          decimal("portfolio_pf", { precision: 8, scale: 4 }),
+  portfolioWr:          decimal("portfolio_wr", { precision: 5, scale: 4 }),
+  portfolioMaxDd:       decimal("portfolio_max_dd", { precision: 10, scale: 2 }),
+  diversificationScore: decimal("diversification_score", { precision: 5, scale: 4 }),
+  regimeCoverage:       decimal("regime_coverage", { precision: 5, scale: 4 }),
+  confidenceScore:      decimal("confidence_score", { precision: 5, scale: 4 }),
+  activeSpecialists:    int("active_specialists").default(0),
+  idleSpecialists:      int("idle_specialists").default(0),
+  correlationMatrix:    json("correlation_matrix"),
+  capitalAllocation:    json("capital_allocation"),
+  regimeBreakdown:      json("regime_breakdown"),
+  modelSummaries:       json("model_summaries"),
+});
+export type Arp1PortfolioIntelligence = typeof arp1PortfolioIntelligence.$inferSelect;
+export type InsertArp1PortfolioIntelligence = typeof arp1PortfolioIntelligence.$inferInsert;
+
+/**
+ * arp1_weekly_reviews — Program F weekly self-review reports (every Sunday).
+ */
+export const arp1WeeklyReviews = mysqlTable("arp1_weekly_reviews", {
+  id:                      int("id").primaryKey().autoincrement(),
+  weekStartDate:           date("week_start_date").notNull().unique(),
+  weekEndDate:             date("week_end_date").notNull(),
+  generatedAt:             timestamp("generated_at").defaultNow().notNull(),
+  heartbeatTaskUid:        varchar("heartbeat_task_uid", { length: 65 }),
+  whatDidAtlasLearn:       text("what_did_atlas_learn"),
+  whatImproved:            text("what_improved"),
+  whatDeteriorated:        text("what_deteriorated"),
+  marketLawsStrengthened:  text("market_laws_strengthened"),
+  marketLawsWeakened:      text("market_laws_weakened"),
+  candidatesAdvanced:      text("candidates_advanced"),
+  candidatesFailed:        text("candidates_failed"),
+  productionModelsReview:  text("production_models_review"),
+  highestEvResearchDir:    text("highest_ev_research_dir"),
+  fullReport:              text("full_report"),
+  portfolioSnapshot:       json("portfolio_snapshot"),
+  status:                  varchar("status", { length: 20 }).default("PENDING").notNull(),
+});
+export type Arp1WeeklyReview = typeof arp1WeeklyReviews.$inferSelect;
+export type InsertArp1WeeklyReview = typeof arp1WeeklyReviews.$inferInsert;
+
+/**
+ * arp1_daily_briefs — Program G daily owner briefings (every morning 9 AM ET).
+ */
+export const arp1DailyBriefs = mysqlTable("arp1_daily_briefs", {
+  id:                   int("id").primaryKey().autoincrement(),
+  briefDate:            date("brief_date").notNull().unique(),
+  generatedAt:          timestamp("generated_at").defaultNow().notNull(),
+  heartbeatTaskUid:     varchar("heartbeat_task_uid", { length: 65 }),
+  currentRegime:        varchar("current_regime", { length: 50 }),
+  portfolioReadiness:   varchar("portfolio_readiness", { length: 20 }),
+  activeSpecialists:    text("active_specialists"),
+  walkForwardStatus:    text("walk_forward_status"),
+  paperTradingStatus:   text("paper_trading_status"),
+  productionStatus:     text("production_status"),
+  criticalAlerts:       text("critical_alerts"),
+  recommendedActions:   text("recommended_actions"),
+  expectedOpportunity:  text("expected_opportunity"),
+  operatingNormally:    boolean("operating_normally").default(true).notNull(),
+  fullBrief:            text("full_brief"),
+  status:               varchar("status", { length: 20 }).default("PENDING").notNull(),
+});
+export type Arp1DailyBrief = typeof arp1DailyBriefs.$inferSelect;
+export type InsertArp1DailyBrief = typeof arp1DailyBriefs.$inferInsert;

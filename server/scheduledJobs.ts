@@ -493,5 +493,34 @@ export function registerScheduledJobs(app: Router): void {
     }
   });
 
-  console.log("[Scheduler] Registered 16 scheduled job endpoints (5 Atlas + 4 DARWIN + 5 Sprint-099 + 2 Sprint-101 CRO)");
+  // ─── ARP-1 Programs F and G ─────────────────────────────────────────────
+  // ARP-1 Weekly Self-Review — Sundays 18:00 ET (22:00 UTC)
+  app.post("/api/scheduled/arp1-weekly-review", async (req, res) => {
+    try {
+      const auth = await sdk.authenticateRequest(req);
+      if (!auth.isCron) { res.status(403).json({ error: "Forbidden" }); return; }
+      const { generateWeeklyReview } = await import("./arp1Db");
+      const result = await generateWeeklyReview();
+      res.json({ ok: true, job: "arp1-weekly-review", result, timestamp: new Date().toISOString() });
+    } catch (err) {
+      console.error("[ARP1-F] Weekly review error:", err);
+      if (!res.headersSent) res.status(500).json({ error: String(err) });
+    }
+  });
+
+  // ARP-1 Daily Owner Brief — 08:00 ET weekdays (12:00 UTC)
+  app.post("/api/scheduled/arp1-daily-brief", async (req, res) => {
+    try {
+      const auth = await sdk.authenticateRequest(req);
+      if (!auth.isCron) { res.status(403).json({ error: "Forbidden" }); return; }
+      const { generateDailyBrief } = await import("./arp1Db");
+      const result = await generateDailyBrief();
+      res.json({ ok: true, job: "arp1-daily-brief", result, timestamp: new Date().toISOString() });
+    } catch (err) {
+      console.error("[ARP1-G] Daily brief error:", err);
+      if (!res.headersSent) res.status(500).json({ error: String(err) });
+    }
+  });
+
+  console.log("[Scheduler] Registered 18 scheduled job endpoints (5 Atlas + 4 DARWIN + 5 Sprint-099 + 2 Sprint-101 CRO + 2 ARP-1)");
 }

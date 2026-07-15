@@ -47,6 +47,7 @@ const DarwinDiscoveryPage = lazy(() => import("./pages/DarwinDiscovery"));
 const WalkForwardPage = lazy(() => import("./pages/WalkForward"));
 const ApexEvaluationPage = lazy(() => import("./pages/ApexEvaluation"));
 const ExecCertificationPage = lazy(() => import("./pages/ExecCertification"));
+const Arp1CommandCentrePage = lazy(() => import("./pages/Arp1CommandCentre"));
 
 function PageLoader() {
   return (
@@ -103,6 +104,7 @@ function Router() {
           <Route path="/walk-forward" component={WalkForwardPage} />
           <Route path="/apex-evaluation" component={ApexEvaluationPage} />
           <Route path="/exec-certification" component={ExecCertificationPage} />
+          <Route path="/arp1" component={Arp1CommandCentrePage} />
           <Route path="/404" component={NotFound} />
           <Route component={NotFound} />
         </Switch>

@@ -88,6 +88,7 @@ const NAV_GROUPS = [
       { icon: Activity, label: "Walk-Forward S111", path: "/walk-forward" },
       { icon: Activity, label: "Apex Evaluation S112", path: "/apex-evaluation" },
       { icon: Shield, label: "Exec Certification", path: "/exec-certification" },
+      { icon: Brain, label: "ARP-1 Command Centre", path: "/arp1" },
     ],
   },
 ];
