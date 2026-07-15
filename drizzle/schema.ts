@@ -1662,3 +1662,26 @@ export const sessionReports = mysqlTable("session_reports", {
 });
 export type SessionReport = typeof sessionReports.$inferSelect;
 export type InsertSessionReport = typeof sessionReports.$inferInsert;
+
+/**
+ * Permanent MNQ 5-minute OHLCV candle store.
+ * Downloaded from Massive.com and persisted here so data survives sandbox resets.
+ * window_start is a nanosecond Unix timestamp from Massive API.
+ */
+export const mnqCandles = mysqlTable("mnq_candles", {
+  id: bigint("id", { mode: "number" }).autoincrement().primaryKey(),
+  ticker: varchar("ticker", { length: 16 }).notNull(),
+  windowStart: bigint("window_start", { mode: "number" }).notNull(),
+  sessionEndDate: date("session_end_date").notNull(),
+  open: decimal("open", { precision: 12, scale: 4 }).notNull(),
+  high: decimal("high", { precision: 12, scale: 4 }).notNull(),
+  low: decimal("low", { precision: 12, scale: 4 }).notNull(),
+  close: decimal("close", { precision: 12, scale: 4 }).notNull(),
+  volume: int("volume").notNull().default(0),
+  transactions: int("transactions").notNull().default(0),
+  dollarVolume: decimal("dollar_volume", { precision: 20, scale: 2 }),
+  // Derived fields computed on insert
+  barTimeEt: varchar("bar_time_et", { length: 32 }),
+  session: varchar("session", { length: 16 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});

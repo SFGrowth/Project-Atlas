@@ -753,3 +753,19 @@
 - [x] Write Sprint 107 closure report answering all 5 executive questions with evidence
 - [x] Commit to Project-Atlas (commit 192e3cc)
 - [x] 77/77 tests passing, 0 TypeScript errors
+
+## Sprint 108 — Institutional Validation of DARWIN-S107-002 (2026-07-15)
+
+- [x] Mandatory repository audit: git log, all registries, locate 2-year MNQ dataset
+- [x] Re-download 2-year MNQ 5-min OHLCV from Massive.com (136,198 bars, MNQU4-MNQM6)
+- [x] Create permanent `mnq_candles` database table — survives sandbox resets
+- [x] Store MASSIVE_API_KEY as permanent project secret
+- [x] Part 1 — Full 2-year replay: 579 trades, WR 52.7%, PF 1.058, P&L +$1,728 — FAIL (4/7 thresholds)
+- [x] Part 2 — Robustness: AM session has real edge (WR 58.1%), LUNCH/PM destroy edge
+- [x] Part 3 — Stability: Q1-Q2 2025 PF 0.821 — UNSTABLE across 4 periods
+- [x] Part 4 — Monte Carlo: 34.7% prop firm pass rate — INSUFFICIENT
+- [x] Part 5 — Portfolio contribution: 12.1% coverage, Calmar 0.721
+- [x] Executive decision: RESEARCH — do not promote, refine session filter + target
+- [x] Update DARWIN-S107-002 confidence 58%→42%, stage→investigating, evidence 579 trades
+- [x] Register DARWIN-S108-001 (AM_VWAP_CONTINUATION) — P1 priority, 62% confidence
+- [x] Write Sprint 108 closure report and commit to Project-Atlas (commit 9e8fa11)
