@@ -1,0 +1,149 @@
+{
+  "manifest_version": "1.0",
+  "portfolio": {
+    "name": "Atlas Unified Portfolio",
+    "script": "atlas_portfolio",
+    "script_version": "1.0.0",
+    "pine_version": 5,
+    "build_date": "2026-07-15",
+    "sprint": 117,
+    "rule_hash": "ATLAS-PORT-117-A1-A3-SB1-ORB1-S109-B1-2026-07-15",
+    "ade_version": "ADE-v2.0",
+    "portfolio_version": "PORT-v1.0",
+    "parity_status": "PENDING_VALIDATION",
+    "instrument": "MNQ",
+    "timeframe": "5m",
+    "exchange": "CME"
+  },
+  "invariants": {
+    "single_active_strategy": true,
+    "confirmed_bar_only": true,
+    "no_repainting": true,
+    "server_is_authoritative": true,
+    "frozen_s109_parameters": true
+  },
+  "strategies": [
+    {
+      "id": "A1",
+      "name": "Atlas Model A1",
+      "rule_version": "M-16-A1-v1",
+      "enabled": true,
+      "regime": "TRENDING",
+      "session": "RTH",
+      "ade_score_formula": "ADX",
+      "ade_score_type": "dynamic",
+      "stop_atr_multiplier": 2.5,
+      "target_atr_multiplier": 2.0,
+      "chart_colour": "#00B4D8",
+      "parity_status": "PENDING_VALIDATION",
+      "known_gaps": ["Pine derives from ADX+regime; server uses M-16 a1_eligible flag"]
+    },
+    {
+      "id": "A3",
+      "name": "Atlas Model A3",
+      "rule_version": "M-16-A3-v1",
+      "enabled": true,
+      "regime": "TRENDING",
+      "session": "RTH",
+      "ade_score_formula": "ADX * 0.95",
+      "ade_score_type": "dynamic",
+      "stop_atr_multiplier": 2.5,
+      "target_atr_multiplier": 2.0,
+      "chart_colour": "#0077B6",
+      "parity_status": "PENDING_VALIDATION",
+      "known_gaps": ["Pine derives from ADX+regime; server uses M-16 a3_eligible flag"]
+    },
+    {
+      "id": "SB1",
+      "name": "Atlas Model SB1",
+      "rule_version": "M-16-SB1-v1",
+      "enabled": true,
+      "regime": "TRENDING",
+      "session": "AM_MID",
+      "ade_score_formula": "50.0",
+      "ade_score_type": "fixed",
+      "stop_atr_multiplier": 2.5,
+      "target_atr_multiplier": 2.0,
+      "chart_colour": "#7B2FBE",
+      "parity_status": "PENDING_VALIDATION",
+      "known_gaps": ["Pine uses ADX>30 as RAS proxy; server uses full 9-component RAS from M-16"]
+    },
+    {
+      "id": "ORB-1",
+      "name": "Atlas Model ORB-1",
+      "rule_version": "M-16-ORB1-v1",
+      "enabled": true,
+      "regime": "VOLATILE",
+      "session": "AM_OPEN",
+      "ade_score_formula": "45.0",
+      "ade_score_type": "fixed",
+      "stop_atr_multiplier": 2.5,
+      "target_atr_multiplier": 2.0,
+      "chart_colour": "#FF6B35",
+      "parity_status": "PENDING_VALIDATION",
+      "known_gaps": ["VOLATILE regime uses ATR expansion proxy; server uses M-16 regime classification"]
+    },
+    {
+      "id": "S109-001",
+      "name": "DARWIN S109-001",
+      "rule_version": "DARWIN-S109-v1",
+      "enabled": true,
+      "regime": "ANY",
+      "session": "RTH",
+      "ade_score_formula": "abs(close - vwap) / atr14 * 100",
+      "ade_score_type": "dynamic",
+      "stop_atr_multiplier": 2.5,
+      "target_atr_multiplier": 2.0,
+      "chart_colour": "#06D6A0",
+      "parity_status": "PENDING_VALIDATION",
+      "parameters": {
+        "vwap_deviation_min_atr": 0.5,
+        "rsi_long_threshold": 50,
+        "rsi_short_threshold": 50,
+        "ov_inventory_proxy": "EMA9_slope",
+        "vwap_slope_proxy": "EMA9_3bar_slope"
+      },
+      "known_gaps": [
+        "Pine uses EMA9 slope as OV inventory proxy; server derives from trendDirection field",
+        "Minor divergence possible in choppy/ranging conditions"
+      ],
+      "frozen": true,
+      "frozen_reason": "DARWIN-validated parameters — no optimisation permitted"
+    },
+    {
+      "id": "B1",
+      "name": "Atlas Model B1",
+      "rule_version": "M-16-B1-v1",
+      "enabled": true,
+      "regime": "ANY",
+      "session": "RTH",
+      "ade_score_formula": "1.0",
+      "ade_score_type": "fixed",
+      "stop_atr_multiplier": 2.5,
+      "target_atr_multiplier": 2.0,
+      "chart_colour": "#ADB5BD",
+      "parity_status": "PENDING_VALIDATION",
+      "known_gaps": ["B1 is baseline fallback — only wins when all other models are ineligible"]
+    }
+  ],
+  "webhook": {
+    "schema_version": "1.0",
+    "endpoint": "/api/webhook/atlas-bar",
+    "auth": "ATLAS_WEBHOOK_TOKEN",
+    "events": ["entry", "exit", "cancel", "flatten"],
+    "deduplication_field": "event_id"
+  },
+  "drift_detection": {
+    "rule_hash_field": "rule_hash",
+    "parity_status_field": "parity_status",
+    "dashboard_indicator": "pine_parity_status in strategy_registry",
+    "trigger_conditions": [
+      "strategy rule change",
+      "ADE scoring threshold change",
+      "new strategy added to portfolio",
+      "strategy suspended or retired",
+      "stop/target parameter change",
+      "session restriction change"
+    ]
+  }
+}

@@ -12,6 +12,7 @@ import { arp1Router } from "./arp1Router";
 import { tpRouter } from "./tpRouter";
 import { gapDiscoveryRouter } from "./gapDiscoveryRouter";
 import { darwinDailyReportRouter } from "./darwinDailyReportRouter";
+import { pineStatusRouter } from "./pineStatusRouter";
 import {
   liveLearningCertSessions,
   behaviourLibrary,
@@ -69,6 +70,7 @@ export const appRouter = router({
   tp: tpRouter,
   gaps: gapDiscoveryRouter,
   darwinReports: darwinDailyReportRouter,
+  pineStatus: pineStatusRouter,
   auth: router({
     me: publicProcedure.query((opts) => opts.ctx.user),
     logout: publicProcedure.mutation(({ ctx }) => {

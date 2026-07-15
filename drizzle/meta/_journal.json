@@ -176,6 +176,13 @@
       "when": 1784109307622,
       "tag": "0024_gorgeous_santa_claus",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "5",
+      "when": 1784111009184,
+      "tag": "0025_huge_captain_america",
+      "breakpoints": true
     }
   ]
 }

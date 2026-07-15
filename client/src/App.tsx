@@ -51,6 +51,7 @@ const Arp1CommandCentrePage = lazy(() => import("./pages/Arp1CommandCentre"));
 const TradersPostPage = lazy(() => import("./pages/TradersPost"));
 const GapDiscoveryPage = lazy(() => import("./pages/GapDiscovery"));
 const DarwinDailyReportPage = lazy(() => import("./pages/DarwinDailyReport"));
+const PortfolioPineStatusPage = lazy(() => import("./pages/PortfolioPineStatus"));
 
 function PageLoader() {
   return (
@@ -111,6 +112,7 @@ function Router() {
           <Route path="/traderspost" component={TradersPostPage} />
           <Route path="/gap-discovery" component={GapDiscoveryPage} />
           <Route path="/darwin-daily-reports" component={DarwinDailyReportPage} />
+          <Route path="/portfolio-pine-status" component={PortfolioPineStatusPage} />
           <Route path="/404" component={NotFound} />
           <Route component={NotFound} />
         </Switch>

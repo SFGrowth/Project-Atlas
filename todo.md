@@ -944,3 +944,26 @@
 - [x] Write darwinDailyReport.test.ts — 22 tests covering date derivation, GitHub paths, Markdown structure
 - [x] TypeScript: 0 errors · 152/152 tests pass
 - [ ] Update weekly gap report to aggregate 7 daily DARWIN reports (weekly integration) — deferred to Sprint 117
+
+## Sprint 117 — Atlas Unified Portfolio Pine Script (completed 2026-07-15)
+
+- [x] Audit ADE scoring rules (barEvaluator.ts, paperTradeEngine.ts) for exact Pine parity
+- [x] Write tradingview/atlas-unified-portfolio/atlas_portfolio_v1.pine (450+ lines, all 6 strategies, ADE selection, chart visualisation, drift guard, webhook)
+- [x] Pine: ADE-parity selection hierarchy (VWAP deviation scoring for S109, ADX for A1/A3, fixed scores for SB1/ORB-1/B1)
+- [x] Pine: single-active-strategy rule (no entry while portfolio position open)
+- [x] Pine: chart visualisation — entry/exit markers, strategy labels, trade lines, R/R boxes
+- [x] Pine: debug table (eligibility, scores, rejection reasons)
+- [x] Pine: deterministic event IDs, no repainting, confirmed-bar logic
+- [x] Pine: full JSON webhook payload with strategy_id, score, regime, reason, rule_hash
+- [x] Pine: all supported events (entry, exit, stop, target, cancel, flatten)
+- [x] Write README.md, WEBHOOK_SCHEMA.md, ADE_PARITY_SPEC.md, CHANGELOG.md, strategy_manifest.json
+- [x] Schema: add 13 pine_metadata fields to strategy_registry (migration 0025)
+- [x] Seed pine_metadata for all 6 strategies in strategy_registry
+- [x] Write server/pineStatusRouter.ts: getPortfolioStatus, updateParityStatus, toggleWebhook, recordSignal, getManifest
+- [x] Wire pineStatusRouter into appRouter in routers.ts
+- [x] Build client/src/pages/PortfolioPineStatus.tsx — parity dashboard with drift detection, strategy table, manifest info
+- [x] Add Code2 icon and Portfolio Pine Status nav item to OrionLayout.tsx (PORTFOLIO section)
+- [x] Add /portfolio-pine-status route to App.tsx
+- [x] Write server/pineStatus.test.ts — 33 tests covering ADE scoring, proposal selection, drift detection, webhook validation, manifest invariants, parity status derivation
+- [x] TypeScript: 0 errors · 185/185 tests pass (11 test files)
+- [ ] Commit Pine files to SFGrowth/Project-Atlas/tradingview/atlas-unified-portfolio/ — deferred (GitHub push pending)

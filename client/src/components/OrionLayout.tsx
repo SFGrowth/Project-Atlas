@@ -7,7 +7,7 @@ import { getLoginUrl } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
 import {
   Activity, AlertTriangle, BadgeCheck, BarChart2, BarChart3, BookOpen, Brain, BrainCircuit, CalendarCheck, ChevronLeft, ChevronRight,
-  Clock, Cpu, Database, Dna, FileText, FlaskConical, GitBranch, Home, LayoutDashboard, Layers, LineChart, Menu,
+  Clock, Code2, Cpu, Database, Dna, FileText, FlaskConical, GitBranch, Home, LayoutDashboard, Layers, LineChart, Menu,
   Radio, SearchCode, Send, Settings, Shield, ShieldCheck, ScanLine, Star, Target, Telescope, TrendingUp, Zap,
 } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
@@ -92,6 +92,7 @@ const NAV_GROUPS = [
       { icon: Brain, label: "ARP-1 Command Centre", path: "/arp1" },
       { icon: SearchCode, label: "Gap Discovery", path: "/gap-discovery" },
       { icon: FileText, label: "DARWIN Daily Reports", path: "/darwin-daily-reports" },
+      { icon: Code2, label: "Portfolio Pine Status", path: "/portfolio-pine-status" },
     ],
   },
 ];
