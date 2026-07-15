@@ -547,5 +547,40 @@ export function registerScheduledJobs(app: Router): void {
       if (!res.headersSent) res.status(500).json({ error: String(err) });
     }
   });
-  console.log("[Scheduler] Registered 19 scheduled job endpoints (5 Atlas + 4 DARWIN + 5 Sprint-099 + 2 Sprint-101 CRO + 2 ARP-1 + 1 Sprint-115 GDE)");
+  // ─── Sprint 116: DARWIN Daily Research Report ───────────────────────────────
+  // Daily Report — Weekdays 17:30 ET (21:30 UTC) — after RTH close + research cycle
+  app.post("/api/scheduled/darwin-daily-report", async (req, res) => {
+    try {
+      const auth = await sdk.authenticateRequest(req);
+      if (!auth.isCron) { res.status(403).json({ error: "Forbidden" }); return; }
+      const { generateDarwinDailyReport, updateReportGithubStatus } = await import("./darwinDailyReport");
+      const { archiveReportToGitHub, ensureResearchDirectoryExists } = await import("./darwinGitArchive");
+      // Ensure research/daily/ directory exists in GitHub
+      await ensureResearchDirectoryExists();
+      // Generate the report
+      const { reportDate, markdown, dbId } = await generateDarwinDailyReport();
+      // Commit to GitHub
+      const archiveResult = await archiveReportToGitHub(reportDate, markdown);
+      // Update DB with GitHub commit status
+      if (archiveResult.success && archiveResult.sha && archiveResult.url) {
+        await updateReportGithubStatus(dbId, archiveResult.sha, archiveResult.url, "SUCCESS");
+      }
+      console.log(`[DARWIN] Daily report complete for ${reportDate} — GitHub: ${archiveResult.success ? archiveResult.sha?.slice(0, 8) : 'FAILED'}`);
+      res.json({
+        ok: true,
+        job: "darwin-daily-report",
+        reportDate,
+        dbId,
+        githubCommitSha: archiveResult.sha ?? null,
+        githubCommitUrl: archiveResult.url ?? null,
+        githubSuccess: archiveResult.success,
+        githubError: archiveResult.error ?? null,
+        timestamp: new Date().toISOString(),
+      });
+    } catch (err) {
+      console.error("[DARWIN] Daily report error:", err);
+      if (!res.headersSent) res.status(500).json({ error: String(err) });
+    }
+  });
+  console.log("[Scheduler] Registered 20 scheduled job endpoints (5 Atlas + 4 DARWIN + 5 Sprint-099 + 2 Sprint-101 CRO + 2 ARP-1 + 1 Sprint-115 GDE + 1 Sprint-116 DDR)");
 }

@@ -2380,3 +2380,31 @@ export const gapDiscoveryReports = mysqlTable("gap_discovery_reports", {
 });
 export type GapDiscoveryReport = typeof gapDiscoveryReports.$inferSelect;
 export type InsertGapDiscoveryReport = typeof gapDiscoveryReports.$inferInsert;
+
+// ─── Sprint 116: DARWIN Daily Research Reports ───────────────────────────────
+
+export const darwinDailyReports = mysqlTable("darwin_daily_reports", {
+  id:                   int("id").primaryKey().autoincrement(),
+  reportDate:           varchar("report_date", { length: 10 }).notNull().unique(), // YYYY-MM-DD
+  // Executive summary counts
+  tradesAnalysed:       int("trades_analysed").notNull().default(0),
+  strategiesEvaluated:  int("strategies_evaluated").notNull().default(0),
+  newBehavioursFound:   int("new_behaviours_found").notNull().default(0),
+  behavioursConfirmed:  int("behaviours_confirmed").notNull().default(0),
+  behavioursRejected:   int("behaviours_rejected").notNull().default(0),
+  modelsImproving:      int("models_improving").notNull().default(0),
+  modelsDegrading:      int("models_degrading").notNull().default(0),
+  // Full Markdown report
+  reportMarkdown:       text("report_markdown").notNull(),
+  // GitHub commit info
+  githubCommitSha:      varchar("github_commit_sha", { length: 40 }),
+  githubCommitUrl:      text("github_commit_url"),
+  githubCommitStatus:   varchar("github_commit_status", { length: 20 }).default("PENDING"), // PENDING | SUCCESS | FAILED
+  // Generation metadata
+  generatedBy:          varchar("generated_by", { length: 20 }).notNull().default("DARWIN"),
+  generationDurationMs: int("generation_duration_ms"),
+  generatedAt:          bigint("generated_at", { mode: "number" }).notNull(),
+  createdAt:            timestamp("created_at").defaultNow().notNull(),
+});
+export type DarwinDailyReport = typeof darwinDailyReports.$inferSelect;
+export type InsertDarwinDailyReport = typeof darwinDailyReports.$inferInsert;

@@ -11,6 +11,7 @@ import { execCertRouter } from "./execCertRouter";
 import { arp1Router } from "./arp1Router";
 import { tpRouter } from "./tpRouter";
 import { gapDiscoveryRouter } from "./gapDiscoveryRouter";
+import { darwinDailyReportRouter } from "./darwinDailyReportRouter";
 import {
   liveLearningCertSessions,
   behaviourLibrary,
@@ -67,6 +68,7 @@ export const appRouter = router({
   arp1: arp1Router,
   tp: tpRouter,
   gaps: gapDiscoveryRouter,
+  darwinReports: darwinDailyReportRouter,
   auth: router({
     me: publicProcedure.query((opts) => opts.ctx.user),
     logout: publicProcedure.mutation(({ ctx }) => {

@@ -929,3 +929,18 @@
 - [x] TypeScript: 0 errors after all changes
 - [x] 14 new Sprint 114A vitest tests (execution state transitions, gate logic, strategy controls, single webhook)
 - [x] 115/115 tests pass
+
+## Sprint 116 — DARWIN Daily Research Reports + GitHub Knowledge Archive (completed 2026-07-15)
+
+- [x] Create darwin_daily_reports table in schema (migration 0024)
+- [x] Write darwinDailyReport.ts: 10-section LLM-powered report generator (Executive Summary, Market Regime, Portfolio Performance, Model Health, Behaviour Library, Market Law Validation, DARWIN Pipeline, Gap Discovery, Risk & Execution, Tomorrow's Priorities)
+- [x] Write darwinGitArchive.ts: commit DARWIN-YYYY-MM-DD.md to SFGrowth/Project-Atlas/research/daily/YYYY/MM/ via gh CLI
+- [x] Write darwinDailyReportRouter.ts: tRPC procedures (getReports, getReport, runReport, getStats)
+- [x] Wire darwinDailyReportRouter into appRouter in routers.ts
+- [x] Register /api/scheduled/darwin-daily-report endpoint in scheduledJobs.ts (17:30 ET weekdays)
+- [x] Build DarwinDailyReport.tsx dashboard page (report list, stats, full Markdown viewer with syntax highlighting)
+- [x] Add DARWIN Daily Reports nav item to OrionLayout.tsx (PORTFOLIO section)
+- [x] Add /darwin-daily-reports route to App.tsx
+- [x] Write darwinDailyReport.test.ts — 22 tests covering date derivation, GitHub paths, Markdown structure
+- [x] TypeScript: 0 errors · 152/152 tests pass
+- [ ] Update weekly gap report to aggregate 7 daily DARWIN reports (weekly integration) — deferred to Sprint 117

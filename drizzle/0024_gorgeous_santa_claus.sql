@@ -1,0 +1,21 @@
+CREATE TABLE `darwin_daily_reports` (
+	`id` int AUTO_INCREMENT NOT NULL,
+	`report_date` varchar(10) NOT NULL,
+	`trades_analysed` int NOT NULL DEFAULT 0,
+	`strategies_evaluated` int NOT NULL DEFAULT 0,
+	`new_behaviours_found` int NOT NULL DEFAULT 0,
+	`behaviours_confirmed` int NOT NULL DEFAULT 0,
+	`behaviours_rejected` int NOT NULL DEFAULT 0,
+	`models_improving` int NOT NULL DEFAULT 0,
+	`models_degrading` int NOT NULL DEFAULT 0,
+	`report_markdown` text NOT NULL,
+	`github_commit_sha` varchar(40),
+	`github_commit_url` text,
+	`github_commit_status` varchar(20) DEFAULT 'PENDING',
+	`generated_by` varchar(20) NOT NULL DEFAULT 'DARWIN',
+	`generation_duration_ms` int,
+	`generated_at` bigint NOT NULL,
+	`created_at` timestamp NOT NULL DEFAULT (now()),
+	CONSTRAINT `darwin_daily_reports_id` PRIMARY KEY(`id`),
+	CONSTRAINT `darwin_daily_reports_report_date_unique` UNIQUE(`report_date`)
+);

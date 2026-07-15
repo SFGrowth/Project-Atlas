@@ -169,6 +169,13 @@
       "when": 1784107437257,
       "tag": "0023_empty_marrow",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "5",
+      "when": 1784109307622,
+      "tag": "0024_gorgeous_santa_claus",
+      "breakpoints": true
     }
   ]
 }
