@@ -1685,3 +1685,185 @@ export const mnqCandles = mysqlTable("mnq_candles", {
   session: varchar("session", { length: 16 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SPRINT 111 — LIVE WALK-FORWARD VALIDATION OF DARWIN-S109-001
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * wf_live_trades — every paper trade evaluated and recorded by the S109-001
+ * live signal engine. Immutable: no trade may be deleted or modified.
+ *
+ * Frozen hypothesis parameters (Sprint 109/110):
+ *   Entry: VWAP deviation >0.5×ATR + OV inventory aligned + VWAP slope aligned + RSI confirms
+ *   Stop: 2.5×ATR | Target: 2.0×ATR | Time stop: 10 bars | Session: RTH only
+ */
+export const wfLiveTrades = mysqlTable("wf_live_trades", {
+  id: varchar("id", { length: 64 }).primaryKey(),
+  // Hypothesis reference
+  hypothesisId: varchar("hypothesis_id", { length: 32 }).notNull().default("DARWIN-S109-001"),
+  hypothesisVersion: varchar("hypothesis_version", { length: 8 }).notNull().default("1.0"),
+  // Signal context
+  tradeDate: date("trade_date").notNull(),
+  barTimeEt: varchar("bar_time_et", { length: 32 }).notNull(),
+  session: varchar("session", { length: 16 }).notNull().default("RTH"),
+  regime: varchar("regime", { length: 32 }),
+  // Filter values at signal time (frozen — for drift detection)
+  ovInventory: varchar("ov_inventory", { length: 8 }), // LONG | SHORT | NEUTRAL
+  vwapSlope: decimal("vwap_slope", { precision: 10, scale: 6 }),
+  rsi14: decimal("rsi14", { precision: 8, scale: 4 }),
+  atr14: decimal("atr14", { precision: 12, scale: 4 }),
+  vwapDeviation: decimal("vwap_deviation", { precision: 12, scale: 4 }),
+  // Filter pass/fail (all three must be true for a trade to be taken)
+  filterOvInventory: boolean("filter_ov_inventory").notNull().default(false),
+  filterVwapSlope: boolean("filter_vwap_slope").notNull().default(false),
+  filterRsi: boolean("filter_rsi").notNull().default(false),
+  // Trade parameters
+  direction: mysqlEnum("direction", ["LONG", "SHORT"]).notNull(),
+  entryPrice: decimal("entry_price", { precision: 12, scale: 4 }),
+  stopPrice: decimal("stop_price", { precision: 12, scale: 4 }),
+  targetPrice: decimal("target_price", { precision: 12, scale: 4 }),
+  exitPrice: decimal("exit_price", { precision: 12, scale: 4 }),
+  exitReason: varchar("exit_reason", { length: 32 }), // TARGET_HIT | STOP_HIT | TIME_STOP | MANUAL
+  // Risk
+  riskDollars: decimal("risk_dollars", { precision: 10, scale: 2 }).notNull().default("450"),
+  // Outcome
+  status: mysqlEnum("status", ["OPEN", "CLOSED"]).notNull().default("OPEN"),
+  outcome: mysqlEnum("outcome", ["WIN", "LOSS", "BREAKEVEN"]),
+  pnlDollar: decimal("pnl_dollar", { precision: 10, scale: 2 }),
+  pnlR: decimal("pnl_r", { precision: 8, scale: 4 }),
+  mfe: decimal("mfe", { precision: 10, scale: 2 }),
+  mae: decimal("mae", { precision: 10, scale: 2 }),
+  holdingBars: int("holding_bars"),
+  holdingMs: bigint("holding_ms", { mode: "number" }),
+  // Timing
+  openedAt: timestamp("opened_at").defaultNow().notNull(),
+  closedAt: timestamp("closed_at"),
+  // Pipeline reference
+  pipelineRunId: varchar("pipeline_run_id", { length: 128 }),
+  atlasMemoryBarId: int("atlas_memory_bar_id"),
+  // Provenance — always PAPER for Sprint 111
+  provenance: mysqlEnum("provenance", ["PAPER", "BACKTEST", "LIVE", "TEST", "CONTAMINATED"]).notNull().default("PAPER"),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  // Immutable flag — set to true after close, prevents any further updates
+  immutable: boolean("immutable").notNull().default(false),
+});
+export type WfLiveTrade = typeof wfLiveTrades.$inferSelect;
+export type InsertWfLiveTrade = typeof wfLiveTrades.$inferInsert;
+
+/**
+ * wf_sessions — one row per RTH session during the walk-forward window.
+ * Tracks promotion gate progress.
+ */
+export const wfSessions = mysqlTable("wf_sessions", {
+  id: int("id").autoincrement().primaryKey(),
+  sessionDate: date("session_date").notNull().unique(),
+  sessionNumber: int("session_number").notNull(), // sequential from WF start
+  // Bar integrity
+  barsExpected: int("bars_expected").default(78),
+  barsReceived: int("bars_received").default(0),
+  // S109-001 activity
+  signalsEvaluated: int("signals_evaluated").default(0),
+  signalsFiltered: int("signals_filtered").default(0), // passed all 3 filters
+  tradesOpened: int("trades_opened").default(0),
+  tradesClosed: int("trades_closed").default(0),
+  wins: int("wins").default(0),
+  losses: int("losses").default(0),
+  sessionPnl: decimal("session_pnl", { precision: 10, scale: 2 }).default("0"),
+  // Cumulative stats at end of session
+  cumTrades: int("cum_trades").default(0),
+  cumWins: int("cum_wins").default(0),
+  cumWinRate: decimal("cum_win_rate", { precision: 6, scale: 4 }),
+  cumPf: decimal("cum_pf", { precision: 8, scale: 4 }),
+  cumPnl: decimal("cum_pnl", { precision: 10, scale: 2 }).default("0"),
+  cumMaxDd: decimal("cum_max_dd", { precision: 10, scale: 2 }).default("0"),
+  // Drift flags
+  driftDetected: boolean("drift_detected").default(false),
+  driftAlertIds: text("drift_alert_ids"), // comma-separated wf_drift_alerts.id
+  // Promotion gate status
+  promotionGateStatus: mysqlEnum("promotion_gate_status", [
+    "PENDING",
+    "IN_PROGRESS",
+    "PASSED",
+    "FAILED",
+    "SUSPENDED",
+  ]).notNull().default("PENDING"),
+  // Daily report reference
+  dailyReportId: int("daily_report_id"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+export type WfSession = typeof wfSessions.$inferSelect;
+export type InsertWfSession = typeof wfSessions.$inferInsert;
+
+/**
+ * wf_drift_alerts — fired when live behaviour deviates materially from Sprint 110 benchmarks.
+ * No optimisation is permitted in response — only documentation and potential RESEARCH return.
+ */
+export const wfDriftAlerts = mysqlTable("wf_drift_alerts", {
+  id: int("id").autoincrement().primaryKey(),
+  alertType: varchar("alert_type", { length: 64 }).notNull(),
+  // WIN_RATE_DEVIATION | PF_DETERIORATION | DRAWDOWN_EXCEEDED |
+  // REGIME_DISTRIBUTION_SHIFT | OV_INVENTORY_SIGNAL_LOSS |
+  // VWAP_SLOPE_SIGNAL_LOSS | RSI_SIGNAL_LOSS | PIPELINE_INTEGRITY
+  severity: mysqlEnum("severity", ["WARN", "CRITICAL"]).notNull().default("WARN"),
+  // Benchmark vs live
+  benchmarkValue: decimal("benchmark_value", { precision: 10, scale: 4 }),
+  liveValue: decimal("live_value", { precision: 10, scale: 4 }),
+  deviationPct: decimal("deviation_pct", { precision: 8, scale: 4 }),
+  // Context
+  tradeCount: int("trade_count"),
+  sessionDate: date("session_date"),
+  description: text("description").notNull(),
+  // Resolution
+  resolved: boolean("resolved").default(false),
+  resolution: text("resolution"),
+  resolvedAt: timestamp("resolved_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export type WfDriftAlert = typeof wfDriftAlerts.$inferSelect;
+export type InsertWfDriftAlert = typeof wfDriftAlerts.$inferInsert;
+
+/**
+ * wf_daily_reports — auto-generated after each RTH session close.
+ * Contains full system, strategy, validation, and portfolio sections.
+ */
+export const wfDailyReports = mysqlTable("wf_daily_reports", {
+  id: int("id").autoincrement().primaryKey(),
+  reportDate: date("report_date").notNull().unique(),
+  sessionNumber: int("session_number").notNull(),
+  // System section
+  pipelineHealth: mysqlEnum("pipeline_health", ["OK", "DEGRADED", "FAILED"]).notNull().default("OK"),
+  dashboardHealth: mysqlEnum("dashboard_health", ["OK", "DEGRADED", "FAILED"]).notNull().default("OK"),
+  dataIntegrity: mysqlEnum("data_integrity", ["OK", "DEGRADED", "FAILED"]).notNull().default("OK"),
+  barsReceived: int("bars_received").default(0),
+  barsExpected: int("bars_expected").default(78),
+  // Strategy section
+  signalsGenerated: int("signals_generated").default(0),
+  tradesOpened: int("trades_opened").default(0),
+  tradesClosed: int("trades_closed").default(0),
+  sessionWins: int("session_wins").default(0),
+  sessionLosses: int("session_losses").default(0),
+  sessionPnl: decimal("session_pnl", { precision: 10, scale: 2 }).default("0"),
+  sessionDrawdown: decimal("session_drawdown", { precision: 10, scale: 2 }).default("0"),
+  // Validation section — live vs historical
+  liveWinRate: decimal("live_win_rate", { precision: 6, scale: 4 }),
+  livePf: decimal("live_pf", { precision: 8, scale: 4 }),
+  liveExpectancy: decimal("live_expectancy", { precision: 10, scale: 2 }),
+  liveMaxDd: decimal("live_max_dd", { precision: 10, scale: 2 }),
+  benchmarkWinRate: decimal("benchmark_win_rate", { precision: 6, scale: 4 }).default("0.753"),
+  benchmarkPf: decimal("benchmark_pf", { precision: 8, scale: 4 }).default("4.985"),
+  driftDetected: boolean("drift_detected").default(false),
+  driftAlertCount: int("drift_alert_count").default(0),
+  // Promotion gate
+  cumTradeCount: int("cum_trade_count").default(0),
+  calendarDaysElapsed: int("calendar_days_elapsed").default(0),
+  promotionGateStatus: varchar("promotion_gate_status", { length: 32 }),
+  estimatedCompletionDate: date("estimated_completion_date"),
+  // Full report JSON
+  reportJson: text("report_json"),
+  generatedAt: timestamp("generated_at").defaultNow().notNull(),
+});
+export type WfDailyReport = typeof wfDailyReports.$inferSelect;
+export type InsertWfDailyReport = typeof wfDailyReports.$inferInsert;

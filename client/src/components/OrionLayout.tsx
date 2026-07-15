@@ -85,6 +85,7 @@ const NAV_GROUPS = [
       { icon: FlaskConical, label: "DARWIN CRO", path: "/darwin-cro" },
       { icon: Cpu, label: "Autonomous Ops", path: "/autonomous" },
       { icon: ShieldCheck, label: "Live Learning Cert", path: "/live-learning" },
+      { icon: Activity, label: "Walk-Forward S111", path: "/walk-forward" },
     ],
   },
 ];

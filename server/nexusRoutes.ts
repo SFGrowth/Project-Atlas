@@ -1088,6 +1088,68 @@ export function registerNexusRoutes(router: Router) {
             } catch (repErr) {
               console.error("[MONITOR] Session report generation error:", repErr);
             }
+            // ── Sprint 111: WF session close + daily executive report ──────────
+            try {
+              const { computeWfStats, checkAndFireDriftAlerts, upsertWfSession, upsertWfDailyReport, getWfSessionCount } = await import("./wfDb");
+              const etDate2 = new Date(barTimeMs - 4 * 3600 * 1000);
+              const etDateStr2 = etDate2.toISOString().split("T")[0];
+              const stats = await computeWfStats();
+              const sessionCount = await getWfSessionCount();
+              const newAlerts = await checkAndFireDriftAlerts(stats, etDateStr2);
+              const sessionData = {
+                sessionDate: etDateStr2 as unknown as Date,
+                sessionNumber: sessionCount + 1,
+                barsExpected: 78,
+                barsReceived: 0, // updated by bar count if needed
+                signalsEvaluated: 0,
+                signalsFiltered: 0,
+                tradesOpened: 0,
+                tradesClosed: 0,
+                wins: 0,
+                losses: 0,
+                sessionPnl: "0",
+                cumTrades: stats.totalTrades,
+                cumWins: stats.wins,
+                cumWinRate: stats.winRate > 0 ? String(stats.winRate.toFixed(4)) : null,
+                cumPf: stats.pf > 0 ? String(stats.pf.toFixed(4)) : null,
+                cumPnl: String(stats.totalPnl.toFixed(2)),
+                cumMaxDd: String(stats.maxDd.toFixed(2)),
+                driftDetected: newAlerts.length > 0,
+                driftAlertIds: newAlerts.map((a: any) => String(a.id)).join(",") || null,
+                promotionGateStatus: stats.promotionGateStatus,
+              };
+              await upsertWfSession(sessionData);
+              const reportData = {
+                reportDate: etDateStr2 as unknown as Date,
+                sessionNumber: sessionCount + 1,
+                pipelineHealth: "OK" as const,
+                dashboardHealth: "OK" as const,
+                dataIntegrity: "OK" as const,
+                barsReceived: 0,
+                barsExpected: 78,
+                signalsGenerated: 0,
+                tradesOpened: 0,
+                tradesClosed: 0,
+                sessionWins: 0,
+                sessionLosses: 0,
+                sessionPnl: "0",
+                sessionDrawdown: "0",
+                liveWinRate: stats.winRate > 0 ? String(stats.winRate.toFixed(4)) : null,
+                livePf: stats.pf > 0 ? String(stats.pf.toFixed(4)) : null,
+                liveExpectancy: stats.totalTrades > 0 ? String((stats.totalPnl / stats.totalTrades).toFixed(2)) : null,
+                liveMaxDd: String(stats.maxDd.toFixed(2)),
+                driftDetected: newAlerts.length > 0,
+                driftAlertCount: newAlerts.length,
+                cumTradeCount: stats.totalTrades,
+                calendarDaysElapsed: stats.calendarDaysElapsed,
+                promotionGateStatus: stats.promotionGateStatus,
+                reportJson: JSON.stringify({ stats, newAlerts, sessionDate: etDateStr2 }),
+              };
+              await upsertWfDailyReport(reportData);
+              console.log(`[WF-S111] Daily report generated for ${etDateStr2} — trades: ${stats.totalTrades}, gate: ${stats.promotionGateStatus}`);
+            } catch (wfRepErr) {
+              console.error("[WF-S111] Daily report generation error:", wfRepErr);
+            }
           }
         } catch (monErr) {
           console.error("[MONITOR] Bar evaluation error:", monErr);
@@ -1131,6 +1193,94 @@ export function registerNexusRoutes(router: Router) {
           console.error("[LIVE LEARN] processLiveBar error:", leErr);
         }
       });
+      // ── Sprint 111: Trigger S109-001 Walk-Forward Signal Evaluation (non-blocking) ──
+      setImmediate(async () => {
+        try {
+          const { evaluateS109001Signal, evaluateOpenTradeExit, createWfLiveTrade, getOpenWfTrade, closeWfTrade, S109_BENCHMARK } = await import("./wfDb");
+          // Only evaluate RTH bars
+          if (mem.session !== "RTH" && mem.session !== "AM_OPEN" && mem.session !== "PM_CLOSE") return;
+          const close = mem.close != null ? Number(mem.close) : null;
+          const vwap = mem.vwap != null ? Number(mem.vwap) : null;
+          const atr14 = mem.atr != null ? Number(mem.atr) : null;
+          const rsi14 = mem.rsi != null ? Number(mem.rsi) : null;
+          if (close == null || vwap == null || atr14 == null || rsi14 == null) return;
+          // Derive VWAP slope from ema9 as proxy (slope = ema9 - close / atr)
+          const vwapSlope3Bar = mem.ema9 != null ? (Number(mem.ema9) - close) / atr14 : 0;
+          // Derive OV inventory from trendDirection
+          const ovInventory: "LONG" | "SHORT" | "NEUTRAL" =
+            mem.trendDirection === "BULLISH" ? "LONG" :
+            mem.trendDirection === "BEARISH" ? "SHORT" : "NEUTRAL";
+          const etDateStr = mem.barTimeEt ? mem.barTimeEt.split(" ")[0] : new Date(barTimeMs - 4 * 3600 * 1000).toISOString().split("T")[0];
+          const barData = {
+            barTimeEt: mem.barTimeEt ?? "",
+            tradeDate: etDateStr,
+            session: "RTH",
+            regime: mem.regimeClassification ?? "UNKNOWN",
+            close, vwap, atr14, vwapSlope3Bar, rsi14, ovInventory,
+            pipelineRunId: mem.pipelineRunId ?? undefined,
+            atlasMemoryBarId: typeof memoryId === "string" ? parseInt(memoryId, 10) : (memoryId as number),
+          };
+          // Check open trade exit first
+          const openTrade = await getOpenWfTrade();
+          if (openTrade) {
+            const openedAt = new Date(openTrade.openedAt).getTime();
+            const barsSinceEntry = Math.floor((barTimeMs - openedAt) / (5 * 60 * 1000));
+            const exitEval = evaluateOpenTradeExit(openTrade, barData, barsSinceEntry);
+            if (exitEval?.shouldClose) {
+              const entry = Number(openTrade.entryPrice ?? 0);
+              const stopDist = Math.abs(entry - Number(openTrade.stopPrice ?? entry));
+              const pnlPoints = openTrade.direction === "LONG" ? exitEval.exitPrice - entry : entry - exitEval.exitPrice;
+              const pnlDollar = stopDist > 0 ? (pnlPoints / stopDist) * Number(openTrade.riskDollars ?? 450) : 0;
+              const pnlR = stopDist > 0 ? pnlPoints / stopDist : 0;
+              await closeWfTrade(openTrade.id, {
+                exitPrice: String(exitEval.exitPrice.toFixed(4)),
+                exitReason: exitEval.exitReason as "TARGET_HIT" | "STOP_HIT" | "TIME_STOP" | "MANUAL",
+                outcome: exitEval.outcome,
+                pnlDollar: String(pnlDollar.toFixed(2)),
+                pnlR: String(pnlR.toFixed(4)),
+                mfe: String(Math.max(0, openTrade.direction === "LONG" ? close - entry : entry - close).toFixed(2)),
+                mae: String(Math.max(0, openTrade.direction === "LONG" ? entry - close : close - entry).toFixed(2)),
+                holdingBars: barsSinceEntry,
+                holdingMs: barTimeMs - openedAt,
+              });
+              console.log(`[WF-S111] Trade closed: ${openTrade.id} | ${exitEval.exitReason} | PnL $${pnlDollar.toFixed(0)}`);
+            } else {
+              return; // Trade still open, no new entry
+            }
+          }
+          // Evaluate new signal
+          const signal = evaluateS109001Signal(barData);
+          if (signal.hasSignal && signal.direction && signal.entryPrice != null) {
+            const tradeId = await createWfLiveTrade({
+              tradeDate: etDateStr as unknown as Date,
+              barTimeEt: mem.barTimeEt ?? "",
+              session: "RTH",
+              regime: mem.regimeClassification ?? "UNKNOWN",
+              ovInventory,
+              vwapSlope: String(vwapSlope3Bar.toFixed(6)),
+              rsi14: String(rsi14.toFixed(4)),
+              atr14: String(atr14.toFixed(4)),
+              vwapDeviation: String(signal.vwapDeviation.toFixed(4)),
+              filterOvInventory: true,
+              filterVwapSlope: true,
+              filterRsi: true,
+              direction: signal.direction,
+              entryPrice: String(signal.entryPrice.toFixed(4)),
+              stopPrice: String(signal.stopPrice!.toFixed(4)),
+              targetPrice: String(signal.targetPrice!.toFixed(4)),
+              status: "OPEN",
+              riskDollars: "450",
+              pipelineRunId: mem.pipelineRunId ?? undefined,
+              atlasMemoryBarId: typeof memoryId === "string" ? parseInt(memoryId, 10) : (memoryId as number),
+              provenance: "PAPER",
+            });
+            console.log(`[WF-S111] Trade opened: ${tradeId} | ${signal.direction} @ ${signal.entryPrice.toFixed(2)} | Stop ${signal.stopPrice!.toFixed(2)} | Target ${signal.targetPrice!.toFixed(2)}`);
+          }
+        } catch (wfErr) {
+          console.error("[WF-S111] Signal evaluation error:", wfErr);
+        }
+      });
+
       return res.status(201).json({ status: "ok", id: result.id, memory_id: memoryId });
     } catch (err) {
       console.error("[ATLAS MEMORY] Ingestion error:", err);

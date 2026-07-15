@@ -5,6 +5,7 @@ import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import { executiveRouter } from "./executiveRouter";
+import { wfRouter } from "./wfRouter";
 import {
   liveLearningCertSessions,
   behaviourLibrary,
@@ -54,6 +55,7 @@ import {
 
 export const appRouter = router({
   system: systemRouter,
+  wf: wfRouter,
   auth: router({
     me: publicProcedure.query((opts) => opts.ctx.user),
     logout: publicProcedure.mutation(({ ctx }) => {
