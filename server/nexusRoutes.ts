@@ -1248,6 +1248,17 @@ export function registerNexusRoutes(router: Router) {
               return; // Trade still open, no new entry
             }
           }
+          // ── Sprint 112 Part 9: Safety lockout check ──────────────────────
+          const { getSafetyState: getSafety, resetDailyCounters: resetCounters, triggerHalt: safetyHalt } = await import("./execCertDb");
+          const safetyState = await getSafety();
+          if (safetyState?.isHalted) {
+            console.log(`[SAFETY-S112] Trading halted: ${safetyState.haltReason} — skipping signal evaluation`);
+            return;
+          }
+          // Reset daily counters at AM_OPEN bar
+          if (mem.session === "AM_OPEN") {
+            await resetCounters();
+          }
           // Evaluate new signal
           const signal = evaluateS109001Signal(barData);
           if (signal.hasSignal && signal.direction && signal.entryPrice != null) {

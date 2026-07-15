@@ -1968,3 +1968,97 @@ export const apexAccountSnapshots = mysqlTable("apex_account_snapshots", {
 
 export type ApexAccountSnapshot = typeof apexAccountSnapshots.$inferSelect;
 export type InsertApexAccountSnapshot = typeof apexAccountSnapshots.$inferInsert;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SPRINT 112 PARTS 8–9 — EXECUTION CERTIFICATION & APEX SAFETY
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * exec_cert_runs — one row per certification run (DRY_RUN or PRE_LIVE_GATE).
+ */
+export const execCertRuns = mysqlTable("exec_cert_runs", {
+  id: int("id").primaryKey().autoincrement(),
+  runType: mysqlEnum("run_type", ["DRY_RUN", "PRE_LIVE_GATE"]).notNull(),
+  startedAt: bigint("started_at", { mode: "number" }).notNull(),
+  completedAt: bigint("completed_at", { mode: "number" }),
+  overallStatus: mysqlEnum("overall_status", ["PASS", "FAIL", "IN_PROGRESS", "ABORTED"]).notNull().default("IN_PROGRESS"),
+  stagesPassed: int("stages_passed").notNull().default(0),
+  stagesFailed: int("stages_failed").notNull().default(0),
+  stagesSkipped: int("stages_skipped").notNull().default(0),
+  totalLatencyMs: int("total_latency_ms"),
+  notes: text("notes"),
+  certifiedBy: varchar("certified_by", { length: 100 }),
+});
+
+export type ExecCertRun = typeof execCertRuns.$inferSelect;
+export type InsertExecCertRun = typeof execCertRuns.$inferInsert;
+
+/**
+ * exec_stage_results — one row per stage per certification run.
+ */
+export const execStageResults = mysqlTable("exec_stage_results", {
+  id: int("id").primaryKey().autoincrement(),
+  runId: int("run_id").notNull(),
+  stageNumber: int("stage_number").notNull(),
+  stageName: varchar("stage_name", { length: 100 }).notNull(),
+  stageType: mysqlEnum("stage_type", ["AUTO", "MANUAL"]).notNull(),
+  status: mysqlEnum("status", ["PASS", "FAIL", "SKIP", "PENDING"]).notNull().default("PENDING"),
+  timestampMs: bigint("timestamp_ms", { mode: "number" }),
+  latencyMs: int("latency_ms"),
+  retryCount: int("retry_count").notNull().default(0),
+  errorMessage: text("error_message"),
+  details: text("details"),
+});
+
+export type ExecStageResult = typeof execStageResults.$inferSelect;
+export type InsertExecStageResult = typeof execStageResults.$inferInsert;
+
+/**
+ * apex_safety_state — singleton row tracking current halt state.
+ * id is always 1.
+ */
+export const apexSafetyState = mysqlTable("apex_safety_state", {
+  id: int("id").primaryKey().autoincrement(),
+  isHalted: boolean("is_halted").notNull().default(false),
+  haltReason: mysqlEnum("halt_reason", [
+    "DAILY_LOSS_LOCKOUT",
+    "CONSECUTIVE_LOSS_PROTECTION",
+    "EXECUTION_ANOMALY",
+    "WEBHOOK_FAILURE",
+    "DATA_INTEGRITY_FAILURE",
+    "DRIFT_SUSPENSION",
+  ]),
+  haltDetails: text("halt_details"),
+  haltedAt: bigint("halted_at", { mode: "number" }),
+  acknowledgedBy: varchar("acknowledged_by", { length: 100 }),
+  acknowledgedAt: bigint("acknowledged_at", { mode: "number" }),
+  clearedAt: bigint("cleared_at", { mode: "number" }),
+  // Daily counters — reset at AM_OPEN bar
+  dailyLosses: int("daily_losses").notNull().default(0),
+  dailyLossAmount: decimal("daily_loss_amount", { precision: 10, scale: 2 }).notNull().default("0.00"),
+  consecutiveLosses: int("consecutive_losses").notNull().default(0),
+});
+
+export type ApexSafetyState = typeof apexSafetyState.$inferSelect;
+export type InsertApexSafetyState = typeof apexSafetyState.$inferInsert;
+
+/**
+ * apex_safety_log — immutable event log for all safety state changes.
+ */
+export const apexSafetyLog = mysqlTable("apex_safety_log", {
+  id: int("id").primaryKey().autoincrement(),
+  timestampMs: bigint("timestamp_ms", { mode: "number" }).notNull(),
+  eventType: mysqlEnum("event_type", [
+    "HALT_TRIGGERED",
+    "HALT_ACKNOWLEDGED",
+    "HALT_CLEARED",
+    "COUNTER_RESET",
+    "LOSS_RECORDED",
+  ]).notNull(),
+  haltReason: varchar("halt_reason", { length: 50 }),
+  triggeredBy: varchar("triggered_by", { length: 100 }),
+  details: text("details"),
+});
+
+export type ApexSafetyLog = typeof apexSafetyLog.$inferSelect;
+export type InsertApexSafetyLog = typeof apexSafetyLog.$inferInsert;

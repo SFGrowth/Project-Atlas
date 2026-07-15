@@ -134,6 +134,13 @@
       "when": 1784089259205,
       "tag": "0018_talented_terrax",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "5",
+      "when": 1784091809734,
+      "tag": "0019_secret_gamora",
+      "breakpoints": true
     }
   ]
 }

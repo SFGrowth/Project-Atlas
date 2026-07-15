@@ -7,6 +7,7 @@ import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import { executiveRouter } from "./executiveRouter";
 import { wfRouter } from "./wfRouter";
 import { apexRouter } from "./apexRouter";
+import { execCertRouter } from "./execCertRouter";
 import {
   liveLearningCertSessions,
   behaviourLibrary,
@@ -58,6 +59,7 @@ export const appRouter = router({
   system: systemRouter,
   wf: wfRouter,
   apex: apexRouter,
+  execCert: execCertRouter,
   auth: router({
     me: publicProcedure.query((opts) => opts.ctx.user),
     logout: publicProcedure.mutation(({ ctx }) => {
