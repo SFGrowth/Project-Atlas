@@ -74,22 +74,22 @@ function PnlBucket({ label, data, riskOverride }: { label: string; data: BucketS
         {/* Main stats row */}
         <div className="grid grid-cols-3 gap-2 text-center">
           <div>
-            <div className={`text-lg font-bold font-['Orbitron'] ${pnlClass(pnl)}`}>
+            <div className={`text-xl font-bold font-['Orbitron'] ${pnlClass(pnl)}`}>
               {trades > 0 ? pnlStr(pnl) : "—"}
             </div>
-            <div className="text-[10px] text-[var(--color-muted-foreground)] tracking-wider mt-0.5">P&L</div>
+            <div className="text-[11px] text-[var(--color-muted-foreground)] tracking-wider mt-0.5">NET P&L</div>
           </div>
           <div>
-            <div className="text-lg font-bold font-['Orbitron'] text-[var(--arc-cyan)]">
+            <div className="text-xl font-bold font-['Orbitron'] text-[var(--arc-cyan)]">
               {trades > 0 ? `${winRate?.toFixed(0) ?? "—"}%` : "—"}
             </div>
-            <div className="text-[10px] text-[var(--color-muted-foreground)] tracking-wider mt-0.5">WIN RATE</div>
+            <div className="text-[11px] text-[var(--color-muted-foreground)] tracking-wider mt-0.5">WIN RATE</div>
           </div>
           <div>
-            <div className="text-lg font-bold font-['Orbitron'] text-[var(--arc-blue)]">
+            <div className="text-xl font-bold font-['Orbitron'] text-[var(--arc-blue)]">
               {trades}
             </div>
-            <div className="text-[10px] text-[var(--color-muted-foreground)] tracking-wider mt-0.5">TRADES</div>
+            <div className="text-[11px] text-[var(--color-muted-foreground)] tracking-wider mt-0.5">TRADES</div>
           </div>
         </div>
         {/* W/L bar */}
@@ -112,15 +112,18 @@ function PnlBucket({ label, data, riskOverride }: { label: string; data: BucketS
               return (
                 <div key={m.model}>
                   {/* Model summary header */}
-                  <div className="flex items-center justify-between text-xs mb-1.5">
+                  <div className="flex items-center justify-between text-sm mb-1.5 px-1">
                     <div className="flex items-center gap-2">
-                      <span className="font-mono font-bold text-[var(--arc-blue)]">{m.model}</span>
-                      <span className="text-[var(--color-muted-foreground)]">{m.trades}t</span>
+                      <span className="font-mono font-bold text-[var(--arc-blue)] text-sm">{m.model}</span>
+                      <span className="text-[var(--color-muted-foreground)] text-xs">{m.trades} trade{m.trades !== 1 ? 's' : ''}</span>
                       {m.winRate !== null && (
-                        <span className="text-[var(--arc-cyan)]">{m.winRate.toFixed(0)}%</span>
+                        <span className="text-[var(--arc-cyan)] text-xs">{m.winRate.toFixed(0)}% win</span>
                       )}
                     </div>
-                    <span className={`font-mono font-bold ${pnlClass(m.pnl)}`}>{pnlStr(m.pnl)}</span>
+                    <div className="flex flex-col items-end">
+                      <span className={`font-mono font-bold text-sm ${pnlClass(m.pnl)}`}>{pnlStr(m.pnl)}</span>
+                      <span className="text-[10px] text-[var(--color-muted-foreground)]">subtotal</span>
+                    </div>
                   </div>
                   {/* Individual trade rows */}
                   {modelTrades.length > 0 && (
@@ -129,9 +132,8 @@ function PnlBucket({ label, data, riskOverride }: { label: string; data: BucketS
                         const isWin = tr.pnl > 0;
                         const dirColor = tr.direction === 'LONG' ? '#4ade80' : '#f87171';
                         return (
-                          <div key={tr.id} className="grid items-center py-1 px-1 rounded bg-[oklch(0.12_0.04_220/0.4)] border border-[oklch(0.18_0.04_220/0.3)]" style={{ gridTemplateColumns: '32px 14px 56px 44px 44px 1fr 52px 60px' }}>
-                            <span className="font-mono font-bold text-[10px] text-[var(--arc-blue)] bg-[oklch(0.16_0.06_220/0.6)] rounded px-1 py-0.5 text-center">{tr.model}</span>
-                            <span style={{ color: dirColor, fontSize: 10 }}>{tr.direction === 'LONG' ? '▲' : '▼'}</span>
+                          <div key={tr.id} className="grid items-center py-1.5 px-2 rounded bg-[oklch(0.12_0.04_220/0.4)] border border-[oklch(0.18_0.04_220/0.3)]" style={{ gridTemplateColumns: '14px 60px 46px 46px 1fr 56px 68px' }}>
+                            <span style={{ color: dirColor, fontSize: 11 }}>{tr.direction === 'LONG' ? '▲' : '▼'}</span>
                             <span className="text-[var(--color-muted-foreground)] text-xs">{fmtD(tr.entryTime)}</span>
                             <span className="font-mono text-[var(--arc-cyan)] text-xs">{fmtT(tr.entryTime)}</span>
                             <span className="font-mono text-[var(--color-muted-foreground)] text-xs">{fmtT(tr.exitTime)}</span>
