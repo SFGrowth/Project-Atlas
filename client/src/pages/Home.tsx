@@ -48,16 +48,25 @@ function pnlStr(v: number) {
 }
 
 // ─── P&L Bucket Panel ─────────────────────────────────────────────────────────
-function PnlBucket({ label, data }: { label: string; data: BucketStats | undefined }) {
+function PnlBucket({ label, data, riskOverride }: { label: string; data: BucketStats | undefined; riskOverride: number }) {
   if (!data) {
     return (
       <div className="hud-panel hud-panel-br flex flex-col gap-2 p-3">
-        <div className="hud-header text-[10px]"><span className="hud-header-dot" />{label}</div>
+        <div className="hud-header text-xs"><span className="hud-header-dot" />{label}</div>
         <div className="text-[var(--color-muted-foreground)] text-xs text-center py-4">No data</div>
       </div>
     );
   }
   const { trades, wins, losses, pnl, winRate, models } = data;
+  const NY = 'America/New_York';
+  const fmtT = (iso: string | null) => iso ? new Date(iso).toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', timeZone: NY }) : '—';
+  const fmtD = (iso: string | null) => iso ? new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: NY }) : '—';
+  const fmtP = (p: number | null) => p != null ? p.toFixed(2) : '—';
+  const fmtR = (tradePnl: number) => {
+    if (!riskOverride) return '—';
+    const r = tradePnl / riskOverride;
+    return `${r >= 0 ? '+' : ''}${r.toFixed(2)}R`;
+  };
   return (
     <div className="hud-panel hud-panel-br flex flex-col gap-0">
       <div className="hud-header"><span className="hud-header-dot" />{label}</div>
@@ -68,24 +77,24 @@ function PnlBucket({ label, data }: { label: string; data: BucketStats | undefin
             <div className={`text-lg font-bold font-['Orbitron'] ${pnlClass(pnl)}`} style={{ textShadow: pnl > 0 ? "0 0 8px #4ade80" : pnl < 0 ? "0 0 8px #f87171" : "none" }}>
               {trades > 0 ? pnlStr(pnl) : "—"}
             </div>
-            <div className="text-[9px] text-[var(--color-muted-foreground)] tracking-wider mt-0.5">P&L</div>
+            <div className="text-[10px] text-[var(--color-muted-foreground)] tracking-wider mt-0.5">P&L</div>
           </div>
           <div>
             <div className="text-lg font-bold font-['Orbitron'] text-[var(--arc-cyan)]" style={{ textShadow: "0 0 6px var(--arc-cyan)" }}>
               {trades > 0 ? `${winRate?.toFixed(0) ?? "—"}%` : "—"}
             </div>
-            <div className="text-[9px] text-[var(--color-muted-foreground)] tracking-wider mt-0.5">WIN RATE</div>
+            <div className="text-[10px] text-[var(--color-muted-foreground)] tracking-wider mt-0.5">WIN RATE</div>
           </div>
           <div>
             <div className="text-lg font-bold font-['Orbitron'] text-[var(--arc-blue)]">
               {trades}
             </div>
-            <div className="text-[9px] text-[var(--color-muted-foreground)] tracking-wider mt-0.5">TRADES</div>
+            <div className="text-[10px] text-[var(--color-muted-foreground)] tracking-wider mt-0.5">TRADES</div>
           </div>
         </div>
         {/* W/L bar */}
         {trades > 0 && (
-          <div className="flex items-center gap-1 text-[9px]">
+          <div className="flex items-center gap-1 text-xs">
             <span className="text-green-400">{wins}W</span>
             <div className="flex-1 h-1.5 rounded-full bg-[oklch(0.18_0.06_220)] overflow-hidden">
               <div
@@ -97,74 +106,60 @@ function PnlBucket({ label, data }: { label: string; data: BucketStats | undefin
           </div>
         )}
         {/* Per-model breakdown with individual trade rows */}
-        {data.models.length > 0 && data.tradeList && (() => {
-          const NY = 'America/New_York';
-          const fmtT = (iso: string | null) => iso ? new Date(iso).toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', timeZone: NY }) : '—';
-          const fmtD = (iso: string | null) => iso ? new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: NY }) : '—';
-          const fmtP = (p: number | null) => p != null ? p.toFixed(2) : '—';
-          return (
-            <div className="border-t border-[oklch(0.22_0.06_220/0.4)] pt-2 space-y-2">
-              {data.models.map((m) => {
-                const modelTrades = (data.tradeList ?? []).filter((t) => t.model === m.model);
-                return (
-                  <div key={m.model}>
-                    {/* Model summary header */}
-                    <div className="flex items-center justify-between text-[10px] mb-1">
-                      <div className="flex items-center gap-1.5">
-                        <span className="font-mono font-bold text-[var(--arc-blue)] w-6">{m.model}</span>
-                        <span className="text-[var(--color-muted-foreground)]">{m.trades}t</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        {m.winRate !== null && (
-                          <span className="text-[var(--arc-cyan)] text-[9px]">{m.winRate.toFixed(0)}%</span>
-                        )}
-                        <span className={pnlClass(m.pnl)}>{pnlStr(m.pnl)}</span>
-                      </div>
+        {models.length > 0 && data.tradeList && (
+          <div className="border-t border-[oklch(0.22_0.06_220/0.4)] pt-2 space-y-3">
+            {models.map((m) => {
+              const modelTrades = (data.tradeList ?? []).filter((t) => t.model === m.model);
+              return (
+                <div key={m.model}>
+                  {/* Model summary header */}
+                  <div className="flex items-center justify-between text-xs mb-1.5">
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono font-bold text-[var(--arc-blue)]">{m.model}</span>
+                      <span className="text-[var(--color-muted-foreground)]">{m.trades}t</span>
+                      {m.winRate !== null && (
+                        <span className="text-[var(--arc-cyan)]">{m.winRate.toFixed(0)}%</span>
+                      )}
                     </div>
-                    {/* Individual trade rows under this model */}
-                    {modelTrades.length > 0 && (
-                      <div className="ml-1 space-y-0.5">
-                        {modelTrades.map((tr) => {
-                          const isWin = tr.pnl > 0;
-                          const dirColor = tr.direction === 'LONG' ? '#4ade80' : '#f87171';
-                          return (
-                            <div key={tr.id} className="grid items-center text-[9px] py-0.5 border-b border-[oklch(0.16_0.04_220/0.25)] last:border-0" style={{ gridTemplateColumns: '10px 48px 38px 38px 1fr 44px 52px' }}>
-                              {/* Direction dot */}
-                              <span style={{ color: dirColor, fontSize: 8 }}>▲</span>
-                              {/* Date */}
-                              <span className="text-[var(--color-muted-foreground)] text-[8px]">{fmtD(tr.entryTime)}</span>
-                              {/* Entry time */}
-                              <span className="font-mono text-[var(--arc-cyan)] text-[8px]">{fmtT(tr.entryTime)}</span>
-                              {/* Exit time */}
-                              <span className="font-mono text-[var(--color-muted-foreground)] text-[8px]">{fmtT(tr.exitTime)}</span>
-                              {/* Price in → out */}
-                              <span className="font-mono text-[8px] truncate">
-                                <span className="text-[var(--arc-cyan)]">{fmtP(tr.entryPrice)}</span>
-                                <span className="text-[var(--color-muted-foreground)] mx-0.5">→</span>
-                                <span className="text-[var(--color-muted-foreground)]">{fmtP(tr.exitPrice)}</span>
-                              </span>
-                              {/* Risk */}
-                              <span className="font-mono text-[8px] text-orange-400 text-right">
-                                {tr.riskDollars != null ? `$${tr.riskDollars.toFixed(0)}` : '—'}
-                              </span>
-                              {/* P&L */}
-                              <span className={`text-right font-mono font-bold text-[9px] ${isWin ? 'text-green-400' : 'text-red-400'}`}
+                    <span className={`font-mono font-bold ${pnlClass(m.pnl)}`}>{pnlStr(m.pnl)}</span>
+                  </div>
+                  {/* Individual trade rows */}
+                  {modelTrades.length > 0 && (
+                    <div className="space-y-1">
+                      {modelTrades.map((tr) => {
+                        const isWin = tr.pnl > 0;
+                        const dirColor = tr.direction === 'LONG' ? '#4ade80' : '#f87171';
+                        return (
+                          <div key={tr.id} className="grid items-center py-1 px-1 rounded bg-[oklch(0.12_0.04_220/0.4)] border border-[oklch(0.18_0.04_220/0.3)]" style={{ gridTemplateColumns: '14px 56px 44px 44px 1fr 52px 60px' }}>
+                            <span style={{ color: dirColor, fontSize: 10 }}>{tr.direction === 'LONG' ? '▲' : '▼'}</span>
+                            <span className="text-[var(--color-muted-foreground)] text-xs">{fmtD(tr.entryTime)}</span>
+                            <span className="font-mono text-[var(--arc-cyan)] text-xs">{fmtT(tr.entryTime)}</span>
+                            <span className="font-mono text-[var(--color-muted-foreground)] text-xs">{fmtT(tr.exitTime)}</span>
+                            <span className="font-mono text-xs truncate">
+                              <span className="text-[var(--arc-cyan)]">{fmtP(tr.entryPrice)}</span>
+                              <span className="text-[var(--color-muted-foreground)] mx-1">→</span>
+                              <span className="text-[var(--color-muted-foreground)]">{fmtP(tr.exitPrice)}</span>
+                            </span>
+                            <span className="font-mono text-xs text-orange-400 text-right">${riskOverride}</span>
+                            <div className="flex flex-col items-end">
+                              <span className={`font-mono font-bold text-xs ${isWin ? 'text-green-400' : 'text-red-400'}`}
                                 style={{ textShadow: isWin ? '0 0 4px #4ade80' : '0 0 4px #f87171' }}>
                                 {pnlStr(tr.pnl)}
                               </span>
+                              <span className={`font-mono text-[10px] ${isWin ? 'text-green-300' : 'text-red-300'}`}>{fmtR(tr.pnl)}</span>
                             </div>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          );
-        })()}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
         {trades === 0 && (
-          <div className="text-[var(--color-muted-foreground)] text-[10px] text-center py-1">No trades this period</div>
+          <div className="text-[var(--color-muted-foreground)] text-xs text-center py-2">No trades this period</div>
         )}
       </div>
     </div>
@@ -289,6 +284,19 @@ export default function Home() {
   const { data: stats } = trpc.nexus.stats.useQuery(undefined, { refetchInterval: 30000 });
   const { data: summaryStats } = trpc.paper.summaryStats.useQuery({}, { refetchInterval: 60000 });
   const { data: initialReport } = trpc.nexus.latestReport.useQuery(undefined, { refetchInterval: 30000 });
+
+  // Risk override — persisted in localStorage, default $800
+  const [riskOverride, setRiskOverride] = useState<number>(() => {
+    const saved = localStorage.getItem('atlas_risk_override');
+    return saved ? parseInt(saved, 10) || 800 : 800;
+  });
+  const [riskInput, setRiskInput] = useState<string>(() => {
+    const saved = localStorage.getItem('atlas_risk_override');
+    return saved ?? '800';
+  });
+  useEffect(() => {
+    localStorage.setItem('atlas_risk_override', String(riskOverride));
+  }, [riskOverride]);
 
   // Clock tick
   const [tick, setTick] = useState(0);
@@ -455,12 +463,39 @@ export default function Home() {
 
         {/* ── Row 3: P&L Summary — Today / Week / Month / All-Time ── */}
         <div>
-          <div className="text-[10px] tracking-[0.2em] text-[var(--color-muted-foreground)] mb-2 font-mono uppercase">Paper Trading Performance — PAPER provenance only</div>
+          <div className="flex items-center justify-between mb-2">
+            <div className="text-[10px] tracking-[0.2em] text-[var(--color-muted-foreground)] font-mono uppercase">Paper Trading Performance — PAPER provenance only</div>
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] text-[var(--color-muted-foreground)] font-mono tracking-wider">RISK $</span>
+              <input
+                type="number"
+                min={1}
+                step={50}
+                value={riskInput}
+                onChange={(e) => setRiskInput(e.target.value)}
+                onBlur={() => {
+                  const v = parseInt(riskInput, 10);
+                  if (v > 0) setRiskOverride(v);
+                  else setRiskInput(String(riskOverride));
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    const v = parseInt(riskInput, 10);
+                    if (v > 0) setRiskOverride(v);
+                    else setRiskInput(String(riskOverride));
+                    (e.target as HTMLInputElement).blur();
+                  }
+                }}
+                className="w-20 h-7 px-2 text-xs font-mono text-[var(--arc-cyan)] bg-[oklch(0.12_0.05_220/0.8)] border border-[oklch(0.35_0.12_220/0.6)] rounded focus:outline-none focus:border-[var(--arc-cyan)] text-right"
+                style={{ fontFamily: 'JetBrains Mono, monospace' }}
+              />
+            </div>
+          </div>
           <div className="grid grid-cols-4 gap-3">
-            <PnlBucket label="Today" data={summaryStats?.today} />
-            <PnlBucket label="This Week" data={summaryStats?.week} />
-            <PnlBucket label="This Month" data={summaryStats?.month} />
-            <PnlBucket label="All Time" data={summaryStats?.allTime} />
+            <PnlBucket label="Today" data={summaryStats?.today} riskOverride={riskOverride} />
+            <PnlBucket label="This Week" data={summaryStats?.week} riskOverride={riskOverride} />
+            <PnlBucket label="This Month" data={summaryStats?.month} riskOverride={riskOverride} />
+            <PnlBucket label="All Time" data={summaryStats?.allTime} riskOverride={riskOverride} />
           </div>
         </div>
 
@@ -534,27 +569,31 @@ export default function Home() {
 
         {/* ── All-Models Combined Summary ── */}
         {summaryStats && summaryStats.allTime.trades > 0 && (() => {
-          // Aggregate across all models from allTime bucket
           const allModels = summaryStats.allTime.models;
           const allTrades = summaryStats.allTime.tradeList ?? [];
           const NY = 'America/New_York';
           const fmtT = (iso: string | null) => iso ? new Date(iso).toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', timeZone: NY }) : '—';
           const fmtD = (iso: string | null) => iso ? new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: NY }) : '—';
           const fmtP = (p: number | null) => p != null ? p.toFixed(2) : '—';
+          const fmtR = (tradePnl: number) => {
+            if (!riskOverride) return '—';
+            const r = tradePnl / riskOverride;
+            return `${r >= 0 ? '+' : ''}${r.toFixed(2)}R`;
+          };
           return (
             <div className="hud-panel hud-panel-br">
               <div className="hud-header"><span className="hud-header-dot" />ALL-MODELS COMBINED SUMMARY</div>
               <div className="p-3">
-                {/* Model summary row per model */}
-                <div className="grid gap-1 mb-3" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))' }}>
+                {/* Model summary cards */}
+                <div className="grid gap-2 mb-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))' }}>
                   {allModels.map((m) => (
-                    <div key={m.model} className="flex items-center justify-between px-2 py-1.5 rounded bg-[oklch(0.14_0.05_220/0.5)] border border-[oklch(0.22_0.06_220/0.3)]">
+                    <div key={m.model} className="flex items-center justify-between px-3 py-2 rounded bg-[oklch(0.14_0.05_220/0.5)] border border-[oklch(0.22_0.06_220/0.3)]">
                       <div className="flex items-center gap-2">
-                        <span className="font-mono font-bold text-[var(--arc-blue)] text-xs">{m.model}</span>
-                        <span className="text-[9px] text-[var(--color-muted-foreground)]">{m.trades}t</span>
-                        {m.winRate !== null && <span className="text-[9px] text-[var(--arc-cyan)]">{m.winRate.toFixed(0)}%</span>}
+                        <span className="font-mono font-bold text-[var(--arc-blue)] text-sm">{m.model}</span>
+                        <span className="text-xs text-[var(--color-muted-foreground)]">{m.trades}t</span>
+                        {m.winRate !== null && <span className="text-xs text-[var(--arc-cyan)]">{m.winRate.toFixed(0)}%</span>}
                       </div>
-                      <span className={`font-mono font-bold text-xs ${m.pnl > 0 ? 'text-green-400' : m.pnl < 0 ? 'text-red-400' : 'data-value'}`}
+                      <span className={`font-mono font-bold text-sm ${m.pnl > 0 ? 'text-green-400' : m.pnl < 0 ? 'text-red-400' : 'data-value'}`}
                         style={{ textShadow: m.pnl > 0 ? '0 0 6px #4ade80' : m.pnl < 0 ? '0 0 6px #f87171' : 'none' }}>
                         {m.pnl > 0 ? '+' : ''}{m.pnl.toFixed(2)}
                       </span>
@@ -562,8 +601,8 @@ export default function Home() {
                   ))}
                 </div>
                 {/* Full trade log table */}
-                <div className="border-t border-[oklch(0.22_0.06_220/0.4)] pt-2">
-                  <div className="grid text-[8px] text-[var(--color-muted-foreground)] tracking-wider pb-1.5 px-1" style={{ gridTemplateColumns: '36px 14px 60px 42px 42px 1fr 50px 60px' }}>
+                <div className="border-t border-[oklch(0.22_0.06_220/0.4)] pt-3">
+                  <div className="grid text-[10px] text-[var(--color-muted-foreground)] tracking-wider pb-2 px-2" style={{ gridTemplateColumns: '44px 16px 68px 50px 50px 1fr 56px 70px 68px' }}>
                     <span>MODEL</span>
                     <span></span>
                     <span>DATE</span>
@@ -572,30 +611,31 @@ export default function Home() {
                     <span>PRICE IN→OUT</span>
                     <span className="text-right text-orange-400">RISK</span>
                     <span className="text-right">P&L</span>
+                    <span className="text-right text-[var(--arc-cyan)]">R-MULT</span>
                   </div>
                   {allTrades.map((tr) => {
                     const isWin = tr.pnl > 0;
                     const dirColor = tr.direction === 'LONG' ? '#4ade80' : '#f87171';
+                    const rMult = fmtR(tr.pnl);
                     return (
-                      <div key={tr.id} className="grid items-center py-1 border-b border-[oklch(0.16_0.04_220/0.25)] last:border-0 text-[9px] px-1"
-                        style={{ gridTemplateColumns: '36px 14px 60px 42px 42px 1fr 50px 60px' }}>
-                        <span className="font-mono font-bold text-[var(--arc-blue)] text-[9px]">{tr.model}</span>
-                        <span style={{ color: dirColor, fontSize: 8 }}>{tr.direction === 'LONG' ? '▲' : '▼'}</span>
-                        <span className="text-[var(--color-muted-foreground)] text-[8px]">{fmtD(tr.entryTime)}</span>
-                        <span className="font-mono text-[var(--arc-cyan)] text-[8px]">{fmtT(tr.entryTime)}</span>
-                        <span className="font-mono text-[var(--color-muted-foreground)] text-[8px]">{fmtT(tr.exitTime)}</span>
-                        <span className="font-mono text-[8px] truncate">
+                      <div key={tr.id} className="grid items-center py-1.5 px-2 rounded mb-1 bg-[oklch(0.12_0.04_220/0.4)] border border-[oklch(0.18_0.04_220/0.3)]"
+                        style={{ gridTemplateColumns: '44px 16px 68px 50px 50px 1fr 56px 70px 68px' }}>
+                        <span className="font-mono font-bold text-[var(--arc-blue)] text-xs">{tr.model}</span>
+                        <span style={{ color: dirColor, fontSize: 11 }}>{tr.direction === 'LONG' ? '▲' : '▼'}</span>
+                        <span className="text-[var(--color-muted-foreground)] text-xs">{fmtD(tr.entryTime)}</span>
+                        <span className="font-mono text-[var(--arc-cyan)] text-xs">{fmtT(tr.entryTime)}</span>
+                        <span className="font-mono text-[var(--color-muted-foreground)] text-xs">{fmtT(tr.exitTime)}</span>
+                        <span className="font-mono text-xs truncate">
                           <span className="text-[var(--arc-cyan)]">{fmtP(tr.entryPrice)}</span>
-                          <span className="text-[var(--color-muted-foreground)] mx-0.5">→</span>
+                          <span className="text-[var(--color-muted-foreground)] mx-1">→</span>
                           <span className="text-[var(--color-muted-foreground)]">{fmtP(tr.exitPrice)}</span>
                         </span>
-                        <span className="text-right font-mono text-[8px] text-orange-400">
-                          {tr.riskDollars != null ? `$${tr.riskDollars.toFixed(0)}` : '—'}
-                        </span>
-                        <span className={`text-right font-mono font-bold text-[9px] ${isWin ? 'text-green-400' : 'text-red-400'}`}
+                        <span className="text-right font-mono text-xs text-orange-400">${riskOverride}</span>
+                        <span className={`text-right font-mono font-bold text-xs ${isWin ? 'text-green-400' : 'text-red-400'}`}
                           style={{ textShadow: isWin ? '0 0 4px #4ade80' : '0 0 4px #f87171' }}>
                           {isWin ? '+' : ''}{tr.pnl.toFixed(2)}
                         </span>
+                        <span className={`text-right font-mono text-xs ${isWin ? 'text-green-300' : 'text-red-300'}`}>{rMult}</span>
                       </div>
                     );
                   })}

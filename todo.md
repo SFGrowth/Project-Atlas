@@ -883,3 +883,8 @@
 
 - [ ] Replace per-model summary rows in P&L panels with per-trade rows: date, entry time/price, exit time/price, final P&L
 - [ ] getPaperSummaryStats: include full trade list per bucket (openedAt, closedAt, entryPrice, exitPrice, pnl, model, direction)
+
+## Sprint 113e — Risk Override
+- [ ] Add editable risk input on home page P&L section — default $800, user can change it and all trade rows update
+- [ ] Risk override persists in localStorage
+- [ ] Show R-multiple (P&L / risk) for each trade alongside the risk amount
