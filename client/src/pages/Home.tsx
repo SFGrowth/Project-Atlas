@@ -74,13 +74,13 @@ function PnlBucket({ label, data, riskOverride }: { label: string; data: BucketS
         {/* Main stats row */}
         <div className="grid grid-cols-3 gap-2 text-center">
           <div>
-            <div className={`text-lg font-bold font-['Orbitron'] ${pnlClass(pnl)}`} style={{ textShadow: pnl > 0 ? "0 0 8px #4ade80" : pnl < 0 ? "0 0 8px #f87171" : "none" }}>
+            <div className={`text-lg font-bold font-['Orbitron'] ${pnlClass(pnl)}`}>
               {trades > 0 ? pnlStr(pnl) : "—"}
             </div>
             <div className="text-[10px] text-[var(--color-muted-foreground)] tracking-wider mt-0.5">P&L</div>
           </div>
           <div>
-            <div className="text-lg font-bold font-['Orbitron'] text-[var(--arc-cyan)]" style={{ textShadow: "0 0 6px var(--arc-cyan)" }}>
+            <div className="text-lg font-bold font-['Orbitron'] text-[var(--arc-cyan)]">
               {trades > 0 ? `${winRate?.toFixed(0) ?? "—"}%` : "—"}
             </div>
             <div className="text-[10px] text-[var(--color-muted-foreground)] tracking-wider mt-0.5">WIN RATE</div>
@@ -97,9 +97,8 @@ function PnlBucket({ label, data, riskOverride }: { label: string; data: BucketS
           <div className="flex items-center gap-1 text-xs">
             <span className="text-green-400">{wins}W</span>
             <div className="flex-1 h-1.5 rounded-full bg-[oklch(0.18_0.06_220)] overflow-hidden">
-              <div
-                className="h-full rounded-full bg-green-400"
-                style={{ width: `${(wins / trades) * 100}%`, boxShadow: "0 0 4px #4ade80" }}
+                            <div className="h-full rounded-full bg-green-400"
+                style={{ width: `${(wins / trades) * 100}%` }}
               />
             </div>
             <span className="text-red-400">{losses}L</span>
@@ -130,7 +129,8 @@ function PnlBucket({ label, data, riskOverride }: { label: string; data: BucketS
                         const isWin = tr.pnl > 0;
                         const dirColor = tr.direction === 'LONG' ? '#4ade80' : '#f87171';
                         return (
-                          <div key={tr.id} className="grid items-center py-1 px-1 rounded bg-[oklch(0.12_0.04_220/0.4)] border border-[oklch(0.18_0.04_220/0.3)]" style={{ gridTemplateColumns: '14px 56px 44px 44px 1fr 52px 60px' }}>
+                          <div key={tr.id} className="grid items-center py-1 px-1 rounded bg-[oklch(0.12_0.04_220/0.4)] border border-[oklch(0.18_0.04_220/0.3)]" style={{ gridTemplateColumns: '32px 14px 56px 44px 44px 1fr 52px 60px' }}>
+                            <span className="font-mono font-bold text-[10px] text-[var(--arc-blue)] bg-[oklch(0.16_0.06_220/0.6)] rounded px-1 py-0.5 text-center">{tr.model}</span>
                             <span style={{ color: dirColor, fontSize: 10 }}>{tr.direction === 'LONG' ? '▲' : '▼'}</span>
                             <span className="text-[var(--color-muted-foreground)] text-xs">{fmtD(tr.entryTime)}</span>
                             <span className="font-mono text-[var(--arc-cyan)] text-xs">{fmtT(tr.entryTime)}</span>
@@ -142,8 +142,7 @@ function PnlBucket({ label, data, riskOverride }: { label: string; data: BucketS
                             </span>
                             <span className="font-mono text-xs text-orange-400 text-right">${riskOverride}</span>
                             <div className="flex flex-col items-end">
-                              <span className={`font-mono font-bold text-xs ${isWin ? 'text-green-400' : 'text-red-400'}`}
-                                style={{ textShadow: isWin ? '0 0 4px #4ade80' : '0 0 4px #f87171' }}>
+                              <span className={`font-mono font-bold text-xs ${isWin ? 'text-green-400' : 'text-red-400'}`}>
                                 {pnlStr(tr.pnl)}
                               </span>
                               <span className={`font-mono text-[10px] ${isWin ? 'text-green-300' : 'text-red-300'}`}>{fmtR(tr.pnl)}</span>
@@ -593,8 +592,7 @@ export default function Home() {
                         <span className="text-xs text-[var(--color-muted-foreground)]">{m.trades}t</span>
                         {m.winRate !== null && <span className="text-xs text-[var(--arc-cyan)]">{m.winRate.toFixed(0)}%</span>}
                       </div>
-                      <span className={`font-mono font-bold text-sm ${m.pnl > 0 ? 'text-green-400' : m.pnl < 0 ? 'text-red-400' : 'data-value'}`}
-                        style={{ textShadow: m.pnl > 0 ? '0 0 6px #4ade80' : m.pnl < 0 ? '0 0 6px #f87171' : 'none' }}>
+                      <span className={`font-mono font-bold text-sm ${m.pnl > 0 ? 'text-green-400' : m.pnl < 0 ? 'text-red-400' : 'data-value'}`}>
                         {m.pnl > 0 ? '+' : ''}{m.pnl.toFixed(2)}
                       </span>
                     </div>
@@ -631,8 +629,7 @@ export default function Home() {
                           <span className="text-[var(--color-muted-foreground)]">{fmtP(tr.exitPrice)}</span>
                         </span>
                         <span className="text-right font-mono text-xs text-orange-400">${riskOverride}</span>
-                        <span className={`text-right font-mono font-bold text-xs ${isWin ? 'text-green-400' : 'text-red-400'}`}
-                          style={{ textShadow: isWin ? '0 0 4px #4ade80' : '0 0 4px #f87171' }}>
+                        <span className={`text-right font-mono font-bold text-xs ${isWin ? 'text-green-400' : 'text-red-400'}`}>
                           {isWin ? '+' : ''}{tr.pnl.toFixed(2)}
                         </span>
                         <span className={`text-right font-mono text-xs ${isWin ? 'text-green-300' : 'text-red-300'}`}>{rMult}</span>
