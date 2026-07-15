@@ -2178,3 +2178,62 @@ export const arp1DailyBriefs = mysqlTable("arp1_daily_briefs", {
 });
 export type Arp1DailyBrief = typeof arp1DailyBriefs.$inferSelect;
 export type InsertArp1DailyBrief = typeof arp1DailyBriefs.$inferInsert;
+
+// ══════════════════════════════════════════════════════════════════════════════
+// TradersPost Integration — Sprint 113
+// ══════════════════════════════════════════════════════════════════════════════
+
+/**
+ * tp_config — one row per TradersPost strategy.
+ * Controls arm state, webhook URL, and account routing.
+ * S109-001 has frozenUntilOwnerApproval = true and cannot be armed via API.
+ */
+export const tpConfig = mysqlTable("tp_config", {
+  id:                       int("id").autoincrement().primaryKey(),
+  strategyId:               varchar("strategy_id", { length: 32 }).notNull().unique(), // A1 | A3 | B1 | S109-001
+  strategyName:             varchar("strategy_name", { length: 64 }).notNull(),         // ATLAS-A1-TRADERSPOST
+  webhookUrl:               varchar("webhook_url", { length: 512 }),                    // TradersPost webhook URL (null until configured)
+  armed:                    boolean("armed").notNull().default(false),                  // false = DISARMED
+  frozenUntilOwnerApproval: boolean("frozen_until_owner_approval").notNull().default(false), // S109-001 only
+  accountMode:              mysqlEnum("account_mode", ["PAPER", "EVALUATION", "FUNDED", "LIVE"]).notNull().default("PAPER"),
+  preLiveGateRequired:      boolean("pre_live_gate_required").notNull().default(false), // true for EVALUATION/FUNDED/LIVE
+  ticker:                   varchar("ticker", { length: 16 }).notNull().default("MNQ1!"),
+  quantity:                 int("quantity").notNull().default(1),
+  riskDollars:              decimal("risk_dollars", { precision: 10, scale: 2 }).notNull().default("450.00"),
+  notes:                    text("notes"),
+  createdAt:                timestamp("created_at").defaultNow().notNull(),
+  updatedAt:                timestamp("updated_at").defaultNow().notNull(),
+});
+export type TpConfig = typeof tpConfig.$inferSelect;
+export type InsertTpConfig = typeof tpConfig.$inferInsert;
+
+/**
+ * tp_dispatch_log — immutable record of every TradersPost dispatch attempt.
+ * Status values:
+ *   DISPATCHED           — HTTP request sent, response received
+ *   SAFETY_HALTED        — apex_safety_state.isHalted === true
+ *   PRE_LIVE_GATE_BLOCKED — certification not passed for live account
+ *   DISARMED             — strategy armed === false
+ *   FROZEN               — frozenUntilOwnerApproval === true
+ *   DUPLICATE_SKIPPED    — idempotency key already exists
+ *   ERROR                — HTTP request failed or exception thrown
+ */
+export const tpDispatchLog = mysqlTable("tp_dispatch_log", {
+  id:               int("id").autoincrement().primaryKey(),
+  idempotencyKey:   varchar("idempotency_key", { length: 128 }).notNull().unique(),
+  strategyId:       varchar("strategy_id", { length: 32 }).notNull(),
+  barTimeMs:        bigint("bar_time_ms", { mode: "number" }).notNull(),
+  direction:        mysqlEnum("direction", ["LONG", "SHORT"]).notNull(),
+  entryPrice:       decimal("entry_price", { precision: 10, scale: 4 }),
+  stopPrice:        decimal("stop_price", { precision: 10, scale: 4 }),
+  targetPrice:      decimal("target_price", { precision: 10, scale: 4 }),
+  status:           varchar("status", { length: 32 }).notNull(), // see above
+  httpStatus:       int("http_status"),                          // TradersPost HTTP response code
+  responseBody:     text("response_body"),                       // TradersPost response JSON
+  errorMessage:     text("error_message"),                       // if status=ERROR
+  atlasMemoryBarId: int("atlas_memory_bar_id"),
+  pipelineRunId:    varchar("pipeline_run_id", { length: 128 }),
+  dispatchedAt:     timestamp("dispatched_at").defaultNow().notNull(),
+});
+export type TpDispatchLog = typeof tpDispatchLog.$inferSelect;
+export type InsertTpDispatchLog = typeof tpDispatchLog.$inferInsert;

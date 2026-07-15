@@ -148,6 +148,13 @@
       "when": 1784093876762,
       "tag": "0020_common_earthquake",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "5",
+      "when": 1784096429233,
+      "tag": "0021_glossy_whizzer",
+      "breakpoints": true
     }
   ]
 }

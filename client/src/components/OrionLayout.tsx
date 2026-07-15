@@ -8,7 +8,7 @@ import { useIsMobile } from "@/hooks/useMobile";
 import {
   Activity, AlertTriangle, BadgeCheck, BarChart2, BarChart3, BookOpen, Brain, BrainCircuit, CalendarCheck, ChevronLeft, ChevronRight,
   Clock, Cpu, Database, Dna, FlaskConical, GitBranch, Home, LayoutDashboard, Layers, LineChart, Menu,
-  Radio, Settings, Shield, ShieldCheck, ScanLine, Star, Target, Telescope, TrendingUp, Zap,
+  Radio, Send, Settings, Shield, ShieldCheck, ScanLine, Star, Target, Telescope, TrendingUp, Zap,
 } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
@@ -47,6 +47,7 @@ const NAV_GROUPS = [
       { icon: BarChart2, label: "Position State", path: "/position" },
       { icon: Clock, label: "Decision Timeline", path: "/timeline" },
       { icon: FlaskConical, label: "Replay Engine", path: "/replay" },
+      { icon: Send, label: "TradersPost", path: "/traderspost" },
     ],
   },
   {

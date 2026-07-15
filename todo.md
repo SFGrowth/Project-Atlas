@@ -821,13 +821,43 @@
 
 ## ARP-1 — Atlas Autonomous Research Program 1
 
-- [ ] Repository audit: git log, verify canonical dataset, load all registries, Sprint 112 closure
-- [ ] Program A: Live operations continuity — verify all 9 live processes are wired and running
-- [ ] Program B: Continuous discovery engine — per-bar behaviour analysis, candidate generation, market law updates wired into webhook
-- [ ] Program C: Portfolio coverage tracker — current vs target coverage, underrepresented regions, research priority
-- [ ] Program D: Model lifecycle state machine — 9 states, auto-promotion rules, no manual promotion
-- [ ] Program E: Portfolio intelligence engine — PF, WR, DD, correlation matrix, diversification score, regime coverage, capital allocation
-- [ ] Program F: Weekly self-review generator — Sunday auto-run, 9-question report, Weekly Executive Research Report
-- [ ] Program G: Daily owner briefing — morning auto-run, 9-section brief, "Atlas is operating normally" default
-- [ ] ARP-1 Command Centre dashboard page at /arp1 — unified 7-program status view
-- [ ] ARP-1 closure report, registry updates, commit and push to SFGrowth/Project-Atlas
+- [x] Repository audit: git log, verify canonical dataset, load all registries, Sprint 112 closure
+- [x] Program A: Live operations continuity — 8 processes monitored, real-time status
+- [x] Program B: Continuous discovery engine — per-bar behaviour analysis, candidate generation, market law updates wired into webhook
+- [x] Program C: Portfolio coverage tracker — wired into PM_CLOSE pipeline
+- [x] Program D: Model lifecycle state machine — 9 states, auto-promotion rules, 7 models seeded
+- [x] Program E: Portfolio intelligence engine — PF, WR, DD, diversification score, regime coverage at PM_CLOSE
+- [x] Program F: Weekly self-review generator — Heartbeat cron Sunday 22:00 UTC (18:00 ET)
+- [x] Program G: Daily owner briefing — Heartbeat cron weekdays 12:00 UTC (08:00 ET)
+- [x] ARP-1 Command Centre dashboard page at /arp1 — unified 7-program status view with lifecycle transitions
+- [x] ARP-1 closure report commit f473d5e pushed to SFGrowth/Project-Atlas
+
+## TradersPost Multi-Strategy Alert Audit & Implementation
+
+- [ ] Part 1+9: Full Pine repository audit — find A1/A3/B1/M-14/M-15/M-16 files, answer all 9 required questions with code evidence
+- [ ] Parts 2+3+4: Architecture design — dual-pipeline separation, governance preservation, single-strategy rule
+- [ ] Part 5: Build ATLAS-S109-001-TRADERSPOST Pine Script (frozen spec, execution disabled by default)
+- [ ] Part 5: Build ATLAS-A1-TRADERSPOST Pine Script (fires only when final_approved==true AND selected_model=="A1")
+- [ ] Part 5: Build ATLAS-A3-TRADERSPOST Pine Script (fires only when final_approved==true AND selected_model=="A3")
+- [ ] Part 5: Build ATLAS-B1-TRADERSPOST Pine Script (fires only when final_approved==true AND selected_model=="B1")
+- [ ] Part 6: TradersPost payload spec for all 4 strategies (strategy_id, version, environment, action, ticker, direction, quantity, stop, target, timestamp, idempotency_key, atlas_decision_id, account_routing)
+- [ ] Part 7: TradingView alert inventory table (script, chart, condition, frequency, webhook destination, environment, status)
+- [ ] Part 8: Testing checklist — compile, signal comparison, no duplicates, single-model enforcement, M-16 continuity, paper test, entry/stop/target/exit, PRE_LIVE_GATE
+- [ ] Repository Protocol: update Pine architecture docs, TradingView deployment inventory, TradersPost integration docs, strategy registry, commit and push to GitHub
+
+## Sprint 113 — TradersPost Server-Side Integration (Completed)
+
+- [x] Part 1 audit: answered all 9 questions with code evidence — TRADERSPOST-AUDIT-PART1.md
+- [x] Architecture design: dual-pipeline separation, governance preservation, single-strategy rule — TRADERSPOST-ARCHITECTURE.md
+- [x] DB schema: tp_config + tp_dispatch_log tables (migration 0021 applied)
+- [x] Seed: 4 strategies seeded (A1, A3, B1, S109-001) — all DISARMED by default
+- [x] server/tpDb.ts: getAllTpConfigs, armStrategy, disarmStrategy, setTpWebhookUrl, setNotes, getRecentTpDispatches, getTpDispatchStats
+- [x] server/tpDispatch.ts: dispatchToTradersPost() with 3-gate safety system (DISARMED / FROZEN / SAFETY_HALTED / PRE_LIVE_GATE_BLOCKED)
+- [x] server/tpRouter.ts: tRPC procedures — getConfigs, armStrategy, disarmStrategy, setWebhookUrl, setNotes, getDispatchLog, getDispatchStats
+- [x] server/routers.ts: tpRouter registered under tp namespace
+- [x] server/monitor/paperTradeEngine.ts: processBar() return type extended with signalFired, signalModel, signalDirection, signalEntry, signalStop, signalTarget
+- [x] server/nexusRoutes.ts: TradersPost dispatch hook wired after processBar() — non-blocking setImmediate
+- [x] client/src/pages/TradersPost.tsx: full management dashboard — ARM/DISARM controls, webhook URL config, operator notes, dispatch log, per-strategy stats, architecture reference
+- [x] client/src/App.tsx: /traderspost route registered
+- [x] client/src/components/OrionLayout.tsx: TradersPost nav item added to EXECUTION group
+- [x] server/tp.test.ts: 17 new vitest tests — all 95 tests pass (0 failures)

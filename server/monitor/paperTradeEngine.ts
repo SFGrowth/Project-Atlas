@@ -426,6 +426,10 @@ export async function processBar(
 ): Promise<{
   signalFired: boolean;
   signalModel: string | null;
+  signalDirection: "LONG" | "SHORT" | null;
+  signalEntry: number | null;
+  signalStop: number | null;
+  signalTarget: number | null;
   tradeOpened: boolean;
   tradeClosed: boolean;
   exitReason: string | null;
@@ -434,7 +438,7 @@ export async function processBar(
 }> {
   const db = await getDb();
   if (!db) {
-    return { signalFired: false, signalModel: null, tradeOpened: false, tradeClosed: false, exitReason: null, pnl: null, rMultiple: null };
+    return { signalFired: false, signalModel: null, signalDirection: null, signalEntry: null, signalStop: null, signalTarget: null, tradeOpened: false, tradeClosed: false, exitReason: null, pnl: null, rMultiple: null };
   }
 
   const high = parseFloat(bar.high ?? "0");
@@ -443,6 +447,10 @@ export async function processBar(
 
   let signalFired = false;
   let signalModel: string | null = null;
+  let signalDirection: "LONG" | "SHORT" | null = null;
+  let signalEntry: number | null = null;
+  let signalStop: number | null = null;
+  let signalTarget: number | null = null;
   let tradeOpened = false;
   let tradeClosed = false;
   let exitReason: string | null = null;
@@ -529,6 +537,10 @@ export async function processBar(
 
       const signal = deriveSignal(bar, chosenModel, evaluation);
       if (signal) {
+        signalDirection = signal.direction;
+        signalEntry = signal.entry;
+        signalStop = signal.stop;
+        signalTarget = signal.target;
         const tradeId = await openTrade(signal, bar);
         tradeOpened = true;
 
@@ -544,7 +556,7 @@ export async function processBar(
     }
   }
 
-  return { signalFired, signalModel, tradeOpened, tradeClosed, exitReason, pnl, rMultiple };
+  return { signalFired, signalModel, signalDirection, signalEntry, signalStop, signalTarget, tradeOpened, tradeClosed, exitReason, pnl, rMultiple };
 }
 
 /**

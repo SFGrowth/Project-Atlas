@@ -9,6 +9,7 @@ import { wfRouter } from "./wfRouter";
 import { apexRouter } from "./apexRouter";
 import { execCertRouter } from "./execCertRouter";
 import { arp1Router } from "./arp1Router";
+import { tpRouter } from "./tpRouter";
 import {
   liveLearningCertSessions,
   behaviourLibrary,
@@ -62,6 +63,7 @@ export const appRouter = router({
   apex: apexRouter,
   execCert: execCertRouter,
   arp1: arp1Router,
+  tp: tpRouter,
   auth: router({
     me: publicProcedure.query((opts) => opts.ctx.user),
     logout: publicProcedure.mutation(({ ctx }) => {

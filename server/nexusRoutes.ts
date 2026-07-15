@@ -1072,7 +1072,30 @@ export function registerNexusRoutes(router: Router) {
             pipelineRunId: mem.pipelineRunId ?? null,
           };
           const evaluation = await evaluate(barRow);
-          await processBar(barRow, evaluation);
+          const processBarResult = await processBar(barRow, evaluation);
+
+          // ── Sprint 113: TradersPost Dispatch (non-blocking, additive) ─────────
+          // Fires ONLY when the paper trade engine selected a model and opened a trade.
+          if (processBarResult.signalFired && processBarResult.signalModel && processBarResult.signalDirection) {
+            setImmediate(async () => {
+              try {
+                const { dispatchTradersPost } = await import("./tpDispatch");
+                const tpModel = processBarResult.signalModel as "A1" | "A3" | "B1" | "S109-001";
+                await dispatchTradersPost({
+                  model: tpModel,
+                  direction: processBarResult.signalDirection as "LONG" | "SHORT",
+                  entryPrice: processBarResult.signalEntry ?? parseFloat(mem.close ?? "0"),
+                  stopPrice: processBarResult.signalStop ?? 0,
+                  targetPrice: processBarResult.signalTarget ?? 0,
+                  barTimeMs,
+                  atlasMemoryBarId: monitorBarId,
+                  pipelineRunId: mem.pipelineRunId ?? "",
+                });
+              } catch (tpErr) {
+                console.error("[TP-DISPATCH] Hook error:", tpErr);
+              }
+            });
+          }
 
           // ── DEF-002 fix: RTH-close trigger for session report ──────────────
           // Fire session report on the last bar of RTH (16:00 ET = 20:00 UTC EDT)
