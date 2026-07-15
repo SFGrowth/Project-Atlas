@@ -778,3 +778,16 @@
 - [x] Part 5: Durable backup — manifest.json, checksums.json, recovery.mjs, verify.mjs committed to Project-Atlas
 - [x] Part 7: Re-run Sprint 108 DARWIN-S107-002 against certified canonical dataset, cite dataset ID/version in all results
 - [x] Part 8 + Repository Protocol: Add Memory Safeguard rule, update all registries, write DATASET-RECOVERY-VALIDATION-GATE.md reconciliation report, commit to Project-Atlas
+
+## Sprint 109 — Behavioural Discriminator Discovery (2026-07-15)
+
+- [x] Repository audit: git log, verify canonical dataset ATLAS-MNQ-5M-V1 v1.0 checksum, load all registries
+- [x] Part 1: Trade forensics — extract 27 features for all 643 DARWIN-S107-002 trades
+- [x] Part 2: Winner vs loser analysis — 13 significant discriminators found
+- [x] Part 3: Feature importance ranking — top 5 discriminators identified
+- [x] Part 4: Behavioural subgroup clustering — 4 groups: ALIGNED_FLOW (PF 4.23), MIXED, COUNTER_FLOW (PF 0.94), OR_BREAKOUT
+- [x] Part 5: Portfolio impact — triple filter achieves PF 4.609, Max DD $685, Calmar 49.8
+- [x] Part 6: Executive decision — SPLIT+REFINE: S107-002 RETIRED, S109-001 HYPOTHESIS, S109-002 RESEARCH
+- [x] Update Behaviour Library (BL-020/021/022), Sequence Library (SEQ-016/017), Market Laws (ML-011/012), DARWIN Registry
+- [x] Write Sprint 109 closure report and commit to Project-Atlas
+- [x] Push to SFGrowth/Project-Atlas — commit c253fb4, 4 files, push verified
