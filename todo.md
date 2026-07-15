@@ -904,16 +904,16 @@
 
 ## Sprint 115 — Atlas Permanent Research Directive: Gap Discovery Engine
 
-- [ ] Create gap_discovery_reports table in schema (weekly gap reports, gap candidates, priority scores)
-- [ ] Create gap_candidates table (impact, confidence, effort, benefit, risk_reduction, priority, status)
-- [ ] Write gapDiscoveryEngine.ts: autonomous analysis of atlas_memory, paper_trades, monitor_evaluations, strategy_registry
-- [ ] Implement 12 gap analysis dimensions (market regimes, model coverage, losing trade concentration, etc.)
-- [ ] Implement autonomous question framework (10 questions evaluated per weekly run)
-- [ ] Write gapDiscoveryRouter.ts: tRPC procedures for gap report, candidates, recommendations
-- [ ] Create DARWIN Gap Discovery scheduled job (weekly, Sunday 18:00 ET)
-- [ ] Build Gap Discovery dashboard page (top 10 gaps, research opportunities, engineering improvements)
-- [ ] Weekly Gap Report PDF generation (auto-produced every Sunday)
-- [ ] Add Gap Discovery to sidebar navigation under INTELLIGENCE section
+- [x] Create gap_discovery_reports table in schema (weekly gap reports, gap candidates, priority scores)
+- [x] Create gap_candidates table (impact, confidence, effort, benefit, risk_reduction, priority, status)
+- [x] Write gapDiscoveryEngine.ts: autonomous analysis of atlas_memory, paper_trades, monitor_evaluations, strategy_registry
+- [x] Implement 12 gap analysis dimensions (market regimes, model coverage, losing trade concentration, etc.)
+- [x] Implement autonomous question framework (10 questions evaluated per weekly run)
+- [x] Write gapDiscoveryRouter.ts: tRPC procedures for gap report, candidates, recommendations
+- [x] Create DARWIN Gap Discovery scheduled job (weekly, Sunday 18:30 ET via /api/scheduled/atlas-gap-analysis)
+- [x] Build Gap Discovery dashboard page (top 10 gaps, research opportunities, engineering improvements)
+- [ ] Weekly Gap Report PDF generation (auto-produced every Sunday) — deferred to Sprint 116
+- [x] Add Gap Discovery to sidebar navigation under PORTFOLIO section
 
 ## Sprint 114A — Unified Execution Control & Single TradersPost Route
 

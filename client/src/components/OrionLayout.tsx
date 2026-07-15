@@ -8,7 +8,7 @@ import { useIsMobile } from "@/hooks/useMobile";
 import {
   Activity, AlertTriangle, BadgeCheck, BarChart2, BarChart3, BookOpen, Brain, BrainCircuit, CalendarCheck, ChevronLeft, ChevronRight,
   Clock, Cpu, Database, Dna, FlaskConical, GitBranch, Home, LayoutDashboard, Layers, LineChart, Menu,
-  Radio, Send, Settings, Shield, ShieldCheck, ScanLine, Star, Target, Telescope, TrendingUp, Zap,
+  Radio, SearchCode, Send, Settings, Shield, ShieldCheck, ScanLine, Star, Target, Telescope, TrendingUp, Zap,
 } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
@@ -90,6 +90,7 @@ const NAV_GROUPS = [
       { icon: Activity, label: "Apex Evaluation S112", path: "/apex-evaluation" },
       { icon: Shield, label: "Exec Certification", path: "/exec-certification" },
       { icon: Brain, label: "ARP-1 Command Centre", path: "/arp1" },
+      { icon: SearchCode, label: "Gap Discovery", path: "/gap-discovery" },
     ],
   },
 ];

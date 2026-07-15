@@ -10,6 +10,7 @@ import { apexRouter } from "./apexRouter";
 import { execCertRouter } from "./execCertRouter";
 import { arp1Router } from "./arp1Router";
 import { tpRouter } from "./tpRouter";
+import { gapDiscoveryRouter } from "./gapDiscoveryRouter";
 import {
   liveLearningCertSessions,
   behaviourLibrary,
@@ -65,6 +66,7 @@ export const appRouter = router({
   execCert: execCertRouter,
   arp1: arp1Router,
   tp: tpRouter,
+  gaps: gapDiscoveryRouter,
   auth: router({
     me: publicProcedure.query((opts) => opts.ctx.user),
     logout: publicProcedure.mutation(({ ctx }) => {

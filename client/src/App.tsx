@@ -49,6 +49,7 @@ const ApexEvaluationPage = lazy(() => import("./pages/ApexEvaluation"));
 const ExecCertificationPage = lazy(() => import("./pages/ExecCertification"));
 const Arp1CommandCentrePage = lazy(() => import("./pages/Arp1CommandCentre"));
 const TradersPostPage = lazy(() => import("./pages/TradersPost"));
+const GapDiscoveryPage = lazy(() => import("./pages/GapDiscovery"));
 
 function PageLoader() {
   return (
@@ -107,6 +108,7 @@ function Router() {
           <Route path="/exec-certification" component={ExecCertificationPage} />
           <Route path="/arp1" component={Arp1CommandCentrePage} />
           <Route path="/traderspost" component={TradersPostPage} />
+          <Route path="/gap-discovery" component={GapDiscoveryPage} />
           <Route path="/404" component={NotFound} />
           <Route component={NotFound} />
         </Switch>

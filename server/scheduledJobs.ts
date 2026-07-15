@@ -522,5 +522,30 @@ export function registerScheduledJobs(app: Router): void {
     }
   });
 
-  console.log("[Scheduler] Registered 18 scheduled job endpoints (5 Atlas + 4 DARWIN + 5 Sprint-099 + 2 Sprint-101 CRO + 2 ARP-1)");
+  // ─── Sprint 115: Atlas Gap Discovery Engine ──────────────────────────────
+  // Weekly Gap Analysis — Sundays 18:30 ET (22:30 UTC) — runs after weekly-review
+  app.post("/api/scheduled/atlas-gap-analysis", async (req, res) => {
+    try {
+      const auth = await sdk.authenticateRequest(req);
+      if (!auth.isCron) { res.status(403).json({ error: "Forbidden" }); return; }
+      const { runGapDiscoveryEngine, persistGapReport } = await import("./gapDiscoveryEngine");
+      const result = await runGapDiscoveryEngine();
+      const reportId = await persistGapReport(result);
+      console.log(`[GapDiscovery] Weekly analysis complete: ${result.findings.length} gaps, report #${reportId}`);
+      res.json({
+        ok: true,
+        job: "atlas-gap-analysis",
+        reportId,
+        findingsCount: result.findings.length,
+        estimatedPortfolioImprovementPct: result.estimatedPortfolioImprovementPct,
+        recommendedNextPriority: result.recommendedNextPriority,
+        generationDurationMs: result.generationDurationMs,
+        timestamp: new Date().toISOString(),
+      });
+    } catch (err) {
+      console.error("[GapDiscovery] Weekly analysis error:", err);
+      if (!res.headersSent) res.status(500).json({ error: String(err) });
+    }
+  });
+  console.log("[Scheduler] Registered 19 scheduled job endpoints (5 Atlas + 4 DARWIN + 5 Sprint-099 + 2 Sprint-101 CRO + 2 ARP-1 + 1 Sprint-115 GDE)");
 }
