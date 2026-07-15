@@ -791,3 +791,12 @@
 - [x] Update Behaviour Library (BL-020/021/022), Sequence Library (SEQ-016/017), Market Laws (ML-011/012), DARWIN Registry
 - [x] Write Sprint 109 closure report and commit to Project-Atlas
 - [x] Push to SFGrowth/Project-Atlas — commit c253fb4, 4 files, push verified
+
+## Sprint 110 — Out-of-Sample Validation of DARWIN-S109-001 (2026-07-15)
+
+- [x] Part 1: Freeze DARWIN-S109-001 hypothesis — locked, no optimisation
+- [x] Part 2: OOS validation — 6/6 WF windows positive, 4/4 expanding windows, 3/3 years, 8/8 quarters, 5/5 regimes
+- [x] Part 3: Stability — PF CV=0.098, WR CV=0.034, no dominant quarter, worst 3Q = +$10,587
+- [x] Part 4: Monte Carlo — ruin 0.4%, prop pass 99.6%, positive 100%, median DD $2,452
+- [x] Part 5: VERDICT — WALK FORWARD — 10/10 thresholds passed, DARWIN-S109-001 promoted
+- [x] Committed to SFGrowth/Project-Atlas — commit 135840f, 2 files, push verified
