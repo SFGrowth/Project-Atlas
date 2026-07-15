@@ -733,3 +733,23 @@
 - [x] 12 Sequence Library entries registered in tie_sequence_library
 - [x] Sprint 106 closure report written and committed to Project-Atlas (commit e4f8c35)
 - [x] All 8 executive questions answered with database evidence
+
+## Sprint 107 — VWAP Behavioural Decomposition (2026-07-15)
+
+- [x] Mandatory repository audit: git log, all registries, atlas_memory schema (293 bars)
+- [x] VWAP deviation event extraction: 10 episodes identified, avg 26.3 bars, 89.8% of bars deviating
+- [x] Behavioural decomposition: 6 families tested, 2 warranted by evidence
+- [x] Statistical separation test: bimodal duration distribution (2-5 bars vs 11-119 bars) confirms 2 distinct families
+- [x] Disprove DARWIN-S106-001 original hypothesis: only 10% mean reversion observed, 90% continuation
+- [x] Revise DARWIN-S106-001 confidence to 28% (INVESTIGATING stage)
+- [x] Add DARWIN-S107-001 VWAP_REJECTION_RETURN (45% conf, HYPOTHESIS, 3 obs)
+- [x] Add DARWIN-S107-002 VWAP_CONTINUATION_TREND_RIDER (58% conf, INVESTIGATING, 10 obs)
+- [x] Add DARWIN-S107-003 VWAP_EPISODE_BOUNDARY (42% conf, HYPOTHESIS, 10 obs)
+- [x] Update BL-009 VWAP_DEVIATION (293 obs, 90% continuation rate)
+- [x] Add BL-017 VWAP_CONTINUATION (293 obs)
+- [x] Add BL-018 VWAP_REJECTION_RETURN (3 obs)
+- [x] Add BL-019 VWAP_EPISODE_STRUCTURE (293 obs)
+- [x] Add 3 Sequence Library entries (CONTINUATION_LONG, REJECTION_SHORT, EXPANSION_ONSET)
+- [x] Write Sprint 107 closure report answering all 5 executive questions with evidence
+- [x] Commit to Project-Atlas (commit 192e3cc)
+- [x] 77/77 tests passing, 0 TypeScript errors
