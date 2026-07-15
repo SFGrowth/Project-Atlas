@@ -769,3 +769,12 @@
 - [x] Update DARWIN-S107-002 confidence 58%→42%, stage→investigating, evidence 579 trades
 - [x] Register DARWIN-S108-001 (AM_VWAP_CONTINUATION) — P1 priority, 62% confidence
 - [x] Write Sprint 108 closure report and commit to Project-Atlas (commit 9e8fa11)
+
+## Dataset Recovery Validation Gate — Mandatory Pre-Sprint 108 Acceptance Audit
+
+- [x] Part 1+2: Dataset identity audit — exact row count, date range, instrument, provider, timezone, session coverage, contract symbols, roll methodology; reconcile 136,198 vs 140,933 bars (4,735 difference)
+- [x] Part 3: Full data-quality audit — duplicates, OHLC integrity, gaps classified by type (MARKET_CLOSED/CME_MAINTENANCE/HOLIDAY/EARLY_CLOSE/CONTRACT_ROLL/PROVIDER_MISSING/IMPORT_FAILURE/UNKNOWN)
+- [x] Part 4+6: Create permanent provenance record in DB (dataset_provenance table), declare Atlas Canonical MNQ 5-Minute Dataset with canonical row count, checksum, version
+- [x] Part 5: Durable backup — manifest.json, checksums.json, recovery.mjs, verify.mjs committed to Project-Atlas
+- [x] Part 7: Re-run Sprint 108 DARWIN-S107-002 against certified canonical dataset, cite dataset ID/version in all results
+- [x] Part 8 + Repository Protocol: Add Memory Safeguard rule, update all registries, write DATASET-RECOVERY-VALIDATION-GATE.md reconciliation report, commit to Project-Atlas
