@@ -26,6 +26,8 @@ interface TradeRow {
   entryPrice: number | null;
   exitPrice: number | null;
   pnl: number;
+  riskDollars?: number | null;
+  contracts?: number | null;
 }
 interface BucketStats {
   trades: number;
@@ -126,7 +128,7 @@ function PnlBucket({ label, data }: { label: string; data: BucketStats | undefin
                           const isWin = tr.pnl > 0;
                           const dirColor = tr.direction === 'LONG' ? '#4ade80' : '#f87171';
                           return (
-                            <div key={tr.id} className="grid items-center text-[9px] py-0.5 border-b border-[oklch(0.16_0.04_220/0.25)] last:border-0" style={{ gridTemplateColumns: '10px 52px 42px 42px 1fr 52px' }}>
+                            <div key={tr.id} className="grid items-center text-[9px] py-0.5 border-b border-[oklch(0.16_0.04_220/0.25)] last:border-0" style={{ gridTemplateColumns: '10px 48px 38px 38px 1fr 44px 52px' }}>
                               {/* Direction dot */}
                               <span style={{ color: dirColor, fontSize: 8 }}>▲</span>
                               {/* Date */}
@@ -140,6 +142,10 @@ function PnlBucket({ label, data }: { label: string; data: BucketStats | undefin
                                 <span className="text-[var(--arc-cyan)]">{fmtP(tr.entryPrice)}</span>
                                 <span className="text-[var(--color-muted-foreground)] mx-0.5">→</span>
                                 <span className="text-[var(--color-muted-foreground)]">{fmtP(tr.exitPrice)}</span>
+                              </span>
+                              {/* Risk */}
+                              <span className="font-mono text-[8px] text-orange-400 text-right">
+                                {tr.riskDollars != null ? `$${tr.riskDollars.toFixed(0)}` : '—'}
                               </span>
                               {/* P&L */}
                               <span className={`text-right font-mono font-bold text-[9px] ${isWin ? 'text-green-400' : 'text-red-400'}`}
@@ -557,13 +563,14 @@ export default function Home() {
                 </div>
                 {/* Full trade log table */}
                 <div className="border-t border-[oklch(0.22_0.06_220/0.4)] pt-2">
-                  <div className="grid text-[8px] text-[var(--color-muted-foreground)] tracking-wider pb-1.5 px-1" style={{ gridTemplateColumns: '36px 14px 60px 42px 42px 1fr 60px' }}>
+                  <div className="grid text-[8px] text-[var(--color-muted-foreground)] tracking-wider pb-1.5 px-1" style={{ gridTemplateColumns: '36px 14px 60px 42px 42px 1fr 50px 60px' }}>
                     <span>MODEL</span>
                     <span></span>
                     <span>DATE</span>
                     <span>ENTRY</span>
                     <span>EXIT</span>
                     <span>PRICE IN→OUT</span>
+                    <span className="text-right text-orange-400">RISK</span>
                     <span className="text-right">P&L</span>
                   </div>
                   {allTrades.map((tr) => {
@@ -571,7 +578,7 @@ export default function Home() {
                     const dirColor = tr.direction === 'LONG' ? '#4ade80' : '#f87171';
                     return (
                       <div key={tr.id} className="grid items-center py-1 border-b border-[oklch(0.16_0.04_220/0.25)] last:border-0 text-[9px] px-1"
-                        style={{ gridTemplateColumns: '36px 14px 60px 42px 42px 1fr 60px' }}>
+                        style={{ gridTemplateColumns: '36px 14px 60px 42px 42px 1fr 50px 60px' }}>
                         <span className="font-mono font-bold text-[var(--arc-blue)] text-[9px]">{tr.model}</span>
                         <span style={{ color: dirColor, fontSize: 8 }}>{tr.direction === 'LONG' ? '▲' : '▼'}</span>
                         <span className="text-[var(--color-muted-foreground)] text-[8px]">{fmtD(tr.entryTime)}</span>
@@ -581,6 +588,9 @@ export default function Home() {
                           <span className="text-[var(--arc-cyan)]">{fmtP(tr.entryPrice)}</span>
                           <span className="text-[var(--color-muted-foreground)] mx-0.5">→</span>
                           <span className="text-[var(--color-muted-foreground)]">{fmtP(tr.exitPrice)}</span>
+                        </span>
+                        <span className="text-right font-mono text-[8px] text-orange-400">
+                          {tr.riskDollars != null ? `$${tr.riskDollars.toFixed(0)}` : '—'}
                         </span>
                         <span className={`text-right font-mono font-bold text-[9px] ${isWin ? 'text-green-400' : 'text-red-400'}`}
                           style={{ textShadow: isWin ? '0 0 4px #4ade80' : '0 0 4px #f87171' }}>

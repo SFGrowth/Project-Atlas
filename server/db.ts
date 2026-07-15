@@ -495,6 +495,8 @@ export async function getPaperSummaryStats(account = "ATLAS_MONITOR_PAPER") {
       entryPrice: tr.entry ? parseFloat(String(tr.entry)) : null,
       exitPrice: tr.exitPrice ? parseFloat(String(tr.exitPrice)) : null,
       pnl: parseFloat(String(tr.pnl ?? 0)),
+      riskDollars: tr.riskDollars ? parseFloat(String(tr.riskDollars)) : null,
+      contracts: tr.contracts ?? 1,
     }));
     return {
       trades: t.length,
