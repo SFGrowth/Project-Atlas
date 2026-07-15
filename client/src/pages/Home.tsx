@@ -16,6 +16,17 @@ import PipelineOrb from "@/components/PipelineOrb";
 import { useEffect, useRef, useState } from "react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
+interface TradeRow {
+  id: string;
+  model: string;
+  direction: string;
+  date: string | null;
+  entryTime: string | null;
+  exitTime: string | null;
+  entryPrice: number | null;
+  exitPrice: number | null;
+  pnl: number;
+}
 interface BucketStats {
   trades: number;
   wins: number;
@@ -23,6 +34,7 @@ interface BucketStats {
   pnl: number;
   winRate: number | null;
   models: { model: string; trades: number; wins: number; pnl: number; winRate: number | null }[];
+  tradeList?: TradeRow[];
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -82,25 +94,69 @@ function PnlBucket({ label, data }: { label: string; data: BucketStats | undefin
             <span className="text-red-400">{losses}L</span>
           </div>
         )}
-        {/* Per-model breakdown */}
-        {models.length > 0 && (
-          <div className="border-t border-[oklch(0.22_0.06_220/0.4)] pt-2 space-y-1">
-            {models.map((m) => (
-              <div key={m.model} className="flex items-center justify-between text-[10px]">
-                <div className="flex items-center gap-1.5">
-                  <span className="font-mono font-bold text-[var(--arc-blue)] w-6">{m.model}</span>
-                  <span className="text-[var(--color-muted-foreground)]">{m.trades}t</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  {m.winRate !== null && (
-                    <span className="text-[var(--arc-cyan)] text-[9px]">{m.winRate.toFixed(0)}%</span>
-                  )}
-                  <span className={pnlClass(m.pnl)}>{pnlStr(m.pnl)}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
+        {/* Per-model breakdown with individual trade rows */}
+        {data.models.length > 0 && data.tradeList && (() => {
+          const NY = 'America/New_York';
+          const fmtT = (iso: string | null) => iso ? new Date(iso).toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', timeZone: NY }) : '—';
+          const fmtD = (iso: string | null) => iso ? new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: NY }) : '—';
+          const fmtP = (p: number | null) => p != null ? p.toFixed(2) : '—';
+          return (
+            <div className="border-t border-[oklch(0.22_0.06_220/0.4)] pt-2 space-y-2">
+              {data.models.map((m) => {
+                const modelTrades = (data.tradeList ?? []).filter((t) => t.model === m.model);
+                return (
+                  <div key={m.model}>
+                    {/* Model summary header */}
+                    <div className="flex items-center justify-between text-[10px] mb-1">
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-mono font-bold text-[var(--arc-blue)] w-6">{m.model}</span>
+                        <span className="text-[var(--color-muted-foreground)]">{m.trades}t</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {m.winRate !== null && (
+                          <span className="text-[var(--arc-cyan)] text-[9px]">{m.winRate.toFixed(0)}%</span>
+                        )}
+                        <span className={pnlClass(m.pnl)}>{pnlStr(m.pnl)}</span>
+                      </div>
+                    </div>
+                    {/* Individual trade rows under this model */}
+                    {modelTrades.length > 0 && (
+                      <div className="ml-1 space-y-0.5">
+                        {modelTrades.map((tr) => {
+                          const isWin = tr.pnl > 0;
+                          const dirColor = tr.direction === 'LONG' ? '#4ade80' : '#f87171';
+                          return (
+                            <div key={tr.id} className="grid items-center text-[9px] py-0.5 border-b border-[oklch(0.16_0.04_220/0.25)] last:border-0" style={{ gridTemplateColumns: '10px 52px 42px 42px 1fr 52px' }}>
+                              {/* Direction dot */}
+                              <span style={{ color: dirColor, fontSize: 8 }}>▲</span>
+                              {/* Date */}
+                              <span className="text-[var(--color-muted-foreground)] text-[8px]">{fmtD(tr.entryTime)}</span>
+                              {/* Entry time */}
+                              <span className="font-mono text-[var(--arc-cyan)] text-[8px]">{fmtT(tr.entryTime)}</span>
+                              {/* Exit time */}
+                              <span className="font-mono text-[var(--color-muted-foreground)] text-[8px]">{fmtT(tr.exitTime)}</span>
+                              {/* Price in → out */}
+                              <span className="font-mono text-[8px] truncate">
+                                <span className="text-[var(--arc-cyan)]">{fmtP(tr.entryPrice)}</span>
+                                <span className="text-[var(--color-muted-foreground)] mx-0.5">→</span>
+                                <span className="text-[var(--color-muted-foreground)]">{fmtP(tr.exitPrice)}</span>
+                              </span>
+                              {/* P&L */}
+                              <span className={`text-right font-mono font-bold text-[9px] ${isWin ? 'text-green-400' : 'text-red-400'}`}
+                                style={{ textShadow: isWin ? '0 0 4px #4ade80' : '0 0 4px #f87171' }}>
+                                {pnlStr(tr.pnl)}
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          );
+        })()}
         {trades === 0 && (
           <div className="text-[var(--color-muted-foreground)] text-[10px] text-center py-1">No trades this period</div>
         )}
@@ -469,6 +525,75 @@ export default function Home() {
             </div>
           )}
         </div>
+
+        {/* ── All-Models Combined Summary ── */}
+        {summaryStats && summaryStats.allTime.trades > 0 && (() => {
+          // Aggregate across all models from allTime bucket
+          const allModels = summaryStats.allTime.models;
+          const allTrades = summaryStats.allTime.tradeList ?? [];
+          const NY = 'America/New_York';
+          const fmtT = (iso: string | null) => iso ? new Date(iso).toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', timeZone: NY }) : '—';
+          const fmtD = (iso: string | null) => iso ? new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: NY }) : '—';
+          const fmtP = (p: number | null) => p != null ? p.toFixed(2) : '—';
+          return (
+            <div className="hud-panel hud-panel-br">
+              <div className="hud-header"><span className="hud-header-dot" />ALL-MODELS COMBINED SUMMARY</div>
+              <div className="p-3">
+                {/* Model summary row per model */}
+                <div className="grid gap-1 mb-3" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))' }}>
+                  {allModels.map((m) => (
+                    <div key={m.model} className="flex items-center justify-between px-2 py-1.5 rounded bg-[oklch(0.14_0.05_220/0.5)] border border-[oklch(0.22_0.06_220/0.3)]">
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono font-bold text-[var(--arc-blue)] text-xs">{m.model}</span>
+                        <span className="text-[9px] text-[var(--color-muted-foreground)]">{m.trades}t</span>
+                        {m.winRate !== null && <span className="text-[9px] text-[var(--arc-cyan)]">{m.winRate.toFixed(0)}%</span>}
+                      </div>
+                      <span className={`font-mono font-bold text-xs ${m.pnl > 0 ? 'text-green-400' : m.pnl < 0 ? 'text-red-400' : 'data-value'}`}
+                        style={{ textShadow: m.pnl > 0 ? '0 0 6px #4ade80' : m.pnl < 0 ? '0 0 6px #f87171' : 'none' }}>
+                        {m.pnl > 0 ? '+' : ''}{m.pnl.toFixed(2)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+                {/* Full trade log table */}
+                <div className="border-t border-[oklch(0.22_0.06_220/0.4)] pt-2">
+                  <div className="grid text-[8px] text-[var(--color-muted-foreground)] tracking-wider pb-1.5 px-1" style={{ gridTemplateColumns: '36px 14px 60px 42px 42px 1fr 60px' }}>
+                    <span>MODEL</span>
+                    <span></span>
+                    <span>DATE</span>
+                    <span>ENTRY</span>
+                    <span>EXIT</span>
+                    <span>PRICE IN→OUT</span>
+                    <span className="text-right">P&L</span>
+                  </div>
+                  {allTrades.map((tr) => {
+                    const isWin = tr.pnl > 0;
+                    const dirColor = tr.direction === 'LONG' ? '#4ade80' : '#f87171';
+                    return (
+                      <div key={tr.id} className="grid items-center py-1 border-b border-[oklch(0.16_0.04_220/0.25)] last:border-0 text-[9px] px-1"
+                        style={{ gridTemplateColumns: '36px 14px 60px 42px 42px 1fr 60px' }}>
+                        <span className="font-mono font-bold text-[var(--arc-blue)] text-[9px]">{tr.model}</span>
+                        <span style={{ color: dirColor, fontSize: 8 }}>{tr.direction === 'LONG' ? '▲' : '▼'}</span>
+                        <span className="text-[var(--color-muted-foreground)] text-[8px]">{fmtD(tr.entryTime)}</span>
+                        <span className="font-mono text-[var(--arc-cyan)] text-[8px]">{fmtT(tr.entryTime)}</span>
+                        <span className="font-mono text-[var(--color-muted-foreground)] text-[8px]">{fmtT(tr.exitTime)}</span>
+                        <span className="font-mono text-[8px] truncate">
+                          <span className="text-[var(--arc-cyan)]">{fmtP(tr.entryPrice)}</span>
+                          <span className="text-[var(--color-muted-foreground)] mx-0.5">→</span>
+                          <span className="text-[var(--color-muted-foreground)]">{fmtP(tr.exitPrice)}</span>
+                        </span>
+                        <span className={`text-right font-mono font-bold text-[9px] ${isWin ? 'text-green-400' : 'text-red-400'}`}
+                          style={{ textShadow: isWin ? '0 0 4px #4ade80' : '0 0 4px #f87171' }}>
+                          {isWin ? '+' : ''}{tr.pnl.toFixed(2)}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          );
+        })()}
 
       </div>
     </PageWrapper>

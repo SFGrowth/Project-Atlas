@@ -485,6 +485,17 @@ export async function getPaperSummaryStats(account = "ATLAS_MONITOR_PAPER") {
       if (Number(tr.pnl ?? 0) > 0) models[m].wins++;
       models[m].pnl += Number(tr.pnl ?? 0);
     }
+    const tradeList = t.map((tr) => ({
+      id: tr.id,
+      model: tr.model ?? "UNKNOWN",
+      direction: tr.direction ?? "LONG",
+      date: tr.openedAt ? tr.openedAt.toISOString().slice(0, 10) : null,
+      entryTime: tr.openedAt ? tr.openedAt.toISOString() : null,
+      exitTime: tr.closedAt ? tr.closedAt.toISOString() : null,
+      entryPrice: tr.entry ? parseFloat(String(tr.entry)) : null,
+      exitPrice: tr.exitPrice ? parseFloat(String(tr.exitPrice)) : null,
+      pnl: parseFloat(String(tr.pnl ?? 0)),
+    }));
     return {
       trades: t.length,
       wins,
@@ -498,6 +509,7 @@ export async function getPaperSummaryStats(account = "ATLAS_MONITOR_PAPER") {
         pnl: parseFloat(s.pnl.toFixed(2)),
         winRate: s.trades > 0 ? parseFloat(((s.wins / s.trades) * 100).toFixed(1)) : null,
       })),
+      tradeList,
     };
   }
   const open = openRows.length > 0 ? {

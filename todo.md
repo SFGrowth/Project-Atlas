@@ -878,3 +878,8 @@
 - [x] Home.tsx: open trade card (if any trade is currently OPEN)
 - [x] Home.tsx: keep pipeline orb + RUN DEMO but make it secondary below the summary
 - [x] RUN DEMO: animate with stage labels and final trade-fire card
+
+## Sprint 113d — P&L Panel Trade Log
+
+- [ ] Replace per-model summary rows in P&L panels with per-trade rows: date, entry time/price, exit time/price, final P&L
+- [ ] getPaperSummaryStats: include full trade list per bucket (openedAt, closedAt, entryPrice, exitPrice, pnl, model, direction)
