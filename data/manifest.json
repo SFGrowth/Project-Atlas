@@ -1,0 +1,123 @@
+{
+  "atlas_dataset_manifest": {
+    "dataset_id": "ATLAS-MNQ-5M-V1",
+    "dataset_version": "v1.0",
+    "label": "REAL_HISTORICAL",
+    "canonical": true,
+    "created_at": "2026-07-15T02:01:43Z",
+    "validation_gate_passed": true,
+    "validation_gate_date": "2026-07-15T02:01:43Z"
+  },
+  "identity": {
+    "instrument": "MNQ (Micro E-mini Nasdaq-100 Futures)",
+    "exchange": "CME",
+    "timeframe": "5min",
+    "provider": "Massive.com",
+    "api_endpoint_family": "/v1/aggs/ticker/{ticker}/range/5/minute/{from}/{to}",
+    "timezone": "UTC (stored), America/New_York (bar_time_et derived field)",
+    "session_coverage": "Full ETH+RTH (OV+PRE+AM_OPEN+AM_MID+LUNCH+PM+PM_CLOSE)"
+  },
+  "coverage": {
+    "date_range_start_utc": "2024-07-15T00:00:00Z",
+    "date_range_end_utc": "2026-06-18T13:25:00Z",
+    "date_range_start_et": "2024-07-14 20:00 ET",
+    "date_range_end_et": "2026-06-18 09:25 ET",
+    "duration_calendar_days": 703.6,
+    "duration_years": 1.93,
+    "trading_days": 488,
+    "canonical_row_count": 136198
+  },
+  "contracts": [
+    { "ticker": "MNQU4", "bars": 13477, "first_bar_utc": "2024-07-15T00:00:00Z", "last_bar_utc": "2024-09-20T00:00:00Z" },
+    { "ticker": "MNQZ4", "bars": 17836, "first_bar_utc": "2024-09-20T00:00:00Z", "last_bar_utc": "2024-12-20T00:00:00Z" },
+    { "ticker": "MNQH5", "bars": 17111, "first_bar_utc": "2024-12-20T00:00:00Z", "last_bar_utc": "2025-03-21T00:00:00Z" },
+    { "ticker": "MNQM5", "bars": 17569, "first_bar_utc": "2025-03-21T00:00:00Z", "last_bar_utc": "2025-06-20T00:00:00Z" },
+    { "ticker": "MNQU5", "bars": 17581, "first_bar_utc": "2025-06-20T00:00:00Z", "last_bar_utc": "2025-09-19T00:00:00Z" },
+    { "ticker": "MNQZ5", "bars": 17689, "first_bar_utc": "2025-09-19T00:00:00Z", "last_bar_utc": "2025-12-19T00:00:00Z" },
+    { "ticker": "MNQH6", "bars": 17250, "first_bar_utc": "2025-12-19T00:00:00Z", "last_bar_utc": "2026-03-20T00:00:00Z" },
+    { "ticker": "MNQM6", "bars": 17685, "first_bar_utc": "2026-03-20T00:00:00Z", "last_bar_utc": "2026-06-18T13:25:00Z" }
+  ],
+  "contract_roll_methodology": "Front-month contract roll at CME quarterly expiry (third Friday of March/June/September/December). Individual contracts stored separately — NOT spliced into a continuous series. 7 contract-roll overlap bars exist where two contracts share the same timestamp.",
+  "session_distribution": {
+    "OV": { "bars": 65243, "pct": 47.9 },
+    "PRE": { "bars": 32796, "pct": 24.1 },
+    "PM": { "bars": 11631, "pct": 8.5 },
+    "AM_OPEN": { "bars": 8922, "pct": 6.6 },
+    "LUNCH": { "bars": 5941, "pct": 4.4 },
+    "AM_MID": { "bars": 5930, "pct": 4.4 },
+    "PM_CLOSE": { "bars": 5735, "pct": 4.2 },
+    "RTH_total": { "bars": 38159, "pct": 28.0 },
+    "ETH_total": { "bars": 98039, "pct": 72.0 }
+  },
+  "checksums": {
+    "algorithm": "SHA-256",
+    "input": "sorted (window_start:close) pairs, one per line",
+    "checksum": "663893c56e6e6001f937f7e11ed76bd4238e21f387fd7a9de9dcf8ea44df06ff"
+  },
+  "storage": {
+    "primary": {
+      "type": "TiDB/MySQL database",
+      "table": "mnq_candles",
+      "project": "atlas-nexus",
+      "schema_version": "migration-0016",
+      "timestamp_format": "nanoseconds since Unix epoch (divide by 1e9 for seconds)"
+    },
+    "backup": {
+      "type": "Project-Atlas repository",
+      "path": "data/",
+      "contents": ["manifest.json", "checksums.json", "recovery.mjs", "verify.mjs"]
+    }
+  },
+  "import": {
+    "script": "scripts/download-mnq-candles.mjs",
+    "import_date": "2026-07-15",
+    "import_duration_seconds": 72,
+    "api_key_secret": "MASSIVE_API_KEY (project secret — never commit value)",
+    "idempotent": true,
+    "on_duplicate": "UPDATE (upsert by ticker+window_start)"
+  },
+  "quality_audit": {
+    "date": "2026-07-15",
+    "ohlc_integrity": "PASS",
+    "zero_prices": "PASS",
+    "negative_prices": "PASS",
+    "negative_volume": "PASS",
+    "timestamp_ordering": "PASS (all 8 contracts)",
+    "intra_contract_duplicates": "PASS (0)",
+    "cross_contract_duplicates": "7 (contract-roll overlap — expected)",
+    "total_gaps": 513,
+    "gap_classification": {
+      "MARKET_CLOSED": 99,
+      "CME_MAINTENANCE": 388,
+      "HOLIDAY": 18,
+      "EARLY_CLOSE": 2,
+      "CONTRACT_ROLL": 0,
+      "PROVIDER_MISSING": 6,
+      "IMPORT_FAILURE": 0,
+      "UNKNOWN": 0
+    },
+    "synthetic_records": "PASS (0)",
+    "atlas_memory_contamination": "PASS (0)"
+  },
+  "known_limitations": [
+    "Dataset ends 2026-06-18 (not full year 2026) — MNQM6 contract expires Sep 2026, data downloaded mid-sprint",
+    "7 contract-roll overlap bars exist where two contracts share the same timestamp (expected, not defects)",
+    "6 PROVIDER_MISSING gaps (25-50min each) in MNQH5 (Jan-Feb 2025) and MNQZ5 (Dec 2025) — Massive.com API gaps",
+    "4,735 fewer bars than TradingView Sprint 102 count — TradingView uses synthetic gap-fill, Massive.com does not",
+    "window_start stored in nanoseconds — divide by 1e9 for Unix seconds, by 1e6 for milliseconds",
+    "2,944 bars with close > 30,000 (MNQM6 May-Jun 2026) — real market prices, not data errors"
+  ],
+  "bar_count_reconciliation": {
+    "sprint_102_tradingview_count": 140933,
+    "current_massive_count": 136198,
+    "difference": 4735,
+    "explanation": "TradingView continuous contract includes synthetic gap-fill bars during low-liquidity periods. Massive.com returns only bars where actual trades occurred. The 4,735 missing bars are TradingView synthetic/interpolated bars with no real market activity."
+  },
+  "usage_rules": [
+    "All future backtests must cite dataset_id = ATLAS-MNQ-5M-V1, version = v1.0",
+    "No report may use vague language such as 'the two-year dataset' without this citation",
+    "Verify checksum before any new backtest run using scripts/verify.mjs",
+    "Do not use this dataset for live trading decisions without re-verification",
+    "Do not mix atlas_memory (live bars) with mnq_candles (historical bars) in backtests"
+  ]
+}

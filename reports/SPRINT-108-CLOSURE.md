@@ -214,7 +214,25 @@ If these refinements produce WR ≥55%, PF ≥1.30, prop pass ≥70%, and stable
 
 ---
 
+## Canonical Dataset Citation
+
+```
+Dataset: ATLAS-MNQ-5M-V1 v1.0
+Provider: Massive.com
+Instrument: MNQ Micro E-mini Nasdaq-100 Futures (5-minute bars)
+Coverage: 2024-07-15 → 2026-06-18 UTC (488 trading days)
+Bars: 136,198 (ETH+RTH, 8 quarterly contracts)
+Checksum: 663893c56e6e6001f937f7e11ed76bd4238e21f387fd7a9de9dcf8ea44df06ff (SHA-256)
+Verified: 2026-07-15 (verify.mjs PASS)
+Provenance table: dataset_provenance WHERE dataset_id = 'ATLAS-MNQ-5M-V1'
+```
+
+**Dataset Recovery Validation Gate:** PASSED 2026-07-15. See `reports/DATASET-RECOVERY-VALIDATION-GATE.md` for full audit.
+
+---
+
 ## Commit
 
-Committed to Project-Atlas: `reports/SPRINT-108-CLOSURE.md`
-Scripts: `scripts/sprint108-validation.mjs`, `scripts/download-mnq-candles.mjs`
+Committed to Project-Atlas: `reports/SPRINT-108-CLOSURE.md`, `reports/DATASET-RECOVERY-VALIDATION-GATE.md`
+Data: `data/manifest.json`, `data/checksums.json`, `data/recovery.mjs`, `data/verify.mjs`
+Scripts: `scripts/sprint108-validation.mjs`, `scripts/download-mnq-candles.mjs`, `scripts/verify-canonical.mjs`

@@ -1,0 +1,33 @@
+{
+  "atlas_dataset_checksums": {
+    "dataset_id": "ATLAS-MNQ-5M-V1",
+    "version": "v1.0",
+    "generated_at": "2026-07-15T02:01:43Z",
+    "generated_by": "Dataset Recovery Validation Gate — Part 4+6"
+  },
+  "primary_checksum": {
+    "algorithm": "SHA-256",
+    "input_description": "Sorted (window_start:close) pairs from mnq_candles, one per line, format: '{window_start_ns}:{close_decimal}\\n'",
+    "sort_order": "ORDER BY window_start ASC, ticker ASC",
+    "checksum": "663893c56e6e6001f937f7e11ed76bd4238e21f387fd7a9de9dcf8ea44df06ff",
+    "row_count": 136198
+  },
+  "per_contract_checksums": {
+    "note": "Individual contract checksums not computed in this version. Use primary checksum for verification.",
+    "MNQU4": { "bars": 13477 },
+    "MNQZ4": { "bars": 17836 },
+    "MNQH5": { "bars": 17111 },
+    "MNQM5": { "bars": 17569 },
+    "MNQU5": { "bars": 17581 },
+    "MNQZ5": { "bars": 17689 },
+    "MNQH6": { "bars": 17250 },
+    "MNQM6": { "bars": 17685 }
+  },
+  "verification_procedure": "Run scripts/verify.mjs from the atlas-nexus project directory. The script will query mnq_candles, compute the SHA-256 checksum using the same algorithm, and compare against the value above.",
+  "expected_result": {
+    "row_count": 136198,
+    "checksum": "663893c56e6e6001f937f7e11ed76bd4238e21f387fd7a9de9dcf8ea44df06ff",
+    "date_range_start_utc": "2024-07-15T00:00:00Z",
+    "date_range_end_utc": "2026-06-18T13:25:00Z"
+  }
+}
