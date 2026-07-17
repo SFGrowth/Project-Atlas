@@ -1,0 +1,79 @@
+graph TB
+    subgraph EXTERNAL["External Data Providers"]
+        DB["DataBento\nGLBX.MDP3 / MBP-1\nTCP Raw API"]
+        TV["TradingView M-16\nPine Script Alert\nWebhook"]
+    end
+
+    subgraph GATEWAY["Atlas Market Data Gateway"]
+        DC["databento-client.ts\nTCP + Auth + DBN Parser"]
+        EN["event-normalizer.ts\nPrice Conversion\nSymbol Mapping"]
+        SR["symbol-registry.ts\nContract Roll\nInstrument Specs"]
+        FH["feed-health.ts\n6-State Machine\nFailover Logic"]
+        GD["gap-detector.ts\nSequence Monitor\nGap-Fill Requests"]
+    end
+
+    subgraph BUS["Atlas Market Event Bus"]
+        EB["EventEmitter\nAtlasTradeEvent\nAtlasQuoteEvent\nAtlasBarEvent\nAtlasFeedHealthEvent"]
+    end
+
+    subgraph CONSUMERS["Event Consumers"]
+        BB["Bar Builder\n5-min OHLCV\nDeveloping Bar"]
+        TS["Tick Storage\natlas_ticks\natlas_quotes"]
+        FE["Feature Engine\nATR / ADX / RSI\nVWAP / EMAs / Regime"]
+        SSE["SSE Fan-Out\nDashboard Streaming\nLive Chart Updates"]
+    end
+
+    subgraph PIPELINE["Atlas Execution Pipeline"]
+        PB["processBar()\nADE → ARI → TVL\nGuardian → Safety"]
+        TP["tpDispatch.ts\nTradersPost\nTradovate"]
+    end
+
+    subgraph STORAGE["Storage Tiers"]
+        HOT["Hot Tier\nMySQL 0-7 days\natlas_ticks\natlas_quotes"]
+        WARM["Warm Tier\nMySQL indefinite\natlas_memory\natlas_bars_1m"]
+        COLD["Cold Tier\nS3 Parquet\n90+ days"]
+    end
+
+    subgraph DASHBOARD["Atlas Nexus Dashboard"]
+        CHART["Live Chart\nLightweight Charts\nDeveloping Bar\nAnnotations"]
+        HEALTH["Feed Health\nIndicator"]
+        OBS["Observatory\nParity Monitor\nMetrics"]
+    end
+
+    DB -->|"Raw DBN binary"| DC
+    TV -->|"POST /webhook/observe"| FH
+    DC --> EN
+    EN --> SR
+    EN --> GD
+    DC --> FH
+    EN -->|"AtlasTradeEvent\nAtlasQuoteEvent"| EB
+    FH -->|"AtlasFeedHealthEvent"| EB
+    SR -->|"AtlasSymbolMappingEvent"| EB
+
+    EB --> BB
+    EB --> TS
+    EB --> SSE
+
+    BB -->|"AtlasBarEvent confirmed"| FE
+    FE -->|"AtlasBarEvent + indicators"| PB
+    FE -->|"AtlasBarEvent"| WARM
+
+    TS --> HOT
+    HOT -->|"nightly export"| COLD
+
+    PB --> TP
+    PB -->|"bar record"| WARM
+
+    SSE --> CHART
+    SSE --> HEALTH
+    SSE --> OBS
+
+    TV -.->|"Fallback when\nDataBento offline"| PB
+
+    style EXTERNAL fill:#1a1a2e,stroke:#00d4ff,color:#e2e8f0
+    style GATEWAY fill:#0f172a,stroke:#7c3aed,color:#e2e8f0
+    style BUS fill:#0f172a,stroke:#00d4ff,color:#e2e8f0
+    style CONSUMERS fill:#0f172a,stroke:#059669,color:#e2e8f0
+    style PIPELINE fill:#0f172a,stroke:#dc2626,color:#e2e8f0
+    style STORAGE fill:#0f172a,stroke:#d97706,color:#e2e8f0
+    style DASHBOARD fill:#0f172a,stroke:#2563eb,color:#e2e8f0

@@ -1,0 +1,48 @@
+sequenceDiagram
+    participant DB_FEED as DataBento Feed
+    participant FH as feed-health.ts
+    participant BB as bar-builder.ts
+    participant TV as TradingView M-16
+    participant WH as Webhook Receiver
+    participant PB as processBar()
+    participant NOTIF as Owner Notification
+    participant DASH as Dashboard
+
+    Note over DB_FEED,DASH: Normal operation — DataBento primary
+
+    DB_FEED->>FH: Messages arriving normally
+    FH->>DASH: SSE: feed_health { state: CONNECTED }
+
+    Note over DB_FEED: --- DataBento disconnects ---
+
+    DB_FEED--xFH: TCP socket closed
+    FH->>FH: Transition: CONNECTED → RECONNECTING
+    FH->>NOTIF: "DataBento disconnected"
+    FH->>DASH: SSE: feed_health { state: RECONNECTING }
+
+    loop Reconnection attempts (1s, 2s, 4s, 8s...)
+        FH->>DB_FEED: Reconnect attempt
+        DB_FEED--xFH: Connection refused
+    end
+
+    Note over FH: After 3 failed attempts
+
+    FH->>FH: Transition: RECONNECTING → FALLBACK_ACTIVE
+    FH->>BB: Suspend processBar() trigger
+    FH->>WH: Activate M-16 as primary
+    FH->>NOTIF: "M-16 fallback activated"
+    FH->>DASH: SSE: feed_health { state: FALLBACK_ACTIVE }
+
+    TV->>WH: POST /webhook/observe (every 5 min)
+    WH->>PB: processBar() via M-16 path
+    Note over WH,PB: Trading continues uninterrupted via M-16
+
+    Note over DB_FEED: --- DataBento reconnects ---
+
+    FH->>DB_FEED: Reconnect attempt
+    DB_FEED->>FH: Connection established
+    FH->>FH: Transition: FALLBACK_ACTIVE → CONNECTED
+    FH->>WH: Deactivate M-16 as primary
+    FH->>BB: Resume processBar() trigger
+    FH->>NOTIF: "DataBento reconnected"
+    FH->>DASH: SSE: feed_health { state: CONNECTED }

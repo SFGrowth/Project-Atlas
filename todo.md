@@ -967,3 +967,186 @@
 - [x] Write server/pineStatus.test.ts — 33 tests covering ADE scoring, proposal selection, drift detection, webhook validation, manifest invariants, parity status derivation
 - [x] TypeScript: 0 errors · 185/185 tests pass (11 test files)
 - [ ] Commit Pine files to SFGrowth/Project-Atlas/tradingview/atlas-unified-portfolio/ — deferred (GitHub push pending)
+
+## Sprint 118 — Production-Grade Durable Dispatch Queue (started 2026-07-15)
+
+- [ ] Audit tpDispatch.ts and portfolioExecDb.ts
+- [ ] Schema: portfolio_dispatch_outbox table
+- [ ] Schema: dispatch_incidents table
+- [ ] Apply migration via webdev_execute_sql
+- [ ] Write server/dispatchWorker.ts
+- [ ] Write server/dispatchQueue.ts
+- [ ] Write server/dispatchValidator.ts
+- [ ] Create POST /api/portfolio/dispatch endpoint
+- [ ] Write server/reconciliationEngine.ts
+- [ ] Register TRADERSPOST_WEBHOOK_URL_PAPER and TRADERSPOST_WEBHOOK_URL_LIVE as secrets
+- [ ] Build client/src/pages/PortfolioExecution.tsx
+- [ ] Add Portfolio Execution nav item to OrionLayout.tsx
+- [ ] Add /portfolio-execution route to App.tsx
+- [ ] Write WEBHOOK_SETUP.md, DELIVERY_RELIABILITY.md, SECURITY.md
+- [ ] Write server/dispatch.test.ts: 20+ tests
+- [ ] TypeScript: 0 errors after all changes
+- [ ] Checkpoint and GitHub push
+
+## Sprint 117 — DARWIN Research Pipeline & Portfolio Gap Governance
+
+- [ ] Schema: darwin_pipeline_stage_history, darwin_portfolio_gaps tables; extend darwin_candidates with all 12 stage status columns
+- [ ] Backend: darwinPipelineDb.ts — candidate CRUD, stage progression, promotion engine, gap analysis helpers
+- [ ] Backend: darwinRouter.ts — tRPC procedures for research centre
+- [ ] Backend: Seed RC-001, RC-002, RC-003, DARWIN-S109-001 with current evidence
+- [ ] Frontend: DARWIN Research Centre page — pipeline dashboard, candidate cards, 12-stage progression
+- [ ] Frontend: Portfolio Gap Analysis panel — Top 10 gaps, coverage score, capital impact
+- [ ] Frontend: Weekly DARWIN Report viewer
+- [ ] Tests + TypeScript check + checkpoint
+
+## Sprint 117 — DARWIN Research Pipeline & Portfolio Gap Governance
+
+- [x] Schema: darwin_portfolio_gaps table (gap_rank, capital impact, health lift, research status)
+- [x] Schema: darwin_pipeline_stage_history table (immutable audit log)
+- [x] Backend: darwinPipelineDb.ts — getCandidatePipeline, getPortfolioGaps, getPipelineStats, seedPortfolioGaps, logStageTransition, getStageHistory
+- [x] Backend: tRPC researchCentre router — candidatePipeline, portfolioGaps, pipelineStats, stageHistory, seedPortfolioGaps
+- [x] Seed: RC-001 (CHOPPY_RANGE_MEAN_REVERSION), RC-002 (TRANSITIONAL_BREAKOUT_FADE), RC-003 (LUNCH_COMPRESSION_BREAKOUT), DARWIN-S109-001
+- [x] Seed: 10 portfolio gaps with capital impact, correlation improvement, health lift estimates
+- [x] Frontend: DarwinResearchCentre.tsx — 12-stage pipeline dashboard, candidate cards, gap analysis, stats header
+- [x] Nav: Research Centre link added to PORTFOLIO group in OrionLayout.tsx
+- [x] TypeScript: 0 errors
+
+
+## Sprint 116 — Atlas Canonical Truth & Institutional Governance
+
+- [ ] Part 1: Complete canonical audit — map every dashboard field to its DB source
+- [ ] Part 2: Strategy lifecycle reconciliation — A1, A2, A3, B1, SB1, ORB-1, DARWIN-S109-001
+- [ ] Part 3: Schema + DB fixes — correct all canonical inconsistencies
+- [ ] Part 4: Executive Report Validation Engine (canonicalValidator.ts)
+- [ ] Part 5: Strategy metric validation — verify all published stats from canonical dataset
+- [ ] Part 6: Portfolio validation — coverage, diversification, correlation, health all from DB
+- [ ] Part 7: Execution validation — trace every stage TV→Webhook→Memory→ADE→Dispatch→TP
+- [ ] Part 8: A2 decision — wire into pipeline OR formally retire
+- [ ] Part 9: ORB-1 validation — verify all stats before Apex deployment
+- [ ] Part 10: DARWIN-S109-001 true lifecycle determination and registry update
+- [ ] Part 11: GitHub institutional memory — automated commits for all report types
+- [ ] Part 12: Executive report automation — Morning/Daily/Weekly/Monthly with email
+- [ ] Part 13: DARWIN continues operating during sprint
+- [ ] Part 14: Atlas Canonical Certification Report — CERTIFIED or NOT CERTIFIED
+
+
+## Sprint 116 Phase 7-9 — Canonical Health Dashboard + Certification
+- [x] Phase 7: canonicalHealth tRPC router added to routers.ts (runValidation + summary + generateCertificationReport)
+- [x] Phase 7: CanonicalHealthPanel component built (status pill, critical/warning counts, run time, findings table, cert report button)
+- [x] Phase 7: Panel added to Health.tsx page with full findings drill-down
+- [x] Phase 7: A2 visible in ExecutivePortfolio strategy list (HISTORICAL_VALIDATION stage + purple badge)
+- [x] Phase 7: Canonical Health status pill added to Home.tsx System Health panel
+- [x] Phase 8: GitHub institutional memory — archiveCanonicalReportToGitHub added to darwinGitArchive.ts
+- [x] Phase 8: Executive report automation — canonical self-validation gate wired in morning brief, daily intelligence, and weekly review handlers
+- [x] Phase 8: A2 added to eligibleModels in morning brief (RC-A03, SB1, ORB-1, A2(PAPER)) and Portfolio Eligibility table
+- [x] Phase 9: generateCertificationReport mutation — runs validator, builds markdown, archives to GitHub, returns result with GitHub URL
+- [x] Phase 9: ExecutivePortfolio portfolio health updated — historicalValidationModels count, HISTORICAL_VALIDATION stage group, A2 needsAttention cleared
+- [x] Phase 9: TypeScript clean (0 errors), 223 tests passing
+- [x] Phase 9: Checkpoint saved + published
+
+## Email Delivery System — Sprint 116 Extension
+- [x] report_delivery_log table created in database (full audit trail schema)
+- [x] Resend SDK installed (resend@6.17.2)
+- [x] RESEND_API_KEY stored as secret (validated via test send)
+- [x] atlasEmailService.ts built — sendExecutiveReport, sendCriticalAlert, retryFailedDeliveries, buildExecutiveEmailHtml
+- [x] HTML email templates for all 7 report types (MORNING_BRIEF, DAILY_INTELLIGENCE, WEEKLY_REVIEW, MONTHLY_REVIEW, CRITICAL_ALERT, CANONICAL_ALERT, EXECUTION_HALT)
+- [x] Email delivery wired into morning brief, daily intelligence, and weekly review scheduled job handlers
+- [x] Canonical self-validation gate sends CANONICAL_ALERT email on failure
+- [x] GitHub archive → email pipeline: commit SHA and report URL included in every email
+- [x] Delivery audit trail: every send attempt recorded in report_delivery_log
+- [x] Retry logic: failed deliveries retried up to 3 times with exponential backoff
+- [x] Exhausted retries trigger Manus owner notification
+- [x] All cron jobs confirmed registered (atlas-heartbeat, atlas-morning-brief, atlas-daily-intelligence, atlas-weekly-review, atlas-concordance, arp1-weekly-review, arp1-daily-brief)
+- [x] End-to-end test: 3/3 test emails delivered to admin@sfgrowthmanagement.com (msgIds confirmed)
+- [x] TypeScript: 0 errors | Tests: 225/225 passing
+
+## Execution Validation Week — Operational Directive
+- [ ] Store Atlas Operational Directive in darwin_permanent_directives table (type: OPERATIONAL_DIRECTIVE)
+- [ ] Build end-of-day review with all 10 mandated sections (System Health, Portfolio Health, Canonical Integrity, Research Progress, Paper Trading Performance, Execution Quality, DARWIN Discoveries, Portfolio Gaps, Critical Issues, Recommended Actions)
+- [ ] Wire 10-section end-of-day review into daily review scheduler (replace/extend existing daily review)
+- [ ] Build end-of-week Operational Certification Report generator with READY/NOT READY verdict
+- [ ] Wire weekly certification report into weekly review scheduler (Sunday 18:00 ET)
+- [ ] Surface directive status banner on Home dashboard (EXECUTION VALIDATION WEEK active)
+- [ ] Add Operational Certification status panel to Health page
+- [ ] Wire certification report email delivery (WEEKLY_REVIEW type with READY/NOT READY verdict)
+- [ ] TypeScript: 0 errors | Tests: 225+ passing | Checkpoint saved
+
+## Sprint 119 — DARWIN Behaviour Discovery Engine v2 (Market Intelligence Engine) [COMPLETE]
+- [x] Store Sprint 119 mandate as permanent directive in darwin_permanent_directives
+- [x] Schema: behaviour_laws, market_intent_bars, behaviour_clusters, behaviour_cluster_trades, portfolio_coverage_map, counterfactual_analyses, strategy_interaction_analysis, market_memory_events, darwin_daily_questions tables created
+- [x] Apply all schema migrations via webdev_execute_sql
+- [x] Server: bdeEngine.ts — all 7 subsystems in one file (Market Intent, Clustering, Coverage Map, Counterfactual, Strategy Interaction, Behaviour Laws, Daily Questions)
+- [x] Wire Daily DARWIN Questions (10 questions) into daily review handler
+- [x] Wire Weekly DARWIN Report into weekly review handler with GitHub archive
+- [x] Dashboard: DarwinIntelligence.tsx — Market Intent Engine, Behaviour Laws, Daily Questions, Behaviour Clusters, Market Memory
+- [x] Dashboard: DarwinCoverageMap.tsx — Portfolio Coverage Map, Strategy Interaction Analysis, Counterfactual Analysis
+- [x] Add DARWIN Intelligence + Coverage Map nav links to OrionLayout sidebar
+- [x] Routes registered in App.tsx (/darwin-intelligence, /darwin-coverage-map)
+- [x] TypeScript: 0 errors | Tests: 224/225 passing (1 external API timeout, not a code defect)
+
+## Sprint 120 — Atlas Market Data Architecture Design [DESIGN-ONLY]
+
+- [x] Add Sprint 120 items to todo.md
+- [x] Create /docs/architecture/market-data/ directory
+- [x] Write MARKET_DATA_ARCHITECTURE.md (master overview)
+- [x] Write CURRENT_STATE.md (current TradingView M-16 flow)
+- [x] Write TARGET_STATE.md (DataBento target architecture)
+- [x] Write DATABENTO_INTEGRATION_DESIGN.md
+- [x] Write MARKET_EVENT_CONTRACTS.md
+- [x] Write SYMBOL_AND_ROLL_SPEC.md
+- [x] Write BAR_BUILDER_SPEC.md
+- [x] Write EVENT_TRANSPORT_DESIGN.md
+- [x] Write STORAGE_DESIGN.md
+- [x] Write LIVE_CHART_DESIGN.md
+- [x] Write TRADE_ANNOTATION_SPEC.md
+- [x] Write REPLAY_ARCHITECTURE.md
+- [x] Write FAILOVER_AND_RECOVERY.md
+- [x] Write TRADINGVIEW_MIGRATION_PLAN.md
+- [x] Write SECURITY_DESIGN.md
+- [x] Write OBSERVABILITY_PLAN.md
+- [x] Write CAPACITY_AND_COST_MODEL.md
+- [x] Write TESTING_AND_CERTIFICATION_PLAN.md
+- [x] Write IMPLEMENTATION_ROADMAP.md
+- [x] Write ADR-001 through ADR-012 (12 Architecture Decision Records)
+- [x] Render 7 Mermaid architecture and sequence diagrams
+- [x] Store Sprint 120 mandate in darwin_research_memory table
+- [x] Checkpoint and deliver all documents
+
+## Sprint 121 — DataBento Infrastructure (No Live Connection)
+
+- [x] Scaffold server/market-data/ directory structure
+- [x] Write shared/types/market-events.ts (all AtlasMarketEvent interfaces)
+- [x] Implement server/market-data/dbn-parser.ts (DBN binary record parser)
+- [x] Implement server/market-data/event-normalizer.ts (MBP-1 → AtlasTradeEvent/AtlasQuoteEvent)
+- [x] Implement server/market-data/symbol-registry.ts (MNQ instrument spec, SymbolMappingMsg)
+- [x] Implement server/market-data/databento-client.ts (TCP + auth + subscription — disabled by default)
+- [x] Implement server/market-data/event-bus.ts (in-process EventEmitter, typed pub/sub)
+- [x] Implement server/market-data/feed-health.ts (6-state machine)
+- [x] Implement server/market-data/gap-detector.ts (sequence gap monitoring)
+- [x] Add atlas_ticks, atlas_quotes, atlas_bars_1m tables to drizzle/schema.ts
+- [x] Add atlas_symbol_registry, atlas_contract_rolls tables to drizzle/schema.ts
+- [x] Add atlas_chart_annotations table to drizzle/schema.ts
+- [x] Apply migration SQL via webdev_execute_sql (6 tables created)
+- [x] Write unit tests: market-data.test.ts — 261 tests, 261 passing
+- [x] Store DATABENTO_API_KEY as server secret
+- [x] Store Orion Architecture Review Directive in Atlas Memory (ORION-DIRECTIVE-001)
+- [x] Write docs/architecture/market-data/ORION_ARCHITECTURE_DIRECTIVE.md
+- [x] Checkpoint Sprint 121
+
+## Sprint 121A — Behaviour Engine Foundation (Architecture Only)
+
+- [x] Store Sprint 121A mandate in Atlas Memory
+- [x] Write docs/architecture/behaviour-engine/BEHAVIOUR_ENGINE_ARCHITECTURE.md
+- [x] Write docs/architecture/behaviour-engine/BEHAVIOUR_REGISTRY_SCHEMA.md
+- [x] Write docs/architecture/behaviour-engine/CANONICAL_BEHAVIOUR_SPECS.md (12 behaviours, full classification rules)
+- [x] Write docs/architecture/behaviour-engine/BEHAVIOUR_EVENT_CONTRACTS.md (5 event types, TypeScript interfaces)
+- [x] Write docs/architecture/behaviour-engine/BEHAVIOUR_CONFIDENCE_MODEL.md (7-dimension model, calibration)
+- [x] Write docs/architecture/behaviour-engine/BEHAVIOUR_LIFECYCLE.md (7 states, promotion rules)
+- [x] Write docs/architecture/behaviour-engine/STRATEGY_INTEGRATION_PLAN.md (A1/A2/A3/B1/SB1/ORB-1 DNA + migration sequence)
+- [x] Write docs/architecture/behaviour-engine/ADE_INTEGRATION.md (7 new ADE dimensions, Intelligence Layer)
+- [x] Write docs/architecture/behaviour-engine/REPLAY_INTEGRATION.md (DecisionReplayRecord, deterministic replay)
+- [x] Write docs/architecture/behaviour-engine/BEHAVIOUR_ENGINE_ROADMAP.md (9 phases, Sprint 122–130+)
+- [x] Apply database schema migration — 8 Behaviour Registry tables created
+- [x] Seed 12 canonical behaviour definitions into atlas_behaviour_definitions
+- [x] Seed 12 performance stats rows into atlas_behaviour_performance_stats
+- [x] Checkpoint and deliver Sprint 121A

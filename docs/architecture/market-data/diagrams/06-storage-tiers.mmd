@@ -1,0 +1,42 @@
+graph LR
+    subgraph LIVE["Live Feed"]
+        TRADES["AtlasTradeEvent\n~500K/day"]
+        QUOTES["AtlasQuoteEvent\n~1.5M/day"]
+        BARS5["AtlasBarEvent confirmed\n~78/day"]
+    end
+
+    subgraph HOT["Hot Tier — MySQL (0-7 days)"]
+        AT["atlas_ticks\n~3.5M rows\n~175MB/week"]
+        AQ["atlas_quotes\n~10.5M rows\n~630MB/week"]
+        AB1["atlas_bars_1m\n~2,730 rows\n~274KB/week"]
+    end
+
+    subgraph WARM["Warm Tier — MySQL (indefinite)"]
+        AM["atlas_memory\n~78 rows/day\nAll time"]
+        AB1W["atlas_bars_1m\n90 days retained\n~3.5MB total"]
+    end
+
+    subgraph COLD["Cold Tier — S3 Parquet (90+ days)"]
+        PT["ticks/MNQ1!/YYYY/MM/DD/\n*.parquet (Snappy)\n~15GB/year"]
+        PQ["quotes/MNQ1!/YYYY/MM/DD/\n*.parquet (Snappy)\n~45GB/year"]
+        PB5["bars-5m/MNQ1!/YYYY/MM/\n*.parquet\n~0.1GB/year"]
+    end
+
+    TRADES -->|"INSERT async"| AT
+    QUOTES -->|"INSERT async"| AQ
+    TRADES -->|"Bar builder\naggregates"| AB1
+    BARS5 -->|"INSERT"| AM
+    AB1 -->|"Retained 90 days"| AB1W
+
+    AT -->|"Nightly export\n(ticks > 7 days)"| PT
+    AQ -->|"Nightly export\n(quotes > 3 days)"| PQ
+    AM -->|"Monthly export\n(bars > 90 days)"| PB5
+
+    AT -->|"Purge at 7 days"| PURGE1[("🗑️")]
+    AQ -->|"Purge at 3 days"| PURGE2[("🗑️")]
+    AB1W -->|"Purge at 90 days"| PURGE3[("🗑️")]
+
+    style HOT fill:#0f172a,stroke:#dc2626,color:#e2e8f0
+    style WARM fill:#0f172a,stroke:#d97706,color:#e2e8f0
+    style COLD fill:#0f172a,stroke:#2563eb,color:#e2e8f0
+    style LIVE fill:#0f172a,stroke:#059669,color:#e2e8f0

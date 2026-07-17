@@ -1,0 +1,38 @@
+stateDiagram-v2
+    [*] --> UNKNOWN : Server startup
+
+    UNKNOWN --> CONNECTED : First message received
+
+    CONNECTED --> DEGRADED : Silence > 30s\nOR gap rate > 0.1%
+    CONNECTED --> RECONNECTING : TCP disconnect
+
+    DEGRADED --> CONNECTED : Message received,\ngap rate normalised
+    DEGRADED --> RECONNECTING : Silence > 120s
+
+    RECONNECTING --> CONNECTED : Reconnection successful
+    RECONNECTING --> FALLBACK_ACTIVE : Attempts > 3
+
+    FALLBACK_ACTIVE --> CONNECTED : DataBento reconnected
+
+    CONNECTED --> OFFLINE : Manual shutdown\nOR unrecoverable error
+    DEGRADED --> OFFLINE : Manual shutdown
+    RECONNECTING --> OFFLINE : Manual shutdown
+    FALLBACK_ACTIVE --> OFFLINE : Manual shutdown
+
+    note right of CONNECTED
+        M-16 in watchdog mode
+        DataBento triggers processBar()
+        Parity monitor active
+    end note
+
+    note right of FALLBACK_ACTIVE
+        M-16 triggers processBar()
+        DataBento bars stored but not used
+        Owner notified
+    end note
+
+    note right of RECONNECTING
+        Exponential backoff: 1s, 2s, 4s, 8s, 16s, 32s, 60s max
+        M-16 continues as primary
+        Dashboard shows RECONNECTING
+    end note

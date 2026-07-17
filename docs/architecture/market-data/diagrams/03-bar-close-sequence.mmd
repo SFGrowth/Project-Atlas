@@ -1,0 +1,42 @@
+sequenceDiagram
+    participant TIMER as 5-min Timer<br/>(barCloseTs + 50ms)
+    participant BB as bar-builder.ts
+    participant EB as Atlas Event Bus
+    participant FE as feature-engine.ts
+    participant PB as processBar()
+    participant ADE as ADE
+    participant ARI as ARI
+    participant TVL as TVL
+    participant GRD as Guardian/Safety
+    participant TP as tpDispatch.ts
+    participant DB_MEM as atlas_memory
+    participant SSE as SSE Fan-Out
+
+    TIMER->>BB: Bar window closed
+    BB->>BB: Finalise confirmed bar<br/>{ open, high, low, close, volume, tickCount }
+    BB->>EB: AtlasBarEvent { status: confirmed }
+
+    EB->>FE: AtlasBarEvent confirmed
+    FE->>FE: Calculate ATR, ADX, RSI<br/>VWAP, EMAs, Regime
+    FE->>EB: AtlasBarEvent { status: confirmed, indicators: {...} }
+
+    EB->>PB: AtlasBarEvent with indicators
+    PB->>ADE: Evaluate entry conditions
+    ADE-->>PB: Decision { direction, confidence }
+    PB->>ARI: Validate risk parameters
+    ARI-->>PB: Approved / Rejected
+    PB->>TVL: Check position limits
+    TVL-->>PB: Status
+    PB->>GRD: Safety checks
+    GRD-->>PB: Clear / Block
+
+    alt Signal approved
+        PB->>TP: Dispatch order
+        TP->>TP: POST TradersPost webhook
+    end
+
+    PB->>DB_MEM: INSERT atlas_memory (confirmed bar + indicators)
+    EB->>SSE: AtlasBarEvent confirmed
+    SSE->>SSE: Broadcast atlas_bar_confirmed to all clients
+
+    Note over BB,SSE: Total latency target: < 200ms from bar close to processBar()

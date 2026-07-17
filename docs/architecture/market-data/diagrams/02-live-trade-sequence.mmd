@@ -1,0 +1,30 @@
+sequenceDiagram
+    participant CME as CME Globex Exchange
+    participant DB as DataBento<br/>GLBX.MDP3
+    participant DC as databento-client.ts
+    participant EN as event-normalizer.ts
+    participant EB as Atlas Event Bus
+    participant BB as bar-builder.ts
+    participant TS as tick-storage.ts
+    participant SSE as SSE Fan-Out
+    participant DASH as Dashboard<br/>Live Chart
+
+    CME->>DB: Trade executed (nanosecond timestamp)
+    DB->>DC: MBP-1 record (action=T, binary DBN)
+    DC->>DC: Parse DBN record
+    DC->>EN: Raw Mbp1Record
+    EN->>EN: Convert price (÷1e9)<br/>Map instrument_id → MNQ1!
+    EN->>EB: AtlasTradeEvent { price, size, side, tsEvent, atlasTs }
+
+    par Parallel consumers
+        EB->>BB: AtlasTradeEvent
+        BB->>BB: Update developing bar OHLCV
+        BB->>EB: AtlasBarEvent { status: developing }
+        EB->>SSE: AtlasBarEvent developing
+        SSE->>DASH: SSE: atlas_bar_developing
+
+        EB->>TS: AtlasTradeEvent
+        TS->>TS: INSERT INTO atlas_ticks (async)
+    end
+
+    Note over BB,DASH: Developing bar updates at ≤10 updates/sec (100ms rate limit)
