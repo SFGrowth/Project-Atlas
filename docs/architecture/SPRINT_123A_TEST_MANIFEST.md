@@ -621,27 +621,27 @@ This manifest defines every test required for Sprint 123A. Each test has a uniqu
 ### TEST-123A3-005 — No-Trade Minute Requires Confirmation Before Synthetic Bar
 
 | Field | Value |
-|---|---|
+|---|
 | **Sub-sprint** | 123A.3 |
-| **Requirement** | A `SYNTHETIC_NO_TRADE_BAR` is only generated when the no-trade period is confirmed by either a Databento `ohlcv-1m` record showing zero volume for the interval, or by the Historical API confirming no trades in the interval. A zero-trade window alone (absence of events) is not sufficient. |
+| **Requirement** | A `SYNTHETIC_NO_TRADE_BAR` is only generated when the no-trade period is confirmed by either a Databento `ohlcv-1m` record showing zero volume for the interval, or by the Historical API confirming no trades in the interval. A zero-trade window alone (absence of events) is not sufficient. An `AtlasBarUnresolved` event is never forwarded to the 5-min aggregator. |
 | **Test file** | `server/market-data/__tests__/bar-builder.test.ts` |
 | **Fixture A** | 60-second window with zero trade events + `ohlcv-1m` record confirming zero volume |
 | **Fixture B** | 60-second window with zero trade events + no `ohlcv-1m` record (feed uncertainty) |
-| **Expected result** | Fixture A: `SYNTHETIC_NO_TRADE_BAR` generated; OHLCV flat; `barType = SYNTHETIC_NO_TRADE_BAR`. Fixture B: bar set to `UNRESOLVED`; no synthetic bar generated; `containsUnresolvedMinutes = true` propagated to 5-min aggregator |
+| **Expected result** | Fixture A: `SYNTHETIC_NO_TRADE_BAR` generated; OHLCV flat; `barType = SYNTHETIC_NO_TRADE_BAR`. Fixture B: `AtlasBarUnresolved` emitted; pending 5-min window marked `BLOCKED_UNRESOLVED`; unresolved event is **not** delivered to the 5-min aggregator; aggregator input count remains unchanged; no synthetic bar produced; no 5-min aggregate object produced; no `containsUnresolvedMinutes=true` canonical candidate created; no `CanonicalBarConfirmed` event emitted; no `processBar` or `postBarAutomation` call occurs |
 | **Blocking gate** | G3 |
 | **Current result** | NOT RUN |
 
 ---
 
-### TEST-123A3-006 — Unresolved Minute Blocks 5-Min Dispatch
+### TEST-123A3-006 — Unresolved Minute Blocks 5-Min Window
 
 | Field | Value |
-|---|---|
+|---|
 | **Sub-sprint** | 123A.3 |
-| **Requirement** | A 5-min bar containing an `UNRESOLVED` 1-min bar is not dispatched to production consumers |
+| **Requirement** | When one 1-min interval in a 5-min window is marked unresolved by the upstream reconciliation service, the unresolved event is not delivered to the 5-min aggregator; the 5-min window remains incomplete and no output is produced |
 | **Test file** | `server/market-data/__tests__/five-min-aggregator.test.ts` |
-| **Fixture** | 4 confirmed 1-min bars + 1 `UNRESOLVED` 1-min bar |
-| **Expected result** | Aggregator sets `containsUnresolvedMinutes = true`; canonical router blocks dispatch; no `processBar()` called; no `postBarAutomation` called |
+| **Fixture** | 4 confirmed 1-min bars (minutes 1–4); the 5th 1-min interval marked unresolved by the upstream reconciliation service; the `AtlasBarUnresolved` event for minute 5 is withheld from the aggregator |
+| **Expected result** | Aggregator receives only 4 inputs (minutes 1–4); 5-min window remains incomplete (4/5 bars); no 5-min aggregate object is produced; no `containsUnresolvedMinutes=true` canonical candidate is created; no `CanonicalBarConfirmed` event is emitted; no `processBar` call occurs; no `postBarAutomation` call occurs; `AtlasBarUnresolved` event is observable on the SSE `atlas_bar_unresolved` channel but is never passed to the aggregator |
 | **Blocking gate** | G3 |
 | **Current result** | NOT RUN |
 
@@ -834,12 +834,12 @@ This manifest defines every test required for Sprint 123A. Each test has a uniqu
 ### TEST-123A4-001 — Parity Monitor Produces Daily Report
 
 | Field | Value |
-|---|---|
+|---|
 | **Sub-sprint** | 123A.4 |
-| **Requirement** | Parity monitor produces a daily report with all fields defined in `DATABENTO_PARITY_CERTIFICATION_SPEC.md` (Revision 2) §12 |
+| **Requirement** | Parity monitor produces a daily report conforming to all fields defined in `DATABENTO_PARITY_CERTIFICATION_SPEC.md` (Revision 5) Section D; Section A composite score computed using the normalised `[0.0, 1.0]` arithmetic mean formula; Section B cross-feed parity metrics present; Gate G4 pass conditions from Section E satisfied |
 | **Test file** | `server/market-data/__tests__/parity-monitor.test.ts` |
 | **Fixture** | Test database with 1 day of matched TradingView and Databento bars |
-| **Expected result** | Daily report contains all required fields; composite score computed correctly per the formula in spec §10; availability metrics present |
+| **Expected result** | Daily report contains all fields required by Parity Spec Rev 5 Section D (daily report format); Section A composite score ≥ 99.0% computed per the normalised formula in Section A.8; all individual Section A metrics pass their own thresholds (composite ≥ 99.0% does not waive individual failures); Section B cross-feed parity score ≥ 99.0% per Section B; Gate G4 pass conditions from Section E are met; availability metric reflects connection health (records received per minute) per Section A.9, not bar-receipt rate |
 | **Blocking gate** | G5 |
 | **Current result** | NOT RUN |
 

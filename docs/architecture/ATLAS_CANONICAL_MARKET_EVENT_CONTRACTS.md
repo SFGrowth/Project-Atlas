@@ -1,9 +1,9 @@
 # Atlas Canonical Market Event Contracts
-**Revision:** 5  
+**Revision:** 6  
 **Sprint:** 123A  
 **Status:** PENDING GATE G0 APPROVAL  
 **Date:** 2026-07-18  
-**Supersedes:** Revision 4
+**Supersedes:** Revision 5
 
 ---
 
@@ -504,3 +504,5 @@ Every downstream consumer of `CanonicalBarConfirmed` must maintain an idempotenc
 | 2 | 2026-07-18 | Added provisional/confirmed/unresolved 1-min bar lifecycle |
 | 3 | 2026-07-18 | Added `AtlasBarReleasedForInspection`; removed operator override path |
 | 4 | 2026-07-18 | Full rewrite: 5 distinct events with unique `type` discriminants; timestamp unit standard (UTC ms with `*Ms`/`*Ns` suffixes); source-safe `CanonicalEventId` discriminated union; `AtlasBarProvisionalClosed` strictly separated from `AtlasBarConfirmed`; `AtlasBarConfirmed` never emitted from trade records alone; `isReconciled` field removed; `containsUnresolvedMinutes` invariant hardened to unconditional `false`; TradingView bar event added; SSE channel table updated; `AtlasContractRoll` timestamp field renamed to `rollTsMs` |
+| 5 | 2026-07-18 | Section 8 authority table: `DATABENTO_CHART_AUTHORITY` added; full 6-column ownership matrix added; `DATABENTO_DECISION_AUTHORITY` reserved for Sprint 123B; `MARKET_DATA_AUTHORITY = DATABENTO` replaced with `DATABENTO_LEARNING_AUTHORITY`; BigInt integer division confirmed as sole ns→ms conversion method; `Math.floor(Number(...))` explicitly prohibited |
+| 6 | 2026-07-18 | Section 8 authority table split into 7 separate columns (`Chart` | `processBar` | `postBarAutomation` | `liveLearnEngine` | `Behaviour Engine` | `DARWIN` | `ADE/Strategy/Execution`); `processBar` column corrected to TradingView for `DATABENTO_LEARNING_AUTHORITY` (Databento must never trigger `processBar` under any authority level); critical invariant note added; `CANONICAL_BAR_CONFIRMED` SSE consumer list corrected — `strategies` removed (Sprint 123B only), replaced with `AtlasLiveChart`; `postBarAutomation` (after Gate G6A); DARWIN and learning systems via `postBarAutomation`; Sprint 123B boundary note added: strategy and `processBar` consumption of `CANONICAL_BAR_CONFIRMED` reserved exclusively for Sprint 123B and `DATABENTO_DECISION_AUTHORITY` |
