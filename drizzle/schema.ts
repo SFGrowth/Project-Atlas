@@ -11,7 +11,10 @@ import {
   varchar,
   date,
   boolean,
+  tinyint,
+  check,
 } from "drizzle-orm/mysql-core";
+import { sql } from "drizzle-orm";
 
 /**
  * Core user table backing auth flow.
@@ -2499,6 +2502,8 @@ export const atlasCanonicalBars = mysqlTable("atlas_canonical_bars", {
   low:                         decimal("low", { precision: 12, scale: 4 }).notNull(),
   close:                       decimal("close", { precision: 12, scale: 4 }).notNull(),
   volume:                      bigint("volume", { mode: "number" }).notNull().default(0),
+  // INVARIANT: always 0 (FALSE). Stored for auditability. Enforced by CHECK constraint.
+  containsUnresolvedMinutes:   tinyint("contains_unresolved_minutes").notNull().default(0),
   barType:                     varchar("bar_type", { length: 30 }).notNull().default("LIVE_CONFIRMED"),
   dispatchedToProcessBar:      boolean("dispatched_to_process_bar").notNull().default(false),
   dispatchedToPostBarAuto:     boolean("dispatched_to_post_bar_auto").notNull().default(false),
@@ -2506,7 +2511,14 @@ export const atlasCanonicalBars = mysqlTable("atlas_canonical_bars", {
   revision:                    int("revision").notNull().default(0),
   atlasTsMs:                   bigint("atlas_ts_ms", { mode: "number" }).notNull(),
   createdAt:                   timestamp("created_at").defaultNow().notNull(),
-});
+}, (table) => ({
+  // INVARIANT ENFORCEMENT: a canonical bar can never contain unresolved minutes.
+  // MySQL 8.0.16+ enforces this at the storage engine level.
+  chkCanonicalNoUnresolved: check(
+    "chk_canonical_no_unresolved",
+    sql`\${table.containsUnresolvedMinutes} = 0`
+  ),
+}));
 export type AtlasCanonicalBar = typeof atlasCanonicalBars.$inferSelect;
 export type InsertAtlasCanonicalBar = typeof atlasCanonicalBars.$inferInsert;
 

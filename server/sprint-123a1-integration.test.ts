@@ -140,6 +140,33 @@ describe("Sprint 123A.1 — Nexus Webhook Integration Tests", () => {
 
   beforeEach(async () => {
     vi.clearAllMocks();
+    // Restore default resolved values after clearAllMocks() (which clears implementations)
+    mockProcessBar.mockResolvedValue({
+      signalFired: false,
+      signalModel: null,
+      signalDirection: null,
+      signalEntry: null,
+      signalStop: null,
+      signalTarget: null,
+    });
+    mockEvaluate.mockResolvedValue({
+      eligible: false,
+      model: null,
+      direction: null,
+      entry: null,
+      stop: null,
+      target: null,
+    });
+    mockRunPostBarAutomation.mockResolvedValue(undefined);
+    mockInsertHealthEvent.mockResolvedValue(undefined);
+    mockSendNotification.mockResolvedValue(undefined);
+    mockGetWfStats.mockResolvedValue({
+      totalTrades: 0, wins: 0, winRate: 0, pf: 0, totalPnl: 0, maxDd: 0,
+      calendarDaysElapsed: 0, promotionGateStatus: "PENDING",
+    });
+    mockGetWfAlerts.mockResolvedValue([]);
+    mockGetWfSessionCount.mockResolvedValue(0);
+    mockGetActiveModels.mockResolvedValue([]);
     // Default: first call = new insert, second call = duplicate
     mockInsertAtlasMemory
       .mockResolvedValueOnce({ inserted: true, id: 42 })

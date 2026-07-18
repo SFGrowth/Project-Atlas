@@ -206,7 +206,12 @@ CREATE TABLE `atlas_canonical_bars` (
     `authority_source`, `raw_symbol`, `bar_open_ts_ms`, `revision`
   ),
   INDEX `idx_atlas_canonical_bars_symbol_ts`    (`raw_symbol`, `bar_open_ts_ms`),
-  INDEX `idx_atlas_canonical_bars_authority_ts` (`authority_source`, `bar_open_ts_ms`)
+  INDEX `idx_atlas_canonical_bars_authority_ts` (`authority_source`, `bar_open_ts_ms`),
+  -- INVARIANT ENFORCEMENT: a canonical bar can never contain unresolved minutes.
+  -- MySQL 8.0.16+ enforces this at the storage engine level.
+  -- INSERT with contains_unresolved_minutes = 1 will fail with ER_CHECK_CONSTRAINT_VIOLATED.
+  CONSTRAINT `chk_canonical_no_unresolved`
+    CHECK (`contains_unresolved_minutes` = 0)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ─── atlas_contract_rolls ────────────────────────────────────────────────────
