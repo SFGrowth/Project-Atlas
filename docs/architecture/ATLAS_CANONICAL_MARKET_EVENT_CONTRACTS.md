@@ -415,7 +415,13 @@ interface TradingViewBarConfirmed {
 }
 ```
 
-When `MARKET_DATA_AUTHORITY = TRADINGVIEW_ONLY`, `TradingViewBarConfirmed` is the sole input to `postBarAutomation`. When `MARKET_DATA_AUTHORITY = DATABENTO`, `CanonicalBarConfirmed` is the sole input to `postBarAutomation`. The two paths are mutually exclusive.
+When `MARKET_DATA_AUTHORITY = TRADINGVIEW_ONLY`, `TradingViewBarConfirmed` is the sole input to `postBarAutomation`. When `MARKET_DATA_AUTHORITY = DATABENTO_LEARNING_AUTHORITY`, `CanonicalBarConfirmed` is the sole input to `postBarAutomation`. The two paths are mutually exclusive.
+
+> **Authority value definitions:**
+> - `TRADINGVIEW_ONLY` — TradingView is the sole canonical source. Databento runs in shadow mode only (no downstream effects).
+> - `DATABENTO_SHADOW` — Databento is active and persisting bars, but TradingView remains the canonical source for `postBarAutomation`.
+> - `DATABENTO_LEARNING_AUTHORITY` — Databento-derived `CanonicalBarConfirmed` is the sole input to `postBarAutomation`. Requires Gate G6A approval. This is the maximum authority level available in Sprint 123A.
+> - `DATABENTO_DECISION_AUTHORITY` — **Reserved for Sprint 123B.** Not defined, not implemented, and not reachable in Sprint 123A. This value must not appear in any Sprint 123A feature flag, configuration, or code path.
 
 ---
 
