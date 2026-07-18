@@ -244,7 +244,16 @@ describe('Sprint 123A.1 — postBarAutomation Authority Matrix (behavioural)', (
     expect(error).toBeNull();
   });
 
-  it('TEST-123A1-009: Databento rejected in DATABENTO_SHADOW mode — triggerSource must be TRADINGVIEW', async () => {
+  // DATABENTO_SHADOW: TradingView ACCEPTED, Databento REJECTED
+  it('TEST-123A1-009: TradingView accepted in DATABENTO_SHADOW mode', async () => {
+    process.env.MARKET_DATA_AUTHORITY = 'DATABENTO_SHADOW';
+    vi.resetModules();
+    const { validatePostBarTrigger } = await import('./market-data/config.js');
+    const error = validatePostBarTrigger('TRADINGVIEW', 'DATABENTO_SHADOW');
+    expect(error).toBeNull();
+  });
+
+  it('TEST-123A1-009B: Databento rejected in DATABENTO_SHADOW mode — triggerSource must be TRADINGVIEW', async () => {
     process.env.MARKET_DATA_AUTHORITY = 'DATABENTO_SHADOW';
     vi.resetModules();
     const { validatePostBarTrigger } = await import('./market-data/config.js');
@@ -255,7 +264,16 @@ describe('Sprint 123A.1 — postBarAutomation Authority Matrix (behavioural)', (
     expect(error).toContain('TRADINGVIEW');
   });
 
-  it('TEST-123A1-010: Databento rejected in DATABENTO_CHART_AUTHORITY mode — triggerSource must be TRADINGVIEW', async () => {
+  // DATABENTO_CHART_AUTHORITY: TradingView ACCEPTED, Databento REJECTED
+  it('TEST-123A1-010: TradingView accepted in DATABENTO_CHART_AUTHORITY mode', async () => {
+    process.env.MARKET_DATA_AUTHORITY = 'DATABENTO_CHART_AUTHORITY';
+    vi.resetModules();
+    const { validatePostBarTrigger } = await import('./market-data/config.js');
+    const error = validatePostBarTrigger('TRADINGVIEW', 'DATABENTO_CHART_AUTHORITY');
+    expect(error).toBeNull();
+  });
+
+  it('TEST-123A1-010B: Databento rejected in DATABENTO_CHART_AUTHORITY mode — triggerSource must be TRADINGVIEW', async () => {
     process.env.MARKET_DATA_AUTHORITY = 'DATABENTO_CHART_AUTHORITY';
     vi.resetModules();
     const { validatePostBarTrigger } = await import('./market-data/config.js');
@@ -266,6 +284,7 @@ describe('Sprint 123A.1 — postBarAutomation Authority Matrix (behavioural)', (
     expect(error).toContain('TRADINGVIEW');
   });
 
+  // DATABENTO_LEARNING_AUTHORITY: Databento ACCEPTED, TradingView REJECTED
   it('TEST-123A1-011: TradingView rejected in DATABENTO_LEARNING_AUTHORITY mode — triggerSource must be DATABENTO', async () => {
     process.env.MARKET_DATA_AUTHORITY = 'DATABENTO_LEARNING_AUTHORITY';
     vi.resetModules();
