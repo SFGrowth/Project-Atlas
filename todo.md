@@ -1161,3 +1161,25 @@
 - [x] Write docs/architecture/SPRINT-122-ATLAS-DECISION-AUDIT.md (8 sections, 7 gaps, 5 priority actions)
 - [x] Store audit findings in Atlas Memory (SPRINT-122-AUDIT-001)
 - [x] Push Sprint 122 to GitHub
+
+## Sprint 122B — Behaviour Engine Shadow Mode Implementation
+
+- [x] Read all 4 architecture specification documents
+- [x] Implement server/behaviour-engine/types.ts
+- [x] Implement server/behaviour-engine/classifier-registry.ts
+- [x] Implement all 12 classifiers (B-001 through B-012)
+- [x] Implement server/behaviour-engine/evidence-aggregator.ts
+- [x] Implement server/behaviour-engine/confidence-calculator.ts
+- [x] Implement server/behaviour-engine/behaviour-state-manager.ts
+- [x] Implement server/behaviour-engine/behaviour-event-bus.ts
+- [x] Implement server/behaviour-engine/behaviour-persistence.ts
+- [x] Implement server/behaviour-engine/behaviour-engine.ts (main orchestrator)
+- [x] Implement server/behaviour-engine/index.ts (singleton entry point)
+- [x] Wire shadow mode into nexusRoutes.ts (setImmediate + try/catch isolation)
+- [x] Add behaviourEngine tRPC router to routers.ts (6 procedures)
+- [x] Build client/src/pages/BehaviourEngine.tsx (5-tab dashboard)
+- [x] Add /behaviour-engine route to App.tsx
+- [x] Write docs/architecture/SPRINT-122B-BEHAVIOUR-ENGINE-VALIDATION.md
+- [x] TypeScript: 0 errors confirmed
+- [x] Push Sprint 122B to GitHub
+- [x] Checkpoint Sprint 122B
