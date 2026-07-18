@@ -1086,15 +1086,18 @@ This manifest defines every test required for Sprint 123A. Each test has a uniqu
 
 ## Test Summary
 
-| Sub-sprint | Tests | Blocking | Notes |
-|---|---|---|---|
-| 123A.1 | 8 | 8 | — |
-| Pre-123A.2 | 1 | 1 | TEST-INT-001: opt-in, live Databento required |
-| 123A.2 | 10 | 10 | TEST-INT-002: opt-in, live Databento required |
-| 123A.3 | 19 | 19 | TEST-123A3-001 split into A/B/C/D |
-| 123A.4 | 11 | 11 | — |
-| 123A.5 | 7 | 7 | — |
-| **Total** | **56** | **56** | 2 opt-in integration tests included in total |
+> **Machine-verified count:** `grep -c "^### TEST-"` = **75** unique test IDs. This is the sole authoritative total. The 2 opt-in integration tests (`TEST-INT-001`, `TEST-INT-002`) are included in the total of 75 and are **not** included in any sub-sprint count below.
 
-**Opt-in integration tests (require `DATABENTO_INTEGRATION_TESTS=true`):** TEST-INT-001, TEST-INT-002  
-**All other tests:** Fixture-based; no live Databento connection required
+| Sub-sprint | Tests | Notes |
+|---|---|---|
+| 123A.1 | 14 | TEST-123A1-001 through 014 |
+| 123A.2 | 18 | TEST-123A2-001 through 018 |
+| 123A.3 | 23 | TEST-123A3-001A/B/C/D/E and 002 through 019 |
+| 123A.4 | 11 | TEST-123A4-001 through 011 |
+| 123A.5 | 7 | TEST-123A5-001 through 007 |
+| Opt-in integration | 2 | TEST-INT-001 (symbol resolution), TEST-INT-002 (live connection) — listed separately, not double-counted |
+| **Total** | **75** | **Machine-verified. INT tests included in total. No double-counting.** |
+
+**Opt-in integration tests (require `DATABENTO_INTEGRATION_TESTS=true`):** TEST-INT-001, TEST-INT-002. These 2 tests require a live Databento API key and are not run in CI by default.
+
+**All other 73 tests:** Fixture-based; no live Databento connection required.

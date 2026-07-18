@@ -417,11 +417,21 @@ interface TradingViewBarConfirmed {
 
 When `MARKET_DATA_AUTHORITY = TRADINGVIEW_ONLY`, `TradingViewBarConfirmed` is the sole input to `postBarAutomation`. When `MARKET_DATA_AUTHORITY = DATABENTO_LEARNING_AUTHORITY`, `CanonicalBarConfirmed` is the sole input to `postBarAutomation`. The two paths are mutually exclusive.
 
-> **Authority value definitions:**
-> - `TRADINGVIEW_ONLY` — TradingView is the sole canonical source. Databento runs in shadow mode only (no downstream effects).
-> - `DATABENTO_SHADOW` — Databento is active and persisting bars, but TradingView remains the canonical source for `postBarAutomation`.
-> - `DATABENTO_LEARNING_AUTHORITY` — Databento-derived `CanonicalBarConfirmed` is the sole input to `postBarAutomation`. Requires Gate G6A approval. This is the maximum authority level available in Sprint 123A.
-> - `DATABENTO_DECISION_AUTHORITY` — **Reserved for Sprint 123B.** Not defined, not implemented, and not reachable in Sprint 123A. This value must not appear in any Sprint 123A feature flag, configuration, or code path.
+> **Authority value definitions (Sprint 123A authority order):**
+>
+> | Value | Chart | processBar / postBarAutomation | liveLearnEngine | Behaviour Engine | DARWIN | ADE / Execution |
+> |---|---|---|---|---|---|---|
+> | `TRADINGVIEW_ONLY` | TradingView | TradingView | TradingView | TradingView | TradingView | TradingView |
+> | `DATABENTO_SHADOW` | TradingView | TradingView | TradingView | TradingView | TradingView | TradingView |
+> | `DATABENTO_CHART_AUTHORITY` | **Databento** | TradingView | TradingView | TradingView | TradingView | TradingView |
+> | `DATABENTO_LEARNING_AUTHORITY` | **Databento** | **Databento** | **Databento** | **Databento** | **Databento** | TradingView |
+> | `DATABENTO_DECISION_AUTHORITY` | — | — | — | — | — | — |
+>
+> - **`TRADINGVIEW_ONLY`** — TradingView is the sole canonical source. Databento runs in shadow mode only (no downstream effects on any system).
+> - **`DATABENTO_SHADOW`** — Databento is active and persisting bars to `atlas_bars_1m` and `atlas_bars_5m`. TradingView remains the canonical source for all downstream systems.
+> - **`DATABENTO_CHART_AUTHORITY`** — Databento-derived bars are authoritative for `AtlasLiveChart` and chart SSE events (`atlas_bar_developing`, `atlas_bar_confirmed`). TradingView remains authoritative for `processBar` and `postBarAutomation`. Databento does **not** trigger `liveLearnEngine`, Behaviour Engine canonical learning, DARWIN canonical observation, ADE, strategy processing, or execution.
+> - **`DATABENTO_LEARNING_AUTHORITY`** — Databento-derived `CanonicalBarConfirmed` is the sole input to `postBarAutomation`. All downstream learning systems receive Databento bars. Requires Gate G6A approval. This is the maximum authority level available in Sprint 123A.
+> - **`DATABENTO_DECISION_AUTHORITY`** — **Reserved for Sprint 123B.** Not defined, not implemented, and not reachable in Sprint 123A. This value must not appear in any Sprint 123A feature flag, configuration, or code path.
 
 ---
 
