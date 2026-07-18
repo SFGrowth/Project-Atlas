@@ -1,16 +1,26 @@
-# Sprint 123A Risk Register
+# Sprint 123A Risk Register (Revision 2)
 **Document type:** Architecture Reference  
 **Sprint:** 123A  
-**Status:** ACTIVE — update after each sub-sprint  
-**Date:** 2026-07-18
+**Status:** ACTIVE — update after each sub-sprint gate review  
+**Date:** 2026-07-18 (Revision 2: Correction 6 applied — all risk categories recalculated from numeric L × I composite scores; categories no longer assigned by judgment)  
+**Parent document:** `SPRINT_123A_AMENDED_IMPLEMENTATION_PLAN.md`
 
 ---
 
-## Overview
+## Scoring Methodology
 
-This register records every identified risk for Sprint 123A. Each risk is assessed for likelihood, impact, and mitigation. The register is updated after each sub-sprint gate review. Risks that materialise are promoted to incidents and tracked separately.
+Each risk is scored on two independent dimensions, each rated 1–5. The composite risk score is the product of the two dimensions. Category thresholds are applied to the composite score only. Category labels are never assigned by judgment — they are derived mechanically from the composite score.
 
-**Risk scoring:** Likelihood and Impact are scored 1–5. Risk Score = Likelihood × Impact.
+**Likelihood (L):** 1 = Very unlikely, 2 = Unlikely, 3 = Possible, 4 = Likely, 5 = Near-certain  
+**Impact (I):** 1 = Negligible, 2 = Minor, 3 = Moderate, 4 = Major, 5 = Critical  
+**Composite Score (C):** L × I
+
+| Score Range | Category |
+|---|---|
+| 1–4 | LOW |
+| 5–9 | MEDIUM |
+| 10–14 | HIGH |
+| 15–25 | CRITICAL |
 
 ---
 
@@ -18,171 +28,203 @@ This register records every identified risk for Sprint 123A. Each risk is assess
 
 ### R-001 — Databento API Key Exposure
 
-| Field | Value |
-|---|---|
-| **Risk** | `DATABENTO_API_KEY` leaks into logs, SSE payloads, database rows, error responses, or browser bundles |
-| **Likelihood** | 3 (Possible — requires careful implementation) |
-| **Impact** | 5 (Critical — API key compromise, account suspension, financial data exposure) |
-| **Risk Score** | 15 |
-| **Category** | Security |
-| **Mitigation** | Secret scanning tests required in Sprint 123A.2. Key stored only in environment variables. Bridge authentication uses a separate `BRIDGE_AUTH_TOKEN`. Python service never logs the key. TypeScript server never forwards the key to any client-facing endpoint. |
-| **Residual Likelihood** | 1 |
-| **Residual Score** | 5 |
-| **Owner** | Sprint 123A.2 |
-| **Status** | OPEN |
+**Description:** `DATABENTO_API_KEY` leaks into logs, SSE payloads, database rows, error responses, or browser bundles.
+
+| Dimension | Value | Rationale |
+|---|---|---|
+| Likelihood (L) | 3 | Possible — requires careful implementation; a common mistake in error logging |
+| Impact (I) | 5 | API key compromise gives full Databento account access; account suspension; financial data exposure |
+| **Composite (C)** | **15** | |
+| **Category** | **CRITICAL** | 15 ÷ 25 = 60% of maximum |
+
+**Mitigation:** Secret scanning tests are a blocking gate criterion at G2. Python service never logs the key. TypeScript server never forwards the key to any client-facing endpoint. Bridge uses a separate `BRIDGE_AUTH_TOKEN`. Frontend never connects to Databento directly.
+
+**Residual L:** 1 | **Residual C:** 5 | **Residual Category:** MEDIUM  
+**Owner:** Sprint 123A.2 | **Status:** OPEN
 
 ---
 
 ### R-002 — Production processBar() Triggered from Databento Path
 
-| Field | Value |
-|---|---|
-| **Risk** | A Databento canonical bar accidentally triggers `processBar()`, causing a duplicate trade signal in paper trading |
-| **Likelihood** | 3 (Possible — requires explicit gate in canonical router) |
-| **Impact** | 5 (Critical — duplicate trades, incorrect P&L, prop-firm rule violation) |
-| **Risk Score** | 15 |
-| **Category** | Execution Safety |
-| **Mitigation** | `MARKET_DATA_AUTHORITY` flag gates every dispatch path. `DATABENTO_SHADOW` mode explicitly prohibits calling `processBar()`. Canonical router checks authority flag before every consumer dispatch. Integration test verifies no `processBar()` call from Databento path in shadow mode. |
-| **Residual Likelihood** | 1 |
-| **Residual Score** | 5 |
-| **Owner** | Sprint 123A.3 |
-| **Status** | OPEN |
+**Description:** A Databento canonical bar accidentally triggers `processBar()`, causing a duplicate trade signal in paper trading.
+
+| Dimension | Value | Rationale |
+|---|---|---|
+| Likelihood (L) | 3 | Possible — requires explicit authority gate in canonical router |
+| Impact (I) | 5 | Duplicate trades, incorrect P&L, potential prop-firm rule violation |
+| **Composite (C)** | **15** | |
+| **Category** | **CRITICAL** | 15 ÷ 25 = 60% of maximum |
+
+**Mitigation:** `MARKET_DATA_AUTHORITY` flag gates every dispatch path. `DATABENTO_SHADOW` mode explicitly prohibits calling `processBar()`. Canonical router checks authority flag before every consumer dispatch. Integration test `TEST-123A3-008` verifies no `processBar()` call from Databento path in shadow mode.
+
+**Residual L:** 1 | **Residual C:** 5 | **Residual Category:** MEDIUM  
+**Owner:** Sprint 123A.3 | **Status:** OPEN
 
 ---
 
-### R-003 — Duplicate onNewBarObservation() Calls
+### R-003 — Databento Continuous Symbol Resolution Failure
 
-| Field | Value |
-|---|---|
-| **Risk** | `onNewBarObservation()` is called from both `postBarAutomation` (TradingView path) and `CanonicalBarConfirmed` (Databento path) simultaneously, corrupting DARWIN research state |
-| **Likelihood** | 3 (Possible during authority transition) |
-| **Impact** | 4 (High — DARWIN research contaminated with duplicate observations) |
-| **Risk Score** | 12 |
-| **Category** | Data Integrity |
-| **Mitigation** | `postBarAutomation.ts` checks `MARKET_DATA_AUTHORITY` before calling `onNewBarObservation()`. In `DATABENTO_LEARNING_AUTHORITY` mode, TradingView trigger is disabled. Consumer processing ledger prevents duplicate processing. |
-| **Residual Likelihood** | 1 |
-| **Residual Score** | 4 |
-| **Owner** | Sprint 123A.5 |
-| **Status** | OPEN |
+**Description:** The continuous symbol for MNQ front-month on Databento does not match any assumed naming convention. Sprint 123A.2 cannot begin until `TEST-INT-001` passes.
 
----
+| Dimension | Value | Rationale |
+|---|---|---|
+| Likelihood (L) | 3 | Databento naming conventions are not publicly documented to match TradingView or CME conventions |
+| Impact (I) | 4 | Blocks Sprint 123A.2 entirely; requires research and code changes |
+| **Composite (C)** | **12** | |
+| **Category** | **HIGH** | |
 
-### R-004 — Unresolved Minute Silently Aggregated into 5-Min Bar
+**Mitigation:** `TEST-INT-001` is a mandatory pre-requisite for Gate G2. Contract Roll Manager uses dynamic resolution from Databento metadata API. No hardcoded symbol strings in production code.
 
-| Field | Value |
-|---|---|
-| **Risk** | A 5-minute bar containing an `UNRESOLVED` minute is confirmed and dispatched to production consumers |
-| **Likelihood** | 2 (Unlikely — requires explicit check to be missing) |
-| **Impact** | 4 (High — incorrect bar data drives strategy decisions) |
-| **Risk Score** | 8 |
-| **Category** | Data Quality |
-| **Mitigation** | 5-min aggregator checks all 5 constituent minutes before confirming. `containsUnresolvedMinutes = true` blocks production dispatch. Hard error if dispatch attempted. |
-| **Residual Likelihood** | 1 |
-| **Residual Score** | 4 |
-| **Owner** | Sprint 123A.3 |
-| **Status** | OPEN |
+**Residual L:** 1 | **Residual C:** 4 | **Residual Category:** LOW  
+**Owner:** Sprint 123A.2 | **Status:** OPEN
 
 ---
 
-### R-005 — Contract Roll Missed
+### R-004 — Duplicate postBarAutomation Trigger
 
-| Field | Value |
-|---|---|
-| **Risk** | A contract roll occurs but is not detected, causing bars from the new contract to be attributed to the old contract |
-| **Likelihood** | 2 (Unlikely — Databento `SymbolMappingMsg` is reliable) |
-| **Impact** | 4 (High — incorrect price continuity, incorrect strategy signals) |
-| **Risk Score** | 8 |
-| **Category** | Data Quality |
-| **Mitigation** | Contract Roll Manager monitors `SymbolMappingMsg`, `InstrumentDefMsg`, and instrument_id changes in `trades` records. Three independent detection mechanisms. Alert on any anomaly. |
-| **Residual Likelihood** | 1 |
-| **Residual Score** | 4 |
-| **Owner** | Sprint 123A.3 |
-| **Status** | OPEN |
+**Description:** A code path outside `postBarAutomation.ts` calls `liveLearnEngine` or `onNewBarObservation()` directly, causing duplicate DARWIN observations, duplicate behaviour instances, or duplicate market-law updates.
 
----
+| Dimension | Value | Rationale |
+|---|---|---|
+| Likelihood (L) | 3 | The direct `nexusRoutes.ts → liveLearnEngine` call must be removed in 123A.1; if missed, it creates a duplicate trigger |
+| Impact (I) | 4 | Duplicate DARWIN observations corrupt research data; duplicate behaviour instances corrupt the canonical system |
+| **Composite (C)** | **12** | |
+| **Category** | **HIGH** | |
 
-### R-006 — Bridge Port Exposed Externally
+**Mitigation:** Gate G1 requires a source search confirming no direct `liveLearnEngine` call remains in `nexusRoutes.ts`. Test `TEST-123A1-003` verifies `postBarAutomation` is the sole caller. Consumer processing ledger detects duplicate processing.
 
-| Field | Value |
-|---|---|
-| **Risk** | The bridge WebSocket port `7890` is exposed in a firewall rule or reverse proxy, allowing unauthenticated external access |
-| **Likelihood** | 2 (Unlikely in Manus webdev — but must be verified) |
-| **Impact** | 4 (High — market data injection, denial of service) |
-| **Risk Score** | 8 |
-| **Category** | Security |
-| **Mitigation** | Bridge binds to `127.0.0.1` only. Bridge authentication required. Deployment topology documentation explicitly prohibits external exposure. Security review required before Sprint 123A.2 deployment. |
-| **Residual Likelihood** | 1 |
-| **Residual Score** | 4 |
-| **Owner** | Sprint 123A.2 |
-| **Status** | OPEN |
+**Residual L:** 1 | **Residual C:** 4 | **Residual Category:** LOW  
+**Owner:** Sprint 123A.1 | **Status:** OPEN
 
 ---
 
-### R-007 — Legacy Behaviour System Retired Prematurely
+### R-005 — Duplicate onNewBarObservation() Calls During Authority Transition
 
-| Field | Value |
-|---|---|
-| **Risk** | The legacy 7-behaviour system is disabled before the canonical system is certified, causing a gap in DARWIN's behaviour tracking |
-| **Likelihood** | 2 (Unlikely — requires explicit Phil approval) |
-| **Impact** | 3 (Medium — DARWIN research quality degraded temporarily) |
-| **Risk Score** | 6 |
-| **Category** | Research Continuity |
-| **Mitigation** | Legacy system is never disabled without Phil's explicit approval. `LEGACY_BEHAVIOUR_ENABLED` flag defaults to `true`. Certification criteria require 20 trading days of shadow data and 95% agreement rate. |
-| **Residual Likelihood** | 1 |
-| **Residual Score** | 3 |
-| **Owner** | Post-123A.5 |
-| **Status** | OPEN |
+**Description:** `onNewBarObservation()` is called from both the TradingView path and the Databento canonical bar path simultaneously during authority transition, corrupting DARWIN research state.
 
----
+| Dimension | Value | Rationale |
+|---|---|---|
+| Likelihood (L) | 3 | Possible during authority transition if `postBarAutomation` authority check is incorrect |
+| Impact (I) | 4 | DARWIN research contaminated with duplicate observations |
+| **Composite (C)** | **12** | |
+| **Category** | **HIGH** | |
 
-### R-008 — Python Service Memory Leak
+**Mitigation:** `postBarAutomation.ts` checks `MARKET_DATA_AUTHORITY` before calling `onNewBarObservation()`. In `DATABENTO_LEARNING_AUTHORITY` mode, TradingView trigger is disabled. Consumer processing ledger prevents duplicate processing. Test `TEST-123A5-005` verifies zero duplicates.
 
-| Field | Value |
-|---|---|
-| **Risk** | The Python Databento feed service accumulates memory over time and is killed by the container OOM killer |
-| **Likelihood** | 2 (Possible — Python processes with long-running connections can accumulate) |
-| **Impact** | 3 (Medium — feed goes offline; recoverable but causes data gaps) |
-| **Risk Score** | 6 |
-| **Category** | Reliability |
-| **Mitigation** | Memory profiling in Sprint 123A.2. Bounded queues. Periodic health checks. Auto-restart on OOM. |
-| **Residual Likelihood** | 2 |
-| **Residual Score** | 6 |
-| **Owner** | Sprint 123A.2 |
-| **Status** | OPEN |
+**Residual L:** 1 | **Residual C:** 4 | **Residual Category:** LOW  
+**Owner:** Sprint 123A.5 | **Status:** OPEN
 
 ---
 
-### R-009 — Parity Below 99.9% at Chart Authority Gate
+### R-006 — Unresolved Minute Silently Aggregated into 5-Min Bar
 
-| Field | Value |
-|---|---|
-| **Risk** | TradingView/Databento bar parity falls below 99.9% over the 5-day certification window, blocking the Chart Authority gate |
-| **Likelihood** | 3 (Possible — TradingView bars may differ due to webhook timing or Pine Script calculation differences) |
-| **Impact** | 2 (Low — gate delayed; no production impact) |
-| **Risk Score** | 6 |
-| **Category** | Certification |
-| **Mitigation** | Parity monitor identifies specific discrepancy types. Known acceptable differences (e.g. VWAP calculation method) are documented and excluded from parity scoring. Gate criteria are reviewed if systematic differences are found. |
-| **Residual Likelihood** | 2 |
-| **Residual Score** | 4 |
-| **Owner** | Sprint 123A.4 |
-| **Status** | OPEN |
+**Description:** A 5-minute bar containing an `UNRESOLVED` 1-minute bar is confirmed and dispatched to production consumers.
+
+| Dimension | Value | Rationale |
+|---|---|---|
+| Likelihood (L) | 2 | Unlikely — requires the aggregator's `containsUnresolvedMinutes` check to be missing or bypassed |
+| Impact (I) | 4 | Incorrect bar data drives strategy decisions |
+| **Composite (C)** | **8** | |
+| **Category** | **MEDIUM** | |
+
+**Mitigation:** Five-minute aggregator enforces `containsUnresolvedMinutes` flag. Gate G3 requires test `TEST-123A3-006` to verify that `containsUnresolvedMinutes=true` bars are blocked from production dispatch. Hard error if dispatch is attempted.
+
+**Residual L:** 1 | **Residual C:** 4 | **Residual Category:** LOW  
+**Owner:** Sprint 123A.3 | **Status:** OPEN
 
 ---
 
-### R-010 — Sprint 123A Too Large to Complete in One Sprint
+### R-007 — Contract Roll Missed or Delayed
 
-| Field | Value |
-|---|---|
-| **Risk** | The five sub-sprints collectively take longer than expected, blocking other Atlas work |
-| **Likelihood** | 4 (Likely — this is a large infrastructure sprint) |
-| **Impact** | 2 (Low — sub-sprints are independently releasable; each delivers value) |
-| **Risk Score** | 8 |
-| **Category** | Delivery |
-| **Mitigation** | Sub-sprints are independently releasable. 123A.1 (Foundation) is the only blocker for all other work. Each sub-sprint can be paused and resumed. DARWIN and other Atlas work continues during sub-sprint gaps. |
-| **Residual Likelihood** | 4 |
-| **Residual Score** | 8 |
-| **Owner** | Phil (scope management) |
-| **Status** | OPEN |
+**Description:** A contract roll occurs but is not detected by the Contract Roll Manager, causing the bar builder to continue using the expired contract's trades.
+
+| Dimension | Value | Rationale |
+|---|---|---|
+| Likelihood (L) | 2 | Unlikely — Databento sends `SymbolMappingMsg` on roll; missed only if handler is incorrect |
+| Impact (I) | 4 | Bars built from expired contract trades are incorrect; parity comparison fails |
+| **Composite (C)** | **8** | |
+| **Category** | **MEDIUM** | |
+
+**Mitigation:** Three independent roll detection mechanisms (symbol mapping, definition record, instrument_id change). Anomaly handling raises alerts for disagreement. `atlas_contract_rolls` table provides audit trail.
+
+**Residual L:** 1 | **Residual C:** 4 | **Residual Category:** LOW  
+**Owner:** Sprint 123A.3 | **Status:** OPEN
+
+---
+
+### R-008 — Bridge Port 7890 Exposed Externally
+
+**Description:** The Python-to-TypeScript bridge WebSocket server is accessible from outside the container.
+
+| Dimension | Value | Rationale |
+|---|---|---|
+| Likelihood (L) | 2 | Unlikely in Manus webdev — bridge binds to 127.0.0.1; exposure requires misconfiguration |
+| Impact (I) | 4 | Internal market data stream exposed; bridge auth token potentially compromised |
+| **Composite (C)** | **8** | |
+| **Category** | **MEDIUM** | |
+
+**Mitigation:** Bridge binds to `127.0.0.1:7890` only. Gate G2 requires security verification that port 7890 is not externally accessible. `BRIDGE_AUTH_TOKEN` required for all bridge connections.
+
+**Residual L:** 1 | **Residual C:** 4 | **Residual Category:** LOW  
+**Owner:** Sprint 123A.2 | **Status:** OPEN
+
+---
+
+### R-009 — AtlasLiveChart Publishing to Event Bus
+
+**Description:** `AtlasLiveChart.tsx` publishes an event to the Atlas Event Bus, causing canonical event contamination.
+
+| Dimension | Value | Rationale |
+|---|---|---|
+| Likelihood (L) | 2 | Unlikely if architecture is followed; a common mistake when adding chart interactivity |
+| Impact (I) | 3 | Downstream consumers receive chart-generated events as authoritative market data |
+| **Composite (C)** | **6** | |
+| **Category** | **MEDIUM** | |
+
+**Mitigation:** Canonical direction rule documented in §5 of amended plan. Test `TEST-123A4-005` verifies `AtlasLiveChart.tsx` never publishes to event bus. Gate G4 and G7 both require this test to pass.
+
+**Residual L:** 1 | **Residual C:** 3 | **Residual Category:** LOW  
+**Owner:** Sprint 123A.4 | **Status:** OPEN
+
+---
+
+### R-010 — Parity Certification Threshold Not Met
+
+**Description:** After 5 consecutive trading days of shadow operation, the composite parity score is below the threshold defined in `DATABENTO_PARITY_CERTIFICATION_SPEC.md`, blocking Gate G4.
+
+| Dimension | Value | Rationale |
+|---|---|---|
+| Likelihood (L) | 3 | Possible — TradingView and Databento use different timestamps and rounding; achieving the threshold requires careful tolerance calibration |
+| Impact (I) | 2 | Gate G4 is blocked; Sprint 123A.4 deliverables are complete but cannot be activated; no production impact |
+| **Composite (C)** | **6** | |
+| **Category** | **MEDIUM** | |
+
+**Mitigation:** Parity tolerances are defined in `DATABENTO_PARITY_CERTIFICATION_SPEC.md` before implementation begins. Parity monitor produces daily reports so issues are visible before the 5-day window closes. Excluded periods (rolls, gaps, synthetic bars) are clearly defined.
+
+**Residual L:** 2 | **Residual C:** 4 | **Residual Category:** LOW  
+**Owner:** Sprint 123A.4 | **Status:** OPEN
+
+---
+
+## Risk Summary
+
+| ID | Risk | L | I | C | Category |
+|---|---|---|---|---|---|
+| R-001 | Databento API key exposure | 3 | 5 | **15** | CRITICAL |
+| R-002 | Production processBar() triggered from Databento path | 3 | 5 | **15** | CRITICAL |
+| R-003 | Databento continuous symbol resolution failure | 3 | 4 | **12** | HIGH |
+| R-004 | Duplicate postBarAutomation trigger | 3 | 4 | **12** | HIGH |
+| R-005 | Duplicate onNewBarObservation() calls | 3 | 4 | **12** | HIGH |
+| R-006 | Unresolved minute silently aggregated | 2 | 4 | **8** | MEDIUM |
+| R-007 | Contract roll missed or delayed | 2 | 4 | **8** | MEDIUM |
+| R-008 | Bridge port 7890 exposed externally | 2 | 4 | **8** | MEDIUM |
+| R-009 | AtlasLiveChart publishing to event bus | 2 | 3 | **6** | MEDIUM |
+| R-010 | Parity certification threshold not met | 3 | 2 | **6** | MEDIUM |
+
+**CRITICAL risks:** 2 (R-001, R-002)  
+**HIGH risks:** 3 (R-003, R-004, R-005)  
+**MEDIUM risks:** 5 (R-006, R-007, R-008, R-009, R-010)  
+**LOW risks:** 0
 
 ---
 
@@ -191,14 +233,3 @@ This register records every identified risk for Sprint 123A. Each risk is assess
 | Risk ID | Description | Closed Date | Resolution |
 |---|---|---|---|
 | — | No risks closed yet | — | — |
-
----
-
-## Risk Summary
-
-| Score Range | Count | Risks |
-|---|---|---|
-| 12–25 (Critical) | 2 | R-001, R-002 |
-| 8–11 (High) | 3 | R-003, R-004, R-010 |
-| 5–7 (Medium) | 4 | R-005, R-006, R-007, R-008 |
-| 1–4 (Low) | 1 | R-009 |

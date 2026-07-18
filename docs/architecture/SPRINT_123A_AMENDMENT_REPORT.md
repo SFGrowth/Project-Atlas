@@ -189,3 +189,127 @@ This report records all 15 amendments to the original Sprint 123A implementation
 **Resolution:** This entire document set is the documentation-first deliverable. No production code, no migrations, no Databento connection. Implementation begins only after Phil approves Gate G0.
 
 **Recorded in:** `SPRINT_123A_AMENDED_IMPLEMENTATION_PLAN.md` §24, `SPRINT_123A_GATE_MATRIX.md` Gate G0
+
+---
+
+# Revision 2 — Gate G0 Corrections (Applied 2026-07-18)
+
+The following 12 corrections were required by Phil's Gate G0 review. All corrections are documentation-only. No production code was modified. No migrations were run. No Databento connection was made.
+
+---
+
+## Correction 1 — postBarAutomation Is the Single Owner of All Post-Bar Autonomous Processing
+
+**Contradiction identified:** The original amended plan described a direct TradingView → `liveLearnEngine` path that existed in parallel with `postBarAutomation`. This created ambiguity about which component owned `liveLearnEngine` triggering.
+
+**Correction:** The direct TradingView → `liveLearnEngine` path is explicitly removed after `postBarAutomation` is introduced in Sprint 123A.1. `postBarAutomation.ts` is the sole owner of: `liveLearnEngine`, `onNewBarObservation()`, Behaviour Engine `processBar()`, market-law updates, and all post-bar research hooks. No other component calls these functions directly.
+
+**Documents updated:** `SPRINT_123A_AMENDED_IMPLEMENTATION_PLAN.md` §11, `SPRINT_123A_DEPENDENCY_DIAGRAM.md` component graph, `SPRINT_123A_GATE_MATRIX.md` G1 and G7, `SPRINT_123A_TEST_MANIFEST.md` TEST-123A1-003 and TEST-123A1-004.
+
+---
+
+## Correction 2 — Chart Event Direction Corrected
+
+**Contradiction identified:** The original dependency diagram contained an arrow from `AtlasLiveChart.tsx` to the Atlas Event Bus, labelled with SSE event names. This implied the chart publishes canonical market events, which is architecturally incorrect.
+
+**Correction:** The canonical event direction is strictly one-way. Canonical services (Market-Data Canonical Router, Feed Health Service, Contract Roll Manager) publish to the Atlas Event Bus. SSE transports events from the bus to the browser. `AtlasLiveChart.tsx` is a pure consumer — it subscribes to SSE and never publishes to the Atlas Event Bus or any tRPC mutation that could be interpreted as a canonical market event.
+
+**Documents updated:** `SPRINT_123A_DEPENDENCY_DIAGRAM.md` event flow diagram, `SPRINT_123A_TEST_MANIFEST.md` TEST-123A4-005, `SPRINT_123A_GATE_MATRIX.md` G4 and G7.
+
+---
+
+## Correction 3 — Gate G6 Split into G6 (Implementation Certified) and G6A (Optional Activation)
+
+**Contradiction identified:** The original Gate G6 combined implementation certification with `DATABENTO_LEARNING_AUTHORITY` activation. This meant the implementation could not be certified without simultaneously activating a mode that changes DARWIN's data source — a high-risk step that should require additional deliberation.
+
+**Correction:** Gate G6 certifies Sprint 123A.5 implementation only. `DATABENTO_LEARNING_AUTHORITY` remains disabled at G6. Gate G6A is a separate, optional gate for `DATABENTO_LEARNING_AUTHORITY` activation, requiring Phil's explicit written approval after 20 trading days of shadow data and behaviour agreement ≥ 95%.
+
+**Documents updated:** `SPRINT_123A_GATE_MATRIX.md` G6 and G6A, `SPRINT_123A_DEPENDENCY_DIAGRAM.md` sub-sprint graph, `SPRINT_123A_AMENDED_IMPLEMENTATION_PLAN.md` §19.
+
+---
+
+## Correction 4 — Gate G7 and Sprint 123A Completion Are Independent of G6A
+
+**Contradiction identified:** The original plan implied that Sprint 123A was not complete until Learning Authority was activated.
+
+**Correction:** Sprint 123A is complete at Gate G7 regardless of whether Gate G6A has been passed. G6A may be pursued after G7 at any time, at Phil's discretion. Sprint 123B planning can begin after G7 without G6A.
+
+**Documents updated:** `SPRINT_123A_GATE_MATRIX.md` G7, `SPRINT_123A_DEPENDENCY_DIAGRAM.md` sub-sprint graph, `SPRINT_123A_AMENDED_IMPLEMENTATION_PLAN.md` §19.
+
+---
+
+## Correction 5 — MNQ1! Removed as Stated Databento Symbol
+
+**Contradiction identified:** The original documents stated `MNQ1!` as the Databento continuous symbol for MNQ front-month. This is a TradingView symbol convention and may not match Databento's actual naming.
+
+**Correction:** `MNQ1!` is removed from all documents as a stated fact. All references now describe dynamic Databento symbology resolution via the Databento metadata API and Contract Roll Manager. `TEST-INT-001` is a mandatory opt-in integration test that must pass before Sprint 123A.2 begins, confirming the actual continuous symbol name. The confirmed symbol is recorded in `docs/evidence/TEST-INT-001-result.md`.
+
+**Documents updated:** `DATABENTO_CONTRACT_MAPPING_AND_ROLL_POLICY.md`, `SPRINT_123A_DEPENDENCY_DIAGRAM.md` symbology note, `SPRINT_123A_TEST_MANIFEST.md` TEST-INT-001, `SPRINT_123A_GATE_MATRIX.md` G2 pre-requisite.
+
+---
+
+## Correction 6 — Risk Register Recalculated from Numeric Scores
+
+**Contradiction identified:** The original risk register assigned category labels (Security, Execution Safety, etc.) that did not correspond to the numeric L × I composite scores. R-003 had a composite score of 12 but was categorised as Data Integrity (a qualitative label, not a score-derived category). R-009 had a composite score of 6 but was categorised as Low.
+
+**Correction:** All risk categories are now derived mechanically from the composite score using the defined thresholds (1–4 LOW, 5–9 MEDIUM, 10–14 HIGH, 15–25 CRITICAL). Category labels are never assigned by judgment. The risk register is rewritten with 10 risks, all with correctly derived categories. Three new risks are added (R-003 symbol resolution, R-004 duplicate postBarAutomation trigger, R-009 chart publishing to event bus) that were identified during the correction process.
+
+**Documents updated:** `SPRINT_123A_RISK_REGISTER.md` (full rewrite).
+
+---
+
+## Correction 7 — DATABENTO_PARITY_CERTIFICATION_SPEC.md Created
+
+**Contradiction identified:** The original plan referenced parity certification criteria without defining them precisely. The gate matrix referenced "≥99.9%" without specifying what was being measured, how tolerances were defined, what was excluded, or how the composite score was calculated.
+
+**Correction:** `DATABENTO_PARITY_CERTIFICATION_SPEC.md` is created with 13 sections covering: interval coverage, timestamp agreement, OHLC tick tolerances (per field), volume comparison, feature agreement, behaviour agreement, excluded periods, roll handling, synthetic and unresolved bar handling, the exact composite formula with weights, pass thresholds, evaluation window conditions, and daily report format.
+
+**Documents updated:** `DATABENTO_PARITY_CERTIFICATION_SPEC.md` (new document), `SPRINT_123A_GATE_MATRIX.md` G4, `SPRINT_123A_TEST_MANIFEST.md` TEST-123A4-001 and TEST-123A4-002.
+
+---
+
+## Correction 8 — Bar Table Ownership Defined
+
+**Contradiction identified:** The original plan described three bar tables (`atlas_bars_1m`, `atlas_bars_5m`, `atlas_canonical_bars`) without defining their ownership relationship. This created a risk of three uncontrolled copies of the same bar data with no clear authority.
+
+**Correction:** Each table has a single owner and a defined purpose. `atlas_bars_1m` is an internal pipeline table owned by `bar-builder.ts` — no production consumer reads from it directly. `atlas_bars_5m` is an internal pipeline table owned by `five-min-aggregator.ts` — no production consumer reads from it directly. `atlas_canonical_bars` is the single source of truth owned by `canonical-router.ts` — all production consumers (strategies, DARWIN, chart, parity monitor) read from this table only.
+
+**Documents updated:** `SPRINT_123A_AMENDED_IMPLEMENTATION_PLAN.md` §13, `SPRINT_123A_DEPENDENCY_DIAGRAM.md` bar table ownership diagram, `ATLAS_DATA_SOURCE_AUTHORITY_MATRIX.md`.
+
+---
+
+## Correction 9 — Rollback Policy Corrected
+
+**Contradiction identified:** The original rollback policy was vague and did not specify whether tables should be preserved or dropped on rollback.
+
+**Correction:** The rollback policy is explicit: set `MARKET_DATA_AUTHORITY=TRADINGVIEW_ONLY`, disable Databento and bridge consumption, preserve all new tables and validation evidence. Table removal is only permitted for an explicitly approved destructive development reset with Phil's written approval. The rollback procedure is documented in `SPRINT_123A_DEPENDENCY_DIAGRAM.md` and every sub-sprint gate in `SPRINT_123A_GATE_MATRIX.md`.
+
+**Documents updated:** `SPRINT_123A_GATE_MATRIX.md` (all gates), `SPRINT_123A_DEPENDENCY_DIAGRAM.md` rollback path, `SPRINT_123A_AMENDED_IMPLEMENTATION_PLAN.md` §20.
+
+---
+
+## Correction 10 — SPRINT_123A_TEST_MANIFEST.md Created
+
+**Contradiction identified:** The original plan referenced tests without defining them. No test manifest existed.
+
+**Correction:** `SPRINT_123A_TEST_MANIFEST.md` is created with 36 tests across 5 sub-sprints plus 2 opt-in integration tests. Each test has: test ID, sub-sprint, requirement, test file, fixture, expected result, blocking gate, current result, and evidence location. All 36 tests are currently `NOT RUN`. All are blocking.
+
+**Documents updated:** `SPRINT_123A_TEST_MANIFEST.md` (new document), `SPRINT_123A_GATE_MATRIX.md` (all gates reference test IDs).
+
+---
+
+## Correction 11 — Cross-Document Consistency Verified
+
+**Contradiction identified:** The dependency diagram, gate matrix, amended plan, amendment report, and risk register contained inconsistencies introduced by the original 15 amendments and not fully resolved.
+
+**Correction:** All documents are updated to be consistent. The dependency diagram is rewritten at Revision 2. The gate matrix is at Revision 2. The risk register is rewritten. The amended plan is updated for corrections 1–11. All cross-references between documents are verified.
+
+**Documents updated:** All 16 documents in `docs/architecture/`.
+
+---
+
+## Correction 12 — Final Correction Report Produced
+
+**Requirement:** A final correction report explicitly confirming: no production code modified, no migrations run, no Databento connection made, all contradictions resolved, all supporting documents present and cross-linked, Gate G0 ready for Phil's approval.
+
+**Resolution:** See `SPRINT_123A_GATE_G0_CORRECTION_REPORT.md`.
