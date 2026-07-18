@@ -308,20 +308,40 @@ CREATE TABLE `atlas_feed_health_log` (
 -- Two rollback tiers are provided. Neither may be executed without approval.
 --
 -- a) OPERATIONAL ROLLBACK
---    Drops only the data-collection tables that have no evidence value.
---    Preserves: atlas_parity_reports, atlas_canonical_bars,
---               atlas_consumer_processing_ledger, atlas_feed_health_log.
---    Use when rolling back a failed Sprint 123A.3 activation while
---    preserving audit evidence.
+--    Restores TRADINGVIEW_ONLY authority WITHOUT dropping any tables.
+--    ALL Sprint 123A tables and evidence are preserved.
+--    New writes to Databento tables stop automatically because the
+--    Databento feed is disabled and postBarAutomation enforces the
+--    authority guard before any write path is reached.
+--    Use when rolling back a failed Sprint 123A.3+ activation.
 --    Requires: Gate G1 approval to execute.
 --
---    -- BEGIN OPERATIONAL ROLLBACK
---    DROP TABLE IF EXISTS `atlas_chart_annotations`;
---    DROP TABLE IF EXISTS `atlas_contract_rolls`;
---    DROP TABLE IF EXISTS `atlas_bars_5m`;
---    DROP TABLE IF EXISTS `atlas_bars_1m`;
---    DROP TABLE IF EXISTS `atlas_ticks`;
---    -- END OPERATIONAL ROLLBACK
+--    OPERATIONAL ROLLBACK PROCEDURE (no table drops):
+--
+--    Step 1 — Set authority flag in application environment:
+--             MARKET_DATA_AUTHORITY=TRADINGVIEW_ONLY
+--
+--    Step 2 — Disable Databento feed service:
+--             Stop the Databento Python feed process (SIGTERM).
+--             Set DATABENTO_LIVE_ENABLED=false in application environment.
+--
+--    Step 3 — Stop Databento consumers:
+--             Set DATABENTO_SHADOW=false
+--             Set DATABENTO_CHART_AUTHORITY=false
+--             Set DATABENTO_LEARNING_AUTHORITY=false
+--
+--    Step 4 — Restart the Atlas Nexus application server.
+--             postBarAutomation reverts to TRADINGVIEW_ONLY immediately.
+--             assertSprint123A1Invariants() enforces the boundary on startup.
+--
+--    Step 5 — Verify: assertSprint123A1Invariants() must pass without error.
+--             All Sprint 123A tables are preserved for audit and evidence.
+--             No data is written to atlas_ticks, atlas_bars_1m, atlas_bars_5m
+--             while MARKET_DATA_AUTHORITY=TRADINGVIEW_ONLY.
+--
+--    NOTE: Dropping tables is NOT part of the operational rollback.
+--          Table drops are reserved exclusively for the Destructive
+--          Development Reset (tier b) below.
 --
 -- b) DESTRUCTIVE DEVELOPMENT RESET
 --    Drops ALL Sprint 123A.1 tables including evidence tables.
