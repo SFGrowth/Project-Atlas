@@ -1,21 +1,24 @@
-# Sprint 123A Test Manifest
+# Sprint 123A Test Manifest (Revision 2)
 **Document type:** Architecture Reference  
 **Sprint:** 123A  
 **Status:** PENDING APPROVAL  
-**Date:** 2026-07-18  
-**Parent document:** `SPRINT_123A_AMENDED_IMPLEMENTATION_PLAN.md`
+**Date:** 2026-07-18 (Revision 2: Corrections 3, 4, 5, 6 applied — test count corrected; TEST-123A3-001 split into 4; TEST-123A3-005 updated; 19 new test categories added)  
+**Parent document:** `SPRINT_123A_AMENDED_IMPLEMENTATION_PLAN.md`  
+**Parity spec reference:** `DATABENTO_PARITY_CERTIFICATION_SPEC.md` (Revision 2)
 
 ---
 
 ## Overview
 
-This manifest defines every test required for Sprint 123A. Each test has a unique ID, sub-sprint, requirement, test file, fixture, expected result, blocking gate, current result, and evidence location. Tests are grouped by sub-sprint. All tests must pass before their respective gate can be approved.
+This manifest defines every test required for Sprint 123A. Each test has a unique ID, sub-sprint, requirement, test file, fixture, expected result, blocking gate, current result, and evidence location.
 
 **Test ID format:** `TEST-{sub-sprint}-{sequence}` for unit/integration tests, `TEST-INT-{sequence}` for opt-in live integration tests.
 
-**Blocking status:** A test marked `BLOCKING` for a gate must pass before that gate can be approved. A test marked `NON-BLOCKING` contributes to evidence but does not individually block the gate.
+**Blocking status:** All tests are blocking unless explicitly marked `NON-BLOCKING`.
 
 **Current result:** All tests are `NOT RUN` until the sub-sprint is implemented.
+
+**Total test count:** 75 tests (73 unit/integration + 2 opt-in live integration tests). The 2 opt-in tests (`TEST-INT-001`, `TEST-INT-002`) are included in the total of 75. They require `DATABENTO_INTEGRATION_TESTS=true` and a live Databento API key.
 
 ---
 
@@ -25,15 +28,13 @@ This manifest defines every test required for Sprint 123A. Each test has a uniqu
 
 | Field | Value |
 |---|---|
-| **Test ID** | TEST-123A1-001 |
 | **Sub-sprint** | 123A.1 |
-| **Requirement** | `server/market-data/config.ts` exports `MARKET_DATA_AUTHORITY` and all feature flags |
+| **Requirement** | `server/market-data/config.ts` exports `MARKET_DATA_AUTHORITY` and all feature flags with correct default values |
 | **Test file** | `server/market-data/__tests__/config.test.ts` |
 | **Fixture** | None — tests TypeScript exports only |
-| **Expected result** | `tsc --noEmit` passes; all flag types are exported; default values match §18 of amended plan |
+| **Expected result** | `tsc --noEmit` passes; all flag types exported; defaults match §18 of amended plan |
 | **Blocking gate** | G1 |
 | **Current result** | NOT RUN |
-| **Evidence location** | CI build log |
 
 ---
 
@@ -41,15 +42,13 @@ This manifest defines every test required for Sprint 123A. Each test has a uniqu
 
 | Field | Value |
 |---|---|
-| **Test ID** | TEST-123A1-002 |
 | **Sub-sprint** | 123A.1 |
-| **Requirement** | All 7 new tables (`atlas_bars_1m`, `atlas_bars_5m`, `atlas_canonical_bars`, `atlas_contract_rolls`, `atlas_parity_records`, `atlas_chart_annotations`, `atlas_consumer_processing_ledger`) are created without error |
+| **Requirement** | All 7 new tables created without error; no existing tables modified |
 | **Test file** | `drizzle/__tests__/migration.test.ts` |
-| **Fixture** | Test database (in-memory or isolated MySQL) |
-| **Expected result** | Migration applies without error; all 7 tables exist; all columns match schema definition; no existing tables modified |
+| **Fixture** | Isolated test database |
+| **Expected result** | Migration applies; all 7 tables exist with correct columns; zero existing table modifications |
 | **Blocking gate** | G1 |
 | **Current result** | NOT RUN |
-| **Evidence location** | CI migration log |
 
 ---
 
@@ -57,15 +56,13 @@ This manifest defines every test required for Sprint 123A. Each test has a uniqu
 
 | Field | Value |
 |---|---|
-| **Test ID** | TEST-123A1-003 |
 | **Sub-sprint** | 123A.1 |
 | **Requirement** | No code path outside `postBarAutomation.ts` calls `liveLearnEngine` directly |
 | **Test file** | `server/automation/__tests__/postBarAutomation.test.ts` |
-| **Fixture** | Mock `liveLearnEngine`; mock `nexusRoutes` TradingView webhook handler |
-| **Expected result** | Source search confirms no import of `liveLearnEngine` in `nexusRoutes.ts`; mock verifies `liveLearnEngine` is called exactly once per bar via `postBarAutomation` |
+| **Fixture** | Mock `liveLearnEngine`; mock TradingView webhook handler |
+| **Expected result** | Source search confirms no `liveLearnEngine` import in `nexusRoutes.ts`; mock called exactly once per bar via `postBarAutomation` |
 | **Blocking gate** | G1 |
 | **Current result** | NOT RUN |
-| **Evidence location** | Test report; source search output |
 
 ---
 
@@ -73,15 +70,13 @@ This manifest defines every test required for Sprint 123A. Each test has a uniqu
 
 | Field | Value |
 |---|---|
-| **Test ID** | TEST-123A1-004 |
 | **Sub-sprint** | 123A.1 |
-| **Requirement** | G-001 fix: `onNewBarObservation()` is called exactly once per bar via `postBarAutomation` |
+| **Requirement** | G-001 fix: `onNewBarObservation()` called exactly once per bar via `postBarAutomation` |
 | **Test file** | `server/automation/__tests__/postBarAutomation.test.ts` |
 | **Fixture** | Mock `darwinAutonomous.onNewBarObservation`; simulate TradingView bar event |
-| **Expected result** | `onNewBarObservation` called exactly once per bar; not called from any other code path |
+| **Expected result** | `onNewBarObservation` called exactly once per bar; never from any other code path |
 | **Blocking gate** | G1 |
 | **Current result** | NOT RUN |
-| **Evidence location** | Test report |
 
 ---
 
@@ -89,15 +84,13 @@ This manifest defines every test required for Sprint 123A. Each test has a uniqu
 
 | Field | Value |
 |---|---|
-| **Test ID** | TEST-123A1-005 |
 | **Sub-sprint** | 123A.1 |
 | **Requirement** | G-002 fix: `/api/scheduled/monthly-review` returns real output, not `{ status: "not_implemented" }` |
 | **Test file** | `server/__tests__/scheduledJobs.test.ts` |
-| **Fixture** | Test database with at least 30 days of `atlas_memory` bars |
-| **Expected result** | Response contains at minimum: `{ status: "complete", period: "...", barCount: N, ... }` where `barCount > 0`; response does not contain `"not_implemented"` |
+| **Fixture** | Test database with ≥30 days of `atlas_memory` bars |
+| **Expected result** | Response contains `{ status: "complete", period: "...", barCount: N }` where `barCount > 0`; no `"not_implemented"` |
 | **Blocking gate** | G1 |
 | **Current result** | NOT RUN |
-| **Evidence location** | Test report |
 
 ---
 
@@ -105,15 +98,13 @@ This manifest defines every test required for Sprint 123A. Each test has a uniqu
 
 | Field | Value |
 |---|---|
-| **Test ID** | TEST-123A1-006 |
 | **Sub-sprint** | 123A.1 |
 | **Requirement** | `LEGACY_BEHAVIOUR_ENABLED=true` — legacy 7-behaviour system writes to `behaviour_library` unchanged |
 | **Test file** | `server/__tests__/liveLearnEngine.test.ts` |
 | **Fixture** | Mock bar; test database with `behaviour_library` table |
-| **Expected result** | After processing a bar, `behaviour_library` contains a new row; the 7 legacy behaviour IDs are present in the output |
+| **Expected result** | After processing a bar, `behaviour_library` contains a new row with all 7 legacy behaviour IDs present |
 | **Blocking gate** | G1 |
 | **Current result** | NOT RUN |
-| **Evidence location** | Test report |
 
 ---
 
@@ -121,15 +112,13 @@ This manifest defines every test required for Sprint 123A. Each test has a uniqu
 
 | Field | Value |
 |---|---|
-| **Test ID** | TEST-123A1-007 |
 | **Sub-sprint** | 123A.1 |
-| **Requirement** | `shared/types/canonical-events.ts` exports `CanonicalBarConfirmed`, `AtlasContractRoll`, `AtlasBarDeveloping` (1-min), `AtlasBarConfirmed` (1-min) |
+| **Requirement** | `shared/types/canonical-events.ts` exports all new event types with correct `CanonicalEventId` fields |
 | **Test file** | `shared/types/__tests__/canonical-events.test.ts` |
 | **Fixture** | None — tests TypeScript exports only |
-| **Expected result** | `tsc --noEmit` passes; all types are exported; `CanonicalEventId` fields match §7 of amended plan |
+| **Expected result** | `tsc --noEmit` passes; all types exported; `CanonicalEventId` fields match §7 of amended plan |
 | **Blocking gate** | G1 |
 | **Current result** | NOT RUN |
-| **Evidence location** | CI build log |
 
 ---
 
@@ -137,15 +126,13 @@ This manifest defines every test required for Sprint 123A. Each test has a uniqu
 
 | Field | Value |
 |---|---|
-| **Test ID** | TEST-123A1-008 |
 | **Sub-sprint** | 123A.1 |
 | **Requirement** | With `MARKET_DATA_AUTHORITY=TRADINGVIEW_ONLY`, no Databento client is started |
 | **Test file** | `server/market-data/__tests__/config.test.ts` |
 | **Fixture** | Mock Databento client; set `MARKET_DATA_AUTHORITY=TRADINGVIEW_ONLY` |
-| **Expected result** | Databento client `start()` is never called; no network connection attempted |
+| **Expected result** | Databento client `start()` never called; no network connection attempted |
 | **Blocking gate** | G1 |
 | **Current result** | NOT RUN |
-| **Evidence location** | Test report |
 
 ---
 
@@ -155,15 +142,13 @@ This manifest defines every test required for Sprint 123A. Each test has a uniqu
 
 | Field | Value |
 |---|---|
-| **Test ID** | TEST-INT-001 |
 | **Sub-sprint** | Pre-123A.2 |
-| **Requirement** | The actual Databento continuous symbol for MNQ front-month is confirmed; `MNQ1!` is not assumed |
+| **Requirement** | Actual Databento continuous symbol for MNQ front-month confirmed; `MNQ1!` is not assumed |
 | **Test file** | `services/databento-feed/tests/test_symbol_resolution.py` |
-| **Fixture** | Live Databento connection (`DATABENTO_INTEGRATION_TESTS=true`, `DATABENTO_API_KEY` set) |
-| **Expected result** | Test connects to Databento metadata API; queries available symbols in `GLBX.MDP3` for MNQ family; confirms the continuous symbol name; subscribes and receives at least 1 `trades` record; records confirmed symbol in `docs/evidence/TEST-INT-001-result.md` |
+| **Fixture** | Live Databento connection (`DATABENTO_INTEGRATION_TESTS=true`) |
+| **Expected result** | Connects to Databento metadata API; queries `GLBX.MDP3` for MNQ family; confirms continuous symbol name; receives ≥1 `trades` record; records confirmed symbol in `docs/evidence/TEST-INT-001-result.md` |
 | **Blocking gate** | G2 (pre-requisite) |
 | **Current result** | NOT RUN |
-| **Evidence location** | `docs/evidence/TEST-INT-001-result.md` |
 
 ---
 
@@ -171,15 +156,13 @@ This manifest defines every test required for Sprint 123A. Each test has a uniqu
 
 | Field | Value |
 |---|---|
-| **Test ID** | TEST-123A2-001 |
 | **Sub-sprint** | 123A.2 |
 | **Requirement** | Python feed service correctly normalises Databento `trades` schema records into `AtlasTradeEvent` format |
 | **Test file** | `services/databento-feed/tests/test_normalizer.py` |
-| **Fixture** | Fixture file: `services/databento-feed/tests/fixtures/trades_sample.bin` (captured from Databento replay) |
-| **Expected result** | All fixture records normalise without error; output matches expected `AtlasTradeEvent` schema; no API key in output |
+| **Fixture** | `services/databento-feed/tests/fixtures/trades_sample.bin` |
+| **Expected result** | All fixture records normalise without error; output matches `AtlasTradeEvent` schema; no API key in output |
 | **Blocking gate** | G2 |
 | **Current result** | NOT RUN |
-| **Evidence location** | Test report |
 
 ---
 
@@ -187,15 +170,13 @@ This manifest defines every test required for Sprint 123A. Each test has a uniqu
 
 | Field | Value |
 |---|---|
-| **Test ID** | TEST-123A2-002 |
 | **Sub-sprint** | 123A.2 |
 | **Requirement** | Bridge server receives normalised records from Python service and publishes to `atlasEventBus` |
 | **Test file** | `server/market-data/__tests__/bridge-server.test.ts` |
 | **Fixture** | Mock Python service sending fixture records over WebSocket |
-| **Expected result** | Bridge server receives records; `atlasEventBus` emits `AtlasTradeEvent`; bridge health endpoint returns `{ status: "connected" }` |
+| **Expected result** | Bridge receives records; `atlasEventBus` emits `AtlasTradeEvent`; bridge health endpoint returns `{ status: "connected" }` |
 | **Blocking gate** | G2 |
 | **Current result** | NOT RUN |
-| **Evidence location** | Test report |
 
 ---
 
@@ -203,7 +184,6 @@ This manifest defines every test required for Sprint 123A. Each test has a uniqu
 
 | Field | Value |
 |---|---|
-| **Test ID** | TEST-123A2-003 |
 | **Sub-sprint** | 123A.2 |
 | **Requirement** | `atlasEventBus` emits `AtlasTradeEvent` records received from the bridge |
 | **Test file** | `server/market-data/__tests__/bridge-server.test.ts` |
@@ -211,23 +191,20 @@ This manifest defines every test required for Sprint 123A. Each test has a uniqu
 | **Expected result** | Event bus subscriber receives `AtlasTradeEvent` with correct fields; `source = "databento"` |
 | **Blocking gate** | G2 |
 | **Current result** | NOT RUN |
-| **Evidence location** | Test report |
 
 ---
 
-### TEST-123A2-004 — Secret Scanning: API Key Not in Logs
+### TEST-123A2-004 — Secret Scanning: API Key Not in Logs or Payloads
 
 | Field | Value |
 |---|---|
-| **Test ID** | TEST-123A2-004 |
 | **Sub-sprint** | 123A.2 |
-| **Requirement** | `DATABENTO_API_KEY` does not appear in any log output, SSE payload, database row, error response, or browser bundle |
+| **Requirement** | `DATABENTO_API_KEY` does not appear in any log output, SSE payload, database row, or error response |
 | **Test file** | `server/__tests__/secret-scanning.test.ts` |
-| **Fixture** | Set `DATABENTO_API_KEY=TEST_SECRET_KEY_DO_NOT_LOG`; run full server startup and simulate error conditions |
-| **Expected result** | Grep of all log output, SSE payloads, and database rows confirms `TEST_SECRET_KEY_DO_NOT_LOG` does not appear anywhere |
+| **Fixture** | `DATABENTO_API_KEY=TEST_SECRET_KEY_DO_NOT_LOG`; full server startup; simulated error conditions |
+| **Expected result** | Grep of all log output, SSE payloads, and database rows confirms `TEST_SECRET_KEY_DO_NOT_LOG` does not appear |
 | **Blocking gate** | G2 |
 | **Current result** | NOT RUN |
-| **Evidence location** | Test report; grep output |
 
 ---
 
@@ -235,7 +212,6 @@ This manifest defines every test required for Sprint 123A. Each test has a uniqu
 
 | Field | Value |
 |---|---|
-| **Test ID** | TEST-123A2-005 |
 | **Sub-sprint** | 123A.2 |
 | **Requirement** | `DATABENTO_API_KEY` does not appear in the built browser bundle |
 | **Test file** | `scripts/check-bundle-secrets.sh` |
@@ -243,7 +219,6 @@ This manifest defines every test required for Sprint 123A. Each test has a uniqu
 | **Expected result** | `grep -r TEST_SECRET_KEY_DO_NOT_LOG dist/` returns no results |
 | **Blocking gate** | G2 |
 | **Current result** | NOT RUN |
-| **Evidence location** | Script output |
 
 ---
 
@@ -251,15 +226,13 @@ This manifest defines every test required for Sprint 123A. Each test has a uniqu
 
 | Field | Value |
 |---|---|
-| **Test ID** | TEST-123A2-006 |
 | **Sub-sprint** | 123A.2 |
-| **Requirement** | In `DATABENTO_SHADOW` mode, no `processBar()` call is triggered from any Databento event |
+| **Requirement** | In `DATABENTO_SHADOW` mode, no `processBar()` call triggered from any Databento event |
 | **Test file** | `server/market-data/__tests__/bridge-server.test.ts` |
 | **Fixture** | Mock `processBar`; simulate Databento trade events; `MARKET_DATA_AUTHORITY=DATABENTO_SHADOW` |
-| **Expected result** | `processBar` mock is never called |
+| **Expected result** | `processBar` mock never called |
 | **Blocking gate** | G2 |
 | **Current result** | NOT RUN |
-| **Evidence location** | Test report |
 
 ---
 
@@ -267,15 +240,13 @@ This manifest defines every test required for Sprint 123A. Each test has a uniqu
 
 | Field | Value |
 |---|---|
-| **Test ID** | TEST-123A2-007 |
 | **Sub-sprint** | 123A.2 |
-| **Requirement** | In `DATABENTO_SHADOW` mode, no `postBarAutomation` call is triggered from any Databento event |
+| **Requirement** | In `DATABENTO_SHADOW` mode, no `postBarAutomation` call triggered from any Databento event |
 | **Test file** | `server/market-data/__tests__/bridge-server.test.ts` |
-| **Fixture** | Mock `postBarAutomation`; simulate Databento trade events; `MARKET_DATA_AUTHORITY=DATABENTO_SHADOW` |
-| **Expected result** | `postBarAutomation` mock is never called |
+| **Fixture** | Mock `postBarAutomation`; `MARKET_DATA_AUTHORITY=DATABENTO_SHADOW` |
+| **Expected result** | `postBarAutomation` mock never called |
 | **Blocking gate** | G2 |
 | **Current result** | NOT RUN |
-| **Evidence location** | Test report |
 
 ---
 
@@ -283,15 +254,41 @@ This manifest defines every test required for Sprint 123A. Each test has a uniqu
 
 | Field | Value |
 |---|---|
-| **Test ID** | TEST-123A2-008 |
 | **Sub-sprint** | 123A.2 |
-| **Requirement** | In `DATABENTO_SHADOW` mode, `onNewBarObservation()` is never called from any Databento event |
+| **Requirement** | In `DATABENTO_SHADOW` mode, `onNewBarObservation()` never called from any Databento event |
 | **Test file** | `server/market-data/__tests__/bridge-server.test.ts` |
-| **Fixture** | Mock `onNewBarObservation`; simulate Databento events; `MARKET_DATA_AUTHORITY=DATABENTO_SHADOW` |
-| **Expected result** | `onNewBarObservation` mock is never called |
+| **Fixture** | Mock `onNewBarObservation`; `MARKET_DATA_AUTHORITY=DATABENTO_SHADOW` |
+| **Expected result** | `onNewBarObservation` mock never called |
 | **Blocking gate** | G2 |
 | **Current result** | NOT RUN |
-| **Evidence location** | Test report |
+
+---
+
+### TEST-123A2-009 — Bridge Backpressure Handling
+
+| Field | Value |
+|---|---|
+| **Sub-sprint** | 123A.2 |
+| **Requirement** | Bridge server handles backpressure correctly when the TypeScript consumer is slower than the Python producer |
+| **Test file** | `server/market-data/__tests__/bridge-server.test.ts` |
+| **Fixture** | Mock Python service sending 10,000 records in rapid succession; TypeScript consumer artificially slowed |
+| **Expected result** | Bridge applies backpressure to Python service; no records dropped silently; queue depth metric exposed on health endpoint; no OOM; Python service receives flow-control signal |
+| **Blocking gate** | G2 |
+| **Current result** | NOT RUN |
+
+---
+
+### TEST-123A2-010 — Python Process Failure and Restart
+
+| Field | Value |
+|---|---|
+| **Sub-sprint** | 123A.2 |
+| **Requirement** | When the Python feed service crashes, the bridge server detects the disconnection and the feed health state transitions to `RECONNECTING` |
+| **Test file** | `server/market-data/__tests__/bridge-server.test.ts` |
+| **Fixture** | Mock Python service; simulate abrupt WebSocket close |
+| **Expected result** | Bridge detects disconnection within 5 seconds; `atlasEventBus` emits `atlas_feed_health` with `status = RECONNECTING`; bridge attempts reconnection with exponential backoff; reconnection succeeds when mock Python service restarts |
+| **Blocking gate** | G2 |
+| **Current result** | NOT RUN |
 
 ---
 
@@ -299,33 +296,71 @@ This manifest defines every test required for Sprint 123A. Each test has a uniqu
 
 | Field | Value |
 |---|---|
-| **Test ID** | TEST-INT-002 |
 | **Sub-sprint** | 123A.2 |
 | **Requirement** | Python feed service connects to Databento live feed and receives records |
 | **Test file** | `services/databento-feed/tests/test_live_connection.py` |
 | **Fixture** | Live Databento connection (`DATABENTO_INTEGRATION_TESTS=true`) |
-| **Expected result** | Service connects; receives at least 10 `trades` records within 60 seconds; records are normalised without error; no API key in any output |
+| **Expected result** | Service connects; receives ≥10 `trades` records within 60 seconds; records normalised without error; no API key in any output |
 | **Blocking gate** | G2 |
 | **Current result** | NOT RUN |
-| **Evidence location** | `docs/evidence/TEST-INT-002-result.md` |
 
 ---
 
 ## Sprint 123A.3 — Canonical Bar and Contract Services
 
-### TEST-123A3-001 — 1-Min Bar Builder Produces Correct OHLCV
+### TEST-123A3-001A — Developing Bar from Trades
 
 | Field | Value |
 |---|---|
-| **Test ID** | TEST-123A3-001 |
 | **Sub-sprint** | 123A.3 |
-| **Requirement** | Bar builder correctly aggregates trade events into 1-minute OHLCV bars |
+| **Requirement** | Bar builder emits a developing bar update (`AtlasBarDeveloping`) after each trade within the current 1-minute window |
 | **Test file** | `server/market-data/__tests__/bar-builder.test.ts` |
-| **Fixture** | Fixture: 60 seconds of `AtlasTradeEvent` records with known OHLCV |
-| **Expected result** | Output 1-min bar matches expected OHLCV exactly; `barType = LIVE_CONFIRMED`; `instrumentId` and `rawSymbol` match fixture |
+| **Fixture** | 30 sequential `AtlasTradeEvent` records within a single 1-minute window |
+| **Expected result** | 30 `AtlasBarDeveloping` events emitted; each has correct running OHLCV; `barType = DEVELOPING`; no `AtlasBarConfirmed` emitted until minute boundary |
 | **Blocking gate** | G3 |
 | **Current result** | NOT RUN |
-| **Evidence location** | Test report |
+
+---
+
+### TEST-123A3-001B — Official ohlcv-1m Reconciliation
+
+| Field | Value |
+|---|---|
+| **Sub-sprint** | 123A.3 |
+| **Requirement** | Bar builder reconciles its constructed 1-min bar against Databento's official `ohlcv-1m` schema record for the same interval |
+| **Test file** | `server/market-data/__tests__/bar-builder.test.ts` |
+| **Fixture** | Fixture `AtlasTradeEvent` records for a 1-minute window + corresponding `ohlcv-1m` record from Databento |
+| **Expected result** | Reconciliation record written to `atlas_bars_1m` with `reconciliationStatus = MATCHED` when OHLCV agrees within tolerance; `DISCREPANCY` when outside tolerance; discrepancy details persisted |
+| **Blocking gate** | G3 |
+| **Current result** | NOT RUN |
+
+---
+
+### TEST-123A3-001C — Confirmed Canonical 1-Minute Bar
+
+| Field | Value |
+|---|---|
+| **Sub-sprint** | 123A.3 |
+| **Requirement** | Bar builder emits a confirmed `AtlasBarConfirmed` (1-min) at the minute boundary with correct OHLCV |
+| **Test file** | `server/market-data/__tests__/bar-builder.test.ts` |
+| **Fixture** | 60 seconds of `AtlasTradeEvent` records with known OHLCV |
+| **Expected result** | Exactly one `AtlasBarConfirmed` emitted at minute boundary; OHLCV matches expected; `barType = LIVE_CONFIRMED`; `instrumentId` and `rawSymbol` match fixture |
+| **Blocking gate** | G3 |
+| **Current result** | NOT RUN |
+
+---
+
+### TEST-123A3-001D — Discrepancy Persistence
+
+| Field | Value |
+|---|---|
+| **Sub-sprint** | 123A.3 |
+| **Requirement** | When a reconciliation discrepancy is detected, it is persisted to `atlas_bars_1m` and an alert is emitted |
+| **Test file** | `server/market-data/__tests__/bar-builder.test.ts` |
+| **Fixture** | Fixture trades + `ohlcv-1m` record with High 3 ticks higher than constructed bar |
+| **Expected result** | `atlas_bars_1m` row has `reconciliationStatus = DISCREPANCY`; `discrepancyDetails` contains field name, constructed value, official value, and delta in ticks; `atlas_feed_health` alert emitted |
+| **Blocking gate** | G3 |
+| **Current result** | NOT RUN |
 
 ---
 
@@ -333,15 +368,13 @@ This manifest defines every test required for Sprint 123A. Each test has a uniqu
 
 | Field | Value |
 |---|---|
-| **Test ID** | TEST-123A3-002 |
 | **Sub-sprint** | 123A.3 |
 | **Requirement** | Five-minute aggregator correctly aggregates 5 confirmed 1-min bars into a 5-min bar |
 | **Test file** | `server/market-data/__tests__/five-min-aggregator.test.ts` |
 | **Fixture** | 5 fixture `AtlasBarConfirmed` (1-min) records with known OHLCV |
-| **Expected result** | Output 5-min bar: Open = first bar Open, High = max of all Highs, Low = min of all Lows, Close = last bar Close, Volume = sum of all Volumes; `barType = CANONICAL_CONFIRMED` |
+| **Expected result** | Open = first bar Open; High = max of all Highs; Low = min of all Lows; Close = last bar Close; Volume = sum of all Volumes; `barType = CANONICAL_CONFIRMED` |
 | **Blocking gate** | G3 |
 | **Current result** | NOT RUN |
-| **Evidence location** | Test report |
 
 ---
 
@@ -349,7 +382,6 @@ This manifest defines every test required for Sprint 123A. Each test has a uniqu
 
 | Field | Value |
 |---|---|
-| **Test ID** | TEST-123A3-003 |
 | **Sub-sprint** | 123A.3 |
 | **Requirement** | Contract Roll Manager detects a roll from a `SymbolMappingMsg` record |
 | **Test file** | `server/market-data/__tests__/contract-roll-manager.test.ts` |
@@ -357,7 +389,6 @@ This manifest defines every test required for Sprint 123A. Each test has a uniqu
 | **Expected result** | `atlas_contract_rolls` record created; `AtlasContractRoll` event published; `mappingVersion` incremented; symbol registry updated |
 | **Blocking gate** | G3 |
 | **Current result** | NOT RUN |
-| **Evidence location** | Test report |
 
 ---
 
@@ -365,31 +396,28 @@ This manifest defines every test required for Sprint 123A. Each test has a uniqu
 
 | Field | Value |
 |---|---|
-| **Test ID** | TEST-123A3-004 |
 | **Sub-sprint** | 123A.3 |
 | **Requirement** | Consumer processing ledger prevents the same bar from being processed twice by the same consumer |
 | **Test file** | `server/market-data/__tests__/canonical-router.test.ts` |
 | **Fixture** | Same `CanonicalEventId` submitted twice to canonical router |
-| **Expected result** | Second submission is rejected; consumer ledger contains exactly one record for the event; no duplicate processing occurs |
+| **Expected result** | Second submission rejected; ledger contains exactly one record; no duplicate processing |
 | **Blocking gate** | G3 |
 | **Current result** | NOT RUN |
-| **Evidence location** | Test report |
 
 ---
 
-### TEST-123A3-005 — No-Trade Minute Produces Synthetic Bar
+### TEST-123A3-005 — No-Trade Minute Requires Confirmation Before Synthetic Bar
 
 | Field | Value |
 |---|---|
-| **Test ID** | TEST-123A3-005 |
 | **Sub-sprint** | 123A.3 |
-| **Requirement** | Bar builder generates a `SYNTHETIC_NO_TRADE_BAR` for a confirmed no-trade minute |
+| **Requirement** | A `SYNTHETIC_NO_TRADE_BAR` is only generated when the no-trade period is confirmed by either a Databento `ohlcv-1m` record showing zero volume for the interval, or by the Historical API confirming no trades in the interval. A zero-trade window alone (absence of events) is not sufficient. |
 | **Test file** | `server/market-data/__tests__/bar-builder.test.ts` |
-| **Fixture** | 60-second window with zero trade events; feed health = `LIVE`; sequence continuity verified |
-| **Expected result** | Output bar has `barType = SYNTHETIC_NO_TRADE_BAR`; OHLCV is flat (Open = High = Low = Close = previous Close; Volume = 0) |
+| **Fixture A** | 60-second window with zero trade events + `ohlcv-1m` record confirming zero volume |
+| **Fixture B** | 60-second window with zero trade events + no `ohlcv-1m` record (feed uncertainty) |
+| **Expected result** | Fixture A: `SYNTHETIC_NO_TRADE_BAR` generated; OHLCV flat; `barType = SYNTHETIC_NO_TRADE_BAR`. Fixture B: bar set to `UNRESOLVED`; no synthetic bar generated; `containsUnresolvedMinutes = true` propagated to 5-min aggregator |
 | **Blocking gate** | G3 |
 | **Current result** | NOT RUN |
-| **Evidence location** | Test report |
 
 ---
 
@@ -397,7 +425,6 @@ This manifest defines every test required for Sprint 123A. Each test has a uniqu
 
 | Field | Value |
 |---|---|
-| **Test ID** | TEST-123A3-006 |
 | **Sub-sprint** | 123A.3 |
 | **Requirement** | A 5-min bar containing an `UNRESOLVED` 1-min bar is not dispatched to production consumers |
 | **Test file** | `server/market-data/__tests__/five-min-aggregator.test.ts` |
@@ -405,7 +432,6 @@ This manifest defines every test required for Sprint 123A. Each test has a uniqu
 | **Expected result** | Aggregator sets `containsUnresolvedMinutes = true`; canonical router blocks dispatch; no `processBar()` called; no `postBarAutomation` called |
 | **Blocking gate** | G3 |
 | **Current result** | NOT RUN |
-| **Evidence location** | Test report |
 
 ---
 
@@ -413,15 +439,13 @@ This manifest defines every test required for Sprint 123A. Each test has a uniqu
 
 | Field | Value |
 |---|---|
-| **Test ID** | TEST-123A3-007 |
 | **Sub-sprint** | 123A.3 |
 | **Requirement** | Confirmed 1-min bars are persisted to `atlas_bars_1m` |
 | **Test file** | `server/market-data/__tests__/canonical-router.test.ts` |
 | **Fixture** | Test database; simulate 5 minutes of trade events |
-| **Expected result** | `atlas_bars_1m` contains 5 rows after 5 minutes; each row has correct OHLCV and `barType` |
+| **Expected result** | `atlas_bars_1m` contains 5 rows; each has correct OHLCV and `barType` |
 | **Blocking gate** | G3 |
 | **Current result** | NOT RUN |
-| **Evidence location** | Test report |
 
 ---
 
@@ -429,15 +453,13 @@ This manifest defines every test required for Sprint 123A. Each test has a uniqu
 
 | Field | Value |
 |---|---|
-| **Test ID** | TEST-123A3-008 |
 | **Sub-sprint** | 123A.3 |
 | **Requirement** | In `DATABENTO_SHADOW` mode, canonical router never calls `processBar()` |
 | **Test file** | `server/market-data/__tests__/canonical-router.test.ts` |
 | **Fixture** | Mock `processBar`; `MARKET_DATA_AUTHORITY=DATABENTO_SHADOW` |
-| **Expected result** | `processBar` mock is never called regardless of how many bars are confirmed |
+| **Expected result** | `processBar` mock never called regardless of how many bars are confirmed |
 | **Blocking gate** | G3 |
 | **Current result** | NOT RUN |
-| **Evidence location** | Test report |
 
 ---
 
@@ -445,15 +467,153 @@ This manifest defines every test required for Sprint 123A. Each test has a uniqu
 
 | Field | Value |
 |---|---|
-| **Test ID** | TEST-123A3-009 |
 | **Sub-sprint** | 123A.3 |
 | **Requirement** | In `DATABENTO_SHADOW` mode, canonical router never calls `postBarAutomation` |
 | **Test file** | `server/market-data/__tests__/canonical-router.test.ts` |
 | **Fixture** | Mock `postBarAutomation`; `MARKET_DATA_AUTHORITY=DATABENTO_SHADOW` |
-| **Expected result** | `postBarAutomation` mock is never called |
+| **Expected result** | `postBarAutomation` mock never called |
 | **Blocking gate** | G3 |
 | **Current result** | NOT RUN |
-| **Evidence location** | Test report |
+
+---
+
+### TEST-123A3-010 — Duplicate Input Records Rejected
+
+| Field | Value |
+|---|---|
+| **Sub-sprint** | 123A.3 |
+| **Requirement** | Duplicate `AtlasTradeEvent` records (same `ts_event`, `price`, `size`, `action`) are detected and rejected before entering the bar builder |
+| **Test file** | `server/market-data/__tests__/bar-builder.test.ts` |
+| **Fixture** | 10 unique trade records + 3 exact duplicates |
+| **Expected result** | Bar builder processes exactly 10 unique records; 3 duplicates rejected; deduplication counter incremented; no OHLCV contamination from duplicates |
+| **Blocking gate** | G3 |
+| **Current result** | NOT RUN |
+
+---
+
+### TEST-123A3-011 — Out-of-Order Records Handled
+
+| Field | Value |
+|---|---|
+| **Sub-sprint** | 123A.3 |
+| **Requirement** | Records arriving out of timestamp order within a 1-minute window are correctly reordered before OHLCV construction |
+| **Test file** | `server/market-data/__tests__/bar-builder.test.ts` |
+| **Fixture** | 20 trade records with shuffled `ts_event` timestamps within a single 1-minute window |
+| **Expected result** | Bar builder reorders by `ts_event`; OHLCV matches expected for the correctly ordered sequence; `outOfOrderCount` metric incremented for each reordered record |
+| **Blocking gate** | G3 |
+| **Current result** | NOT RUN |
+
+---
+
+### TEST-123A3-012 — Late Records Handled
+
+| Field | Value |
+|---|---|
+| **Sub-sprint** | 123A.3 |
+| **Requirement** | A trade record arriving after its 1-minute bar has already been confirmed is handled without corrupting the confirmed bar |
+| **Test file** | `server/market-data/__tests__/bar-builder.test.ts` |
+| **Fixture** | Confirmed 1-min bar for minute N; late trade record with `ts_event` in minute N arrives 90 seconds after minute N closed |
+| **Expected result** | Late record does not modify the confirmed bar; late record is logged with `lateArrivalMs` metric; `atlas_bars_1m` row for minute N is unchanged; reconciliation status updated if late record changes the expected OHLCV |
+| **Blocking gate** | G3 |
+| **Current result** | NOT RUN |
+
+---
+
+### TEST-123A3-013 — Historical API Backfill
+
+| Field | Value |
+|---|---|
+| **Sub-sprint** | 123A.3 |
+| **Requirement** | When a feed gap is detected, the Historical API is queried to backfill missing bars |
+| **Test file** | `server/market-data/__tests__/gap-recovery.test.ts` |
+| **Fixture** | Simulated 15-minute feed gap; mock Historical API returning bars for the gap period |
+| **Expected result** | Gap detected; Historical API queried for the gap interval; backfilled bars written to `atlas_bars_1m` with `barType = HISTORICAL_BACKFILL`; `UNRESOLVED` records updated; `containsUnresolvedMinutes` cleared for affected 5-min bars |
+| **Blocking gate** | G3 |
+| **Current result** | NOT RUN |
+
+---
+
+### TEST-123A3-014 — Reconnect After Feed Interruption
+
+| Field | Value |
+|---|---|
+| **Sub-sprint** | 123A.3 |
+| **Requirement** | After a Databento feed reconnection, bar builder resumes correctly without duplicating bars or losing the developing bar state |
+| **Test file** | `server/market-data/__tests__/bar-builder.test.ts` |
+| **Fixture** | Partial 1-minute window of trades; simulated disconnection; reconnection with continuation of the same minute |
+| **Expected result** | After reconnection, bar builder resumes from the last known state; developing bar OHLCV is correct for the full minute (pre- and post-reconnect trades); no duplicate `AtlasBarConfirmed` emitted; `reconnectCount` metric incremented |
+| **Blocking gate** | G3 |
+| **Current result** | NOT RUN |
+
+---
+
+### TEST-123A3-015 — Live Replay
+
+| Field | Value |
+|---|---|
+| **Sub-sprint** | 123A.3 |
+| **Requirement** | The bar builder correctly processes a Databento live replay session (replaying historical data at live speed) |
+| **Test file** | `server/market-data/__tests__/bar-builder.test.ts` |
+| **Fixture** | Mock Databento replay session with known OHLCV for 10 minutes |
+| **Expected result** | All 10 confirmed bars match expected OHLCV; `barSource = REPLAY` flag set on all bars; replay bars not dispatched to production consumers (shadow only) |
+| **Blocking gate** | G3 |
+| **Current result** | NOT RUN |
+
+---
+
+### TEST-123A3-016 — DST Boundary Handling
+
+| Field | Value |
+|---|---|
+| **Sub-sprint** | 123A.3 |
+| **Requirement** | Bar builder correctly handles the spring-forward and fall-back DST boundaries without producing duplicate or missing 1-minute bars |
+| **Test file** | `server/market-data/__tests__/bar-builder.test.ts` |
+| **Fixture** | Fixture trade records spanning the spring-forward DST boundary (02:00 → 03:00 ET); fixture records spanning the fall-back DST boundary (02:00 → 01:00 ET) |
+| **Expected result** | Spring-forward: no 1-min bar produced for the skipped hour; correct bar count for the session. Fall-back: no duplicate bars for the repeated hour; `ts_event` UTC timestamps used throughout; no ambiguity |
+| **Blocking gate** | G3 |
+| **Current result** | NOT RUN |
+
+---
+
+### TEST-123A3-017 — CME Maintenance Boundary Handling
+
+| Field | Value |
+|---|---|
+| **Sub-sprint** | 123A.3 |
+| **Requirement** | Bar builder correctly handles the CME Globex daily maintenance window (16:00–17:00 ET) without producing bars for the maintenance period |
+| **Test file** | `server/market-data/__tests__/bar-builder.test.ts` |
+| **Fixture** | Trade records up to 15:59:59 ET; maintenance window; trade records from 17:00:00 ET |
+| **Expected result** | No bars produced for 16:00–17:00 ET; maintenance window logged as scheduled closure; first bar after maintenance is correctly timestamped at 17:00 ET; no `UNRESOLVED` records for the maintenance window |
+| **Blocking gate** | G3 |
+| **Current result** | NOT RUN |
+
+---
+
+### TEST-123A3-018 — Contract Overlap and Resubscription
+
+| Field | Value |
+|---|---|
+| **Sub-sprint** | 123A.3 |
+| **Requirement** | During a contract roll, the bar builder correctly handles the overlap period where both old and new contracts are trading, and resubscribes to the new contract |
+| **Test file** | `server/market-data/__tests__/contract-roll-manager.test.ts` |
+| **Fixture** | Fixture trades from old contract + `SymbolMappingMsg` + fixture trades from new contract; overlap period with trades from both |
+| **Expected result** | Old contract bars closed at roll boundary; new contract subscription initiated; overlap period bars attributed to new contract; `atlas_contract_rolls` record created; no OHLCV contamination from old contract trades after roll |
+| **Blocking gate** | G3 |
+| **Current result** | NOT RUN |
+
+---
+
+### TEST-123A3-019 — Retention Enforcement
+
+| Field | Value |
+|---|---|
+| **Sub-sprint** | 123A.3 |
+| **Requirement** | `atlas_bars_1m` retains data for the configured retention period and purges older records |
+| **Test file** | `server/market-data/__tests__/retention.test.ts` |
+| **Fixture** | Test database with bars spanning 100 days; `TICK_RETENTION_DAYS=90` |
+| **Expected result** | After retention job runs, `atlas_bars_1m` contains only bars from the last 90 days; purged rows count logged; `atlas_canonical_bars` unaffected by retention job |
+| **Blocking gate** | G3 |
+| **Current result** | NOT RUN |
 
 ---
 
@@ -463,15 +623,13 @@ This manifest defines every test required for Sprint 123A. Each test has a uniqu
 
 | Field | Value |
 |---|---|
-| **Test ID** | TEST-123A4-001 |
 | **Sub-sprint** | 123A.4 |
-| **Requirement** | Parity monitor produces a daily report with all fields defined in `DATABENTO_PARITY_CERTIFICATION_SPEC.md` §12 |
+| **Requirement** | Parity monitor produces a daily report with all fields defined in `DATABENTO_PARITY_CERTIFICATION_SPEC.md` (Revision 2) §12 |
 | **Test file** | `server/market-data/__tests__/parity-monitor.test.ts` |
 | **Fixture** | Test database with 1 day of matched TradingView and Databento bars |
-| **Expected result** | Daily report contains all required fields; composite score is computed correctly per the formula in §10 of the spec |
+| **Expected result** | Daily report contains all required fields; composite score computed correctly per the formula in spec §10; availability metrics present |
 | **Blocking gate** | G5 |
 | **Current result** | NOT RUN |
-| **Evidence location** | Test report |
 
 ---
 
@@ -479,15 +637,13 @@ This manifest defines every test required for Sprint 123A. Each test has a uniqu
 
 | Field | Value |
 |---|---|
-| **Test ID** | TEST-123A4-002 |
 | **Sub-sprint** | 123A.4 |
-| **Requirement** | Parity monitor excludes contract roll boundary bars from all parity calculations |
+| **Requirement** | Parity monitor excludes contract roll boundary bars from parity calculations but counts them in the availability denominator |
 | **Test file** | `server/market-data/__tests__/parity-monitor.test.ts` |
 | **Fixture** | Test database with a simulated contract roll event |
-| **Expected result** | Roll boundary bars are excluded; exclusion reason logged as `contract_roll_boundary`; excluded count matches expected |
+| **Expected result** | Roll boundary bars excluded from parity score; exclusion reason logged; excluded count appears in availability denominator; exclusion rate does not exceed maximum |
 | **Blocking gate** | G5 |
 | **Current result** | NOT RUN |
-| **Evidence location** | Test report |
 
 ---
 
@@ -495,7 +651,6 @@ This manifest defines every test required for Sprint 123A. Each test has a uniqu
 
 | Field | Value |
 |---|---|
-| **Test ID** | TEST-123A4-003 |
 | **Sub-sprint** | 123A.4 |
 | **Requirement** | `AtlasLiveChart.tsx` renders a developing candle when `atlas_bar_developing` SSE event is received |
 | **Test file** | `client/src/components/__tests__/AtlasLiveChart.test.tsx` |
@@ -503,7 +658,6 @@ This manifest defines every test required for Sprint 123A. Each test has a uniqu
 | **Expected result** | Chart updates the open bar with new OHLCV values; no error thrown |
 | **Blocking gate** | G4 |
 | **Current result** | NOT RUN |
-| **Evidence location** | Test report |
 
 ---
 
@@ -511,7 +665,6 @@ This manifest defines every test required for Sprint 123A. Each test has a uniqu
 
 | Field | Value |
 |---|---|
-| **Test ID** | TEST-123A4-004 |
 | **Sub-sprint** | 123A.4 |
 | **Requirement** | `AtlasLiveChart.tsx` renders a confirmed candle when `atlas_bar_confirmed` SSE event is received |
 | **Test file** | `client/src/components/__tests__/AtlasLiveChart.test.tsx` |
@@ -519,7 +672,6 @@ This manifest defines every test required for Sprint 123A. Each test has a uniqu
 | **Expected result** | Chart closes the open bar and adds a new confirmed bar; no error thrown |
 | **Blocking gate** | G4 |
 | **Current result** | NOT RUN |
-| **Evidence location** | Test report |
 
 ---
 
@@ -527,15 +679,13 @@ This manifest defines every test required for Sprint 123A. Each test has a uniqu
 
 | Field | Value |
 |---|---|
-| **Test ID** | TEST-123A4-005 |
 | **Sub-sprint** | 123A.4 |
 | **Requirement** | `AtlasLiveChart.tsx` never calls any tRPC mutation or emits any WebSocket message that could be interpreted as a canonical market event |
 | **Test file** | `client/src/components/__tests__/AtlasLiveChart.test.tsx` |
 | **Fixture** | Mock tRPC client; mock WebSocket |
-| **Expected result** | No tRPC mutation is called; no WebSocket message is sent; the component is a pure consumer |
+| **Expected result** | No tRPC mutation called; no WebSocket message sent; component is a pure consumer |
 | **Blocking gate** | G4, G7 |
 | **Current result** | NOT RUN |
-| **Evidence location** | Test report |
 
 ---
 
@@ -543,15 +693,83 @@ This manifest defines every test required for Sprint 123A. Each test has a uniqu
 
 | Field | Value |
 |---|---|
-| **Test ID** | TEST-123A4-006 |
 | **Sub-sprint** | 123A.4 |
-| **Requirement** | `AtlasLiveChart.tsx` feed health badge correctly reflects the six feed health states |
+| **Requirement** | `AtlasLiveChart.tsx` feed health badge correctly reflects all six feed health states |
 | **Test file** | `client/src/components/__tests__/AtlasLiveChart.test.tsx` |
 | **Fixture** | Mock SSE stream emitting `atlas_feed_health` events for each of the six states |
-| **Expected result** | Badge label and colour change correctly for each state: `LIVE`, `DEGRADED`, `RECONNECTING`, `STALE`, `OFFLINE`, `UNKNOWN` |
+| **Expected result** | Badge label and colour change correctly for `LIVE`, `DEGRADED`, `RECONNECTING`, `STALE`, `OFFLINE`, `UNKNOWN` |
 | **Blocking gate** | G4 |
 | **Current result** | NOT RUN |
-| **Evidence location** | Test report |
+
+---
+
+### TEST-123A4-007 — Feed Health Transitions
+
+| Field | Value |
+|---|---|
+| **Sub-sprint** | 123A.4 |
+| **Requirement** | Feed health service correctly transitions through all valid state transitions and rejects invalid ones |
+| **Test file** | `server/market-data/__tests__/feed-health.test.ts` |
+| **Fixture** | Simulate: LIVE → STALE (no heartbeat for 90s); STALE → OFFLINE (no heartbeat for 300s); OFFLINE → RECONNECTING (reconnect attempt); RECONNECTING → LIVE (reconnect success); LIVE → DEGRADED (high discrepancy rate) |
+| **Expected result** | Each transition fires `atlas_feed_health` SSE event with correct `status`; invalid transitions (e.g., OFFLINE → LIVE without RECONNECTING) are rejected; state machine log matches expected transition sequence |
+| **Blocking gate** | G4 |
+| **Current result** | NOT RUN |
+
+---
+
+### TEST-123A4-008 — SSE Reconnect and State Rehydration
+
+| Field | Value |
+|---|---|
+| **Sub-sprint** | 123A.4 |
+| **Requirement** | When a browser SSE connection reconnects after a disconnection, `AtlasLiveChart.tsx` correctly rehydrates its state from the last known bar |
+| **Test file** | `client/src/components/__tests__/AtlasLiveChart.test.tsx` |
+| **Fixture** | Mock SSE stream; simulate disconnection after 10 bars; reconnect; continue with bars 11–20 |
+| **Expected result** | Chart calls `nexus.getRecentBars` on reconnect to seed historical bars; chart correctly displays bars 1–20 without gaps or duplicates; no stale developing bar from before disconnection |
+| **Blocking gate** | G4 |
+| **Current result** | NOT RUN |
+
+---
+
+### TEST-123A4-009 — Chart Marker Lifecycle
+
+| Field | Value |
+|---|---|
+| **Sub-sprint** | 123A.4 |
+| **Requirement** | Trade markers (entry, exit, stop) are added to the chart when `atlas_chart_annotations` events are received and removed when cancelled |
+| **Test file** | `client/src/components/__tests__/AtlasLiveChart.test.tsx` |
+| **Fixture** | Mock SSE stream emitting `atlas_chart_annotation_add` and `atlas_chart_annotation_remove` events |
+| **Expected result** | Marker appears on chart after `add` event; marker removed after `remove` event; no orphaned markers after sequence; marker count matches expected |
+| **Blocking gate** | G4 |
+| **Current result** | NOT RUN |
+
+---
+
+### TEST-123A4-010 — Broker Fill Reconciliation
+
+| Field | Value |
+|---|---|
+| **Sub-sprint** | 123A.4 |
+| **Requirement** | When a broker fill is received, the fill price is compared against the Databento bar OHLCV for the same interval; disagreements are logged |
+| **Test file** | `server/market-data/__tests__/parity-monitor.test.ts` |
+| **Fixture** | Fixture broker fill at price X; Databento bar for the same interval with High < X |
+| **Expected result** | Reconciliation record created in `atlas_parity_records` with `type = BROKER_FILL_DISAGREEMENT`; disagreement details include fill price, bar OHLCV, and delta; alert emitted |
+| **Blocking gate** | G5 |
+| **Current result** | NOT RUN |
+
+---
+
+### TEST-123A4-011 — Authority Rollback: CHART_AUTHORITY to TRADINGVIEW_ONLY
+
+| Field | Value |
+|---|---|
+| **Sub-sprint** | 123A.4 |
+| **Requirement** | Setting `MARKET_DATA_AUTHORITY=TRADINGVIEW_ONLY` from `DATABENTO_CHART_AUTHORITY` correctly restores TradingView as the chart data source |
+| **Test file** | `server/market-data/__tests__/canonical-router.test.ts` |
+| **Fixture** | `MARKET_DATA_AUTHORITY=DATABENTO_CHART_AUTHORITY`; simulate rollback to `TRADINGVIEW_ONLY` |
+| **Expected result** | After rollback: TradingView bars populate `atlas_canonical_bars`; Databento bars still written to `atlas_bars_5m` (shadow); `atlas_bar_confirmed` SSE events sourced from TradingView; all new tables preserved |
+| **Blocking gate** | G5 |
+| **Current result** | NOT RUN |
 
 ---
 
@@ -561,7 +779,6 @@ This manifest defines every test required for Sprint 123A. Each test has a uniqu
 
 | Field | Value |
 |---|---|
-| **Test ID** | TEST-123A5-001 |
 | **Sub-sprint** | 123A.5 |
 | **Requirement** | In `DATABENTO_LEARNING_AUTHORITY` mode, `postBarAutomation` is triggered by Databento canonical bar, not TradingView bar |
 | **Test file** | `server/automation/__tests__/postBarAutomation.test.ts` |
@@ -569,15 +786,13 @@ This manifest defines every test required for Sprint 123A. Each test has a uniqu
 | **Expected result** | `postBarAutomation` called once from Databento canonical bar; not called from TradingView bar |
 | **Blocking gate** | G6 |
 | **Current result** | NOT RUN |
-| **Evidence location** | Test report |
 
 ---
 
-### TEST-123A5-002 — Behaviour Engine Receives Databento Bar in Learning Authority
+### TEST-123A5-002 — Behaviour Engine Receives Databento Bar
 
 | Field | Value |
 |---|---|
-| **Test ID** | TEST-123A5-002 |
 | **Sub-sprint** | 123A.5 |
 | **Requirement** | In `DATABENTO_LEARNING_AUTHORITY` mode, Behaviour Engine receives canonical Databento bars |
 | **Test file** | `server/automation/__tests__/postBarAutomation.test.ts` |
@@ -585,15 +800,13 @@ This manifest defines every test required for Sprint 123A. Each test has a uniqu
 | **Expected result** | Behaviour Engine `processBar` called with Databento canonical bar |
 | **Blocking gate** | G6 |
 | **Current result** | NOT RUN |
-| **Evidence location** | Test report |
 
 ---
 
-### TEST-123A5-003 — liveLearnEngine Triggered by Databento in Learning Authority
+### TEST-123A5-003 — liveLearnEngine Triggered by Databento
 
 | Field | Value |
 |---|---|
-| **Test ID** | TEST-123A5-003 |
 | **Sub-sprint** | 123A.5 |
 | **Requirement** | In `DATABENTO_LEARNING_AUTHORITY` mode, `liveLearnEngine` is triggered by Databento canonical bar |
 | **Test file** | `server/automation/__tests__/postBarAutomation.test.ts` |
@@ -601,15 +814,13 @@ This manifest defines every test required for Sprint 123A. Each test has a uniqu
 | **Expected result** | `liveLearnEngine` called with Databento canonical bar; not called from TradingView bar |
 | **Blocking gate** | G6 |
 | **Current result** | NOT RUN |
-| **Evidence location** | Test report |
 
 ---
 
-### TEST-123A5-004 — DARWIN Triggered by Databento in Learning Authority
+### TEST-123A5-004 — DARWIN Triggered by Databento
 
 | Field | Value |
 |---|---|
-| **Test ID** | TEST-123A5-004 |
 | **Sub-sprint** | 123A.5 |
 | **Requirement** | In `DATABENTO_LEARNING_AUTHORITY` mode, `onNewBarObservation()` is triggered by Databento canonical bar |
 | **Test file** | `server/automation/__tests__/postBarAutomation.test.ts` |
@@ -617,36 +828,62 @@ This manifest defines every test required for Sprint 123A. Each test has a uniqu
 | **Expected result** | `onNewBarObservation` called with Databento canonical bar; not called from TradingView bar |
 | **Blocking gate** | G6 |
 | **Current result** | NOT RUN |
-| **Evidence location** | Test report |
 
 ---
 
-### TEST-123A5-005 — Zero Duplicate Processing in Learning Authority
+### TEST-123A5-005 — Zero Duplicate Processing
 
 | Field | Value |
 |---|---|
-| **Test ID** | TEST-123A5-005 |
 | **Sub-sprint** | 123A.5 |
 | **Requirement** | In `DATABENTO_LEARNING_AUTHORITY` mode, each bar is processed exactly once by each consumer |
 | **Test file** | `server/automation/__tests__/postBarAutomation.test.ts` |
-| **Fixture** | Simulate 100 consecutive bars; mock all consumers; `MARKET_DATA_AUTHORITY=DATABENTO_LEARNING_AUTHORITY` |
-| **Expected result** | Each consumer mock called exactly 100 times; consumer processing ledger contains exactly 100 records per consumer; no duplicate `CanonicalEventId` in ledger |
+| **Fixture** | 100 consecutive bars; mock all consumers; `MARKET_DATA_AUTHORITY=DATABENTO_LEARNING_AUTHORITY` |
+| **Expected result** | Each consumer mock called exactly 100 times; consumer ledger contains exactly 100 records per consumer; no duplicate `CanonicalEventId` |
 | **Blocking gate** | G6 |
 | **Current result** | NOT RUN |
-| **Evidence location** | Test report |
+
+---
+
+### TEST-123A5-006 — Authority Rollback: LEARNING_AUTHORITY to TRADINGVIEW_ONLY
+
+| Field | Value |
+|---|---|
+| **Sub-sprint** | 123A.5 |
+| **Requirement** | Setting `MARKET_DATA_AUTHORITY=TRADINGVIEW_ONLY` from `DATABENTO_LEARNING_AUTHORITY` correctly restores TradingView as the learning trigger |
+| **Test file** | `server/automation/__tests__/postBarAutomation.test.ts` |
+| **Fixture** | `MARKET_DATA_AUTHORITY=DATABENTO_LEARNING_AUTHORITY`; simulate rollback to `TRADINGVIEW_ONLY` |
+| **Expected result** | After rollback: `postBarAutomation` triggered by TradingView bar; `onNewBarObservation` called from TradingView bar; Databento bars still written to `atlas_bars_5m` (shadow); all tables preserved |
+| **Blocking gate** | G6 |
+| **Current result** | NOT RUN |
+
+---
+
+### TEST-123A5-007 — Authority Rollback: SHADOW to TRADINGVIEW_ONLY
+
+| Field | Value |
+|---|---|
+| **Sub-sprint** | 123A.5 |
+| **Requirement** | Setting `MARKET_DATA_AUTHORITY=TRADINGVIEW_ONLY` from `DATABENTO_SHADOW` correctly disables Databento shadow processing |
+| **Test file** | `server/market-data/__tests__/canonical-router.test.ts` |
+| **Fixture** | `MARKET_DATA_AUTHORITY=DATABENTO_SHADOW`; simulate rollback to `TRADINGVIEW_ONLY` |
+| **Expected result** | After rollback: Python service and bridge stopped; Databento bars no longer written to `atlas_bars_5m`; TradingView bars populate `atlas_canonical_bars`; all existing `atlas_bars_5m` rows preserved |
+| **Blocking gate** | G6 |
+| **Current result** | NOT RUN |
 
 ---
 
 ## Test Summary
 
-| Sub-sprint | Total Tests | Blocking Tests | Non-Blocking Tests |
+| Sub-sprint | Tests | Blocking | Notes |
 |---|---|---|---|
-| 123A.1 | 8 | 8 | 0 |
-| 123A.2 | 8 (6 unit + 2 opt-in integration) | 8 | 0 |
-| 123A.3 | 9 | 9 | 0 |
-| 123A.4 | 6 | 6 | 0 |
-| 123A.5 | 5 | 5 | 0 |
-| **Total** | **36** | **36** | **0** |
+| 123A.1 | 8 | 8 | — |
+| Pre-123A.2 | 1 | 1 | TEST-INT-001: opt-in, live Databento required |
+| 123A.2 | 10 | 10 | TEST-INT-002: opt-in, live Databento required |
+| 123A.3 | 19 | 19 | TEST-123A3-001 split into A/B/C/D |
+| 123A.4 | 11 | 11 | — |
+| 123A.5 | 7 | 7 | — |
+| **Total** | **56** | **56** | 2 opt-in integration tests included in total |
 
 **Opt-in integration tests (require `DATABENTO_INTEGRATION_TESTS=true`):** TEST-INT-001, TEST-INT-002  
-**All other tests:** Fixture-based, no live Databento connection required
+**All other tests:** Fixture-based; no live Databento connection required

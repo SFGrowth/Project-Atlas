@@ -233,3 +233,262 @@ Each risk is scored on two independent dimensions, each rated 1–5. The composi
 | Risk ID | Description | Closed Date | Resolution |
 |---|---|---|---|
 | — | No risks closed yet | — | — |
+
+---
+
+# Revision 2 Additions — Correction 9 (Applied 2026-07-18)
+
+The following 12 risks were added in response to Phil's Gate G0 Revision 2 review.
+
+---
+
+### R-011 — API Entitlement or Quota Exhaustion
+
+**Description:** The Databento account's entitlement for `GLBX.MDP3` trades data is insufficient, or the monthly data quota is exhausted mid-session.
+
+| Dimension | Value | Rationale |
+|---|---|---|
+| Likelihood (L) | 2 | Unlikely if account tier is confirmed in TEST-INT-001 |
+| Impact (I) | 4 | Feed terminates mid-session; atlas_feed_health transitions to OFFLINE; bars become UNRESOLVED |
+| **Composite (C)** | **8** | |
+| **Category** | **MEDIUM** | |
+
+**Mitigation:** Entitlement confirmed in TEST-INT-001. Quota monitoring added to feed health service. `atlas_feed_health` transitions to `OFFLINE` on quota exhaustion. Alert emitted.
+
+**Residual L:** 1 | **Residual C:** 4 | **Residual Category:** LOW  
+**Owner:** Sprint 123A.2 | **Status:** OPEN
+
+---
+
+### R-012 — Licensing or Retention Breach
+
+**Description:** Raw tick data stored in `atlas_ticks` or `atlas_bars_1m` exceeds the retention period permitted under the Databento data licence.
+
+| Dimension | Value | Rationale |
+|---|---|---|
+| Likelihood (L) | 2 | Possible if retention enforcement job fails silently |
+| Impact (I) | 5 | Compliance breach; potential licence termination; financial and reputational risk |
+| **Composite (C)** | **10** | |
+| **Category** | **HIGH** | |
+
+**Mitigation:** TEST-123A3-019 is blocking for Gate G3. Retention enforcement job runs daily. `TICK_RETENTION_DAYS` configurable. Retention policy documented in `DATABENTO_NO_TRADE_AND_GAP_POLICY.md`.
+
+**Residual L:** 1 | **Residual C:** 5 | **Residual Category:** MEDIUM  
+**Owner:** Sprint 123A.3 | **Status:** OPEN
+
+---
+
+### R-013 — Raw Tick Storage Growth
+
+**Description:** `atlas_ticks` grows unboundedly, consuming excessive database storage and degrading query performance.
+
+| Dimension | Value | Rationale |
+|---|---|---|
+| Likelihood (L) | 4 | Likely without retention enforcement — MNQ generates thousands of ticks per session |
+| Impact (I) | 2 | Storage cost increase; query degradation; no production data loss |
+| **Composite (C)** | **8** | |
+| **Category** | **MEDIUM** | |
+
+**Mitigation:** Retention enforcement job (TEST-123A3-019). Storage monitoring added to feed health service. `TICK_RETENTION_DAYS` defaults to 7 days.
+
+**Residual L:** 1 | **Residual C:** 2 | **Residual Category:** LOW  
+**Owner:** Sprint 123A.3 | **Status:** OPEN
+
+---
+
+### R-014 — Clock or Timestamp Error
+
+**Description:** The server clock drifts or is misconfigured, causing `barOpenTs` comparisons to fail systematically and parity certification to be impossible.
+
+| Dimension | Value | Rationale |
+|---|---|---|
+| Likelihood (L) | 2 | Unlikely on Manus infrastructure; NTP is standard |
+| Impact (I) | 4 | Systematic timestamp disagreements block Gate G4 |
+| **Composite (C)** | **8** | |
+| **Category** | **MEDIUM** | |
+
+**Mitigation:** NTP synchronisation required. Timestamp agreement metric in parity spec detects systematic offsets. Anomaly flag for disagreements > 5 seconds.
+
+**Residual L:** 1 | **Residual C:** 4 | **Residual Category:** LOW  
+**Owner:** Sprint 123A.2 | **Status:** OPEN
+
+---
+
+### R-015 — Historical API Failure
+
+**Description:** The Databento Historical API is unavailable when a gap recovery is attempted, leaving `UNRESOLVED` bars that block 5-minute bar dispatch.
+
+| Dimension | Value | Rationale |
+|---|---|---|
+| Likelihood (L) | 2 | Unlikely — Databento Historical API has high availability |
+| Impact (I) | 3 | UNRESOLVED bars block dispatch; strategies miss bars; parity window may need to restart |
+| **Composite (C)** | **6** | |
+| **Category** | **MEDIUM** | |
+
+**Mitigation:** TEST-123A3-013 covers gap recovery. `UNRESOLVED` bars block dispatch (not silently aggregated). Historical API failure is logged and escalated. Gap recovery retried with exponential backoff.
+
+**Residual L:** 1 | **Residual C:** 3 | **Residual Category:** LOW  
+**Owner:** Sprint 123A.3 | **Status:** OPEN
+
+---
+
+### R-016 — Python Restart Loop
+
+**Description:** The Python feed service enters a restart loop due to a normalisation error on a specific record type, causing repeated disconnections.
+
+| Dimension | Value | Rationale |
+|---|---|---|
+| Likelihood (L) | 2 | Possible if an unexpected Databento record type is received |
+| Impact (I) | 3 | Feed degraded; bars become UNRESOLVED; parity window may restart |
+| **Composite (C)** | **6** | |
+| **Category** | **MEDIUM** | |
+
+**Mitigation:** TEST-123A2-010 covers Python process failure. Exponential backoff on reconnection. Circuit breaker after 5 consecutive failures. `atlas_feed_health` transitions to `OFFLINE` after circuit break. Unknown record types are logged and skipped, not fatal.
+
+**Residual L:** 1 | **Residual C:** 3 | **Residual Category:** LOW  
+**Owner:** Sprint 123A.2 | **Status:** OPEN
+
+---
+
+### R-017 — Bridge Queue Overflow
+
+**Description:** The bridge WebSocket queue overflows during a high-volume period, causing records to be dropped silently.
+
+| Dimension | Value | Rationale |
+|---|---|---|
+| Likelihood (L) | 2 | Possible during economic data releases (e.g., NFP, FOMC) |
+| Impact (I) | 3 | Dropped records cause incorrect bar OHLCV; parity failures |
+| **Composite (C)** | **6** | |
+| **Category** | **MEDIUM** | |
+
+**Mitigation:** TEST-123A2-009 covers backpressure (blocking for Gate G2). Bridge applies flow control to Python service. Queue depth metric on health endpoint. No silent drops — backpressure is applied before overflow.
+
+**Residual L:** 1 | **Residual C:** 3 | **Residual Category:** LOW  
+**Owner:** Sprint 123A.2 | **Status:** OPEN
+
+---
+
+### R-018 — Synthetic Bar Feature Contamination
+
+**Description:** A synthetic no-trade bar's flat OHLCV values contaminate EMA, ATR, or RSI computations for subsequent bars.
+
+| Dimension | Value | Rationale |
+|---|---|---|
+| Likelihood (L) | 2 | Possible during low-liquidity periods (overnight, pre-market) |
+| Impact (I) | 3 | Incorrect feature values; parity failures; potential strategy signal contamination |
+| **Composite (C)** | **6** | |
+| **Category** | **MEDIUM** | |
+
+**Mitigation:** Parity spec Section 9 defines synthetic bar feature contamination exclusion rules. Feature values for bars immediately following synthetic bars are excluded from feature agreement calculation.
+
+**Residual L:** 1 | **Residual C:** 3 | **Residual Category:** LOW  
+**Owner:** Sprint 123A.3 | **Status:** OPEN
+
+---
+
+### R-019 — Chart/Broker Fill Disagreement
+
+**Description:** A broker fill price falls outside the Databento bar OHLCV for the same interval, indicating a data quality issue or anomalous execution.
+
+| Dimension | Value | Rationale |
+|---|---|---|
+| Likelihood (L) | 2 | Possible — slippage or latency may cause fills outside the bar range |
+| Impact (I) | 3 | Indicates potential data quality issue; requires investigation |
+| **Composite (C)** | **6** | |
+| **Category** | **MEDIUM** | |
+
+**Mitigation:** TEST-123A4-010 covers broker fill reconciliation. Disagreements logged in `atlas_parity_records` with `type = BROKER_FILL_DISAGREEMENT`. Alert emitted for investigation.
+
+**Residual L:** 1 | **Residual C:** 3 | **Residual Category:** LOW  
+**Owner:** Sprint 123A.4 | **Status:** OPEN
+
+---
+
+### R-020 — Stale Contract Mapping
+
+**Description:** The Contract Roll Manager's symbol mapping becomes stale after a reconnection, causing bars to be attributed to the wrong contract.
+
+| Dimension | Value | Rationale |
+|---|---|---|
+| Likelihood (L) | 2 | Possible if reconnection occurs during a roll event |
+| Impact (I) | 4 | Bars attributed to wrong contract; incorrect OHLCV; parity failures |
+| **Composite (C)** | **8** | |
+| **Category** | **MEDIUM** | |
+
+**Mitigation:** TEST-123A3-018 covers contract overlap and resubscription. `mappingVersion` incremented on every roll. Stale mapping detected by comparing `instrument_id` against the current mapping. On reconnection, mapping is re-fetched from Databento metadata API.
+
+**Residual L:** 1 | **Residual C:** 4 | **Residual Category:** LOW  
+**Owner:** Sprint 123A.3 | **Status:** OPEN
+
+---
+
+### R-021 — Ledger or Database Outage
+
+**Description:** The consumer processing ledger or database is unavailable, preventing idempotency checks and potentially causing duplicate processing.
+
+| Dimension | Value | Rationale |
+|---|---|---|
+| Likelihood (L) | 2 | Unlikely — Manus database infrastructure is highly available |
+| Impact (I) | 4 | Without ledger, duplicate processing is possible; DARWIN research contaminated |
+| **Composite (C)** | **8** | |
+| **Category** | **MEDIUM** | |
+
+**Mitigation:** Consumer ledger write failures cause the bar to be held in memory and retried. If the database is unavailable for > 30 seconds, `postBarAutomation` is suspended and `atlas_feed_health` transitions to `DEGRADED`. TradingView path continues unaffected.
+
+**Residual L:** 1 | **Residual C:** 4 | **Residual Category:** LOW  
+**Owner:** Sprint 123A.3 | **Status:** OPEN
+
+---
+
+### R-022 — Excessive Parity Exclusions
+
+**Description:** The exclusion rate exceeds 2.0%, inflating the parity composite score by removing problematic intervals from the denominator.
+
+| Dimension | Value | Rationale |
+|---|---|---|
+| Likelihood (L) | 2 | Possible if feed is unstable during the evaluation window |
+| Impact (I) | 3 | Gate G4 fails; parity certification is impossible without a stable feed period |
+| **Composite (C)** | **6** | |
+| **Category** | **MEDIUM** | |
+
+**Mitigation:** Parity spec Section 7 defines the maximum exclusion rate as a blocking availability gate (≤ 2.0%). Exclusion rate > 2.0% blocks Gate G4 regardless of composite score. Exclusion rate is reported daily.
+
+**Residual L:** 1 | **Residual C:** 3 | **Residual Category:** LOW  
+**Owner:** Sprint 123A.4 | **Status:** OPEN
+
+---
+
+## Updated Risk Summary (Revision 2)
+
+| ID | Risk | L | I | C | Category |
+|---|---|---|---|---|---|
+| R-001 | Databento API key exposure | 3 | 5 | **15** | CRITICAL |
+| R-002 | Production processBar() from Databento path | 3 | 5 | **15** | CRITICAL |
+| R-003 | Databento symbol resolution failure | 3 | 4 | **12** | HIGH |
+| R-004 | Duplicate postBarAutomation trigger | 3 | 4 | **12** | HIGH |
+| R-005 | Duplicate onNewBarObservation() calls | 3 | 4 | **12** | HIGH |
+| R-012 | Licensing/retention breach | 2 | 5 | **10** | HIGH |
+| R-006 | Unresolved minute silently aggregated | 2 | 4 | **8** | MEDIUM |
+| R-007 | Contract roll missed or delayed | 2 | 4 | **8** | MEDIUM |
+| R-008 | Bridge port exposed externally | 2 | 4 | **8** | MEDIUM |
+| R-011 | API entitlement/quota exhaustion | 2 | 4 | **8** | MEDIUM |
+| R-013 | Raw tick storage growth | 4 | 2 | **8** | MEDIUM |
+| R-014 | Clock/timestamp error | 2 | 4 | **8** | MEDIUM |
+| R-020 | Stale contract mapping | 2 | 4 | **8** | MEDIUM |
+| R-021 | Ledger/database outage | 2 | 4 | **8** | MEDIUM |
+| R-009 | AtlasLiveChart publishing to event bus | 2 | 3 | **6** | MEDIUM |
+| R-010 | Parity threshold not met | 3 | 2 | **6** | MEDIUM |
+| R-015 | Historical API failure | 2 | 3 | **6** | MEDIUM |
+| R-016 | Python restart loop | 2 | 3 | **6** | MEDIUM |
+| R-017 | Bridge queue overflow | 2 | 3 | **6** | MEDIUM |
+| R-018 | Synthetic bar feature contamination | 2 | 3 | **6** | MEDIUM |
+| R-019 | Chart/broker fill disagreement | 2 | 3 | **6** | MEDIUM |
+| R-022 | Excessive parity exclusions | 2 | 3 | **6** | MEDIUM |
+
+**Total risks:** 22  
+**CRITICAL:** 2 (R-001, R-002)  
+**HIGH:** 4 (R-003, R-004, R-005, R-012)  
+**MEDIUM:** 16 (R-006 through R-022 excluding CRITICAL and HIGH)  
+**LOW:** 0
+
+All categories derived mechanically from L × I composite score. No category assigned by judgment.
