@@ -170,13 +170,15 @@ All 21 Sprint 123A architecture documents. Revisions reflect the current state.
 
 **Baseline commit:** `0906a80` — "Sprint 123: Live candlestick chart — full implementation" (the last non-docs commit before Sprint 123A documentation began).
 
-**Final SHA:** `43995df` — "Sprint 123A docs: Gate G0 Round 7 corrections" (this correction round's content commit). The approval submission commit that follows will be the true pushed HEAD; the diff proof below uses `43995df` as the final content SHA.
+**Architecture content SHA:** `43995df` — "Sprint 123A docs: Gate G0 Round 7 corrections — event contracts versioning, unresolved bar tests, parity test reference"
+
+**Approval submission SHA:** `d732078` — "Sprint 123A docs: Gate G0 approval submission Revision 7 — clean audit trail, Round 7 corrections"
 
 ### Definitive Git Audit Trail
 
-`git rev-list --count 0906a80..43995df` = **18**
+`git rev-list --count 0906a80..d732078` = **19**
 
-All 18 Sprint 123A commits:
+All 19 Sprint 123A commits:
 
 | # | Commit SHA | Date | Files changed | Changed file paths | Non-docs files changed |
 |---|---|---|---|---|---|
@@ -198,6 +200,7 @@ All 18 Sprint 123A commits:
 | 16 | `ae49ddd` | 2026-07-18 | 1 | `docs/architecture/SPRINT_123A_GATE_G0_FINAL_APPROVAL_SUBMISSION.md` | **0** |
 | 17 | `252f8ed` | 2026-07-18 | 1 | `docs/architecture/SPRINT_123A_GATE_G0_FINAL_APPROVAL_SUBMISSION.md` | **0** |
 | 18 | `43995df` | 2026-07-18 | 2 | `docs/architecture/ATLAS_CANONICAL_MARKET_EVENT_CONTRACTS.md`, `docs/architecture/SPRINT_123A_TEST_MANIFEST.md` | **0** |
+| 19 | `d732078` | 2026-07-18 | 1 | `docs/architecture/SPRINT_123A_GATE_G0_FINAL_APPROVAL_SUBMISSION.md` | **0** |
 
 **Cumulative production code changes since Sprint 123A documentation began: ZERO.**
 
@@ -205,7 +208,7 @@ The Sprint 123 implementation (LiveChart.tsx, getRecentBars, SSE events, behavio
 
 ### Baseline-to-Head Diff Proof
 
-`git diff --name-status 0906a80..43995df` output (24 paths, all under `docs/`):
+`git diff --name-status 0906a80..d732078` output (24 paths, all under `docs/`):
 
 ```
 A	docs/architecture/ATLAS_CANONICAL_MARKET_EVENT_CONTRACTS.md
@@ -234,9 +237,20 @@ A	docs/architecture/SPRINT_123A_RISK_REGISTER.md
 A	docs/architecture/SPRINT_123A_TEST_MANIFEST.md
 ```
 
-`git diff --name-only 0906a80..43995df | grep -v "^docs/" | wc -l` = **0**
+`git diff --name-only 0906a80..d732078 | grep -v "^docs/" | wc -l` = **0**
 
-Every path changed between the Sprint 123A baseline and the final content SHA is under `docs/`. Zero non-docs files were touched.
+Every path changed between the Sprint 123A baseline and the approval submission SHA is under `docs/`. Zero non-docs files were touched.
+
+### Evidence Lock Confirmations
+
+| Confirmation | Result |
+|---|---|
+| Zero non-docs files changed (`0906a80..d732078`) | **0** |
+| No migration executed (`server/db/migrations/` unchanged) | **Confirmed** |
+| No Databento connection made (no `marketData.start()`, no `live.databento.com`) | **Confirmed** |
+| No authority mode changed (`DATABENTO_DECISION_AUTHORITY` not activated) | **Confirmed** |
+| Event Contracts Revision 6 committed at `43995df` | **Confirmed** |
+| Test Manifest Revision 6 — `grep -c "^### TEST-"` = **76** | **76** |
 
 ---
 
