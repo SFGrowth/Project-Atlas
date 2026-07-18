@@ -1,9 +1,10 @@
-# Sprint 123A Test Manifest (Revision 5)
+# Sprint 123A Test Manifest (Revision 6)
 **Document type:** Architecture Reference  
 **Sprint:** 123A  
-**Revision:** 5  
+**Revision:** 6  
 **Status:** PENDING APPROVAL  
-**Date:** 2026-07-18 (Revision 5: Corrections 2 and 3 applied — 8 new timestamp conversion and bridge serialisation tests added (TEST-123A2-011 through 018); test count updated to 75)  
+**Date:** 2026-07-18 (Revision 6: TEST-123A5-002 corrected — expected result now references Behaviour Engine learning handler via `postBarAutomation`, not `processBar`; TEST-123A5-008 added — blocking processBar isolation test under all Databento authority levels; test count updated to 76)  
+**Previous revision:** Revision 5 (2026-07-18): Corrections 2 and 3 applied — 8 new timestamp conversion and bridge serialisation tests added (TEST-123A2-011 through 018); test count updated to 75  
 **Parent document:** `SPRINT_123A_AMENDED_IMPLEMENTATION_PLAN.md`  
 **Parity spec reference:** `DATABENTO_PARITY_CERTIFICATION_SPEC.md` (Revision 5)
 
@@ -19,7 +20,7 @@ This manifest defines every test required for Sprint 123A. Each test has a uniqu
 
 **Current result:** All tests are `NOT RUN` until the sub-sprint is implemented.
 
-**Total test count:** 75 tests (73 unit/integration + 2 opt-in live integration tests). The 2 opt-in tests (`TEST-INT-001`, `TEST-INT-002`) are included in the total of 75. They require `DATABENTO_INTEGRATION_TESTS=true` and a live Databento API key. Breakdown: 123A.1: 14, 123A.2: 18, 123A.3: 23, 123A.4: 11, 123A.5: 7, INT: 2. This count is machine-verified by `grep -c "^### TEST-"`.
+**Total test count:** 76 tests (74 unit/integration + 2 opt-in live integration tests). The 2 opt-in tests (`TEST-INT-001`, `TEST-INT-002`) are included in the total of 76. They require `DATABENTO_INTEGRATION_TESTS=true` and a live Databento API key. Breakdown: 123A.1: 14, 123A.2: 18, 123A.3: 23, 123A.4: 11, 123A.5: 8, INT: 2. This count is machine-verified by `grep -c "^### TEST-"`. (Revision 6: TEST-123A5-002 corrected — expected result now references learning handler via `postBarAutomation`, not `processBar`; TEST-123A5-008 added — blocking processBar isolation test under all Databento authority levels.)
 
 ---
 
@@ -1000,15 +1001,15 @@ This manifest defines every test required for Sprint 123A. Each test has a uniqu
 
 ---
 
-### TEST-123A5-002 — Behaviour Engine Receives Databento Bar
+### TEST-123A5-002 — Behaviour Engine Receives Databento Bar via postBarAutomation
 
 | Field | Value |
-|---|---|
+|---|
 | **Sub-sprint** | 123A.5 |
-| **Requirement** | In `DATABENTO_LEARNING_AUTHORITY` mode, Behaviour Engine receives canonical Databento bars |
+| **Requirement** | In `DATABENTO_LEARNING_AUTHORITY` mode, Behaviour Engine canonical learning handler is invoked by `postBarAutomation` with the Databento canonical bar |
 | **Test file** | `server/automation/__tests__/postBarAutomation.test.ts` |
-| **Fixture** | Mock Behaviour Engine; mock Databento canonical bar; `MARKET_DATA_AUTHORITY=DATABENTO_LEARNING_AUTHORITY` |
-| **Expected result** | Behaviour Engine `processBar` called with Databento canonical bar |
+| **Fixture** | Mock Behaviour Engine learning handler; mock Databento canonical bar; `MARKET_DATA_AUTHORITY=DATABENTO_LEARNING_AUTHORITY` |
+| **Expected result** | Behaviour Engine learning handler called with Databento canonical bar via `postBarAutomation`; the TradingView-owned `processBar` is **not** called by Databento under any authority level |
 | **Blocking gate** | G6 |
 | **Current result** | NOT RUN |
 
@@ -1073,7 +1074,7 @@ This manifest defines every test required for Sprint 123A. Each test has a uniqu
 ### TEST-123A5-007 — Authority Rollback: SHADOW to TRADINGVIEW_ONLY
 
 | Field | Value |
-|---|---|
+|---|
 | **Sub-sprint** | 123A.5 |
 | **Requirement** | Setting `MARKET_DATA_AUTHORITY=TRADINGVIEW_ONLY` from `DATABENTO_SHADOW` correctly disables Databento shadow processing |
 | **Test file** | `server/market-data/__tests__/canonical-router.test.ts` |
@@ -1084,9 +1085,23 @@ This manifest defines every test required for Sprint 123A. Each test has a uniqu
 
 ---
 
+### TEST-123A5-008 — processBar Isolation: Databento Never Triggers processBar Under Any Authority Level
+
+| Field | Value |
+|---|
+| **Sub-sprint** | 123A.5 |
+| **Requirement** | Under `DATABENTO_LEARNING_AUTHORITY`, `DATABENTO_CHART_AUTHORITY`, and `DATABENTO_SHADOW`, no Databento-sourced event ever triggers `processBar`, ADE, strategy evaluation, or execution |
+| **Test file** | `server/automation/__tests__/postBarAutomation.test.ts` |
+| **Fixture** | Mock `processBar`, ADE handler, strategy evaluator, and execution handler; simulate Databento canonical bar events under each of the three authority levels |
+| **Expected result** | `processBar` mock never called from any Databento path under any authority level; ADE, strategy, and execution mocks never called from any Databento path; TradingView `processBar` continues to fire normally in all three modes |
+| **Blocking gate** | G6A |
+| **Current result** | NOT RUN |
+
+---
+
 ## Test Summary
 
-> **Machine-verified count:** `grep -c "^### TEST-"` = **75** unique test IDs. This is the sole authoritative total. The 2 opt-in integration tests (`TEST-INT-001`, `TEST-INT-002`) are included in the total of 75 and are **not** included in any sub-sprint count below.
+> **Machine-verified count:** `grep -c "^### TEST-"` = **76** unique test IDs. This is the sole authoritative total. The 2 opt-in integration tests (`TEST-INT-001`, `TEST-INT-002`) are included in the total of 76 and are **not** included in any sub-sprint count below.
 
 | Sub-sprint | Tests | Notes |
 |---|---|---|
@@ -1094,10 +1109,10 @@ This manifest defines every test required for Sprint 123A. Each test has a uniqu
 | 123A.2 | 18 | TEST-123A2-001 through 018 |
 | 123A.3 | 23 | TEST-123A3-001A/B/C/D/E and 002 through 019 |
 | 123A.4 | 11 | TEST-123A4-001 through 011 |
-| 123A.5 | 7 | TEST-123A5-001 through 007 |
+| 123A.5 | 8 | TEST-123A5-001 through 008 |
 | Opt-in integration | 2 | TEST-INT-001 (symbol resolution), TEST-INT-002 (live connection) — listed separately, not double-counted |
-| **Total** | **75** | **Machine-verified. INT tests included in total. No double-counting.** |
+| **Total** | **76** | **Machine-verified. INT tests included in total. No double-counting.** |
 
 **Opt-in integration tests (require `DATABENTO_INTEGRATION_TESTS=true`):** TEST-INT-001, TEST-INT-002. These 2 tests require a live Databento API key and are not run in CI by default.
 
-**All other 73 tests:** Fixture-based; no live Databento connection required.
+**All other 74 tests:** Fixture-based; no live Databento connection required.
