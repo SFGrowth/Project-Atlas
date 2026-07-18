@@ -13,16 +13,16 @@
 
 ## Section 1 — Mandatory Declaration
 
-This document certifies that all 42 corrections across five Gate G0 review rounds have been applied. The following statements are made without qualification:
+This document certifies that all 44 corrections across five Gate G0 review rounds have been applied. The following statements are made without qualification:
 
 | Statement | Evidence |
 |---|---|
-| **No production code was modified** | Git diff confirms: zero non-`docs/` files changed in commits `71789f0`, `d582563`, `2d7f1b0`, `6b05ff1`, `d485851`, `dc502d2`, and `438ab6a` |
+| **No production code was modified** | Git diff confirms: zero non-`docs/` files changed in commits `71789f0`, `d582563`, `2d7f1b0`, `6b05ff1`, `d485851`, `dc502d2`, `438ab6a`, `9818874`, and `55ea390` |
 | **No database migrations were run** | No migration files created or modified; `server/db/migrations/` unchanged |
 | **No Databento connection was made** | `marketData.start()` is never called; `DATABENTO_LIVE_ENABLED` does not exist in any env file; no network calls to `live.databento.com` |
-| **All 42 corrections applied** | See Section 2 |
+| **All 44 corrections applied** | See Section 2 |
 | **All 21 documents present** | See Section 3 |
-| **All contradictions resolved** | 42 contradictions raised; 42 resolved; 0 remaining |
+| **All contradictions resolved** | 44 contradictions raised; 44 resolved; 0 remaining |
 | **Gate G0 is ready for Phil's approval** | Document set is internally consistent across all 5 review rounds |
 
 ---
@@ -61,9 +61,9 @@ Applied in commit `d485851`. Corrections: authoritative document manifest with S
 
 ---
 
-### Round 5 (Gate G0 Withheld — 6 corrections)
+### Round 5 (Gate G0 Withheld — 8 corrections)
 
-Applied in commits `dc502d2` and `438ab6a` (Revision 5). Corrections:
+Applied in commits `dc502d2`, `438ab6a`, `9818874`, and `55ea390` (Revision 5). Corrections:
 
 | Correction | Document | Change |
 |---|---|---|
@@ -72,9 +72,11 @@ Applied in commits `dc502d2` and `438ab6a` (Revision 5). Corrections:
 | R5-3 | `DATABENTO_PYTHON_FEED_SERVICE_SPEC.md` (Rev 2) | WebSocket wire format confirmed: nanosecond fields transmitted as decimal strings; BigInt reconstruction rule on TypeScript side |
 | R5-4 | `DATABENTO_PARITY_CERTIFICATION_SPEC.md` (Rev 5) | Section A.8 rewritten with normalised composite formula (all metrics on `[0.0, 1.0]` scale); deterministic worked example added |
 | R5-5 | `SPRINT_123A_GATE_G0_CONTRACT_RECONCILIATION.md` (Rev 5) | Correction 8 feed-availability definition corrected from stale `(received_bars / expected_bars) × 100` to connection-health definition matching Parity Spec Rev 5 Section A.9 |
-| R5-6 | `ATLAS_CANONICAL_MARKET_EVENT_CONTRACTS.md` (Rev 5 final) | Section 8: `MARKET_DATA_AUTHORITY = DATABENTO` replaced with `MARKET_DATA_AUTHORITY = DATABENTO_LEARNING_AUTHORITY`; authority value definitions table added; `DATABENTO_DECISION_AUTHORITY` reserved for Sprint 123B |
+| R5-6 | `ATLAS_CANONICAL_MARKET_EVENT_CONTRACTS.md` (Rev 5) | Section 8: `MARKET_DATA_AUTHORITY = DATABENTO` replaced with `MARKET_DATA_AUTHORITY = DATABENTO_LEARNING_AUTHORITY`; authority value definitions table added; `DATABENTO_DECISION_AUTHORITY` reserved for Sprint 123B |
+| R5-7 | `SPRINT_123A_TEST_MANIFEST.md` (Rev 5 final) | Test Summary footer replaced: stale 56-test table removed; machine-verified Revision 5 breakdown added (75 total = 14+18+23+11+7+2 INT; INT tests listed separately, not double-counted) |
+| R5-8 | `ATLAS_CANONICAL_MARKET_EVENT_CONTRACTS.md` (Rev 5 final) | Section 8: `DATABENTO_CHART_AUTHORITY` added to authority order; full 6-column ownership matrix added; complete Sprint 123A authority sequence defined: `TRADINGVIEW_ONLY` → `DATABENTO_SHADOW` → `DATABENTO_CHART_AUTHORITY` → `DATABENTO_LEARNING_AUTHORITY`; `DATABENTO_DECISION_AUTHORITY` reserved for Sprint 123B |
 
-**Status: ALL 6 APPLIED**
+**Status: ALL 8 APPLIED**
 
 ---
 
@@ -182,8 +184,8 @@ The following decisions are final and encoded in the document set. They may not 
 | Round 2 (Gate G0 withheld) | 12 | 12 | 0 |
 | Round 3 (Gate G0 withheld) | 6 | 6 | 0 |
 | Round 4 (Gate G0 withheld) | 10 | 10 | 0 |
-| Round 5 (Gate G0 withheld) | 6 | 6 | 0 |
-| **Total** | **42** | **42** | **0** |
+| Round 5 (Gate G0 withheld) | 8 | 8 | 0 |
+| **Total** | **44** | **44** | **0** |
 
 ---
 
