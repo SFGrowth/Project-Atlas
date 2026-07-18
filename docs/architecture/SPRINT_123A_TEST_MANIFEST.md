@@ -1,10 +1,10 @@
-# Sprint 123A Test Manifest (Revision 2)
+# Sprint 123A Test Manifest (Revision 3)
 **Document type:** Architecture Reference  
 **Sprint:** 123A  
 **Status:** PENDING APPROVAL  
-**Date:** 2026-07-18 (Revision 2: Corrections 3, 4, 5, 6 applied — test count corrected; TEST-123A3-001 split into 4; TEST-123A3-005 updated; 19 new test categories added)  
+**Date:** 2026-07-18 (Revision 3: Correction 6 applied — TEST-123A3-001E added for missing official bar → UNRESOLVED lifecycle; parity spec reference updated to Revision 3)  
 **Parent document:** `SPRINT_123A_AMENDED_IMPLEMENTATION_PLAN.md`  
-**Parity spec reference:** `DATABENTO_PARITY_CERTIFICATION_SPEC.md` (Revision 2)
+**Parity spec reference:** `DATABENTO_PARITY_CERTIFICATION_SPEC.md` (Revision 3)
 
 ---
 
@@ -18,7 +18,7 @@ This manifest defines every test required for Sprint 123A. Each test has a uniqu
 
 **Current result:** All tests are `NOT RUN` until the sub-sprint is implemented.
 
-**Total test count:** 75 tests (73 unit/integration + 2 opt-in live integration tests). The 2 opt-in tests (`TEST-INT-001`, `TEST-INT-002`) are included in the total of 75. They require `DATABENTO_INTEGRATION_TESTS=true` and a live Databento API key.
+**Total test count:** 61 tests (59 unit/integration + 2 opt-in live integration tests). The 2 opt-in tests (`TEST-INT-001`, `TEST-INT-002`) are included in the total of 61. They require `DATABENTO_INTEGRATION_TESTS=true` and a live Databento API key. Breakdown: 123A.1: 8, 123A.2: 10, 123A.3: 23, 123A.4: 11, 123A.5: 7, INT: 2.
 
 ---
 
@@ -359,6 +359,20 @@ This manifest defines every test required for Sprint 123A. Each test has a uniqu
 | **Test file** | `server/market-data/__tests__/bar-builder.test.ts` |
 | **Fixture** | Fixture trades + `ohlcv-1m` record with High 3 ticks higher than constructed bar |
 | **Expected result** | `atlas_bars_1m` row has `reconciliationStatus = DISCREPANCY`; `discrepancyDetails` contains field name, constructed value, official value, and delta in ticks; `atlas_feed_health` alert emitted |
+| **Blocking gate** | G3 |
+| **Current result** | NOT RUN |
+
+---
+
+### TEST-123A3-001E — Missing Official Bar Triggers UNRESOLVED Lifecycle
+
+| Field | Value |
+|---|---|
+| **Sub-sprint** | 123A.3 |
+| **Requirement** | When no `ohlcv-1m` record arrives within 30 minutes of bar close, the bar is marked `UNRESOLVED` and is never forwarded to the five-min aggregator |
+| **Test file** | `server/market-data/__tests__/bar-builder.test.ts` |
+| **Fixture** | Fixture trades for a 1-min bar; no `ohlcv-1m` record injected; clock advanced 31 minutes |
+| **Expected result** | `atlas_bars_1m` row has `reconciliationStatus = UNRESOLVED`; no `AtlasBarConfirmed` with `isReconciled = true` emitted; five-min aggregator does not receive the bar; 5-min bar for the containing window is held pending |
 | **Blocking gate** | G3 |
 | **Current result** | NOT RUN |
 

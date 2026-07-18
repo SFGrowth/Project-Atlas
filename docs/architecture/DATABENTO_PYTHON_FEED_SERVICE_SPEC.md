@@ -54,7 +54,7 @@ Loads and validates all environment variables. Raises a clear error if any requi
 | `DATABENTO_API_KEY` | Yes | — | Never logged |
 | `DATABENTO_LIVE_ENABLED` | Yes | `false` | Must be `true` to connect |
 | `DATABENTO_DATASET` | No | `GLBX.MDP3` | CME Globex |
-| `DATABENTO_SYMBOL` | No | `MNQ1!` | Continuous front month |
+| `DATABENTO_SYMBOL` | No | `<unverified — see TEST-INT-001>` | Continuous front month symbol; actual value confirmed by TEST-INT-001 before use |
 | `DATABENTO_TRADES_SCHEMA` | No | `trades` | Schema for trade records |
 | `DATABENTO_BAR_SCHEMA` | No | `ohlcv-1m` | Schema for bar records |
 | `BRIDGE_AUTH_TOKEN` | Yes | — | Never logged |
@@ -63,7 +63,7 @@ Loads and validates all environment variables. Raises a clear error if any requi
 
 ### `databento_client.py`
 
-Wraps the official `databento.Live` client. Subscribes to `MNQ1!` with `trades` and `ohlcv-1m` schemas. Handles reconnection with exponential backoff. Publishes raw records to the normaliser. Reports connection state changes to the health reporter.
+Wraps the official `databento.Live` client. Subscribes to the continuous MNQ front-month symbol (resolved dynamically; actual symbol confirmed by `TEST-INT-001` before Sprint 123A.2 begins) with `trades` and `ohlcv-1m` schemas. Handles reconnection with exponential backoff. Publishes raw records to the normaliser. Reports connection state changes to the health reporter.
 
 **Must not:** Perform any bar construction. Perform any aggregation. Write to any database. Log the API key.
 
@@ -102,7 +102,7 @@ Authenticated WebSocket client that connects to the Atlas bridge server. Handles
   "version": 1,
   "ts": 1750000000000,
   "payload": {
-    "symbol": "MNQ1!",
+    "symbol": "<resolved by Contract Roll Manager — see TEST-INT-001>",
     "rawSymbol": "MNQM5",
     "instrumentId": 12345,
     "price": 21500.25,

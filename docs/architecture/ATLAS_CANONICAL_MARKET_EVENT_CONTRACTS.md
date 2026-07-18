@@ -2,7 +2,7 @@
 **Document type:** Architecture Reference  
 **Sprint:** 123A.1  
 **Status:** PENDING APPROVAL  
-**Date:** 2026-07-18
+**Date:** 2026-07-18 (Revision 2: Correction 6 applied — provisional vs confirmed 1-min bar lifecycle defined)
 
 ---
 
@@ -100,6 +100,16 @@ Owner: Market-data service (TypeScript bar builder). Trigger: Every normalised t
 ### `AtlasBarConfirmed` v1 (1-min)
 
 Owner: Market-data service (TypeScript bar builder). Trigger: Bar boundary crossed or `ohlcv-1m` reconciliation confirms close.
+
+**Provisional vs confirmed lifecycle:** A 1-minute bar passes through two states before it is eligible to contribute to a 5-minute bar.
+
+1. **Provisional** (`reconciliationStatus = PROVISIONAL`): The bar boundary has been crossed (i.e., 60 seconds have elapsed since `barOpenTs`). The bar is persisted to `atlas_bars_1m` with `reconciliationStatus = PROVISIONAL`. It is **not** forwarded to the five-min aggregator at this stage. An `AtlasBarConfirmed` event with `isReconciled = false` is emitted for chart display only.
+
+2. **Confirmed** (`reconciliationStatus = MATCHED`): The bar builder receives the official Databento `ohlcv-1m` record for the same interval and the OHLCV values agree within the defined tolerances (±1 tick OHLC, ±5% volume). The bar is updated to `reconciliationStatus = MATCHED`, and a revised `AtlasBarConfirmed` event with `isReconciled = true` is emitted. **Only confirmed bars are forwarded to the five-min aggregator.**
+
+3. **Unresolved** (`reconciliationStatus = UNRESOLVED`): If the official `ohlcv-1m` record has not arrived within 30 minutes of the bar close, or if the OHLCV values disagree beyond tolerance, the bar is marked `UNRESOLVED`. Unresolved bars are **never** forwarded to the five-min aggregator. A 5-minute bar that would require an unresolved 1-min bar is held pending. If the unresolved bar is later recovered via Historical API, it is reclassified as `MATCHED` and the 5-minute bar is released.
+
+This lifecycle ensures that `CanonicalBarConfirmed` (5-min) events are only emitted from fully reconciled data. The `containsUnresolvedMinutes` field on `CanonicalBarConfirmed` is always `false` in normal operation; it is only `true` if the 30-minute recovery window expires and the bar is released anyway under an explicit operator override (which requires Phil's written approval).
 
 Same fields as `AtlasBarDeveloping` plus:
 

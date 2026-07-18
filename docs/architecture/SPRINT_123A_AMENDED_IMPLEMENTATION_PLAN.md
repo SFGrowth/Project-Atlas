@@ -462,7 +462,7 @@ See `SPRINT_123A_RISK_REGISTER.md` for the full risk register with corrected num
 | G1 | 123A.2 branch begins | Phil | |
 | G2 | 123A.3 branch begins | Phil | |
 | G3 | 123A.4 branch begins | Phil | |
-| G4 | `DATABENTO_CHART_AUTHORITY` activation | Phil | Parity ≥ 99.9% over 5 days |
+| G4 | `DATABENTO_CHART_AUTHORITY` activation | Phil | All requirements in `DATABENTO_PARITY_CERTIFICATION_SPEC.md` Revision 2 satisfied |
 | G5 | 123A.5 branch begins | Phil | |
 | G6 | Sprint 123A.5 implementation certified | Phil | Learning Authority still disabled |
 | G6A | `DATABENTO_LEARNING_AUTHORITY` activation | Phil | Optional; separate from G6; requires shadow-validation evidence |
@@ -476,7 +476,7 @@ Sprint 123A is complete when all of the following are true:
 
 - All five sub-sprints are merged to `main`
 - `DATABENTO_SHADOW` mode is active in production (or higher authority mode)
-- Parity ≥ 99.9% over 5 consecutive trading days (per `DATABENTO_PARITY_CERTIFICATION_SPEC.md`)
+- All requirements in `DATABENTO_PARITY_CERTIFICATION_SPEC.md` Revision 2 satisfied (Section A: 1-min feed quality; Section B: 5-min cross-feed parity)
 - `AtlasLiveChart.tsx` passes Chart Authority gate (Gate G4)
 - All tests in `SPRINT_123A_TEST_MANIFEST.md` pass
 - No `DATABENTO_API_KEY` in any log, SSE, DB row, or browser bundle

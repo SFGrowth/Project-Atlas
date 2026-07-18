@@ -22,7 +22,7 @@ graph TD
     S3["Sprint 123A.3\nCanonical Bars\n• Bar builder (1-min)\n• 5-min aggregator\n• Contract roll manager\n• Canonical router\n• Tick storage\n• Effective-once ledger"]
     G3["Gate G3\n123A.3 Complete\n(Phil)"]
     S4["Sprint 123A.4\nParity + Chart\n• Parity monitor\n• AtlasLiveChart.tsx\n• Trade lifecycle SSE\n• Chart authority gate"]
-    G4["Gate G4\nParity Certification\n≥99.9% over 5 days\n(Phil)"]
+    G4["Gate G4\nParity Certification\n(per Parity Spec Rev 2)\n(Phil)"]
     G5["Gate G5\n123A.4 Complete\n(Phil)"]
     S5["Sprint 123A.5\nLearning Authority\nImplementation\n• postBarAutomation update\n• Canonical BE trigger\n• DARWIN canonical trigger\n• Duplicate protection"]
     G6["Gate G6\n123A.5 Implementation\nCertified\nLearning Auth DISABLED\n(Phil)"]
@@ -182,7 +182,7 @@ graph TD
 stateDiagram-v2
     [*] --> TRADINGVIEW_ONLY : Current state
     TRADINGVIEW_ONLY --> DATABENTO_SHADOW : Gate G3 passed\n+ Phil approval
-    DATABENTO_SHADOW --> DATABENTO_CHART_AUTHORITY : Gate G4 passed\nParity ≥99.9%\n+ Phil approval
+    DATABENTO_SHADOW --> DATABENTO_CHART_AUTHORITY : Gate G4 passed\nParity Spec Rev 2 satisfied\n+ Phil approval
     DATABENTO_CHART_AUTHORITY --> DATABENTO_LEARNING_AUTHORITY : Gate G6A passed\n20 days shadow data\n+ Phil EXPLICIT approval\n[OPTIONAL]
     DATABENTO_LEARNING_AUTHORITY --> DATABENTO_DECISION_AUTHORITY : Sprint 123B\n+ Phil explicit approval
 

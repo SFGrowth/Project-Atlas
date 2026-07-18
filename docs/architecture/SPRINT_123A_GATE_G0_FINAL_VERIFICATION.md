@@ -261,6 +261,9 @@ The following contradictions identified in Revision 1 and Revision 2 reviews hav
 | Parity spec missing feature agreement aggregation | Rev 2 | Section 6 defines arithmetic mean aggregation with 90% coverage threshold |
 | Parity spec missing RSI/ADX/Session/Regime | Rev 2 | Section 6 defines these as Gate G6A requirements |
 | No availability gates in parity spec | Rev 2 | Section 7 defines three blocking availability gates |
+| Parity spec conflated 1-min and 5-min comparison | Rev 3 | Separated into Section A (1-min feed quality) and Section B (5-min cross-feed parity) |
+| 1-min bar lifecycle undefined | Rev 3 | Provisional → Confirmed → Unresolved lifecycle defined in event contracts |
+| MNQ1! in Python feed service spec | Rev 3 | Removed; dynamic resolution placeholder added; TEST-INT-001 required |
 | Risk register had only 10 risks | Rev 2 | 12 new risks added (R-011 through R-022) |
 
 ---
@@ -283,7 +286,7 @@ Gate G0 is complete when:
 
 - [ ] Phil has explicitly approved Gate G0 in writing
 - [ ] This document has been committed to `SFGrowth/Project-Atlas`
-- [ ] All 16 Sprint 123A architecture documents are present in `docs/architecture/`
+- [ ] All 17 Sprint 123A architecture documents are present in `docs/architecture/`
 - [ ] No production code has been modified
 - [ ] No migrations have been run
 - [ ] No Databento connection has been made

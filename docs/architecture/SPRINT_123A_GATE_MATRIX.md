@@ -2,7 +2,7 @@
 **Document type:** Architecture Reference  
 **Sprint:** 123A  
 **Status:** ACTIVE — update as gates are reached  
-**Date:** 2026-07-18 (Revision 2: corrections 3, 4, 9 applied per Gate G0 review)  
+**Date:** 2026-07-18 (Revision 3: corrections 1, 2, 3 from Gate G0 Final Surgical Pass applied — parity threshold wording unified, G3 test references corrected, test count corrected)  
 **Parent document:** `SPRINT_123A_AMENDED_IMPLEMENTATION_PLAN.md`
 
 ---
@@ -100,8 +100,8 @@ This matrix defines every gate that must be passed before each sub-sprint begins
 | 5-min bars persisted to `atlas_bars_5m` | Database query | NOT REACHED |
 | `atlas_canonical_bars` populated from TradingView in `TRADINGVIEW_ONLY` mode | Database query | NOT REACHED |
 | Contract rolls detected and persisted to `atlas_contract_rolls` | Database query | NOT REACHED |
-| No `UNRESOLVED` minute silently aggregated | Test `TEST-123A3-005` | NOT REACHED |
-| `containsUnresolvedMinutes=true` bars blocked from production dispatch | Test `TEST-123A3-006` | NOT REACHED |
+| Confirmed no-trade minute and synthetic-bar safety | Test `TEST-123A3-005` | NOT REACHED |
+| No `UNRESOLVED` minute silently aggregated into 5-min dispatch | Test `TEST-123A3-006` | NOT REACHED |
 | Consumer processing ledger populated | Database query | NOT REACHED |
 | No `processBar()` called from Databento path | Test `TEST-123A3-008` | NOT REACHED |
 | No `postBarAutomation` called from Databento path | Test `TEST-123A3-009` | NOT REACHED |
@@ -117,11 +117,11 @@ This matrix defines every gate that must be passed before each sub-sprint begins
 **Approver:** Phil  
 **Status:** NOT REACHED
 
-Parity criteria are defined in `DATABENTO_PARITY_CERTIFICATION_SPEC.md`. The composite parity score must meet all thresholds specified in that document.
+Gate G4 passes only when every applicable requirement in `DATABENTO_PARITY_CERTIFICATION_SPEC.md` Revision 2 is satisfied. Thresholds are not restated here — the parity specification is the sole authoritative source.
 
 | Criterion | Verification Method | Status |
 |---|---|---|
-| Composite parity score ≥ 99.9% over 5 consecutive trading days | Parity report per spec | NOT REACHED |
+| All requirements in `DATABENTO_PARITY_CERTIFICATION_SPEC.md` Revision 2 satisfied (Section A: 1-min feed quality; Section B: 5-min cross-feed parity) | Parity report per spec | NOT REACHED |
 | Zero `containsUnresolvedMinutes` bars in 5-day window | Database query | NOT REACHED |
 | All contract rolls detected correctly | Roll log review | NOT REACHED |
 | `AtlasLiveChart.tsx` displays developing and confirmed candles from Databento | Visual review | NOT REACHED |
@@ -205,7 +205,7 @@ Parity criteria are defined in `DATABENTO_PARITY_CERTIFICATION_SPEC.md`. The com
 | All five sub-sprints merged to `main` | Git log | NOT REACHED |
 | Gate G6 passed | See G6 | NOT REACHED |
 | `DATABENTO_SHADOW` mode active in production (or higher) | Environment check | NOT REACHED |
-| Composite parity ≥ 99.9% over 5 consecutive trading days | Parity report | NOT REACHED |
+| All requirements in `DATABENTO_PARITY_CERTIFICATION_SPEC.md` Revision 2 (Section B, Gate G6A features) satisfied | Parity report per spec | NOT REACHED |
 | `AtlasLiveChart.tsx` passes Chart Authority gate | Visual review | NOT REACHED |
 | All tests in `SPRINT_123A_TEST_MANIFEST.md` pass | `pnpm test` | NOT REACHED |
 | `SPRINT_123A_DATABENTO_LIVE_VALIDATION.md` report complete | Document review | NOT REACHED |
