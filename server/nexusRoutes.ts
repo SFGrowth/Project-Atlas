@@ -1220,12 +1220,19 @@ export function registerNexusRoutes(router: Router) {
         }
       });
 
-      // ── Sprint 100A: Trigger Live Learning Engine (non-blocking) ──────────────
+      // ── Sprint 123A.1: Post-Bar Automation (replaces direct liveLearnEngine call) ──
+      // The direct liveLearnEngine call (Sprint 100A) has been removed.
+      // postBarAutomation is now the SINGLE EXCLUSIVE owner of:
+      //   - liveLearnEngine.processLiveBar() (candle cert, gap detection, market laws)
+      //   - darwinAutonomous.onNewBarObservation() (DARWIN per-bar trigger — G-001 fix)
+      //   - behaviourEngine.runBehaviourEngineShadow() (canonical 12-classifier)
+      // processBar() (execution trigger) is NOT owned by postBarAutomation.
+      // Authority: TRADINGVIEW_ONLY — trigger source is always TradingView here.
       const receivedAtMs = Date.now();
       setImmediate(async () => {
         try {
-          const { processLiveBar } = await import("./liveLearnEngine");
-          await processLiveBar({
+          const { runPostBarAutomation } = await import("./automation/postBarAutomation");
+          await runPostBarAutomation({
             id: result.id!,
             memoryId,
             barTime: barTimeMs,
@@ -1252,9 +1259,11 @@ export function registerNexusRoutes(router: Router) {
             b1Eligible: mem.b1Eligible ?? false,
             sb1Eligible: mem.sb1Eligible ?? false,
             receivedAt: receivedAtMs,
+            triggerSource: 'TRADINGVIEW',
+            authorityMode: 'TRADINGVIEW_ONLY',
           });
-        } catch (leErr) {
-          console.error("[LIVE LEARN] processLiveBar error:", leErr);
+        } catch (pbaErr) {
+          console.error("[POST_BAR_AUTO] runPostBarAutomation error:", pbaErr);
         }
       });
       // ── ARP-1 Program B: Continuous Discovery Engine (non-blocking) ─────────

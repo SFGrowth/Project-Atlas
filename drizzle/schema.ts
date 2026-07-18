@@ -2422,3 +2422,156 @@ export const darwinDailyReports = mysqlTable("darwin_daily_reports", {
 });
 export type DarwinDailyReport = typeof darwinDailyReports.$inferSelect;
 export type InsertDarwinDailyReport = typeof darwinDailyReports.$inferInsert;
+
+// ─── Sprint 123A.1: Databento Market-Data Foundation Tables ──────────────────
+// These tables are created in Sprint 123A.1 (schema only).
+// No data is written until Sprint 123A.3 (DATABENTO_SHADOW mode).
+// MARKET_DATA_AUTHORITY = TRADINGVIEW_ONLY: atlas_canonical_bars is populated
+// from TradingView webhook bars. atlas_bars_1m and atlas_bars_5m are empty.
+
+// ─── atlas_bars_1m ────────────────────────────────────────────────────────────
+export const atlasBars1m = mysqlTable("atlas_bars_1m", {
+  id:                      bigint("id", { mode: "number" }).primaryKey().autoincrement(),
+  source:                  varchar("source", { length: 20 }).notNull().default("DATABENTO"),
+  dataset:                 varchar("dataset", { length: 50 }).notNull(),
+  rawSymbol:               varchar("raw_symbol", { length: 50 }).notNull(),
+  instrumentId:            bigint("instrument_id", { mode: "number" }).notNull(),
+  barOpenTsMs:             bigint("bar_open_ts_ms", { mode: "number" }).notNull(),
+  barCloseTsMs:            bigint("bar_close_ts_ms", { mode: "number" }).notNull(),
+  openPricePts100:         bigint("open_price_pts100", { mode: "number" }),
+  highPricePts100:         bigint("high_price_pts100", { mode: "number" }),
+  lowPricePts100:          bigint("low_price_pts100", { mode: "number" }),
+  closePricePts100:        bigint("close_price_pts100", { mode: "number" }),
+  volumeContracts:         bigint("volume_contracts", { mode: "number" }).notNull().default(0),
+  tradeCount:              int("trade_count").notNull().default(0),
+  barType:                 varchar("bar_type", { length: 30 }).notNull(),
+  reconciledAgainstOhlcv:  boolean("reconciled_against_ohlcv").notNull().default(false),
+  reconciliationDeltaPts100: bigint("reconciliation_delta_pts100", { mode: "number" }),
+  revision:                int("revision").notNull().default(0),
+  mappingVersion:          varchar("mapping_version", { length: 50 }),
+  atlasTsMs:               bigint("atlas_ts_ms", { mode: "number" }).notNull(),
+  createdAt:               timestamp("created_at").defaultNow().notNull(),
+});
+export type AtlasBar1m = typeof atlasBars1m.$inferSelect;
+export type InsertAtlasBar1m = typeof atlasBars1m.$inferInsert;
+
+// ─── atlas_bars_5m ────────────────────────────────────────────────────────────
+export const atlasBars5m = mysqlTable("atlas_bars_5m", {
+  id:                   bigint("id", { mode: "number" }).primaryKey().autoincrement(),
+  source:               varchar("source", { length: 20 }).notNull().default("DATABENTO"),
+  dataset:              varchar("dataset", { length: 50 }).notNull(),
+  rawSymbol:            varchar("raw_symbol", { length: 50 }).notNull(),
+  instrumentId:         bigint("instrument_id", { mode: "number" }).notNull(),
+  barOpenTsMs:          bigint("bar_open_ts_ms", { mode: "number" }).notNull(),
+  barCloseTsMs:         bigint("bar_close_ts_ms", { mode: "number" }).notNull(),
+  openPricePts100:      bigint("open_price_pts100", { mode: "number" }),
+  highPricePts100:      bigint("high_price_pts100", { mode: "number" }),
+  lowPricePts100:       bigint("low_price_pts100", { mode: "number" }),
+  closePricePts100:     bigint("close_price_pts100", { mode: "number" }),
+  volumeContracts:      bigint("volume_contracts", { mode: "number" }).notNull().default(0),
+  barType:              varchar("bar_type", { length: 30 }).notNull(),
+  minuteBarsIncluded:   int("minute_bars_included").notNull().default(0),
+  containsSynthetic:    boolean("contains_synthetic").notNull().default(false),
+  containsUnresolved:   boolean("contains_unresolved").notNull().default(false),
+  revision:             int("revision").notNull().default(0),
+  mappingVersion:       varchar("mapping_version", { length: 50 }),
+  atlasTsMs:            bigint("atlas_ts_ms", { mode: "number" }).notNull(),
+  createdAt:            timestamp("created_at").defaultNow().notNull(),
+});
+export type AtlasBar5m = typeof atlasBars5m.$inferSelect;
+export type InsertAtlasBar5m = typeof atlasBars5m.$inferInsert;
+
+// ─── atlas_canonical_bars ─────────────────────────────────────────────────────
+// The ONLY table that production consumers (strategies, DARWIN, Behaviour Engine,
+// parity monitor) read. atlas_bars_1m and atlas_bars_5m are internal pipeline tables.
+export const atlasCanonicalBars = mysqlTable("atlas_canonical_bars", {
+  id:                          bigint("id", { mode: "number" }).primaryKey().autoincrement(),
+  authoritySource:             varchar("authority_source", { length: 30 }).notNull(),
+  authorityMode:               varchar("authority_mode", { length: 40 }).notNull(),
+  source:                      varchar("source", { length: 20 }).notNull(),
+  dataset:                     varchar("dataset", { length: 50 }),
+  rawSymbol:                   varchar("raw_symbol", { length: 50 }).notNull(),
+  instrumentId:                bigint("instrument_id", { mode: "number" }),
+  barOpenTsMs:                 bigint("bar_open_ts_ms", { mode: "number" }).notNull(),
+  barCloseTsMs:                bigint("bar_close_ts_ms", { mode: "number" }).notNull(),
+  open:                        decimal("open", { precision: 12, scale: 4 }).notNull(),
+  high:                        decimal("high", { precision: 12, scale: 4 }).notNull(),
+  low:                         decimal("low", { precision: 12, scale: 4 }).notNull(),
+  close:                       decimal("close", { precision: 12, scale: 4 }).notNull(),
+  volume:                      bigint("volume", { mode: "number" }).notNull().default(0),
+  barType:                     varchar("bar_type", { length: 30 }).notNull().default("LIVE_CONFIRMED"),
+  dispatchedToProcessBar:      boolean("dispatched_to_process_bar").notNull().default(false),
+  dispatchedToPostBarAuto:     boolean("dispatched_to_post_bar_auto").notNull().default(false),
+  dispatchTsMs:                bigint("dispatch_ts_ms", { mode: "number" }),
+  revision:                    int("revision").notNull().default(0),
+  atlasTsMs:                   bigint("atlas_ts_ms", { mode: "number" }).notNull(),
+  createdAt:                   timestamp("created_at").defaultNow().notNull(),
+});
+export type AtlasCanonicalBar = typeof atlasCanonicalBars.$inferSelect;
+export type InsertAtlasCanonicalBar = typeof atlasCanonicalBars.$inferInsert;
+
+// ─── atlas_contract_rolls ─────────────────────────────────────────────────────
+export const atlasContractRolls = mysqlTable("atlas_contract_rolls", {
+  id:             bigint("id", { mode: "number" }).primaryKey().autoincrement(),
+  dataset:        varchar("dataset", { length: 50 }).notNull(),
+  fromSymbol:     varchar("from_symbol", { length: 50 }).notNull(),
+  toSymbol:       varchar("to_symbol", { length: 50 }).notNull(),
+  instrumentId:   bigint("instrument_id", { mode: "number" }).notNull(),
+  rollTsMs:       bigint("roll_ts_ms", { mode: "number" }).notNull(),
+  mappingVersion: varchar("mapping_version", { length: 50 }),
+  detectedBy:     varchar("detected_by", { length: 30 }).notNull().default("CONTRACT_ROLL_MANAGER"),
+  atlasTsMs:      bigint("atlas_ts_ms", { mode: "number" }).notNull(),
+  createdAt:      timestamp("created_at").defaultNow().notNull(),
+});
+export type AtlasContractRoll = typeof atlasContractRolls.$inferSelect;
+export type InsertAtlasContractRoll = typeof atlasContractRolls.$inferInsert;
+
+// ─── atlas_parity_reports ─────────────────────────────────────────────────────
+// Daily parity certification reports per DATABENTO_PARITY_CERTIFICATION_SPEC.md Rev 5.
+export const atlasParityReports = mysqlTable("atlas_parity_reports", {
+  id:                    bigint("id", { mode: "number" }).primaryKey().autoincrement(),
+  reportDate:            varchar("report_date", { length: 10 }).notNull(),
+  sectionACompositeScore: decimal("section_a_composite_score", { precision: 6, scale: 4 }),
+  sectionAPass:          boolean("section_a_pass"),
+  sectionBParityScore:   decimal("section_b_parity_score", { precision: 6, scale: 4 }),
+  sectionBPass:          boolean("section_b_pass"),
+  gateG4Pass:            boolean("gate_g4_pass").notNull().default(false),
+  barsEvaluated:         int("bars_evaluated").notNull().default(0),
+  barsExcluded:          int("bars_excluded").notNull().default(0),
+  barsMatched:           int("bars_matched").notNull().default(0),
+  reportJson:            json("report_json"),
+  authorityMode:         varchar("authority_mode", { length: 40 }).notNull(),
+  generatedAt:           bigint("generated_at", { mode: "number" }).notNull(),
+  createdAt:             timestamp("created_at").defaultNow().notNull(),
+});
+export type AtlasParityReport = typeof atlasParityReports.$inferSelect;
+export type InsertAtlasParityReport = typeof atlasParityReports.$inferInsert;
+
+// ─── atlas_chart_annotations ──────────────────────────────────────────────────
+export const atlasChartAnnotations = mysqlTable("atlas_chart_annotations", {
+  id:             bigint("id", { mode: "number" }).primaryKey().autoincrement(),
+  annotationType: varchar("annotation_type", { length: 30 }).notNull(),
+  barOpenTsMs:    bigint("bar_open_ts_ms", { mode: "number" }).notNull(),
+  label:          varchar("label", { length: 100 }).notNull(),
+  detail:         text("detail"),
+  severity:       varchar("severity", { length: 10 }).notNull().default("INFO"),
+  createdAt:      timestamp("created_at").defaultNow().notNull(),
+});
+export type AtlasChartAnnotation = typeof atlasChartAnnotations.$inferSelect;
+export type InsertAtlasChartAnnotation = typeof atlasChartAnnotations.$inferInsert;
+
+// ─── atlas_consumer_processing_ledger ─────────────────────────────────────────
+// Idempotency ledger for effective-once processing.
+export const atlasConsumerProcessingLedger = mysqlTable("atlas_consumer_processing_ledger", {
+  id:                   bigint("id", { mode: "number" }).primaryKey().autoincrement(),
+  consumerName:         varchar("consumer_name", { length: 50 }).notNull(),
+  consumerVersion:      int("consumer_version").notNull().default(1),
+  canonicalEventId:     varchar("canonical_event_id", { length: 200 }).notNull(),
+  processedAt:          bigint("processed_at", { mode: "number" }).notNull(),
+  processingDurationMs: int("processing_duration_ms"),
+  outcome:              varchar("outcome", { length: 10 }).notNull().default("OK"),
+  errorDetail:          text("error_detail"),
+  createdAt:            timestamp("created_at").defaultNow().notNull(),
+});
+export type AtlasConsumerProcessingLedgerRow = typeof atlasConsumerProcessingLedger.$inferSelect;
+export type InsertAtlasConsumerProcessingLedger = typeof atlasConsumerProcessingLedger.$inferInsert;

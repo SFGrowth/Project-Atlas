@@ -208,19 +208,25 @@ async function handleWeeklyReview(req: Request, res: Response): Promise<void> {
   }
 }
 
-// ─── Monthly Review Handler (placeholder for future use) ──────────────────────
+// ─── Monthly Review Handler (Sprint 123A.1 — G-002 fix) ──────────────────────
+// G-002 fix: was returning { status: "not_implemented" }.
+// Now wired to runMonthlyAudit() from darwinAutonomous.
 
 async function handleMonthlyReview(req: Request, res: Response): Promise<void> {
+  const startTime = Date.now();
   try {
     const user = await sdk.authenticateRequest(req);
     if (!user.isCron) {
       res.status(403).json({ error: "cron-only endpoint" });
       return;
     }
-    // TODO: implement monthly review in Sprint 089+
-    console.log("[Scheduler] Monthly review triggered (not yet implemented)");
-    res.json({ ok: true, status: "not_implemented", message: "Monthly review scheduled for Sprint 089" });
+    console.log("[Scheduler] Monthly review triggered — running runMonthlyAudit()");
+    await runMonthlyAudit();
+    const durationMs = Date.now() - startTime;
+    console.log(`[Scheduler] Monthly review complete in ${durationMs}ms`);
+    res.json({ ok: true, status: "completed", job: "monthly-review", durationMs, timestamp: new Date().toISOString() });
   } catch (err) {
+    console.error("[Scheduler] Monthly review error:", err);
     res.status(500).json({ error: String(err), timestamp: new Date().toISOString() });
   }
 }
