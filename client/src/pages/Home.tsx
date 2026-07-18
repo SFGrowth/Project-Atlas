@@ -13,6 +13,7 @@ import {
   fmtTime,
 } from "@/components/HudComponents";
 import PipelineOrb from "@/components/PipelineOrb";
+import LiveChart from "@/components/LiveChart";
 import { useEffect, useRef, useState } from "react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -500,7 +501,10 @@ export default function Home() {
           </div>
         </div>
 
-        {/* ── Row 4: Pipeline Orb — full width ── */}
+        {/* ── Row 4: Live Candlestick Chart ── */}
+        <LiveChart />
+
+        {/* ── Row 5: Pipeline Orb — full width ── */}
         <div className="hud-panel hud-panel-br flex flex-col">
           <div className="hud-header" style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <div className="flex items-center gap-2">

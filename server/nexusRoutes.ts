@@ -781,14 +781,29 @@ export function registerNexusRoutes(router: Router) {
     tvDisconnectNotified = false; // reset on successful receipt
     await insertHealthEvent({ eventType: "WEBHOOK_RECEIVED", severity: "INFO", message: `${symbol} ${masterState} bar=${barTime}`, metadata: { id, pipelineRunId } });
 
-    // Broadcast to SSE clients
+        // Broadcast to SSE clients
     const broadcastData = { type: "pipeline_report", id, receivedAt: new Date().toISOString(), payload: body };
     const clientsReached = broadcastSSE("pipeline_report", broadcastData);
     console.log(`[Nexus] Webhook accepted: id=${id} symbol=${symbol} state=${masterState} latency=${ingestionLatencyMs}ms sse_clients=${clientsReached}`);
-
+    // ── Sprint 123: atlas_bar_developing ────────────────────────────────────────────────────────────────
+    // Fires on every pipeline_report webhook — shows the current developing (open) candle.
+    // LiveChart suppresses this if its timestamp ≤ last confirmed bar.
+    try {
+      const barTimeDevMs = barTime ? new Date(barTime).getTime() : null;
+      if (barTimeDevMs && !isNaN(barTimeDevMs)) {
+        broadcastSSE("atlas_bar_developing", {
+          time: Math.floor(barTimeDevMs / 1000), // Unix seconds
+          open: body.open != null ? Number(body.open) : null,
+          high: body.high != null ? Number(body.high) : null,
+          low: body.low != null ? Number(body.low) : null,
+          close: body.close != null ? Number(body.close) : null,
+          master_state: masterState,
+          receivedAt: new Date().toISOString(),
+        });
+      }
+    } catch { /* non-fatal */ }
     // Paper trading engine (async, non-blocking)
     processPaperTrading(body).catch((err) => console.error("[Nexus] Paper trading error:", err));
-
     res.status(201).json({ status: "accepted", id, idempotency_key: idempotencyKey, ingestion_latency_ms: ingestionLatencyMs, sse_clients_reached: clientsReached });
   });
 
@@ -1042,6 +1057,27 @@ export function registerNexusRoutes(router: Router) {
         adx: body.adx, atr: body.atr, chop: body.chop, close: body.close,
         trend_direction: mem.trendDirection, active_models: mem.activeModels,
         schema_version: mem.schemaVersion, atlas_version: mem.atlasVersion,
+      });
+      // ── Sprint 123: Live Chart SSE events ─────────────────────────────────────────────────────────
+      // atlas_bar_confirmed fires ONLY on successful (non-duplicate) inserts
+      broadcastSSE("atlas_bar_confirmed", {
+        time: Math.floor(barTimeMs / 1000), // Unix seconds for Lightweight Charts
+        open: mem.open != null ? Number(mem.open) : null,
+        high: mem.high != null ? Number(mem.high) : null,
+        low: mem.low != null ? Number(mem.low) : null,
+        close: mem.close != null ? Number(mem.close) : null,
+        volume: mem.volume != null ? Number(mem.volume) : 0,
+        vwap: mem.vwap != null ? Number(mem.vwap) : null,
+        ema9: mem.ema9 != null ? Number(mem.ema9) : null,
+        ema21: mem.ema21 != null ? Number(mem.ema21) : null,
+        session: mem.session,
+        regime: mem.regimeClassification,
+      });
+      // atlas_feed_health: LIVE status broadcast after every confirmed bar
+      broadcastSSE("atlas_feed_health", {
+        status: "LIVE",
+        lastBarTime: barTimeMs,
+        lastBarTimeIso: new Date(barTimeMs).toISOString(),
       });
       // ── Sprint 104C: Trigger Autonomous Pipeline Monitor (non-blocking) ──────────
       const monitorBarId = result.id!;

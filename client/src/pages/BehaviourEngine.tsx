@@ -460,7 +460,7 @@ export default function BehaviourEnginePage() {
                   <p>Classifiers: <span className="text-white">12 active</span></p>
                 </div>
                 <Button
-                  onClick={() => replayMutation.mutate({ lookbackBars: replayBars })}
+                  onClick={() => replayMutation.mutate({ bars: replayBars })}
                   disabled={replayMutation.isPending}
                   className="bg-blue-600 hover:bg-blue-700 text-white font-['JetBrains_Mono'] text-xs"
                 >

@@ -134,6 +134,48 @@ export const appRouter = router({
         lastSymbol: latest?.symbol ?? null,
       };
     }),
+
+    // ── Sprint 123: Live Chart seed data ─────────────────────────────────────────
+    getRecentBars: publicProcedure
+      .input(z.object({ limit: z.number().min(1).max(500).default(200) }))
+      .query(async ({ input }) => {
+        const { getDb } = await import('./db');
+        const { atlasMemory } = await import('../drizzle/schema');
+        const db = await getDb();
+        if (!db) return [];
+        // Fetch last N bars descending, then reverse to ascending for chart
+        const rows = await db
+          .select({
+            barTime: atlasMemory.barTime,
+            open: atlasMemory.open,
+            high: atlasMemory.high,
+            low: atlasMemory.low,
+            close: atlasMemory.close,
+            volume: atlasMemory.volume,
+            vwap: atlasMemory.vwap,
+            ema9: atlasMemory.ema9,
+            ema21: atlasMemory.ema21,
+            session: atlasMemory.session,
+            regime: atlasMemory.regimeClassification,
+          })
+          .from(atlasMemory)
+          .orderBy(desc(atlasMemory.barTime))
+          .limit(input.limit);
+        // Reverse to ascending order for Lightweight Charts
+        return rows.reverse().map((r) => ({
+          time: Math.floor(r.barTime / 1000), // Unix seconds required by Lightweight Charts
+          open: r.open != null ? Number(r.open) : 0,
+          high: r.high != null ? Number(r.high) : 0,
+          low: r.low != null ? Number(r.low) : 0,
+          close: r.close != null ? Number(r.close) : 0,
+          volume: r.volume != null ? Number(r.volume) : 0,
+          vwap: r.vwap != null ? Number(r.vwap) : null,
+          ema9: r.ema9 != null ? Number(r.ema9) : null,
+          ema21: r.ema21 != null ? Number(r.ema21) : null,
+          session: r.session,
+          regime: r.regime,
+        }));
+      }),
   }),
 
   // ─── Paper Trading ───────────────────────────────────────────────────────────
@@ -1365,6 +1407,144 @@ export const appRouter = router({
       return runSessionCertification();
     }),
   }),
+  // ─── Behaviour Engine (Sprint 122B / 123) ────────────────────────────────────────────
+  behaviourEngine: router({
+    // Returns currently active (FORMING/ACTIVE/MATURE) instances from in-memory state manager
+    getActiveInstances: publicProcedure
+      .input(z.object({ symbol: z.string().optional() }))
+      .query(async ({ input }) => {
+        const { behaviourEngine } = await import('./behaviour-engine/index.js');
+        return behaviourEngine.getActiveInstances(input.symbol);
+      }),
+
+    // Returns recent instances from the DB (includes resolved ones)
+    getRecentInstances: publicProcedure
+      .input(z.object({ limit: z.number().min(1).max(200).default(50) }))
+      .query(async ({ input }) => {
+        const { getDb } = await import('./db');
+        const db = await getDb();
+        if (!db) return [];
+        const { sql: rawSql } = await import('drizzle-orm');
+        const rows = await db.execute(rawSql`
+          SELECT instance_id, behaviour_id, symbol, direction,
+                 lifecycle_state, confidence, probability, regime, session,
+                 first_detected_at, last_updated_at
+          FROM atlas_behaviour_instances
+          ORDER BY last_updated_at DESC
+          LIMIT ${input.limit}
+        `);
+        return (rows as unknown[]).map((r: unknown) => {
+          const row = r as Record<string, unknown>;
+          return {
+            instanceId: row.instance_id as string,
+            behaviourId: row.behaviour_id as string,
+            symbol: row.symbol as string,
+            direction: row.direction as string,
+            lifecycleState: row.lifecycle_state as string,
+            confidence: Number(row.confidence ?? 0),
+            probability: Number(row.probability ?? 0),
+            regime: row.regime as string | null,
+            session: row.session as string | null,
+            firstDetectedAt: row.first_detected_at != null ? Number(row.first_detected_at) : null,
+            lastUpdatedAt: row.last_updated_at != null ? Number(row.last_updated_at) : null,
+          };
+        });
+      }),
+
+    // Returns per-behaviour performance stats from the DB
+    getPerformanceStats: publicProcedure.query(async () => {
+      const { getDb } = await import('./db');
+      const db = await getDb();
+      if (!db) return [];
+      const { sql: rawSql } = await import('drizzle-orm');
+      const rows = await db.execute(rawSql`
+        SELECT
+          behaviour_id,
+          COUNT(*) AS total_instances,
+          SUM(CASE WHEN lifecycle_state = 'CONFIRMED' THEN 1 ELSE 0 END) AS confirmed_instances,
+          ROUND(AVG(confidence), 2) AS avg_confidence,
+          ROUND(
+            100.0 * SUM(CASE WHEN lifecycle_state = 'CONFIRMED' THEN 1 ELSE 0 END) / COUNT(*),
+            2
+          ) AS win_rate
+        FROM atlas_behaviour_instances
+        GROUP BY behaviour_id
+        ORDER BY total_instances DESC
+      `);
+      return (rows as unknown[]).map((r: unknown) => {
+        const row = r as Record<string, unknown>;
+        return {
+          behaviour_id: row.behaviour_id as string,
+          total_instances: Number(row.total_instances ?? 0),
+          confirmed_instances: Number(row.confirmed_instances ?? 0),
+          avg_confidence: row.avg_confidence != null ? String(row.avg_confidence) : null,
+          win_rate: row.win_rate != null ? String(row.win_rate) : null,
+        };
+      });
+    }),
+
+    // Returns static behaviour definitions from the 12 canonical classifiers
+    getDefinitions: publicProcedure.query(async () => {
+      return [
+        { behaviour_id: 'TREND_CONTINUATION', name: 'Trend Continuation', category: 'TREND', description: 'Price continues in the direction of the prevailing trend after a pullback', primary_strategy: 'A1/A3', min_sample_size: 30 },
+        { behaviour_id: 'SECOND_ENTRY_PULLBACK', name: 'Second Entry Pullback', category: 'TREND', description: 'Failed first breakout followed by a second, higher-probability entry', primary_strategy: 'A1', min_sample_size: 20 },
+        { behaviour_id: 'LIQUIDITY_SWEEP', name: 'Liquidity Sweep', category: 'REVERSAL', description: 'Price sweeps a key level to trigger stops, then reverses sharply', primary_strategy: 'SB1', min_sample_size: 25 },
+        { behaviour_id: 'FAILED_BREAKOUT', name: 'Failed Breakout', category: 'REVERSAL', description: 'Price breaks a key level but fails to sustain, trapping breakout traders', primary_strategy: 'B1', min_sample_size: 20 },
+        { behaviour_id: 'MEAN_REVERSION', name: 'Mean Reversion', category: 'REVERSAL', description: 'Overextended price reverts to VWAP or EMA mean', primary_strategy: 'B1', min_sample_size: 30 },
+        { behaviour_id: 'OPENING_RANGE_BREAKOUT', name: 'Opening Range Breakout', category: 'BREAKOUT', description: 'Price breaks the first 30-minute RTH opening range with conviction', primary_strategy: 'ORB-1', min_sample_size: 40 },
+        { behaviour_id: 'VWAP_RECLAIM', name: 'VWAP Reclaim', category: 'TREND', description: 'Price reclaims VWAP after a failed breakdown, signalling buyer control', primary_strategy: 'A3', min_sample_size: 25 },
+        { behaviour_id: 'COMPRESSION', name: 'Compression', category: 'COMPRESSION', description: 'Price compresses into a tight range, coiling energy before expansion', primary_strategy: 'A1/A3', min_sample_size: 20 },
+        { behaviour_id: 'BREAKOUT_EXPANSION', name: 'Breakout Expansion', category: 'BREAKOUT', description: 'Compression resolves into a high-velocity directional move', primary_strategy: 'A1/A3', min_sample_size: 20 },
+        { behaviour_id: 'OVERNIGHT_INVENTORY', name: 'Overnight Inventory', category: 'SESSION', description: 'Overnight positioning creates directional bias at RTH open', primary_strategy: 'SB1', min_sample_size: 30 },
+        { behaviour_id: 'SESSION_ROTATION', name: 'Session Rotation', category: 'SESSION', description: 'Predictable directional rotation at session transitions', primary_strategy: 'A3', min_sample_size: 25 },
+        { behaviour_id: 'VOLATILITY_EXPANSION', name: 'Volatility Expansion', category: 'VOLATILITY', description: 'ATR expansion signals a regime shift into high-volatility conditions', primary_strategy: 'ALL', min_sample_size: 15 },
+      ];
+    }),
+
+    // Triggers a replay of the last N bars through the behaviour engine
+    triggerReplay: publicProcedure
+      .input(z.object({ bars: z.number().min(1).max(1000).default(288) }))
+      .mutation(async ({ input }) => {
+        const { getDb } = await import('./db');
+        const { atlasMemory } = await import('../drizzle/schema');
+        const db = await getDb();
+        if (!db) return { processed: 0, message: 'DB unavailable' };
+        const rows = await db
+          .select()
+          .from(atlasMemory)
+          .orderBy(desc(atlasMemory.barTime))
+          .limit(input.bars);
+        const bars = rows.reverse();
+        const { behaviourEngine } = await import('./behaviour-engine/index.js');
+        let processed = 0;
+        for (const row of bars) {
+          try {
+            await behaviourEngine.processBar({
+              barOpenTs: row.barTime,
+              barCloseTs: row.barTime + 5 * 60 * 1000, // 5-min bars
+              symbol: row.symbol,
+              open: Number(row.open ?? 0),
+              high: Number(row.high ?? 0),
+              low: Number(row.low ?? 0),
+              close: Number(row.close ?? 0),
+              volume: Number(row.volume ?? 0),
+              vwap: Number(row.vwap ?? 0),
+              ema9: Number(row.ema9 ?? 0),
+              ema21: Number(row.ema21 ?? 0),
+              adx: Number(row.adx ?? 0),
+              rsi: Number(row.rsi ?? 0),
+              atr: Number(row.atr ?? 0),
+              regime: (row.regimeClassification ?? 'UNKNOWN') as import('./behaviour-engine/types.js').MarketRegime,
+              session: (row.session ?? 'UNKNOWN') as import('./behaviour-engine/types.js').TradingSession,
+              recentBars: [],
+            });
+            processed++;
+          } catch { /* shadow mode: swallow */ }
+        }
+        return { processed, message: `Replayed ${processed} bars` };
+      }),
+  }),
+
   executive: executiveRouter,
 });
 export type AppRouter = typeof appRouter;
