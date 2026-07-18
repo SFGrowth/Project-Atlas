@@ -2,7 +2,7 @@
 
 **Document type:** Gate Approval Submission  
 **Sprint:** 123A  
-**Revision:** 4 (Contract and Version Reconciliation Pass)  
+**Revision:** 5 (Data Contract and Precision Pass)  
 **Status:** SUBMITTED FOR GATE G0 APPROVAL  
 **Date:** 2026-07-18  
 **Prepared by:** Manus AI (Atlas Nexus autonomous documentation agent)  
@@ -163,15 +163,19 @@ All OHLC tolerances in the parity spec are expressed as "≤ 1 tick" (i.e., ≤ 
 
 ### Correction 8 — Feed Availability Definition
 
-Section A.9 of `DATABENTO_PARITY_CERTIFICATION_SPEC.md` Revision 4 defines feed availability explicitly:
+Section A.9 of `DATABENTO_PARITY_CERTIFICATION_SPEC.md` Revision 5 defines feed availability explicitly as a **connection health metric**, not a bar-receipt metric:
 
-> **Feed availability** is the percentage of expected 1-minute bars in the evaluation window (RTH ∪ ETH, excluding known no-trade minutes and excluded periods) for which a Databento `ohlcv-1m` record was received within the 30-minute reconciliation window.
+> A RTH/ETH minute is considered **feed-available** if the Atlas Databento pipeline received at least one record (trade, quote, or heartbeat) from the Databento live feed during that minute. A minute is considered **feed-unavailable** if the TCP connection to Databento was not established for the full minute, the Python feed service was not running for the full minute, or the WebSocket bridge was not connected for the full minute.
 
-The formula is: `(received_bars / expected_bars) × 100`, where `expected_bars` excludes all periods in the excluded-periods list.
+Feed availability (A-008) is the ratio of feed-available minutes to total expected RTH/ETH minutes in the evaluation window, after excluding the CME maintenance window and scheduled closures.
+
+A minute with zero trades but a heartbeat record is considered feed-available. A minute with zero records of any kind is feed-unavailable.
+
+**The stale formula `(received_bars / expected_bars) × 100` has been removed.** That formula measured bar-receipt rate, which is captured separately by metric A-001 (1-min interval coverage). Feed availability (A-008) measures connection health only.
 
 The minimum required availability is **≥ 99.0%** for Gate G4. This threshold is stated once in the parity spec and is not restated in any other document.
 
-**Status: APPLIED** — `DATABENTO_PARITY_CERTIFICATION_SPEC.md` Revision 4
+**Status: APPLIED** — `DATABENTO_PARITY_CERTIFICATION_SPEC.md` Revision 5
 
 ---
 
@@ -197,7 +201,7 @@ This document (`SPRINT_123A_GATE_G0_CONTRACT_RECONCILIATION.md`) is the definiti
 
 ---
 
-## Section 3 — Authoritative Document Manifest (Revision 4)
+## Section 3 — Authoritative Document Manifest (Revision 5)
 
 All 20 Sprint 123A architecture documents. SHA256 hashes computed at time of Revision 4 commit.
 
@@ -207,7 +211,7 @@ All 20 Sprint 123A architecture documents. SHA256 hashes computed at time of Rev
 |---|---|---|---|---|
 | 1 | `SPRINT_123A_AMENDED_IMPLEMENTATION_PLAN.md` | Rev 3 | `41e0dc8132e89e1d` | All sub-sprint docs |
 | 2 | `SPRINT_123A_GATE_MATRIX.md` | Rev 3 | `df169cd319981f7a` | Plan, Parity Spec, Test Manifest |
-| 3 | `SPRINT_123A_TEST_MANIFEST.md` | Rev 4 | `f66f76abe88676725` | Plan, Gate Matrix, Parity Spec |
+| 3 | `SPRINT_123A_TEST_MANIFEST.md` | Rev 5 | `(recomputed at commit)` | Plan, Gate Matrix, Parity Spec |
 | 4 | `SPRINT_123A_RISK_REGISTER.md` | Rev 2 (22 risks) | `d462b8f53abb83e7` | Plan, Gate Matrix |
 | 5 | `SPRINT_123A_DEPENDENCY_DIAGRAM.md` | Rev 2 | `1cf05d79fdc541ba` | Plan, Gate Matrix |
 | 6 | `SPRINT_123A_AMENDMENT_REPORT.md` | Rev 2 | `e771026be94bab24` | Plan |
@@ -216,7 +220,7 @@ All 20 Sprint 123A architecture documents. SHA256 hashes computed at time of Rev
 
 | # | Document | Revision | SHA256 (first 16 chars) | Cross-links |
 |---|---|---|---|---|
-| 7 | `ATLAS_CANONICAL_MARKET_EVENT_CONTRACTS.md` | Rev 4 | `68195b821814a51b` | Plan, Test Manifest, Parity Spec |
+| 7 | `ATLAS_CANONICAL_MARKET_EVENT_CONTRACTS.md` | Rev 5 | `(recomputed at commit)` | Plan, Test Manifest, Parity Spec |
 | 8 | `ATLAS_DATA_SOURCE_AUTHORITY_MATRIX.md` | Rev 1 | `20c1b6a373b201ab` | Plan, Gate Matrix |
 | 9 | `ATLAS_EFFECTIVELY_ONCE_PROCESSING.md` | Rev 1 | `3164aa0826c10a2c` | Plan, Test Manifest |
 
@@ -224,11 +228,11 @@ All 20 Sprint 123A architecture documents. SHA256 hashes computed at time of Rev
 
 | # | Document | Revision | SHA256 (first 16 chars) | Cross-links |
 |---|---|---|---|---|
-| 10 | `DATABENTO_PARITY_CERTIFICATION_SPEC.md` | Rev 4 | `f6d15ba75f06cca8` | Gate Matrix (G4, G7), Test Manifest |
+| 10 | `DATABENTO_PARITY_CERTIFICATION_SPEC.md` | Rev 5 | `(recomputed at commit)` | Gate Matrix (G4, G7), Test Manifest |
 | 11 | `DATABENTO_CONTRACT_MAPPING_AND_ROLL_POLICY.md` | Rev 2 | `8d0f97174970503` | Plan, Test Manifest |
 | 12 | `DATABENTO_DEPLOYMENT_TOPOLOGY.md` | Rev 1 | `b823b212e74764510` | Plan |
 | 13 | `DATABENTO_NO_TRADE_AND_GAP_POLICY.md` | Rev 1 | `f329fe15a83b8351` | Plan, Parity Spec |
-| 14 | `DATABENTO_PYTHON_FEED_SERVICE_SPEC.md` | Rev 2 | `3e0ccaa2cc790f87` | Plan |
+| 14 | `DATABENTO_PYTHON_FEED_SERVICE_SPEC.md` | Rev 2 | `(recomputed at commit)` | Plan |
 
 ### System Architecture Documents
 
@@ -244,7 +248,8 @@ All 20 Sprint 123A architecture documents. SHA256 hashes computed at time of Rev
 | 17 | `SPRINT_123A_GATE_G0_CORRECTION_REPORT.md` | Revision 1 approval submission |
 | 18 | `SPRINT_123A_GATE_G0_FINAL_VERIFICATION.md` | Revision 2 approval submission |
 | 19 | `SPRINT_123A_GATE_G0_FINAL_RECONCILIATION.md` | Revision 3 approval submission |
-| 20 | `SPRINT_123A_GATE_G0_CONTRACT_RECONCILIATION.md` | **Revision 4 approval submission (this document)** |
+| 20 | `SPRINT_123A_GATE_G0_CONTRACT_RECONCILIATION.md` | Revision 4 approval submission (superseded) |
+| 21 | `SPRINT_123A_GATE_G0_FINAL_APPROVAL_SUBMISSION.md` | **Revision 5 approval submission (active)** |
 
 ---
 
@@ -258,7 +263,8 @@ All 20 Sprint 123A architecture documents. SHA256 hashes computed at time of Rev
 | `d582563` | 2026-07-18 | 14 docs | **0** |
 | `2d7f1b0` | 2026-07-18 | 6 docs | **0** |
 | `6b05ff1` | 2026-07-18 | 6 docs | **0** |
-| Revision 4 commit | 2026-07-18 | docs only | **0** |
+| `d485851` | 2026-07-18 | 14 docs | **0** |
+| Revision 5 commit | 2026-07-18 | docs only | **0** |
 
 **Cumulative production code changes since Sprint 123A documentation began: ZERO.**
 
@@ -276,7 +282,8 @@ All 18 contradictions identified across four review rounds are resolved:
 | Round 2 (Gate G0 withheld — 12 corrections) | 12 | 12 | 0 |
 | Round 3 (Gate G0 withheld — 6 corrections) | 6 | 6 | 0 |
 | Round 4 (Gate G0 withheld — 10 corrections) | 10 | 10 | 0 |
-| **Total** | **36** | **36** | **0** |
+| Round 5 (Gate G0 withheld — 5 corrections) | 5 | 5 | 0 |
+| **Total** | **41** | **41** | **0** |
 
 ---
 

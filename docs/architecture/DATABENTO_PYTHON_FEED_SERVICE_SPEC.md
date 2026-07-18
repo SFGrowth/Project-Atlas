@@ -1,6 +1,7 @@
 # Databento Python Feed Service Specification
 **Document type:** Architecture Reference  
 **Sprint:** 123A.2  
+**Revision:** 2  
 **Status:** PENDING APPROVAL  
 **Date:** 2026-07-18
 
@@ -80,6 +81,21 @@ Normalises raw Databento records into the canonical Atlas message format for the
 | `InstrumentDefMsg` | `atlas_definition` | Contract metadata |
 | `SymbolMappingMsg` | `atlas_symbol_mapping` | Raw symbol → canonical symbol mapping |
 
+**Timestamp conversion rule:** The normaliser is the sole location where Databento nanosecond timestamps are converted to Atlas millisecond timestamps. The conversion must use integer division:
+
+```python
+barOpenTsMs: int = ts_event_ns // 1_000_000  # integer division — no floating-point
+```
+
+The following pattern is **prohibited** because current-epoch nanosecond values exceed the IEEE 754 double-precision safe integer range:
+
+```python
+# PROHIBITED
+# barOpenTsMs = int(float(ts_event_ns) / 1_000_000)  # precision loss
+```
+
+The raw `ts_event_ns` and `ts_recv_ns` values are preserved as Python `int` and serialised to the bridge as base-10 decimal strings (see bridge message format below).
+
 **Must not:** Construct developing candles. Construct confirmed candles. Perform aggregation.
 
 ### `bridge_client.py`
@@ -96,11 +112,13 @@ Authenticated WebSocket client that connects to the Atlas bridge server. Handles
 
 **Message format:**
 
+**Nanosecond wire format:** Standard JSON cannot serialise Python `int` values that exceed JavaScript's `Number.MAX_SAFE_INTEGER`. Nanosecond timestamp fields (`tsEventNs`, `tsRecvNs`) must be serialised as base-10 decimal strings. The TypeScript bridge reconstructs the `BigInt` value using `BigInt(payload.tsEventNs)`.
+
 ```json
 {
   "type": "atlas_trade",
   "version": 1,
-  "ts": 1750000000000,
+  "ts": 1753000000000,
   "payload": {
     "symbol": "<resolved by Contract Roll Manager — see TEST-INT-001>",
     "rawSymbol": "MNQM5",
@@ -109,12 +127,15 @@ Authenticated WebSocket client that connects to the Atlas bridge server. Handles
     "size": 1,
     "side": "buy",
     "aggressor": "buy",
-    "tsEvent": 1750000000000,
-    "tsRecv": 1750000000001,
+    "tsEventNs": "1753000000123456789",
+    "tsRecvNs": "1753000000123500000",
+    "barOpenTsMs": 1753000000123,
     "sequence": 9876543
   }
 }
 ```
+
+`tsEventNs` and `tsRecvNs` are decimal strings. `barOpenTsMs` is a JSON integer (safe: milliseconds since epoch are well within `Number.MAX_SAFE_INTEGER` until the year 2255). Never transmit nanosecond timestamps as floating-point JSON numbers.
 
 **Must not:** Include `DATABENTO_API_KEY` or `BRIDGE_AUTH_TOKEN` in any message.
 

@@ -1,10 +1,11 @@
-# Sprint 123A Test Manifest (Revision 4)
+# Sprint 123A Test Manifest (Revision 5)
 **Document type:** Architecture Reference  
 **Sprint:** 123A  
+**Revision:** 5  
 **Status:** PENDING APPROVAL  
-**Date:** 2026-07-18 (Revision 4: Corrections 4 and 5 applied — 6 new discriminated union tests added (TEST-123A1-009 through 014); TEST-123A3-001A through 001E updated to match 5-event lifecycle; TEST-123A1-007 updated to reference discriminated union; total test count corrected to 67)  
+**Date:** 2026-07-18 (Revision 5: Corrections 2 and 3 applied — 8 new timestamp conversion and bridge serialisation tests added (TEST-123A2-011 through 018); test count updated to 75)  
 **Parent document:** `SPRINT_123A_AMENDED_IMPLEMENTATION_PLAN.md`  
-**Parity spec reference:** `DATABENTO_PARITY_CERTIFICATION_SPEC.md` (Revision 4)
+**Parity spec reference:** `DATABENTO_PARITY_CERTIFICATION_SPEC.md` (Revision 5)
 
 ---
 
@@ -18,7 +19,7 @@ This manifest defines every test required for Sprint 123A. Each test has a uniqu
 
 **Current result:** All tests are `NOT RUN` until the sub-sprint is implemented.
 
-**Total test count:** 67 tests (65 unit/integration + 2 opt-in live integration tests). The 2 opt-in tests (`TEST-INT-001`, `TEST-INT-002`) are included in the total of 67. They require `DATABENTO_INTEGRATION_TESTS=true` and a live Databento API key. Breakdown: 123A.1: 14, 123A.2: 10, 123A.3: 23, 123A.4: 11, 123A.5: 7, INT: 2. This count is machine-verified by `grep -c "^### TEST-"`.
+**Total test count:** 75 tests (73 unit/integration + 2 opt-in live integration tests). The 2 opt-in tests (`TEST-INT-001`, `TEST-INT-002`) are included in the total of 75. They require `DATABENTO_INTEGRATION_TESTS=true` and a live Databento API key. Breakdown: 123A.1: 14, 123A.2: 18, 123A.3: 23, 123A.4: 11, 123A.5: 7, INT: 2. This count is machine-verified by `grep -c "^### TEST-"`.
 
 ---
 
@@ -385,6 +386,118 @@ This manifest defines every test required for Sprint 123A. Each test has a uniqu
 | **Test file** | `services/databento-feed/tests/test_live_connection.py` |
 | **Fixture** | Live Databento connection (`DATABENTO_INTEGRATION_TESTS=true`) |
 | **Expected result** | Service connects; receives ≥10 `trades` records within 60 seconds; records normalised without error; no API key in any output |
+| **Blocking gate** | G2 |
+| **Current result** | NOT RUN |
+
+---
+
+### TEST-123A2-011 — Python ns→ms Conversion: Integer Division
+
+| Field | Value |
+|---|---|
+| **Sub-sprint** | 123A.2 |
+| **Requirement** | Python normaliser converts `ts_event_ns` to `barOpenTsMs` using integer division; result is exact |
+| **Test file** | `services/databento-feed/tests/test_normalizer.py` |
+| **Fixture** | `ts_event_ns = 1_753_000_000_123_456_789` (current-epoch nanosecond value exceeding `Number.MAX_SAFE_INTEGER`) |
+| **Expected result** | `barOpenTsMs == 1_753_000_000_123`; no fractional component; no floating-point intermediate |
+| **Blocking gate** | G2 |
+| **Current result** | NOT RUN |
+
+---
+
+### TEST-123A2-012 — Python ns→ms Conversion: Prohibited Float Pattern Rejected
+
+| Field | Value |
+|---|---|
+| **Sub-sprint** | 123A.2 |
+| **Requirement** | The prohibited pattern `int(float(ts_event_ns) / 1_000_000)` produces a different (wrong) result for large epoch values |
+| **Test file** | `services/databento-feed/tests/test_normalizer.py` |
+| **Fixture** | `ts_event_ns = 1_753_000_000_123_456_789` |
+| **Expected result** | `int(float(ts_event_ns) / 1_000_000) != 1_753_000_000_123` (demonstrates precision loss); confirms the integer-division path is required |
+| **Blocking gate** | G2 |
+| **Current result** | NOT RUN |
+
+---
+
+### TEST-123A2-013 — Bridge JSON Serialisation: tsEventNs as Decimal String
+
+| Field | Value |
+|---|---|
+| **Sub-sprint** | 123A.2 |
+| **Requirement** | Bridge message JSON contains `tsEventNs` as a base-10 decimal string, not a floating-point number |
+| **Test file** | `services/databento-feed/tests/test_bridge_client.py` |
+| **Fixture** | `ts_event_ns = 1_753_000_000_123_456_789` |
+| **Expected result** | Serialised JSON: `{"tsEventNs": "1753000000123456789"}`; `json.loads(msg)["tsEventNs"]` is a `str`; not a `float`; not an `int` |
+| **Blocking gate** | G2 |
+| **Current result** | NOT RUN |
+
+---
+
+### TEST-123A2-014 — Bridge JSON Deserialisation: BigInt Reconstruction
+
+| Field | Value |
+|---|---|
+| **Sub-sprint** | 123A.2 |
+| **Requirement** | TypeScript bridge correctly reconstructs `BigInt` from decimal string `tsEventNs` field |
+| **Test file** | `server/market-data/__tests__/bridge-server.test.ts` |
+| **Fixture** | JSON payload: `{"tsEventNs": "1753000000123456789"}` |
+| **Expected result** | `BigInt(payload.tsEventNs) === 1753000000123456789n`; no precision loss; value equals original nanosecond integer |
+| **Blocking gate** | G2 |
+| **Current result** | NOT RUN |
+
+---
+
+### TEST-123A2-015 — Bridge Rejects Invalid Nanosecond String
+
+| Field | Value |
+|---|---|
+| **Sub-sprint** | 123A.2 |
+| **Requirement** | Bridge server rejects messages where `tsEventNs` is not a valid decimal string |
+| **Test file** | `server/market-data/__tests__/bridge-server.test.ts` |
+| **Fixture** | Payloads with `tsEventNs` as: `1.753e18` (float notation), `"abc"`, `null`, `1753000000123456789` (JSON number, not string) |
+| **Expected result** | Each invalid payload is rejected with a validation error; bridge does not crash; health status remains `CONNECTED`; error is logged |
+| **Blocking gate** | G2 |
+| **Current result** | NOT RUN |
+
+---
+
+### TEST-123A2-016 — Bridge Rejects tsEventNs Above Number.MAX_SAFE_INTEGER as Float
+
+| Field | Value |
+|---|---|
+| **Sub-sprint** | 123A.2 |
+| **Requirement** | Bridge server rejects any `tsEventNs` payload where the value is transmitted as a JSON number (float) rather than a string |
+| **Test file** | `server/market-data/__tests__/bridge-server.test.ts` |
+| **Fixture** | JSON payload: `{"tsEventNs": 1753000000123456789}` (JSON number — exceeds `Number.MAX_SAFE_INTEGER`) |
+| **Expected result** | Bridge rejects the message; validation error logged; `BigInt` is never constructed from a `number` type |
+| **Blocking gate** | G2 |
+| **Current result** | NOT RUN |
+
+---
+
+### TEST-123A2-017 — No Timestamp Precision Loss End-to-End
+
+| Field | Value |
+|---|---|
+| **Sub-sprint** | 123A.2 |
+| **Requirement** | A nanosecond timestamp survives the full Python→bridge→TypeScript pipeline without precision loss |
+| **Test file** | `server/market-data/__tests__/bridge-server.test.ts` |
+| **Fixture** | Python mock sends `ts_event_ns = 1_753_000_000_123_456_789`; TypeScript bridge receives and parses |
+| **Expected result** | `BigInt(received.tsEventNs) === 1753000000123456789n`; `barOpenTsMs === 1753000000123`; no intermediate floating-point conversion |
+| **Blocking gate** | G2 |
+| **Current result** | NOT RUN |
+
+---
+
+### TEST-123A2-018 — TypeScript Prohibited Conversion Pattern Fails Type Check
+
+| Field | Value |
+|---|---|
+| **Sub-sprint** | 123A.2 |
+| **Requirement** | The prohibited TypeScript pattern `Math.floor(Number(tsEventNs) / 1_000_000)` is rejected by a lint rule or type-level test |
+| **Test file** | `server/market-data/__tests__/bridge-server.test.ts` |
+| **Fixture** | Inline test asserting that `Number(1753000000123456789n) / 1_000_000` does not equal `1753000000123` (demonstrates precision loss) |
+| **Expected result** | `Number(1753000000123456789n) / 1_000_000 !== 1753000000123`; confirms the prohibited pattern produces wrong results; BigInt division path produces correct result |
 | **Blocking gate** | G2 |
 | **Current result** | NOT RUN |
 

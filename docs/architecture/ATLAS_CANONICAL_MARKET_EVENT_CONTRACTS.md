@@ -1,9 +1,9 @@
 # Atlas Canonical Market Event Contracts
-**Revision:** 4  
+**Revision:** 5  
 **Sprint:** 123A  
 **Status:** PENDING GATE G0 APPROVAL  
 **Date:** 2026-07-18  
-**Supersedes:** Revision 3
+**Supersedes:** Revision 4
 
 ---
 
@@ -33,7 +33,41 @@ All implementations must conform to these contracts. No event may be consumed by
 | `tsEventNs` | `bigint` | UTC ns | Raw Databento `ts_event` field (nanoseconds since Unix epoch) |
 | `tsRecvNs` | `bigint` | UTC ns | Raw Databento `ts_recv` field (nanoseconds since Unix epoch) |
 
-**Conversion rule:** Nanoseconds are converted to milliseconds exactly once, at the Python/feed-adapter boundary, before any event is published to the Atlas Event Bus. No TypeScript component performs nanosecond arithmetic. The conversion is `Math.floor(Number(tsEventNs) / 1_000_000)`.
+**Conversion rule:** Nanoseconds are converted to milliseconds exactly once, at the Python/feed-adapter boundary, before any event is published to the Atlas Event Bus.
+
+**Python (authoritative conversion):**
+```python
+barOpenTsMs: int = ts_event_ns // 1_000_000  # integer division — no floating-point
+```
+
+**TypeScript (bridge-side conversion only, if required):**
+```typescript
+const barOpenTsMs: number = Number(tsEventNs / 1_000_000n);  // BigInt division before Number()
+```
+
+**Prohibited conversion pattern:**
+```typescript
+// PROHIBITED — tsEventNs exceeds Number.MAX_SAFE_INTEGER (2^53 - 1)
+// Math.floor(Number(tsEventNs) / 1_000_000)  // DO NOT USE
+```
+
+The prohibited pattern converts the nanosecond value to a JavaScript `Number` before division. Because current-epoch nanosecond timestamps (e.g. `1_753_000_000_000_000_000`) exceed `Number.MAX_SAFE_INTEGER` (`9_007_199_254_740_991`), this conversion loses precision and produces incorrect millisecond values. The Python integer-division path is preferred. If TypeScript must perform the conversion, BigInt arithmetic must be used throughout until the final `Number()` cast.
+
+**WebSocket wire format for nanosecond fields:** Standard JSON cannot serialise `bigint`. Nanosecond timestamp fields transmitted over the Python→TypeScript bridge WebSocket must be serialised as base-10 decimal strings:
+
+```json
+{
+  "tsEventNs": "1753000000123456789",
+  "tsRecvNs": "1753000000123500000"
+}
+```
+
+The TypeScript bridge validates the string format and reconstructs the `BigInt` value:
+```typescript
+const tsEventNs: bigint = BigInt(payload.tsEventNs);  // safe for any magnitude
+```
+
+Nanosecond timestamps must never be transmitted as floating-point JSON numbers.
 
 **Prohibited field names:** `barOpenTs`, `barCloseTs`, `atlasTs`, `rollTs` without explicit unit suffix are prohibited. All new code must use the `*Ms` or `*Ns` suffix.
 

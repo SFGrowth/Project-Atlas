@@ -1,8 +1,9 @@
-# Databento Parity Certification Specification (Revision 4)
+# Databento Parity Certification Specification (Revision 5)
 **Document type:** Authoritative Parity Specification  
 **Sprint:** 123A  
+**Revision:** 5  
 **Status:** PENDING APPROVAL — Gate G0  
-**Date:** 2026-07-18 (Revision 4: Correction 7 — MNQ parity units; Correction 8 — feed availability; Correction 3 — barOpenTsMs; Revision 3: Correction 5 applied — separated into Section A: Databento 1-min feed quality and Section B: TradingView vs Databento 5-min cross-feed parity; 5-min denominator defined; 1-min bars never directly compared with TradingView 5-min bars; Revision 2: unified threshold to 99.0%, availability gates, RTH/ETH union, barOpenTs, zero-volume, feature agreement aggregation, RSI/ADX/Session/Regime as G6A requirements)  
+**Date:** 2026-07-18 (Revision 5: Correction 4 — Section A normalised composite formula with deterministic example; Revision 4: Correction 7 — MNQ parity units; Correction 8 — feed availability; Correction 3 — barOpenTsMs; Revision 3: Correction 5 applied — separated into Section A and Section B; Revision 2: unified threshold to 99.0%)  
 **Authoritative source for:** All parity thresholds referenced in `SPRINT_123A_GATE_MATRIX.md`
 
 > **This document is the sole authoritative source for all parity thresholds and certification criteria. No other document may restate these thresholds. The Gate Matrix references this document by revision number only.**
@@ -91,7 +92,44 @@ The denominator for Section A interval coverage is the union of all RTH and ETH 
 
 ### A.8 Section A Composite Score
 
-The Section A composite score is the arithmetic mean of all Section A metric pass rates (A-001 through A-008). All metrics must individually pass their thresholds. A composite score ≥ 99.0% with any individual metric below threshold does not constitute a pass.
+The Section A composite score is the arithmetic mean of all Section A metric pass rates, where each metric is normalised to the range `[0.0, 1.0]` before averaging. This ensures that metrics with different threshold directions ("≥ threshold" vs "≤ threshold") contribute equally to the composite.
+
+**Normalisation rule:**
+
+| Metric direction | Normalised value |
+|---|---|
+| `≥ threshold` (e.g., A-001: coverage ≥ 99.0%) | `min(actual / threshold, 1.0)` |
+| `≤ threshold` (e.g., A-002: unresolved ≤ 0.5%) | `min(threshold / actual, 1.0)` if `actual > 0`; `1.0` if `actual = 0` |
+
+A normalised value of `1.0` means the metric exactly meets or exceeds its threshold. A value below `1.0` means the metric is below threshold.
+
+**Composite formula:**
+
+```
+section_a_composite = (1/8) × (
+  norm(A001) + norm(A002) + norm(A003) + norm(A004) +
+  norm(A005) + norm(A006) + norm(A007) + norm(A008)
+)
+```
+
+**Deterministic example:**
+
+Given the following hypothetical metric values:
+
+| Metric | Threshold | Actual | Direction | Normalised |
+|---|---|---|---|---|
+| A-001 | ≥ 99.0% | 99.5% | ≥ | `min(99.5/99.0, 1.0) = 1.0` |
+| A-002 | ≤ 0.5% | 0.3% | ≤ | `min(0.5/0.3, 1.0) = 1.0` |
+| A-003 | ≤ 1.0% | 0.8% | ≤ | `min(1.0/0.8, 1.0) = 1.0` |
+| A-004 | ≥ 99.0% | 98.5% | ≥ | `min(98.5/99.0, 1.0) = 0.9949` |
+| A-005 | ≤ 0.1% | 0.05% | ≤ | `min(0.1/0.05, 1.0) = 1.0` |
+| A-006 | ≤ 0.1% | 0.0% | ≤ | `1.0` (actual = 0) |
+| A-007 | ≥ 95.0% | 96.0% | ≥ | `min(96.0/95.0, 1.0) = 1.0` |
+| A-008 | ≥ 99.0% | 99.2% | ≥ | `min(99.2/99.0, 1.0) = 1.0` |
+
+`section_a_composite = (1/8) × (1.0 + 1.0 + 1.0 + 0.9949 + 1.0 + 1.0 + 1.0 + 1.0) = 0.9994 = 99.94%`
+
+In this example, A-004 fails its individual threshold (98.5% < 99.0%). Despite the composite score being 99.94%, **Gate G4 fails** because A-004 did not individually pass. All metrics must individually pass their thresholds. A composite score ≥ 99.0% with any individual metric below threshold does not constitute a pass.
 
 ### A.9 Feed Availability Definition
 
