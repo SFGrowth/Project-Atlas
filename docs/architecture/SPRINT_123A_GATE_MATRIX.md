@@ -1,8 +1,8 @@
-# Sprint 123A Gate Matrix (Revision 2)
+# Sprint 123A Gate Matrix (Revision 3)
 **Document type:** Architecture Reference  
 **Sprint:** 123A  
 **Status:** ACTIVE — update as gates are reached  
-**Date:** 2026-07-18 (Revision 3: corrections 1, 2, 3 from Gate G0 Final Surgical Pass applied — parity threshold wording unified, G3 test references corrected, test count corrected)  
+**Date:** 2026-07-18 (Revision 3: corrections 1–3 from Gate G0 Final Surgical Pass applied; Revision 3 update: parity spec references updated to Revision 4; plan reference updated to Revision 3; test manifest reference updated to Revision 4)  
 **Parent document:** `SPRINT_123A_AMENDED_IMPLEMENTATION_PLAN.md`
 
 ---
@@ -27,10 +27,10 @@ This matrix defines every gate that must be passed before each sub-sprint begins
 
 | Criterion | Verification Method | Status |
 |---|---|---|
-| Amended implementation plan (Revision 2) reviewed by Phil | Phil confirms in writing | PENDING |
+| Amended implementation plan (Revision 3) reviewed by Phil | Phil confirms in writing | PENDING |
 | All 15 supporting architecture documents reviewed by Phil | Phil confirms in writing | PENDING |
-| Risk register (Revision 2) reviewed and accepted | Phil confirms in writing | PENDING |
-| Gate matrix (Revision 2) reviewed and accepted | Phil confirms in writing | PENDING |
+| Risk register (Revision 2 — 22 risks) reviewed and accepted | Phil confirms in writing | PENDING |
+| Gate matrix (Revision 3) reviewed and accepted | Phil confirms in writing | PENDING |
 | Test manifest reviewed and accepted | Phil confirms in writing | PENDING |
 | Parity certification spec reviewed and accepted | Phil confirms in writing | PENDING |
 | No production code changes before this gate | Source control verification | PENDING |
@@ -117,11 +117,11 @@ This matrix defines every gate that must be passed before each sub-sprint begins
 **Approver:** Phil  
 **Status:** NOT REACHED
 
-Gate G4 passes only when every applicable requirement in `DATABENTO_PARITY_CERTIFICATION_SPEC.md` Revision 2 is satisfied. Thresholds are not restated here — the parity specification is the sole authoritative source.
+Gate G4 passes only when every applicable requirement in `DATABENTO_PARITY_CERTIFICATION_SPEC.md` Revision 4 is satisfied. Thresholds are not restated here — the parity specification is the sole authoritative source.
 
 | Criterion | Verification Method | Status |
 |---|---|---|
-| All requirements in `DATABENTO_PARITY_CERTIFICATION_SPEC.md` Revision 2 satisfied (Section A: 1-min feed quality; Section B: 5-min cross-feed parity) | Parity report per spec | NOT REACHED |
+| All requirements in `DATABENTO_PARITY_CERTIFICATION_SPEC.md` Revision 4 satisfied (Section A: 1-min feed quality; Section B: 5-min cross-feed parity) | Parity report per spec | NOT REACHED |
 | Zero `containsUnresolvedMinutes` bars in 5-day window | Database query | NOT REACHED |
 | All contract rolls detected correctly | Roll log review | NOT REACHED |
 | `AtlasLiveChart.tsx` displays developing and confirmed candles from Databento | Visual review | NOT REACHED |
@@ -205,7 +205,7 @@ Gate G4 passes only when every applicable requirement in `DATABENTO_PARITY_CERTI
 | All five sub-sprints merged to `main` | Git log | NOT REACHED |
 | Gate G6 passed | See G6 | NOT REACHED |
 | `DATABENTO_SHADOW` mode active in production (or higher) | Environment check | NOT REACHED |
-| All requirements in `DATABENTO_PARITY_CERTIFICATION_SPEC.md` Revision 2 (Section B, Gate G6A features) satisfied | Parity report per spec | NOT REACHED |
+| All requirements in `DATABENTO_PARITY_CERTIFICATION_SPEC.md` Revision 4 (Section B, Gate G6A features) satisfied | Parity report per spec | NOT REACHED |
 | `AtlasLiveChart.tsx` passes Chart Authority gate | Visual review | NOT REACHED |
 | All tests in `SPRINT_123A_TEST_MANIFEST.md` pass | `pnpm test` | NOT REACHED |
 | `SPRINT_123A_DATABENTO_LIVE_VALIDATION.md` report complete | Document review | NOT REACHED |

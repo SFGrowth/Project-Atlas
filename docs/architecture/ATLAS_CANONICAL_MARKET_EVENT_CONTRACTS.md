@@ -1,165 +1,429 @@
 # Atlas Canonical Market Event Contracts
-**Document type:** Architecture Reference  
-**Sprint:** 123A.1  
-**Status:** PENDING APPROVAL  
-**Date:** 2026-07-18 (Revision 2: Correction 6 applied — provisional vs confirmed 1-min bar lifecycle defined)
+**Revision:** 4  
+**Sprint:** 123A  
+**Status:** PENDING GATE G0 APPROVAL  
+**Date:** 2026-07-18  
+**Supersedes:** Revision 3
 
 ---
 
-## Overview
+## 1. Purpose
 
-This document defines every canonical market event contract used in Atlas. All events are versioned. Consumers must declare the contract version they consume. Breaking changes require a new version. Non-breaking additions (new optional fields) do not require a version bump.
+This document defines the canonical event contracts for all market data events emitted by the Atlas Nexus market-data pipeline. These contracts govern the precise semantics of every event type, the fields and units of every event, the eligibility of each event for downstream canonical processing, and the timestamp unit standard for all Atlas events.
 
-The existing contracts in `shared/types/market-events.ts` are the authoritative TypeScript types. This document adds the canonical event ID specification, ownership, and the new contracts required for Sprint 123A.
-
----
-
-## Existing Contracts (Sprint 121 — Verified)
-
-These contracts exist in `shared/types/market-events.ts` and are verified correct.
-
-### `AtlasTradeEvent` v1
-
-Owner: Market-data service. Trigger: Databento `trades` record normalised by `event-normalizer.ts`.
-
-| Field | Type | Description |
-|---|---|---|
-| `type` | `'trade'` | Discriminant |
-| `source` | `DataSource` | `'databento'` or `'tradingview'` |
-| `symbol` | string | Canonical symbol (`MNQ1!`) |
-| `price` | `AtlasPrice` | Trade price in USD |
-| `size` | `AtlasSize` | Contracts traded |
-| `side` | `TradeSide` | `'buy'`, `'sell'`, or `'unknown'` |
-| `aggressor` | `TradeSide` | Aggressor side |
-| `tsEvent` | number | Exchange timestamp (ms UTC) |
-| `tsRecv` | number? | DataBento receive timestamp (ms UTC) |
-| `atlasTs` | number | Atlas receive timestamp (ms UTC) |
-| `sequence` | number? | Exchange sequence number |
-| `instrumentId` | number? | DataBento instrument_id |
-
-### `AtlasQuoteEvent` v1
-
-Owner: Market-data service. Reserved for future `mbp-1` schema use. Not used in Sprint 123A.
-
-### `AtlasBarEvent` v1
-
-Owner: Market-data service. Current use: 5-min bars only. Will be extended in Sprint 123A.3 to support 1-min bars.
-
-### `AtlasFeedHealthEvent` v1
-
-Owner: Market-data service. Trigger: Feed health state machine transition.
-
-### `AtlasSymbolMappingEvent` v1
-
-Owner: Market-data service. Trigger: Databento `SymbolMappingMsg` record.
+All implementations must conform to these contracts. No event may be consumed by canonical downstream systems unless it is explicitly listed as eligible in this document.
 
 ---
 
-## New Contracts Required for Sprint 123A
+## 2. Timestamp Unit Standard
 
-These contracts do not yet exist and must be added to `shared/types/canonical-events.ts` in Sprint 123A.1.
+**All canonical Atlas timestamps use UTC milliseconds (integer).**
 
-### `CanonicalEventId` v1
+| Field name | Type | Unit | Description |
+|---|---|---|---|
+| `barOpenTsMs` | `number` | UTC ms | Start of the bar's time window (floor to interval boundary) |
+| `barCloseTsMs` | `number` | UTC ms | End of the bar's time window (exclusive) |
+| `atlasTsMs` | `number` | UTC ms | Timestamp at which Atlas processed or emitted the event |
+| `rollTsMs` | `number` | UTC ms | Timestamp of the contract roll event |
 
-The durable identifier for every canonical market event. Used as the basis for all consumer idempotency keys.
+**Raw Databento nanosecond timestamps are preserved separately and never used as canonical identifiers.**
+
+| Field name | Type | Unit | Description |
+|---|---|---|---|
+| `tsEventNs` | `bigint` | UTC ns | Raw Databento `ts_event` field (nanoseconds since Unix epoch) |
+| `tsRecvNs` | `bigint` | UTC ns | Raw Databento `ts_recv` field (nanoseconds since Unix epoch) |
+
+**Conversion rule:** Nanoseconds are converted to milliseconds exactly once, at the Python/feed-adapter boundary, before any event is published to the Atlas Event Bus. No TypeScript component performs nanosecond arithmetic. The conversion is `Math.floor(Number(tsEventNs) / 1_000_000)`.
+
+**Prohibited field names:** `barOpenTs`, `barCloseTs`, `atlasTs`, `rollTs` without explicit unit suffix are prohibited. All new code must use the `*Ms` or `*Ns` suffix.
+
+---
+
+## 3. Canonical Event ID — Source-Safe Discriminated Union
+
+The `CanonicalEventId` is a discriminated union. The `source` field is the discriminant. No field from one source variant is required by the other.
+
+### 3.1 DatabentoEventId
+
+Used when the event originates from the Databento feed.
 
 ```typescript
-interface CanonicalEventId {
-  source: 'databento' | 'tradingview';
-  dataset: string;           // e.g. 'GLBX.MDP3'
-  rawSymbol: string;         // e.g. 'MNQM5'
-  instrumentId: number;      // Databento instrument_id
+interface DatabentoEventId {
+  source: 'DATABENTO';
+  dataset: string;           // e.g. "GLBX.MDP3"
+  rawSymbol: string;         // resolved dynamically — see TEST-INT-001; never hardcoded
+  instrumentId: number;      // Databento numeric instrument ID
   interval: '1m' | '5m';
-  barOpenTs: number;         // UTC milliseconds
-  revision: number;          // 0 for first, incremented on correction
-  mappingVersion: number;    // Incremented on contract roll
+  barOpenTsMs: number;       // UTC milliseconds
+  revision: number;          // 0 for original; increments on correction
+  mappingVersion: string;    // Databento symbol mapping version at time of event
 }
 ```
 
-Serialised form: `{source}.{dataset}.{rawSymbol}.{instrumentId}.{interval}.{barOpenTs}.{revision}.{mappingVersion}`
+### 3.2 TradingViewEventId
 
-### `AtlasBarDeveloping` v1 (1-min)
+Used when the event originates from the TradingView webhook (Pine Script M-16).
 
-Owner: Market-data service (TypeScript bar builder). Trigger: Every normalised trade event, rate-limited to 1 per second per symbol.
+```typescript
+interface TradingViewEventId {
+  source: 'TRADINGVIEW';
+  sourceInstrumentKey: string;  // e.g. "CME_MINI:MNQ1!"
+  interval: '5m';
+  barOpenTsMs: number;          // UTC milliseconds
+  revision: number;             // 0 for original; increments on correction
+}
+```
 
-| Field | Type | Description |
-|---|---|---|
-| `type` | `'bar_developing'` | Discriminant |
-| `canonicalEventId` | `CanonicalEventId` | Durable event ID |
-| `symbol` | string | Canonical symbol |
-| `barOpenTs` | number | Bar open (ms UTC) |
-| `barCloseTs` | number | Bar close = barOpenTs + 60_000 |
-| `open` | number | First trade price |
-| `high` | number | Highest trade price |
-| `low` | number | Lowest trade price |
-| `close` | number | Most recent trade price |
-| `volume` | number | Total contracts |
-| `tickCount` | number | Number of trades |
-| `atlasTs` | number | Atlas timestamp (ms UTC) |
+### 3.3 Discriminated Union Type
 
-### `AtlasBarConfirmed` v1 (1-min)
+```typescript
+type CanonicalEventId = DatabentoEventId | TradingViewEventId;
+```
 
-Owner: Market-data service (TypeScript bar builder). Trigger: Bar boundary crossed or `ohlcv-1m` reconciliation confirms close.
+### 3.4 Deterministic Serialisation
 
-**Provisional vs confirmed lifecycle:** A 1-minute bar passes through two states before it is eligible to contribute to a 5-minute bar.
+Both forms must serialise deterministically. The canonical serialisation is:
 
-1. **Provisional** (`reconciliationStatus = PROVISIONAL`): The bar boundary has been crossed (i.e., 60 seconds have elapsed since `barOpenTs`). The bar is persisted to `atlas_bars_1m` with `reconciliationStatus = PROVISIONAL`. It is **not** forwarded to the five-min aggregator at this stage. An `AtlasBarConfirmed` event with `isReconciled = false` is emitted for chart display only.
+```
+DATABENTO:{dataset}:{rawSymbol}:{instrumentId}:{interval}:{barOpenTsMs}:{revision}:{mappingVersion}
+TRADINGVIEW:{sourceInstrumentKey}:{interval}:{barOpenTsMs}:{revision}
+```
 
-2. **Confirmed** (`reconciliationStatus = MATCHED`): The bar builder receives the official Databento `ohlcv-1m` record for the same interval and the OHLCV values agree within the defined tolerances (±1 tick OHLC, ±5% volume). The bar is updated to `reconciliationStatus = MATCHED`, and a revised `AtlasBarConfirmed` event with `isReconciled = true` is emitted. **Only confirmed bars are forwarded to the five-min aggregator.**
-
-3. **Unresolved** (`reconciliationStatus = UNRESOLVED`): If the official `ohlcv-1m` record has not arrived within 30 minutes of the bar close, or if the OHLCV values disagree beyond tolerance, the bar is marked `UNRESOLVED`. Unresolved bars are **never** forwarded to the five-min aggregator. A 5-minute bar that would require an unresolved 1-min bar is held pending. If the unresolved bar is later recovered via Historical API, it is reclassified as `MATCHED` and the 5-minute bar is released.
-
-This lifecycle ensures that `CanonicalBarConfirmed` (5-min) events are only emitted from fully reconciled data. The `containsUnresolvedMinutes` field on `CanonicalBarConfirmed` is always `false` in normal operation; it is only `true` if the 30-minute recovery window expires and the bar is released anyway under an explicit operator override (which requires Phil's written approval).
-
-Same fields as `AtlasBarDeveloping` plus:
-
-| Field | Type | Description |
-|---|---|---|
-| `type` | `'bar_confirmed'` | Discriminant |
-| `isSynthetic` | boolean | True if `SYNTHETIC_NO_TRADE_BAR` |
-| `isReconciled` | boolean | True if reconciled against `ohlcv-1m` |
-| `reconciliationDelta` | number? | Price delta vs official bar (if reconciled) |
-
-### `CanonicalBarConfirmed` v1 (5-min)
-
-Owner: Market-data service (5-min aggregator). Trigger: 5 confirmed 1-min bars aggregated. This is the single trigger for all downstream processing.
-
-| Field | Type | Description |
-|---|---|---|
-| `type` | `'canonical_bar_confirmed'` | Discriminant |
-| `canonicalEventId` | `CanonicalEventId` | Durable event ID (interval = `5m`) |
-| `symbol` | string | Canonical symbol |
-| `barOpenTs` | number | Bar open (ms UTC) |
-| `barCloseTs` | number | Bar close = barOpenTs + 300_000 |
-| `open` | number | Open price |
-| `high` | number | High price |
-| `low` | number | Low price |
-| `close` | number | Close price |
-| `volume` | number | Total contracts |
-| `tickCount` | number | Total trades |
-| `containsSyntheticMinutes` | boolean | True if any 1-min bar was synthetic |
-| `containsUnresolvedMinutes` | boolean | True if any 1-min bar was unresolved — **must not be used for production processing** |
-| `atlasTs` | number | Atlas timestamp (ms UTC) |
-
-### `AtlasContractRoll` v1
-
-Owner: Market-data service (Contract Roll Manager). Trigger: Databento symbol-mapping change or definition record indicating new front month.
-
-| Field | Type | Description |
-|---|---|---|
-| `type` | `'contract_roll'` | Discriminant |
-| `parentSymbol` | string | `MNQ` |
-| `previousRawSymbol` | string | e.g. `MNQM5` |
-| `newRawSymbol` | string | e.g. `MNQU5` |
-| `previousInstrumentId` | number | Previous Databento instrument_id |
-| `newInstrumentId` | number | New Databento instrument_id |
-| `rollTs` | number | Roll timestamp (ms UTC) |
-| `mappingVersion` | number | New mapping version |
-| `atlasTs` | number | Atlas timestamp |
+No collision is possible between sources because the `source` prefix is always distinct. The serialisation is used as the idempotency key for the consumer processing ledger.
 
 ---
 
-## Consumer Idempotency Key Pattern
+## 4. Bar Event Lifecycle
+
+The 1-minute bar lifecycle has five distinct states, each with a unique event type and unique `type` discriminant. No state may be skipped. The lifecycle is strictly sequential.
+
+```
+TRADE records arrive
+        │
+        ▼
+AtlasBarDeveloping  (repeated on each trade)
+        │
+        ▼  (minute boundary crossed)
+AtlasBarProvisionalClosed  (chart display only — NOT canonical)
+        │
+        ├──► ohlcv-1m arrives ≤30 min, values agree within tolerance
+        │           │
+        │           ▼
+        │    AtlasBarConfirmed  ──► five-minute aggregator ──► CanonicalBarConfirmed
+        │
+        ├──► ohlcv-1m arrives ≤30 min, values disagree beyond tolerance
+        │           │
+        │           ▼
+        │    AtlasBarUnresolved (UNRESOLVED_DISCREPANCY) + alert
+        │
+        └──► no ohlcv-1m within 30 min
+                    │
+                    ▼
+             AtlasBarUnresolved (UNRESOLVED_MISSING) + alert
+                    │
+                    └──► Phil approves inspection (written)
+                                │
+                                ▼
+                         AtlasBarReleasedForInspection
+                         (chart/diagnostics/research only)
+```
+
+---
+
+## 5. Event Definitions
+
+### 5.1 AtlasBarDeveloping
+
+Emitted on every trade record received for the current open 1-minute bar. Represents the live, in-progress state of the bar. Not persisted to `atlas_bars_1m`.
+
+```typescript
+interface AtlasBarDeveloping {
+  type: 'ATLAS_BAR_DEVELOPING';
+  id: DatabentoEventId;
+  symbol: string;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+  volume: number;
+  tradeCount: number;
+  atlasTsMs: number;
+  tsEventNs: bigint;
+}
+```
+
+| Eligibility | Decision |
+|---|---|
+| Chart display | YES — live developing bar |
+| `atlas_bars_1m` persistence | NO |
+| Five-minute aggregation | NO |
+| `postBarAutomation` | NO |
+| `liveLearnEngine` | NO |
+| DARWIN canonical observation | NO |
+
+---
+
+### 5.2 AtlasBarProvisionalClosed
+
+Emitted exactly once when the 1-minute boundary is crossed. Represents the bar as seen from trade data alone, before official Databento reconciliation. **This event is not canonical.** It is for chart display only.
+
+```typescript
+interface AtlasBarProvisionalClosed {
+  type: 'ATLAS_BAR_PROVISIONAL_CLOSED';
+  id: DatabentoEventId;
+  symbol: string;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+  volume: number;
+  tradeCount: number;
+  barOpenTsMs: number;
+  barCloseTsMs: number;
+  atlasTsMs: number;
+  reconciliationStatus: 'PROVISIONAL';
+}
+```
+
+| Eligibility | Decision |
+|---|---|
+| Chart display | YES — provisional display pending confirmation |
+| `atlas_bars_1m` persistence | YES — with `reconciliationStatus = 'PROVISIONAL'` |
+| Five-minute aggregation | **NO** |
+| `postBarAutomation` | **NO** |
+| `liveLearnEngine` | **NO** |
+| DARWIN canonical observation | **NO** |
+
+**Invariant:** `AtlasBarProvisionalClosed` is never forwarded to the five-minute aggregator. It is never used as input to any canonical computation. `AtlasBarConfirmed` is never emitted at the minute boundary — only `AtlasBarProvisionalClosed` is emitted at the boundary.
+
+---
+
+### 5.3 AtlasBarConfirmed
+
+Emitted after the official Databento `ohlcv-1m` record arrives and reconciliation passes. This is the only 1-minute event eligible for five-minute aggregation and canonical downstream processing. **This event is never emitted from trade records alone.**
+
+```typescript
+interface AtlasBarConfirmed {
+  type: 'ATLAS_BAR_CONFIRMED';
+  id: DatabentoEventId;
+  symbol: string;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+  volume: number;
+  tradeCount: number;
+  barOpenTsMs: number;
+  barCloseTsMs: number;
+  atlasTsMs: number;
+  reconciliationStatus: 'MATCHED';
+  tsEventNs: bigint;
+  tsRecvNs: bigint;
+}
+```
+
+| Eligibility | Decision |
+|---|---|
+| Chart display | YES — replaces provisional display |
+| `atlas_bars_1m` persistence | YES — updates existing row to `MATCHED` |
+| Five-minute aggregation | **YES** |
+| `postBarAutomation` | YES — via five-minute aggregator only |
+| `liveLearnEngine` | YES — via `postBarAutomation` only |
+| DARWIN canonical observation | YES — via `postBarAutomation` only |
+
+**Invariant:** `AtlasBarConfirmed` requires a passing `ohlcv-1m` reconciliation. It is never emitted from trade records alone. The field `isReconciled` does not exist on this type — the event type itself is the confirmation. `AtlasBarConfirmed` with `isReconciled=false` is not a valid event.
+
+---
+
+### 5.4 AtlasBarUnresolved
+
+Emitted when either (a) no `ohlcv-1m` record arrives within 30 minutes of bar close, or (b) the `ohlcv-1m` record arrives but OHLCV values disagree beyond tolerance. This event is never eligible for canonical downstream processing.
+
+```typescript
+interface AtlasBarUnresolved {
+  type: 'ATLAS_BAR_UNRESOLVED';
+  id: DatabentoEventId;
+  symbol: string;
+  provisionalOpen: number;
+  provisionalHigh: number;
+  provisionalLow: number;
+  provisionalClose: number;
+  provisionalVolume: number;
+  officialOpen?: number;
+  officialHigh?: number;
+  officialLow?: number;
+  officialClose?: number;
+  officialVolume?: number;
+  barOpenTsMs: number;
+  barCloseTsMs: number;
+  atlasTsMs: number;
+  reconciliationStatus: 'UNRESOLVED_MISSING' | 'UNRESOLVED_DISCREPANCY';
+  discrepancyFields?: string[];
+  alertEmitted: boolean;
+}
+```
+
+| Eligibility | Decision |
+|---|---|
+| Chart display | YES — marked as unresolved |
+| `atlas_bars_1m` persistence | YES — with `reconciliationStatus = 'UNRESOLVED_*'` |
+| Five-minute aggregation | **NEVER** |
+| `postBarAutomation` | **NEVER** |
+| `liveLearnEngine` | **NEVER** |
+| DARWIN canonical observation | **NEVER** |
+
+**Invariant:** An `AtlasBarUnresolved` event always triggers an alert. The five-minute aggregator holds any pending 5-minute bar that contains this 1-minute slot until the bar is either confirmed (via historical recovery) or explicitly released for inspection.
+
+---
+
+### 5.5 AtlasBarReleasedForInspection
+
+A non-canonical event emitted only with Phil's explicit written approval when an unresolved bar needs to be inspected. This event is never eligible for canonical downstream processing.
+
+```typescript
+interface AtlasBarReleasedForInspection {
+  type: 'ATLAS_BAR_RELEASED_FOR_INSPECTION';
+  id: DatabentoEventId;
+  symbol: string;
+  provisionalOpen: number;
+  provisionalHigh: number;
+  provisionalLow: number;
+  provisionalClose: number;
+  provisionalVolume: number;
+  barOpenTsMs: number;
+  barCloseTsMs: number;
+  atlasTsMs: number;
+  reconciliationStatus: 'UNRESOLVED_MISSING' | 'UNRESOLVED_DISCREPANCY';
+  releaseApprovedBy: 'PHIL';
+  releaseReason: string;
+}
+```
+
+| Eligibility | Decision |
+|---|---|
+| Chart inspection | YES |
+| Diagnostics | YES |
+| Research tooling | YES |
+| `postBarAutomation` | **NEVER** |
+| `liveLearnEngine` | **NEVER** |
+| Behaviour Engine canonical processing | **NEVER** |
+| DARWIN canonical observation | **NEVER** |
+| ADE | **NEVER** |
+| Strategies | **NEVER** |
+| Execution | **NEVER** |
+
+**Invariant:** Emitting `AtlasBarReleasedForInspection` does not change the `reconciliationStatus` of the underlying `atlas_bars_1m` row. The row remains `UNRESOLVED_*`. The five-minute aggregator does not receive this event.
+
+---
+
+## 6. CanonicalBarConfirmed Invariant
+
+`CanonicalBarConfirmed` (the five-minute canonical event emitted by the five-minute aggregator) always has:
+
+```
+containsUnresolvedMinutes = false
+```
+
+This invariant is unconditional. There is no operator override path. No `CanonicalBarConfirmed` event may be emitted if any of its constituent 1-minute bars has `reconciliationStatus` other than `'MATCHED'`.
+
+If Phil approves inspection of data that contains unresolved minutes, the `AtlasBarReleasedForInspection` event is used. The five-minute aggregator does not participate in this path.
+
+---
+
+## 7. CanonicalBarConfirmed (5-min)
+
+Owner: Market-data service (five-minute aggregator). Trigger: 5 consecutive `AtlasBarConfirmed` events aggregated. This is the single trigger for all downstream processing.
+
+```typescript
+interface CanonicalBarConfirmed {
+  type: 'CANONICAL_BAR_CONFIRMED';
+  id: DatabentoEventId | TradingViewEventId;
+  symbol: string;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+  volume: number;
+  tradeCount: number;
+  barOpenTsMs: number;
+  barCloseTsMs: number;
+  atlasTsMs: number;
+  containsSyntheticMinutes: boolean;
+  containsUnresolvedMinutes: false;   // ALWAYS false — see Section 6
+  vwap?: number;
+  ema9?: number;
+  ema21?: number;
+}
+```
+
+---
+
+## 8. TradingView Bar Event
+
+TradingView events use the `TradingViewEventId` discriminant. The bar lifecycle is simpler because TradingView delivers only closed 5-minute bars.
+
+```typescript
+interface TradingViewBarConfirmed {
+  type: 'TRADINGVIEW_BAR_CONFIRMED';
+  id: TradingViewEventId;
+  symbol: string;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+  volume: number;
+  barOpenTsMs: number;
+  barCloseTsMs: number;
+  atlasTsMs: number;
+  vwap?: number;
+  ema9?: number;
+  ema21?: number;
+}
+```
+
+When `MARKET_DATA_AUTHORITY = TRADINGVIEW_ONLY`, `TradingViewBarConfirmed` is the sole input to `postBarAutomation`. When `MARKET_DATA_AUTHORITY = DATABENTO`, `CanonicalBarConfirmed` is the sole input to `postBarAutomation`. The two paths are mutually exclusive.
+
+---
+
+## 9. AtlasContractRoll
+
+Owner: Market-data service (Contract Roll Manager). Trigger: Databento symbol-mapping change or definition record indicating new front month.
+
+```typescript
+interface AtlasContractRoll {
+  type: 'ATLAS_CONTRACT_ROLL';
+  parentSymbol: string;
+  previousRawSymbol: string;
+  newRawSymbol: string;
+  previousInstrumentId: number;
+  newInstrumentId: number;
+  rollTsMs: number;
+  mappingVersion: string;
+  atlasTsMs: number;
+}
+```
+
+---
+
+## 10. SSE Channel Names
+
+| Event type | SSE channel | Consumers |
+|---|---|---|
+| `ATLAS_BAR_DEVELOPING` | `atlas_bar_developing` | `AtlasLiveChart` only |
+| `ATLAS_BAR_PROVISIONAL_CLOSED` | `atlas_bar_provisional_closed` | `AtlasLiveChart` only |
+| `ATLAS_BAR_CONFIRMED` | `atlas_bar_confirmed_1m` | `AtlasLiveChart`, parity monitor |
+| `ATLAS_BAR_UNRESOLVED` | `atlas_bar_unresolved` | `AtlasLiveChart`, alert system |
+| `ATLAS_BAR_RELEASED_FOR_INSPECTION` | `atlas_bar_released_for_inspection` | `AtlasLiveChart` (inspection mode), diagnostics |
+| `TRADINGVIEW_BAR_CONFIRMED` | `atlas_bar_confirmed` | `AtlasLiveChart`, parity monitor |
+| `CANONICAL_BAR_CONFIRMED` | `atlas_canonical_bar` | `AtlasLiveChart`, DARWIN, strategies |
+| `ATLAS_CONTRACT_ROLL` | `atlas_contract_roll` | All consumers |
+| `ATLAS_FEED_HEALTH` | `atlas_feed_health` | `AtlasLiveChart`, ops |
+
+**Invariant:** `AtlasLiveChart` is a pure SSE consumer. It never publishes to any SSE channel or the Atlas Event Bus.
+
+---
+
+## 11. Consumer Idempotency Key Pattern
 
 Every downstream consumer of `CanonicalBarConfirmed` must maintain an idempotency key in the `atlas_consumer_processing_ledger` table:
 
@@ -167,7 +431,7 @@ Every downstream consumer of `CanonicalBarConfirmed` must maintain an idempotenc
 {consumerName}_v{consumerVersion}:{serialisedCanonicalEventId}
 ```
 
-| Consumer | Key Prefix |
+| Consumer | Key prefix |
 |---|---|
 | `liveLearnEngine` | `live_learn_v1:` |
 | `behaviourEngine` (canonical) | `behaviour_engine_v1:` |
@@ -178,13 +442,11 @@ Every downstream consumer of `CanonicalBarConfirmed` must maintain an idempotenc
 
 ---
 
-## SSE Channel Names
+## 12. Revision History
 
-| Event | SSE Channel |
-|---|---|
-| `AtlasBarDeveloping` | `atlas_bar_developing` |
-| `AtlasBarConfirmed` (1-min) | `atlas_bar_confirmed_1m` |
-| `CanonicalBarConfirmed` (5-min) | `atlas_bar_confirmed` |
-| `AtlasFeedHealthEvent` | `atlas_feed_health` |
-| `AtlasContractRoll` | `atlas_contract_roll` |
-| `AtlasTradeEvent` (rate-limited) | `atlas_market_trade` |
+| Revision | Date | Changes |
+|---|---|---|
+| 1 | 2026-07-18 | Initial document — basic event contracts |
+| 2 | 2026-07-18 | Added provisional/confirmed/unresolved 1-min bar lifecycle |
+| 3 | 2026-07-18 | Added `AtlasBarReleasedForInspection`; removed operator override path |
+| 4 | 2026-07-18 | Full rewrite: 5 distinct events with unique `type` discriminants; timestamp unit standard (UTC ms with `*Ms`/`*Ns` suffixes); source-safe `CanonicalEventId` discriminated union; `AtlasBarProvisionalClosed` strictly separated from `AtlasBarConfirmed`; `AtlasBarConfirmed` never emitted from trade records alone; `isReconciled` field removed; `containsUnresolvedMinutes` invariant hardened to unconditional `false`; TradingView bar event added; SSE channel table updated; `AtlasContractRoll` timestamp field renamed to `rollTsMs` |

@@ -1,8 +1,8 @@
-# Databento Parity Certification Specification (Revision 3)
+# Databento Parity Certification Specification (Revision 4)
 **Document type:** Authoritative Parity Specification  
 **Sprint:** 123A  
 **Status:** PENDING APPROVAL — Gate G0  
-**Date:** 2026-07-18 (Revision 3: Correction 5 applied — separated into Section A: Databento 1-min feed quality and Section B: TradingView vs Databento 5-min cross-feed parity; 5-min denominator defined; 1-min bars never directly compared with TradingView 5-min bars; Revision 2: unified threshold to 99.0%, availability gates, RTH/ETH union, barOpenTs, zero-volume, feature agreement aggregation, RSI/ADX/Session/Regime as G6A requirements)  
+**Date:** 2026-07-18 (Revision 4: Correction 7 — MNQ parity units; Correction 8 — feed availability; Correction 3 — barOpenTsMs; Revision 3: Correction 5 applied — separated into Section A: Databento 1-min feed quality and Section B: TradingView vs Databento 5-min cross-feed parity; 5-min denominator defined; 1-min bars never directly compared with TradingView 5-min bars; Revision 2: unified threshold to 99.0%, availability gates, RTH/ETH union, barOpenTs, zero-volume, feature agreement aggregation, RSI/ADX/Session/Regime as G6A requirements)  
 **Authoritative source for:** All parity thresholds referenced in `SPRINT_123A_GATE_MATRIX.md`
 
 > **This document is the sole authoritative source for all parity thresholds and certification criteria. No other document may restate these thresholds. The Gate Matrix references this document by revision number only.**
@@ -39,12 +39,27 @@ The evaluation window for Gate G4 is **5 consecutive trading days** during which
 | A-002 | **Unresolved 1-min rate** | ≤ 0.5% of bars have `reconciliationStatus = UNRESOLVED` | G4 |
 | A-003 | **Synthetic 1-min rate** | ≤ 1.0% of bars have `barType = SYNTHETIC` | G4 |
 | A-004 | **Official ohlcv-1m reconciliation rate** | ≥ 99.0% of bars have `reconciliationStatus = MATCHED` | G4 |
-| A-005 | **Duplicate 1-min rate** | ≤ 0.1% duplicate `(instrumentId, barOpenTs)` pairs | G4 |
+| A-005 | **Duplicate 1-min rate** | ≤ 0.1% duplicate `(instrumentId, barOpenTsMs)` pairs | G4 |
 | A-006 | **Out-of-order 1-min rate** | ≤ 0.1% of bars received out of order | G4 |
 | A-007 | **Historical recovery rate** | ≥ 95.0% of UNRESOLVED bars recovered within 30 minutes via Historical API | G4 |
-| A-008 | **Feed availability** | ≥ 99.0% of RTH/ETH minutes have at least one trade record | G4 |
+| A-008 | **Feed availability** | ≥ 99.0% of RTH/ETH minutes satisfy the feed-availability definition (see Section A.9) | G4 |
+| A-009 | **Trade-active-minute rate** | Informational only — not a gate metric | — |
 
-### A.4 Section A Availability Gates
+### A.4 MNQ Tick Size and Units
+
+All OHLCV price comparisons use the following unit definitions:
+
+| Unit | Definition |
+|---|---|
+| 1 tick | 0.25 index points |
+| 1 index point | 4 ticks |
+| Minimum price increment | 0.25 index points |
+| Dollar value of 1 tick | $0.50 per contract |
+| Dollar value of 1 index point | $2.00 per contract |
+
+All tolerance thresholds in this document that reference "ticks" use this definition. "0.25 ticks" is not a valid unit — the minimum unit is 1 tick (0.25 index points). OHLC tolerances of 1 tick mean the two sources may differ by at most 0.25 index points.
+
+### A.5 Section A Availability Gates
 
 All three availability gates must pass before Section A metrics are evaluated:
 
@@ -56,7 +71,7 @@ All three availability gates must pass before Section A metrics are evaluated:
 
 If any availability gate fails, Section A certification fails regardless of other metric values.
 
-### A.5 RTH/ETH Interval Union for Section A
+### A.6 RTH/ETH Interval Union for Section A
 
 The denominator for Section A interval coverage is the union of all RTH and ETH 1-minute intervals during the evaluation window.
 
@@ -65,7 +80,7 @@ The denominator for Section A interval coverage is the union of all RTH and ETH 
 - **CME maintenance window excluded:** 16:00–17:00 ET daily
 - **Scheduled closures excluded:** Confirmed exchange holidays and emergency halts
 
-### A.6 Section A Exclusion Policy
+### A.7 Section A Exclusion Policy
 
 | Category | In denominator? | In parity numerator? |
 |---|---|---|
@@ -74,9 +89,21 @@ The denominator for Section A interval coverage is the union of all RTH and ETH 
 | Feed outage (unplanned) | Yes | No |
 | Unresolved bar | Yes | No |
 
-### A.7 Section A Composite Score
+### A.8 Section A Composite Score
 
 The Section A composite score is the arithmetic mean of all Section A metric pass rates (A-001 through A-008). All metrics must individually pass their thresholds. A composite score ≥ 99.0% with any individual metric below threshold does not constitute a pass.
+
+### A.9 Feed Availability Definition
+
+A RTH/ETH minute is considered **feed-available** if the Atlas Databento pipeline received at least one record (trade, quote, or heartbeat) from the Databento live feed during that minute. A minute is considered **feed-unavailable** if:
+
+- The TCP connection to Databento was not established for the full minute, **or**
+- The Python feed service was not running for the full minute, **or**
+- The WebSocket bridge was not connected for the full minute.
+
+Feed availability (A-008) is the ratio of feed-available minutes to total expected RTH/ETH minutes in the evaluation window, after excluding the CME maintenance window and scheduled closures.
+
+A minute with zero trades but a heartbeat record is considered feed-available. A minute with zero records of any kind is feed-unavailable.
 
 ---
 
@@ -100,22 +127,24 @@ The denominator for all Section B interval coverage metrics is the set of expect
 - **CME maintenance window excluded:** 16:00–17:00 ET daily
 - **5-minute interval:** A 5-minute interval is included in the denominator if both sources were active during that interval. Intervals where either source was unavailable are excluded from both numerator and denominator.
 
-### B.3 barOpenTs Definition
+### B.3 barOpenTsMs Definition
 
-`barOpenTs` is the UTC nanosecond timestamp of the 5-minute window boundary. It is defined as the floor of the first trade's `ts_event` to the nearest 5-minute boundary, expressed in UTC nanoseconds. Two bars from different sources are considered the same interval if and only if their `barOpenTs` values are identical.
+`barOpenTsMs` is the UTC **millisecond** timestamp of the 5-minute window boundary. It is defined as the floor of the first trade's `ts_event` (converted from nanoseconds to milliseconds at the feed-adapter boundary) to the nearest 5-minute boundary, expressed in UTC milliseconds. Two bars from different sources are considered the same interval if and only if their `barOpenTsMs` values are identical.
+
+The raw Databento nanosecond value (`tsEventNs`) is preserved separately in `atlas_ticks` but is never used as a canonical identifier.
 
 ### B.4 Gate G4 Metrics (Core OHLCV + VWAP + EMA + ATR)
 
 | Metric ID | Metric | Threshold | Gate |
 |---|---|---|---|
 | B-001 | **5-min interval coverage** | ≥ 99.0% of expected 5-min intervals have a Databento bar in `atlas_bars_5m` | G4 |
-| B-002 | **barOpenTs agreement** | ≥ 99.9% of matched intervals have identical `barOpenTs` | G4 |
-| B-003 | **Open agreement** | ≥ 99.0% of matched intervals agree within 0.25 ticks | G4 |
-| B-004 | **High agreement** | ≥ 99.0% of matched intervals agree within 0.25 ticks | G4 |
-| B-005 | **Low agreement** | ≥ 99.0% of matched intervals agree within 0.25 ticks | G4 |
-| B-006 | **Close agreement** | ≥ 99.0% of matched intervals agree within 0.25 ticks | G4 |
-| B-007 | **Volume agreement** | ≥ 95.0% of matched intervals agree within 2.0% | G4 |
-| B-008 | **VWAP agreement** | ≥ 99.0% of matched intervals agree within 0.5 ticks | G4 |
+| B-002 | **barOpenTsMs agreement** | ≥ 99.9% of matched intervals have identical `barOpenTsMs` (UTC ms) | G4 |
+| B-003 | **Open agreement** | ≥ 99.0% of matched intervals agree within 1 tick (0.25 index points) | G4 |
+| B-004 | **High agreement** | ≥ 99.0% of matched intervals agree within 1 tick (0.25 index points) | G4 |
+| B-005 | **Low agreement** | ≥ 99.0% of matched intervals agree within 1 tick (0.25 index points) | G4 |
+| B-006 | **Close agreement** | ≥ 99.0% of matched intervals agree within 1 tick (0.25 index points) | G4 |
+| B-007 | **Volume agreement** | ≥ 95.0% of matched intervals agree within 2.0% (dimensionless ratio) | G4 |
+| B-008 | **VWAP agreement** | ≥ 99.0% of matched intervals agree within 2 ticks (0.50 index points) | G4 |
 | B-009 | **EMA9 agreement** | ≥ 99.0% of matched intervals agree within 0.01% | G4 |
 | B-010 | **EMA21 agreement** | ≥ 99.0% of matched intervals agree within 0.01% | G4 |
 | B-011 | **ATR14 agreement** | ≥ 99.0% of matched intervals agree within 0.01% | G4 |
@@ -170,7 +199,7 @@ The composite formula:
 section_b_composite = (1/11) × (B001 + B002 + B003 + B004 + B005 + B006 + B007 + B008 + B009 + B010 + B011)
 ```
 
-Note: B-002 (barOpenTs) has an individual threshold of 99.9% but is weighted equally in the composite. A composite score ≥ 99.0% does not waive the 99.9% individual threshold for B-002.
+Note: B-002 (`barOpenTsMs`) has an individual threshold of 99.9% but is weighted equally in the composite. A composite score ≥ 99.0% does not waive the 99.9% individual threshold for B-002.
 
 ---
 
@@ -214,7 +243,7 @@ SECTION A — DATABENTO 1-MIN FEED QUALITY
 
 SECTION B — TRADINGVIEW vs DATABENTO 5-MIN PARITY
   B-001 5-min interval coverage:   {value}% (threshold: ≥99.0%) [{PASS|FAIL}]
-  B-002 barOpenTs agreement:        {value}% (threshold: ≥99.9%) [{PASS|FAIL}]
+  B-002 barOpenTsMs agreement:      {value}% (threshold: ≥99.9%) [{PASS|FAIL}]
   B-003 Open agreement:             {value}% (threshold: ≥99.0%) [{PASS|FAIL}]
   B-004 High agreement:             {value}% (threshold: ≥99.0%) [{PASS|FAIL}]
   B-005 Low agreement:              {value}% (threshold: ≥99.0%) [{PASS|FAIL}]
@@ -285,7 +314,7 @@ All thresholds in this table are the authoritative source. The Gate Matrix refer
 | Feed availability | A | ≥ 99.0% | ≥ 99.0% |
 | Section A composite | A | ≥ 99.0% | ≥ 99.0% |
 | 5-min interval coverage | B | ≥ 99.0% | ≥ 99.0% |
-| barOpenTs agreement | B | ≥ 99.9% | ≥ 99.9% |
+| barOpenTsMs agreement | B | ≥ 99.9% | ≥ 99.9% |
 | Open agreement | B | ≥ 99.0% | ≥ 99.0% |
 | High agreement | B | ≥ 99.0% | ≥ 99.0% |
 | Low agreement | B | ≥ 99.0% | ≥ 99.0% |
@@ -312,3 +341,4 @@ All thresholds in this table are the authoritative source. The Gate Matrix refer
 | Rev 1 | 2026-07-18 | Initial version |
 | Rev 2 | 2026-07-18 | Unified threshold to 99.0%; added availability gates; max exclusion rate; RTH/ETH union; barOpenTs; zero-volume; feature agreement aggregation; RSI/ADX/Session/Regime as G6A requirements |
 | Rev 3 | 2026-07-18 | Correction 5: separated into Section A (Databento 1-min feed quality, measured from atlas_bars_1m only) and Section B (TradingView vs Databento 5-min cross-feed parity, comparing atlas_canonical_bars vs atlas_bars_5m); defined 5-min denominator explicitly; clarified that 1-min bars are never directly compared with TradingView 5-min bars; both sections must pass for Gate G4 |
+| Rev 4 | 2026-07-18 | Correction 3: renamed `barOpenTs` to `barOpenTsMs` throughout; added timestamp unit standard reference. Correction 7: added MNQ tick size and units table (Section A.4); corrected OHLC tolerances from "0.25 ticks" to "1 tick (0.25 index points)"; corrected VWAP tolerance from "0.5 ticks" to "2 ticks (0.50 index points)". Correction 8: added explicit feed availability definition (Section A.9); added A-009 informational trade-active-minute metric |

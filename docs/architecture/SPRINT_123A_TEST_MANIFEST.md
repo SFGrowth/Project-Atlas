@@ -1,10 +1,10 @@
-# Sprint 123A Test Manifest (Revision 3)
+# Sprint 123A Test Manifest (Revision 4)
 **Document type:** Architecture Reference  
 **Sprint:** 123A  
 **Status:** PENDING APPROVAL  
-**Date:** 2026-07-18 (Revision 3: Correction 6 applied — TEST-123A3-001E added for missing official bar → UNRESOLVED lifecycle; parity spec reference updated to Revision 3)  
+**Date:** 2026-07-18 (Revision 4: Corrections 4 and 5 applied — 6 new discriminated union tests added (TEST-123A1-009 through 014); TEST-123A3-001A through 001E updated to match 5-event lifecycle; TEST-123A1-007 updated to reference discriminated union; total test count corrected to 67)  
 **Parent document:** `SPRINT_123A_AMENDED_IMPLEMENTATION_PLAN.md`  
-**Parity spec reference:** `DATABENTO_PARITY_CERTIFICATION_SPEC.md` (Revision 3)
+**Parity spec reference:** `DATABENTO_PARITY_CERTIFICATION_SPEC.md` (Revision 4)
 
 ---
 
@@ -18,7 +18,7 @@ This manifest defines every test required for Sprint 123A. Each test has a uniqu
 
 **Current result:** All tests are `NOT RUN` until the sub-sprint is implemented.
 
-**Total test count:** 61 tests (59 unit/integration + 2 opt-in live integration tests). The 2 opt-in tests (`TEST-INT-001`, `TEST-INT-002`) are included in the total of 61. They require `DATABENTO_INTEGRATION_TESTS=true` and a live Databento API key. Breakdown: 123A.1: 8, 123A.2: 10, 123A.3: 23, 123A.4: 11, 123A.5: 7, INT: 2.
+**Total test count:** 67 tests (65 unit/integration + 2 opt-in live integration tests). The 2 opt-in tests (`TEST-INT-001`, `TEST-INT-002`) are included in the total of 67. They require `DATABENTO_INTEGRATION_TESTS=true` and a live Databento API key. Breakdown: 123A.1: 14, 123A.2: 10, 123A.3: 23, 123A.4: 11, 123A.5: 7, INT: 2. This count is machine-verified by `grep -c "^### TEST-"`.
 
 ---
 
@@ -113,10 +113,10 @@ This manifest defines every test required for Sprint 123A. Each test has a uniqu
 | Field | Value |
 |---|---|
 | **Sub-sprint** | 123A.1 |
-| **Requirement** | `shared/types/canonical-events.ts` exports all new event types with correct `CanonicalEventId` fields |
+| **Requirement** | `shared/types/canonical-events.ts` exports all new event types; `CanonicalEventId` is a source-safe discriminated union (`DatabentoEventId | TradingViewEventId`) |
 | **Test file** | `shared/types/__tests__/canonical-events.test.ts` |
 | **Fixture** | None — tests TypeScript exports only |
-| **Expected result** | `tsc --noEmit` passes; all types exported; `CanonicalEventId` fields match §7 of amended plan |
+| **Expected result** | `tsc --noEmit` passes; all 5 bar event types exported with unique `type` discriminants; `DatabentoEventId` and `TradingViewEventId` compile as separate interfaces; union type narrows correctly on `source` field |
 | **Blocking gate** | G1 |
 | **Current result** | NOT RUN |
 
@@ -131,6 +131,90 @@ This manifest defines every test required for Sprint 123A. Each test has a uniqu
 | **Test file** | `server/market-data/__tests__/config.test.ts` |
 | **Fixture** | Mock Databento client; set `MARKET_DATA_AUTHORITY=TRADINGVIEW_ONLY` |
 | **Expected result** | Databento client `start()` never called; no network connection attempted |
+| **Blocking gate** | G1 |
+| **Current result** | NOT RUN |
+
+---
+
+### TEST-123A1-009 — DatabentoEventId Narrows Correctly
+
+| Field | Value |
+|---|---|
+| **Sub-sprint** | 123A.1 |
+| **Requirement** | TypeScript narrows `CanonicalEventId` to `DatabentoEventId` when `source === 'DATABENTO'` |
+| **Test file** | `shared/types/__tests__/canonical-events.test.ts` |
+| **Fixture** | Inline type assertion in test |
+| **Expected result** | After narrowing on `source === 'DATABENTO'`, TypeScript allows access to `dataset`, `instrumentId`, `mappingVersion`; accessing `sourceInstrumentKey` is a compile error |
+| **Blocking gate** | G1 |
+| **Current result** | NOT RUN |
+
+---
+
+### TEST-123A1-010 — TradingViewEventId Narrows Correctly
+
+| Field | Value |
+|---|---|
+| **Sub-sprint** | 123A.1 |
+| **Requirement** | TypeScript narrows `CanonicalEventId` to `TradingViewEventId` when `source === 'TRADINGVIEW'` |
+| **Test file** | `shared/types/__tests__/canonical-events.test.ts` |
+| **Fixture** | Inline type assertion in test |
+| **Expected result** | After narrowing on `source === 'TRADINGVIEW'`, TypeScript allows access to `sourceInstrumentKey`; accessing `dataset` or `instrumentId` is a compile error |
+| **Blocking gate** | G1 |
+| **Current result** | NOT RUN |
+
+---
+
+### TEST-123A1-011 — DatabentoEventId Serialisation Is Deterministic
+
+| Field | Value |
+|---|---|
+| **Sub-sprint** | 123A.1 |
+| **Requirement** | `serializeCanonicalEventId(DatabentoEventId)` produces a deterministic string with `DATABENTO:` prefix |
+| **Test file** | `shared/types/__tests__/canonical-events.test.ts` |
+| **Fixture** | `{ source: 'DATABENTO', dataset: 'GLBX.MDP3', rawSymbol: 'MNQM5', instrumentId: 12345, interval: '5m', barOpenTsMs: 1750000000000, revision: 0, mappingVersion: 'v1' }` |
+| **Expected result** | `'DATABENTO:GLBX.MDP3:MNQM5:12345:5m:1750000000000:0:v1'` |
+| **Blocking gate** | G1 |
+| **Current result** | NOT RUN |
+
+---
+
+### TEST-123A1-012 — TradingViewEventId Serialisation Is Deterministic
+
+| Field | Value |
+|---|---|
+| **Sub-sprint** | 123A.1 |
+| **Requirement** | `serializeCanonicalEventId(TradingViewEventId)` produces a deterministic string with `TRADINGVIEW:` prefix |
+| **Test file** | `shared/types/__tests__/canonical-events.test.ts` |
+| **Fixture** | `{ source: 'TRADINGVIEW', sourceInstrumentKey: 'CME_MINI:MNQ1!', interval: '5m', barOpenTsMs: 1750000000000, revision: 0 }` |
+| **Expected result** | `'TRADINGVIEW:CME_MINI:MNQ1!:5m:1750000000000:0'` |
+| **Blocking gate** | G1 |
+| **Current result** | NOT RUN |
+
+---
+
+### TEST-123A1-013 — No Cross-Source Collision in Serialised IDs
+
+| Field | Value |
+|---|---|
+| **Sub-sprint** | 123A.1 |
+| **Requirement** | A `DatabentoEventId` and a `TradingViewEventId` for the same interval never produce the same serialised string |
+| **Test file** | `shared/types/__tests__/canonical-events.test.ts` |
+| **Fixture** | Both IDs with `barOpenTsMs = 1750000000000` and `interval = '5m'` |
+| **Expected result** | Serialised strings are not equal; `DATABENTO:...` ≠ `TRADINGVIEW:...` |
+| **Blocking gate** | G1 |
+| **Current result** | NOT RUN |
+
+---
+
+### TEST-123A1-014 — AtlasBarProvisionalClosed Is Not Assignable to AtlasBarConfirmed
+
+| Field | Value |
+|---|---|
+| **Sub-sprint** | 123A.1 |
+| **Requirement** | TypeScript type system prevents `AtlasBarProvisionalClosed` from being assigned to `AtlasBarConfirmed` |
+| **Test file** | `shared/types/__tests__/canonical-events.test.ts` |
+| **Fixture** | Inline type assertion: `const x: AtlasBarConfirmed = provisionalBar` |
+| **Expected result** | TypeScript compile error; `type` discriminant `'ATLAS_BAR_PROVISIONAL_CLOSED'` is not assignable to `'ATLAS_BAR_CONFIRMED'` |
 | **Blocking gate** | G1 |
 | **Current result** | NOT RUN |
 
@@ -313,10 +397,10 @@ This manifest defines every test required for Sprint 123A. Each test has a uniqu
 | Field | Value |
 |---|---|
 | **Sub-sprint** | 123A.3 |
-| **Requirement** | Bar builder emits a developing bar update (`AtlasBarDeveloping`) after each trade within the current 1-minute window |
+| **Requirement** | Bar builder emits `AtlasBarDeveloping` after each trade; emits `AtlasBarProvisionalClosed` at the minute boundary (not `AtlasBarConfirmed`) |
 | **Test file** | `server/market-data/__tests__/bar-builder.test.ts` |
-| **Fixture** | 30 sequential `AtlasTradeEvent` records within a single 1-minute window |
-| **Expected result** | 30 `AtlasBarDeveloping` events emitted; each has correct running OHLCV; `barType = DEVELOPING`; no `AtlasBarConfirmed` emitted until minute boundary |
+| **Fixture** | 30 sequential `AtlasTradeEvent` records within a single 1-minute window, then clock advanced past minute boundary |
+| **Expected result** | 30 `AtlasBarDeveloping` events emitted; exactly one `AtlasBarProvisionalClosed` emitted at minute boundary; zero `AtlasBarConfirmed` emitted; `AtlasBarProvisionalClosed.reconciliationStatus = 'PROVISIONAL'`; five-min aggregator does not receive the bar |
 | **Blocking gate** | G3 |
 | **Current result** | NOT RUN |
 
@@ -327,10 +411,10 @@ This manifest defines every test required for Sprint 123A. Each test has a uniqu
 | Field | Value |
 |---|---|
 | **Sub-sprint** | 123A.3 |
-| **Requirement** | Bar builder reconciles its constructed 1-min bar against Databento's official `ohlcv-1m` schema record for the same interval |
+| **Requirement** | After `AtlasBarProvisionalClosed`, bar builder reconciles against Databento's official `ohlcv-1m` record and emits `AtlasBarConfirmed` when values agree within tolerance |
 | **Test file** | `server/market-data/__tests__/bar-builder.test.ts` |
-| **Fixture** | Fixture `AtlasTradeEvent` records for a 1-minute window + corresponding `ohlcv-1m` record from Databento |
-| **Expected result** | Reconciliation record written to `atlas_bars_1m` with `reconciliationStatus = MATCHED` when OHLCV agrees within tolerance; `DISCREPANCY` when outside tolerance; discrepancy details persisted |
+| **Fixture** | Fixture `AtlasTradeEvent` records for a 1-minute window + matching `ohlcv-1m` record within tolerance |
+| **Expected result** | `atlas_bars_1m` row updated to `reconciliationStatus = MATCHED`; `AtlasBarConfirmed` emitted (not `AtlasBarProvisionalClosed`); `AtlasBarConfirmed` forwarded to five-min aggregator |
 | **Blocking gate** | G3 |
 | **Current result** | NOT RUN |
 
@@ -341,10 +425,10 @@ This manifest defines every test required for Sprint 123A. Each test has a uniqu
 | Field | Value |
 |---|---|
 | **Sub-sprint** | 123A.3 |
-| **Requirement** | Bar builder emits a confirmed `AtlasBarConfirmed` (1-min) at the minute boundary with correct OHLCV |
+| **Requirement** | `AtlasBarConfirmed` uses `DatabentoEventId` discriminant; `id.source = 'DATABENTO'`; `id.rawSymbol` is the dynamically resolved symbol (never hardcoded); `id.barOpenTsMs` is UTC milliseconds |
 | **Test file** | `server/market-data/__tests__/bar-builder.test.ts` |
-| **Fixture** | 60 seconds of `AtlasTradeEvent` records with known OHLCV |
-| **Expected result** | Exactly one `AtlasBarConfirmed` emitted at minute boundary; OHLCV matches expected; `barType = LIVE_CONFIRMED`; `instrumentId` and `rawSymbol` match fixture |
+| **Fixture** | Fixture trades + matching `ohlcv-1m`; symbol registry returns `MNQM5` as resolved symbol |
+| **Expected result** | `AtlasBarConfirmed.id.source = 'DATABENTO'`; `id.rawSymbol = 'MNQM5'`; `id.barOpenTsMs` is a UTC ms integer; `id.instrumentId` matches fixture; no `MNQ1!` hardcoded anywhere in emitted event |
 | **Blocking gate** | G3 |
 | **Current result** | NOT RUN |
 
@@ -355,10 +439,10 @@ This manifest defines every test required for Sprint 123A. Each test has a uniqu
 | Field | Value |
 |---|---|
 | **Sub-sprint** | 123A.3 |
-| **Requirement** | When a reconciliation discrepancy is detected, it is persisted to `atlas_bars_1m` and an alert is emitted |
+| **Requirement** | When `ohlcv-1m` values disagree beyond tolerance, bar builder emits `AtlasBarUnresolved` with `reconciliationStatus = 'UNRESOLVED_DISCREPANCY'`; bar is never forwarded to five-min aggregator |
 | **Test file** | `server/market-data/__tests__/bar-builder.test.ts` |
-| **Fixture** | Fixture trades + `ohlcv-1m` record with High 3 ticks higher than constructed bar |
-| **Expected result** | `atlas_bars_1m` row has `reconciliationStatus = DISCREPANCY`; `discrepancyDetails` contains field name, constructed value, official value, and delta in ticks; `atlas_feed_health` alert emitted |
+| **Fixture** | Fixture trades + `ohlcv-1m` record with High 3 ticks higher than constructed bar (exceeds 1-tick tolerance) |
+| **Expected result** | `AtlasBarUnresolved` emitted with `reconciliationStatus = 'UNRESOLVED_DISCREPANCY'`; `discrepancyFields` contains `'high'`; `officialHigh` and `provisionalHigh` both present; `alertEmitted = true`; five-min aggregator does not receive the bar; 5-min bar for containing window is held pending |
 | **Blocking gate** | G3 |
 | **Current result** | NOT RUN |
 
@@ -369,10 +453,10 @@ This manifest defines every test required for Sprint 123A. Each test has a uniqu
 | Field | Value |
 |---|---|
 | **Sub-sprint** | 123A.3 |
-| **Requirement** | When no `ohlcv-1m` record arrives within 30 minutes of bar close, the bar is marked `UNRESOLVED` and is never forwarded to the five-min aggregator |
+| **Requirement** | When no `ohlcv-1m` record arrives within 30 minutes of bar close, bar builder emits `AtlasBarUnresolved` with `reconciliationStatus = 'UNRESOLVED_MISSING'`; bar is never forwarded to five-min aggregator |
 | **Test file** | `server/market-data/__tests__/bar-builder.test.ts` |
 | **Fixture** | Fixture trades for a 1-min bar; no `ohlcv-1m` record injected; clock advanced 31 minutes |
-| **Expected result** | `atlas_bars_1m` row has `reconciliationStatus = UNRESOLVED`; no `AtlasBarConfirmed` with `isReconciled = true` emitted; five-min aggregator does not receive the bar; 5-min bar for the containing window is held pending |
+| **Expected result** | `AtlasBarUnresolved` emitted with `reconciliationStatus = 'UNRESOLVED_MISSING'`; `alertEmitted = true`; `officialOpen/High/Low/Close/Volume` all undefined; five-min aggregator does not receive the bar; 5-min bar for containing window is held pending; no `AtlasBarConfirmed` emitted at any point |
 | **Blocking gate** | G3 |
 | **Current result** | NOT RUN |
 
