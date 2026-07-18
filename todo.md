@@ -1150,3 +1150,14 @@
 - [x] Seed 12 canonical behaviour definitions into atlas_behaviour_definitions
 - [x] Seed 12 performance stats rows into atlas_behaviour_performance_stats
 - [x] Checkpoint and deliver Sprint 121A
+
+## Sprint 122 — Atlas Decision Pipeline Audit
+
+- [x] Read all decision pipeline source files (nexusRoutes.ts, barEvaluator.ts, paperTradeEngine.ts, dispatchWorker.ts, wfDb.ts)
+- [x] Map complete pipeline architecture (Path A M-16 direct + Path B server-side monitor)
+- [x] Extract all ADE scoring formulas from source (A1=ADX, A3=ADX*0.95, SB1=50, ORB-1=45, B1=1.0, S109=abs(dev)/atr*100)
+- [x] Extract all dispatch execution gates from source (5 gates: expiry, HALTED, PAPER_ONLY, webhook URL, safety state)
+- [x] Identify and classify all 7 pipeline gaps (GAP-001 through GAP-007)
+- [x] Write docs/architecture/SPRINT-122-ATLAS-DECISION-AUDIT.md (8 sections, 7 gaps, 5 priority actions)
+- [x] Store audit findings in Atlas Memory (SPRINT-122-AUDIT-001)
+- [x] Push Sprint 122 to GitHub
