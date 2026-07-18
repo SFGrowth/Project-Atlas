@@ -1,61 +1,127 @@
 /**
  * Atlas Canonical Market Event Contracts — TypeScript Interfaces
- * Sprint 123A.1 — Foundation
+ * Sprint 123A.1 — Foundation (Gate G1 Revision 2)
  *
- * These interfaces are the TypeScript implementation of the contracts defined in:
+ * These interfaces implement the contracts defined in:
  *   docs/architecture/ATLAS_CANONICAL_MARKET_EVENT_CONTRACTS.md (Revision 6)
+ *
+ * Key corrections applied at Gate G1 Revision 2:
+ *   - DatabentoEventId and TradingViewEventId are separate types
+ *   - CanonicalEventId = DatabentoEventId | TradingViewEventId
+ *   - All timestamps use barOpenTsMs (not barOpenTs)
+ *   - Five distinct bar lifecycle types (Developing, ProvisionalClosed,
+ *     Confirmed, Unresolved, ReleasedForInspection)
+ *   - AtlasBarConfirmed always has reconciliationStatus = 'MATCHED'
+ *   - reconciledAgainstOhlcv: boolean removed
+ *   - CONTAINS_UNRESOLVED removed from all canonical bar types
+ *   - CanonicalBarConfirmed has containsUnresolvedMinutes: false (literal)
+ *   - Raw Databento timestamps preserved as bigint internally;
+ *     decimal strings on the WebSocket wire
  *
  * Authority rules:
  *   - CanonicalBarConfirmed is published by the Canonical Router only.
  *   - In TRADINGVIEW_ONLY mode, it is derived from TradingView webhook bars.
- *   - Strategies, DARWIN, and the Behaviour Engine consume ONLY from
- *     atlas_canonical_bars (the database table) or via CanonicalBarConfirmed events.
  *   - processBar() is ALWAYS triggered by TradingView in Sprint 123A.
- *   - postBarAutomation is triggered by TradingView in TRADINGVIEW_ONLY mode.
- *
- * Sprint 123A.1 scope: interfaces only. No runtime emitters are implemented here.
+ *   - postBarAutomation is triggered by TradingView in TRADINGVIEW_ONLY,
+ *     DATABENTO_SHADOW, and DATABENTO_CHART_AUTHORITY modes.
+ *   - postBarAutomation is triggered by Databento in
+ *     DATABENTO_LEARNING_AUTHORITY mode only.
+ *   - DATABENTO_DECISION_AUTHORITY is Sprint 123B only — not part of Sprint 123A.
  */
 
-import type { MarketDataAuthorityMode } from '../../server/market-data/config';
+import type { Sprint123AAuthorityMode } from '../../server/market-data/config';
 
-// ─── Canonical Event ID ───────────────────────────────────────────────────────
+// ─── Source-specific Event IDs ────────────────────────────────────────────────
 
 /**
- * Uniquely identifies a canonical market event for effective-once processing.
- * Consumers use this to build their idempotency key:
- *   `{consumerName}_v{consumerVersion}:{source}:{dataset}:{rawSymbol}:{instrumentId}:{interval}:{barOpenTs}:{revision}`
+ * Identifies a Databento-sourced market event.
+ * Raw Databento timestamps are preserved as bigint (nanoseconds since epoch)
+ * internally. On the WebSocket wire they are serialised as decimal strings
+ * to avoid JavaScript number precision loss.
  */
-export interface CanonicalEventId {
-  /** Data source: 'tradingview' | 'databento' */
-  source: string;
-  /** Databento dataset (e.g. 'GLBX.MDP3') or 'tradingview' */
+export interface DatabentoEventId {
+  source: 'databento';
+  /** Databento dataset identifier (e.g. 'GLBX.MDP3') */
   dataset: string;
-  /** Raw symbol as resolved from the data source (e.g. 'MNQM5' or 'MNQ1!') */
+  /** Raw symbol as resolved from Databento (e.g. 'MNQM5') */
   rawSymbol: string;
-  /** Databento instrument ID, or 0 for TradingView */
+  /** Databento instrument_id (numeric, stable within a dataset+date range) */
   instrumentId: number;
   /** Bar interval: '1m' | '5m' */
   interval: '1m' | '5m';
-  /** Bar open timestamp (UTC milliseconds) */
-  barOpenTs: number;
+  /**
+   * Bar open timestamp in UTC milliseconds (used for all Atlas processing).
+   * Derived from the raw nanosecond timestamp: barOpenTsMs = barOpenTsNs / 1_000_000n
+   */
+  barOpenTsMs: number;
+  /**
+   * Raw Databento bar open timestamp in nanoseconds since epoch.
+   * Preserved as bigint to avoid precision loss.
+   * Serialised as a decimal string on the WebSocket wire.
+   */
+  barOpenTsNs: bigint;
   /** Revision number (0 = original; increments on correction) */
   revision: number;
   /** Symbol mapping version at time of event */
   mappingVersion: string;
 }
 
-// ─── 1-Minute Bar Events ──────────────────────────────────────────────────────
+/**
+ * Identifies a TradingView-sourced market event.
+ * TradingView does not provide instrument IDs or nanosecond timestamps.
+ */
+export interface TradingViewEventId {
+  source: 'tradingview';
+  /** Always 'tradingview' — TradingView has no dataset concept */
+  dataset: 'tradingview';
+  /** Raw symbol as sent by TradingView (e.g. 'MNQ1!') */
+  rawSymbol: string;
+  /** Always 0 — TradingView does not provide instrument IDs */
+  instrumentId: 0;
+  /** Bar interval: '1m' | '5m' */
+  interval: '1m' | '5m';
+  /** Bar open timestamp in UTC milliseconds */
+  barOpenTsMs: number;
+  /** Revision number (0 = original) */
+  revision: number;
+  /** Always 'tradingview' — TradingView has no mapping version concept */
+  mappingVersion: 'tradingview';
+}
+
+/**
+ * Union type for all canonical event identifiers.
+ * Use source discriminant to narrow to the specific type.
+ */
+export type CanonicalEventId = DatabentoEventId | TradingViewEventId;
+
+// ─── Reconciliation Status ────────────────────────────────────────────────────
+
+/**
+ * Result of reconciling a bar against the Databento ohlcv-1m reference feed.
+ *
+ * MATCHED:     Bar matches the reference feed within tolerance. Safe to use.
+ * UNMATCHED:   Bar does not match the reference feed. Must not become canonical.
+ * PENDING:     Reconciliation has not yet been attempted.
+ * UNAVAILABLE: Reference feed data is not available for this bar.
+ *
+ * CRITICAL: Only MATCHED bars may be aggregated into a 5-minute window.
+ * UNMATCHED bars must be emitted as AtlasBarUnresolved.
+ */
+export type ReconciliationStatus = 'MATCHED' | 'UNMATCHED' | 'PENDING' | 'UNAVAILABLE';
+
+// ─── Bar Lifecycle Type 1: Developing ────────────────────────────────────────
 
 /**
  * A 1-minute bar that is still developing (intra-bar update).
- * Published by the Bar Builder at rate-limited intervals.
- * Consumed by AtlasLiveChart.tsx only.
- * NOT consumed by strategies, DARWIN, or the Behaviour Engine.
+ * Published by the Bar Builder at rate-limited intervals during the bar.
+ *
+ * Consumers: AtlasLiveChart.tsx only.
+ * NOT consumed by: strategies, DARWIN, Behaviour Engine, Five-Min Aggregator.
  */
-export interface AtlasBarDeveloping1m {
-  type: 'ATLAS_BAR_DEVELOPING_1M';
+export interface AtlasBarDeveloping {
+  type: 'ATLAS_BAR_DEVELOPING';
   eventId: CanonicalEventId;
-  /** Bar open timestamp (UTC ms) */
+  /** Bar open timestamp (UTC ms) — always use barOpenTsMs, never barOpenTs */
   barOpenTsMs: number;
   /** Current partial OHLCV */
   open: number;
@@ -68,14 +134,21 @@ export interface AtlasBarDeveloping1m {
   atlasTsMs: number;
 }
 
+// ─── Bar Lifecycle Type 2: ProvisionalClosed ─────────────────────────────────
+
 /**
- * A 1-minute bar that has been confirmed (bar boundary crossed).
- * Published by the Bar Builder after reconciliation against ohlcv-1m.
- * Consumed by the Five-Min Aggregator.
- * NOT consumed directly by strategies, DARWIN, or the Behaviour Engine.
+ * A 1-minute bar that has crossed the bar boundary but has not yet been
+ * reconciled against the Databento ohlcv-1m reference feed.
+ *
+ * This is a transient state. The bar will transition to either
+ * AtlasBarConfirmed (reconciliationStatus = MATCHED) or
+ * AtlasBarUnresolved (reconciliationStatus = UNMATCHED | UNAVAILABLE).
+ *
+ * Consumers: Bar Builder internal state machine only.
+ * NOT forwarded to the Five-Min Aggregator.
  */
-export interface AtlasBarConfirmed1m {
-  type: 'ATLAS_BAR_CONFIRMED_1M';
+export interface AtlasBarProvisionalClosed {
+  type: 'ATLAS_BAR_PROVISIONAL_CLOSED';
   eventId: CanonicalEventId;
   barOpenTsMs: number;
   barCloseTsMs: number;
@@ -85,34 +158,109 @@ export interface AtlasBarConfirmed1m {
   close: number;
   volume: number;
   tradeCount: number;
-  /** Bar type after reconciliation */
-  barType: AtlasBar1mType;
-  reconciledAgainstOhlcv: boolean;
+  reconciliationStatus: 'PENDING';
+  atlasTsMs: number;
+}
+
+// ─── Bar Lifecycle Type 3: Confirmed ─────────────────────────────────────────
+
+/**
+ * A 1-minute bar that has been confirmed after successful reconciliation.
+ *
+ * INVARIANT: reconciliationStatus is ALWAYS 'MATCHED'.
+ * A bar with any other reconciliation status must not be emitted as
+ * AtlasBarConfirmed. It must be emitted as AtlasBarUnresolved instead.
+ *
+ * Consumers: Five-Min Aggregator.
+ * NOT consumed directly by strategies, DARWIN, or the Behaviour Engine.
+ */
+export interface AtlasBarConfirmed {
+  type: 'ATLAS_BAR_CONFIRMED';
+  eventId: CanonicalEventId;
+  barOpenTsMs: number;
+  barCloseTsMs: number;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+  volume: number;
+  tradeCount: number;
+  /**
+   * INVARIANT: Must always be 'MATCHED'.
+   * This is a literal type to make the invariant explicit and compile-time enforced.
+   */
+  reconciliationStatus: 'MATCHED';
+  /**
+   * Discrepancy details from reconciliation (null when MATCHED with zero discrepancy).
+   * Preserved for audit purposes even when reconciliation passes within tolerance.
+   */
+  reconciliationDiscrepancy: ReconciliationDiscrepancy | null;
   atlasTsMs: number;
 }
 
 /**
+ * Quantified discrepancy between the live bar and the reference feed.
+ * Stored even when within tolerance, for audit and parity reporting.
+ */
+export interface ReconciliationDiscrepancy {
+  closeDeltaPts: number;
+  highDeltaPts: number;
+  lowDeltaPts: number;
+  volumeDelta: number;
+  withinTolerance: boolean;
+  toleranceThresholdPts: number;
+}
+
+// ─── Bar Lifecycle Type 4: Unresolved ────────────────────────────────────────
+
+/**
  * A 1-minute bar that could not be reconciled.
+ *
  * CRITICAL INVARIANT: AtlasBarUnresolved must NEVER be forwarded to the
- * five-minute aggregator. The five-minute window remains BLOCKED_UNRESOLVED.
+ * Five-Min Aggregator. The five-minute window is marked BLOCKED_UNRESOLVED.
  * No CanonicalBarConfirmed event is emitted for a window containing an
- * unresolved minute.
+ * unresolved minute. No containsUnresolvedMinutes=true canonical candidate
+ * is created. No processBar or postBarAutomation is called.
+ *
+ * Consumers: AtlasLiveChart.tsx (for annotation), DARWIN (for gap analysis).
+ * NOT forwarded to: Five-Min Aggregator, strategies, Behaviour Engine.
  */
 export interface AtlasBarUnresolved {
   type: 'ATLAS_BAR_UNRESOLVED';
   eventId: CanonicalEventId;
   barOpenTsMs: number;
   barCloseTsMs: number;
-  /** Reason the bar could not be resolved */
+  reconciliationStatus: 'UNMATCHED' | 'UNAVAILABLE';
   unresolvedReason: string;
+  reconciliationDiscrepancy: ReconciliationDiscrepancy | null;
   atlasTsMs: number;
 }
 
-export type AtlasBar1mType =
-  | 'LIVE_CONFIRMED'
-  | 'SYNTHETIC_NO_TRADE_BAR'
-  | 'UNRESOLVED'
-  | 'RECOVERED';
+// ─── Bar Lifecycle Type 5: ReleasedForInspection ──────────────────────────────
+
+/**
+ * A bar that was previously unresolved and has been manually reviewed and
+ * released for inspection by the Atlas operations team.
+ *
+ * This type exists to support post-hoc analysis and DARWIN research.
+ * It must NEVER be used as input to the Five-Min Aggregator or any
+ * production processing path.
+ *
+ * Consumers: DARWIN research pipeline, Observatory dashboard.
+ * NOT forwarded to: Five-Min Aggregator, strategies, Behaviour Engine,
+ *                   postBarAutomation, processBar.
+ */
+export interface AtlasBarReleasedForInspection {
+  type: 'ATLAS_BAR_RELEASED_FOR_INSPECTION';
+  eventId: CanonicalEventId;
+  barOpenTsMs: number;
+  barCloseTsMs: number;
+  originalReconciliationStatus: 'UNMATCHED' | 'UNAVAILABLE';
+  releaseReason: string;
+  releasedByOperator: string;
+  releasedAtMs: number;
+  atlasTsMs: number;
+}
 
 // ─── 5-Minute Aggregation Window State ───────────────────────────────────────
 
@@ -127,24 +275,28 @@ export type FiveMinWindowState =
 /**
  * The single authoritative confirmed 5-minute bar event.
  * Published by the Canonical Router after the Five-Min Aggregator produces
- * a COMPLETE window (no unresolved minutes).
+ * a COMPLETE window (all 5 minutes confirmed with reconciliationStatus = MATCHED).
+ *
+ * INVARIANT: containsUnresolvedMinutes is ALWAYS false (literal type).
+ * A window containing any unresolved minute must not produce a
+ * CanonicalBarConfirmed event.
  *
  * Sprint 123A.1 consumers (TRADINGVIEW_ONLY mode):
  *   - AtlasLiveChart.tsx
- *   - postBarAutomation (after Gate G6A, via Databento authority)
+ *   - postBarAutomation (after Gate G6A, via DATABENTO_LEARNING_AUTHORITY)
  *   - DARWIN and learning systems (via postBarAutomation)
  *
  * Sprint 123B consumers (DATABENTO_DECISION_AUTHORITY only):
  *   - Strategy processing and processBar
  *
- * CRITICAL: In TRADINGVIEW_ONLY mode, this event is derived from the
- * TradingView webhook bar, not from the Databento pipeline.
+ * NOTE: Strategy and processBar consumption is reserved exclusively for
+ * Sprint 123B and DATABENTO_DECISION_AUTHORITY.
  */
 export interface CanonicalBarConfirmed {
   type: 'CANONICAL_BAR_CONFIRMED';
   eventId: CanonicalEventId;
   /** Authority mode at time of dispatch */
-  authorityMode: MarketDataAuthorityMode;
+  authorityMode: Sprint123AAuthorityMode;
   /** Data source that produced this canonical bar */
   authoritySource: 'TRADINGVIEW' | 'DATABENTO';
   barOpenTsMs: number;
@@ -155,6 +307,13 @@ export interface CanonicalBarConfirmed {
   close: number;
   volume: number;
   barType: AtlasCanonicalBarType;
+  /**
+   * INVARIANT: Always false.
+   * A CanonicalBarConfirmed event must never be produced from a window
+   * that contains an unresolved minute. This is a literal type to make
+   * the invariant explicit and compile-time enforced.
+   */
+  containsUnresolvedMinutes: false;
   /** True if this bar has been dispatched to processBar (TradingView path) */
   dispatchedToProcessBar: boolean;
   /** True if this bar has been dispatched to postBarAutomation */
@@ -163,18 +322,20 @@ export interface CanonicalBarConfirmed {
   atlasTsMs: number;
 }
 
+/**
+ * Canonical bar type classification.
+ * CONTAINS_UNRESOLVED is intentionally absent — a canonical bar can never
+ * contain unresolved minutes.
+ */
 export type AtlasCanonicalBarType =
-  | 'LIVE_CONFIRMED'
-  | 'CONTAINS_SYNTHETIC'
-  | 'CONTAINS_UNRESOLVED'  // Must never be dispatched to production consumers
-  | 'RECOVERED';
+  | 'LIVE_CONFIRMED'      // All 5 minutes confirmed from live feed
+  | 'CONTAINS_SYNTHETIC'  // One or more minutes are synthetic (no-trade bars)
+  | 'RECOVERED';          // Bar was recovered from a gap
 
 // ─── Contract Roll Event ──────────────────────────────────────────────────────
 
 /**
  * Emitted by the Contract Roll Manager when a symbol mapping change is detected.
- * Consumed by AtlasLiveChart.tsx (for annotation) and the Bar Builder (to update
- * the active instrument ID).
  */
 export interface AtlasContractRoll {
   type: 'ATLAS_CONTRACT_ROLL';
@@ -200,7 +361,6 @@ export type AtlasFeedHealthState =
 
 /**
  * Emitted by the Feed Health Monitor on state transitions.
- * Consumed by AtlasLiveChart.tsx only.
  */
 export interface AtlasFeedHealthEvent {
   type: 'ATLAS_FEED_HEALTH';
@@ -217,7 +377,6 @@ export interface AtlasFeedHealthEvent {
 
 /**
  * Emitted by the Parity Monitor when a cross-feed parity check fails.
- * Consumed by AtlasLiveChart.tsx (for annotation) and the Observatory UI.
  */
 export interface AtlasParityAlert {
   type: 'ATLAS_PARITY_ALERT';
@@ -233,9 +392,11 @@ export interface AtlasParityAlert {
 // ─── Union type for all canonical events ─────────────────────────────────────
 
 export type AtlasCanonicalEvent =
-  | AtlasBarDeveloping1m
-  | AtlasBarConfirmed1m
+  | AtlasBarDeveloping
+  | AtlasBarProvisionalClosed
+  | AtlasBarConfirmed
   | AtlasBarUnresolved
+  | AtlasBarReleasedForInspection
   | CanonicalBarConfirmed
   | AtlasContractRoll
   | AtlasFeedHealthEvent
@@ -245,21 +406,28 @@ export type AtlasCanonicalEvent =
 
 /**
  * The bar payload passed to postBarAutomation.
- * In TRADINGVIEW_ONLY mode, this is constructed from the TradingView webhook bar.
+ *
+ * In TRADINGVIEW_ONLY, DATABENTO_SHADOW, and DATABENTO_CHART_AUTHORITY modes,
+ * this is constructed from the TradingView webhook bar.
+ *
  * In DATABENTO_LEARNING_AUTHORITY mode, this is constructed from a
- * CanonicalBarConfirmed event.
+ * CanonicalBarConfirmed event sourced from Databento.
  *
  * postBarAutomation is the SINGLE EXCLUSIVE owner of:
  *   - liveLearnEngine (candle certification, gap detection, market-law updates)
  *   - onNewBarObservation (DARWIN per-bar trigger — G-001 fix)
- *   - behaviourEngine.processBar (canonical 12-classifier)
+ *   - behaviourEngine.processBar (canonical 12-classifier, shadow mode)
  *
- * postBarAutomation does NOT own processBar() (execution trigger).
+ * postBarAutomation does NOT own:
+ *   - processBar() — execution trigger (TradingView only, Sprint 123A)
+ *   - ADE, strategies, risk, or execution logic
  */
 export interface PostBarAutomationInput {
   /** Atlas memory record ID */
   id: number;
+  /** Atlas memory ID string (e.g. 'MEM_MNQ1!_1234567890') */
   memoryId: string;
+  /** Bar open timestamp (UTC ms) */
   barTime: number;
   symbol: string;
   session: string | null;
@@ -284,8 +452,20 @@ export interface PostBarAutomationInput {
   b1Eligible: boolean;
   sb1Eligible: boolean;
   receivedAt: number;
-  /** Source of the bar that triggered postBarAutomation */
+  /**
+   * Source of the bar that triggered postBarAutomation.
+   * Must match the authority matrix:
+   *   TRADINGVIEW_ONLY           → TRADINGVIEW
+   *   DATABENTO_SHADOW           → TRADINGVIEW
+   *   DATABENTO_CHART_AUTHORITY  → TRADINGVIEW
+   *   DATABENTO_LEARNING_AUTHORITY → DATABENTO
+   */
   triggerSource: 'TRADINGVIEW' | 'DATABENTO';
-  /** Authority mode at time of trigger */
-  authorityMode: MarketDataAuthorityMode;
+  /**
+   * Authority mode at time of trigger.
+   * Must match getMarketDataAuthority() at runtime.
+   * A mismatch between this field and the live environment value is a
+   * critical invariant violation and must abort before any subsystem is called.
+   */
+  authorityMode: Sprint123AAuthorityMode;
 }

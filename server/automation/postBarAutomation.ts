@@ -1,101 +1,101 @@
 /**
- * postBarAutomation — Single Exclusive Owner of All Post-Bar Autonomous Processing
- * Sprint 123A.1 — Foundation
+ * postBarAutomation — Post-Bar Autonomous Processing
+ * Sprint 123A.1 — Foundation (Gate G1 Revision 2)
  *
- * This module is the SINGLE AND EXCLUSIVE owner of all post-bar autonomous
- * processing. No other module may call liveLearnEngine, onNewBarObservation(),
- * behaviourEngine.processBar(), or any post-bar research hook directly from
- * a bar event.
+ * This module is the SINGLE EXCLUSIVE OWNER of all post-bar autonomous
+ * processing. It replaces the direct liveLearnEngine.processLiveBar() call
+ * that previously existed in nexusRoutes.ts (Sprint 100A, G-001 gap).
  *
- * Authority rules (per ATLAS_CANONICAL_MARKET_EVENT_CONTRACTS.md Rev 6):
- *
- *   TRADINGVIEW_ONLY:          Triggered by TradingView bar (from nexusRoutes.ts)
- *   DATABENTO_SHADOW:          Triggered by TradingView bar (Databento does NOT trigger)
- *   DATABENTO_CHART_AUTHORITY: Triggered by TradingView bar (Databento does NOT trigger)
- *   DATABENTO_LEARNING_AUTHORITY: Triggered by Databento canonical bar (Gate G6A)
- *   DATABENTO_DECISION_AUTHORITY: Triggered by Databento canonical bar (Sprint 123B)
- *
- * What this module owns:
- *   1. liveLearnEngine.processLiveBar() — candle certification, gap detection,
- *      market-law updates, legacy behaviour classification (G-003 legacy path)
+ * Subsystems owned by postBarAutomation:
+ *   1. liveLearnEngine.processLiveBar()   — candle certification, gap detection,
+ *                                           market-law updates, legacy behaviour
  *   2. darwinAutonomous.onNewBarObservation() — DARWIN per-bar trigger (G-001 fix)
- *   3. behaviourEngine.runBehaviourEngineShadow() — canonical 12-classifier (shadow)
+ *   3. behaviourEngine.runBehaviourEngineShadow() — 12-classifier, shadow mode
  *
- * What this module does NOT own:
- *   - processBar() — execution trigger (remains in nexusRoutes.ts, TradingView only)
- *   - tpDispatch — trade persistence (remains in nexusRoutes.ts)
+ * Subsystems NOT owned by postBarAutomation:
+ *   - processBar()    — execution trigger (TradingView-owned, Sprint 123A)
+ *   - ADE             — autonomous decision engine
+ *   - strategies      — strategy evaluation
+ *   - risk            — risk management
+ *   - execution       — order execution
  *
- * Sprint 123A.1 change:
- *   The direct call from nexusRoutes.ts to liveLearnEngine is REMOVED.
- *   postBarAutomation is now the sole caller of liveLearnEngine.
- *   This makes authority control possible for future Databento modes.
+ * Authority matrix (enforced before any subsystem is called):
+ *   TRADINGVIEW_ONLY           → triggerSource must be TRADINGVIEW
+ *   DATABENTO_SHADOW           → triggerSource must be TRADINGVIEW
+ *   DATABENTO_CHART_AUTHORITY  → triggerSource must be TRADINGVIEW
+ *   DATABENTO_LEARNING_AUTHORITY → triggerSource must be DATABENTO
  *
- * Invariants enforced by TEST-123A1-001 through TEST-123A1-005:
- *   - liveLearnEngine is only called via postBarAutomation
- *   - onNewBarObservation is only called via postBarAutomation
- *   - behaviourEngine.processBar is only called via postBarAutomation
- *   - postBarAutomation is never called by Databento in TRADINGVIEW_ONLY mode
- *   - postBarAutomation never triggers processBar()
+ * Additionally, bar.authorityMode must match getMarketDataAuthority() at
+ * runtime. A mismatch aborts before any subsystem is called.
+ *
+ * Databento must never trigger postBarAutomation in shadow or
+ * chart-authority modes.
+ *
+ * Testability: subsystem dependencies are injected via PostBarAutomationDeps.
+ * Production callers use runPostBarAutomation() which resolves real modules.
+ * Tests use runPostBarAutomationWithDeps() with mock dependencies.
  */
 
 import type { PostBarAutomationInput } from '../../shared/types/canonical-events';
-import { getMarketDataAuthority, isTradingViewOnly } from '../market-data/config';
-
-// ─── Result type ──────────────────────────────────────────────────────────────
+import { validatePostBarTrigger } from '../market-data/config';
 
 export interface PostBarAutomationResult {
   success: boolean;
-  triggerSource: 'TRADINGVIEW' | 'DATABENTO';
-  authorityMode: string;
   liveLearnCompleted: boolean;
   darwinObservationCompleted: boolean;
   behaviourEngineCompleted: boolean;
   durationMs: number;
   errors: string[];
+  triggerSource: 'TRADINGVIEW' | 'DATABENTO';
+  authorityMode: string;
 }
 
-// ─── Main entry point ─────────────────────────────────────────────────────────
+/**
+ * Injected subsystem dependencies.
+ * Production code resolves these from the real modules.
+ * Tests inject mocks to verify isolation and call counts.
+ */
+export interface PostBarAutomationDeps {
+  processLiveBar: (bar: Record<string, unknown>) => Promise<void>;
+  onNewBarObservation: (barTimestamp: number) => Promise<void>;
+  runBehaviourEngineShadow: (bar: Record<string, unknown>) => Promise<void>;
+}
 
 /**
- * runPostBarAutomation — called after every confirmed bar write.
+ * Core implementation — accepts injected dependencies.
+ * Called by runPostBarAutomation (production) and
+ * runPostBarAutomationWithDeps (tests).
  *
- * In TRADINGVIEW_ONLY mode, this is called from nexusRoutes.ts after the
- * TradingView webhook bar is persisted. The direct liveLearnEngine call that
- * previously existed in nexusRoutes.ts has been removed and replaced by this.
- *
- * This function is non-blocking from the caller's perspective — it should be
- * called with setImmediate() or equivalent to avoid blocking the webhook response.
- *
- * Failure in any sub-system is isolated and logged. A failure in one sub-system
- * does not prevent the others from running.
+ * INVARIANT: This function must never call processBar(), ADE, strategies,
+ * risk, or execution logic.
  */
-export async function runPostBarAutomation(
-  bar: PostBarAutomationInput
+export async function runPostBarAutomationWithDeps(
+  bar: PostBarAutomationInput,
+  deps: PostBarAutomationDeps
 ): Promise<PostBarAutomationResult> {
   const startMs = Date.now();
-  const authorityMode = getMarketDataAuthority();
-  const errors: string[] = [];
   let liveLearnCompleted = false;
   let darwinObservationCompleted = false;
   let behaviourEngineCompleted = false;
+  const errors: string[] = [];
 
   // ── Authority guard ───────────────────────────────────────────────────────
-  // In TRADINGVIEW_ONLY mode, postBarAutomation must only be triggered by
-  // TradingView bars. This is enforced here as a runtime invariant.
-  if (isTradingViewOnly() && bar.triggerSource !== 'TRADINGVIEW') {
-    const msg = `[postBarAutomation] INVARIANT VIOLATION: In TRADINGVIEW_ONLY mode, ` +
-      `postBarAutomation must only be triggered by TradingView. ` +
-      `Got triggerSource=${bar.triggerSource}. Aborting.`;
-    console.error(msg);
+  // Validate BEFORE any subsystem is called.
+  // Two checks:
+  //   1. bar.authorityMode matches the live environment value
+  //   2. bar.triggerSource matches the authority matrix for the live mode
+  const authError = validatePostBarTrigger(bar.triggerSource, bar.authorityMode);
+  if (authError) {
+    console.error(authError);
     return {
       success: false,
-      triggerSource: bar.triggerSource,
-      authorityMode,
       liveLearnCompleted: false,
       darwinObservationCompleted: false,
       behaviourEngineCompleted: false,
       durationMs: Date.now() - startMs,
-      errors: [msg],
+      errors: [authError],
+      triggerSource: bar.triggerSource,
+      authorityMode: bar.authorityMode,
     };
   }
 
@@ -103,8 +103,7 @@ export async function runPostBarAutomation(
   // Candle certification, gap detection, market-law updates, legacy behaviour.
   // This replaces the direct liveLearnEngine call removed from nexusRoutes.ts.
   try {
-    const { processLiveBar } = await import('../liveLearnEngine');
-    await processLiveBar({
+    await deps.processLiveBar({
       id: bar.id,
       memoryId: bar.memoryId,
       barTime: bar.barTime,
@@ -143,8 +142,8 @@ export async function runPostBarAutomation(
   // onNewBarObservation was previously never called (verified gap G-001).
   // This is the fix: it is now wired exclusively through postBarAutomation.
   try {
-    const { onNewBarObservation } = await import('../darwinAutonomous');
-    await onNewBarObservation(bar.barTime);
+    // onNewBarObservation accepts only the bar timestamp (ms)
+    await deps.onNewBarObservation(bar.barTime);
     darwinObservationCompleted = true;
   } catch (err) {
     const msg = `[postBarAutomation] DARWIN onNewBarObservation error: ${String(err)}`;
@@ -152,17 +151,14 @@ export async function runPostBarAutomation(
     errors.push(msg);
   }
 
-  // ── 3. Behaviour Engine — Canonical 12-Classifier (shadow mode) ───────────
-  // Runs after liveLearnEngine. Failure is isolated — never affects execution.
+  // ── 3. Behaviour Engine Shadow (canonical 12-classifier) ──────────────────
+  // Runs the 12-classifier in shadow mode — does not affect execution.
   try {
-    const { runBehaviourEngineShadow } = await import('../behaviour-engine/index');
-    // Build ProcessedBarData from the PostBarAutomationInput
-    // Fields that are null/undefined are mapped to safe defaults for shadow mode
-    const n = (v: string | null, def = 0) => v != null ? parseFloat(v) || def : def;
-    const processedBar = {
+    const n = (v: string | null | undefined, def = 0) => v != null ? parseFloat(v) || def : def;
+    await deps.runBehaviourEngineShadow({
       symbol: bar.symbol,
       barOpenTs: bar.barTime,
-      barCloseTs: bar.barTime + 5 * 60 * 1000, // 5-min bar close
+      barCloseTs: bar.barTime + 5 * 60 * 1000,
       open: n(bar.open),
       high: n(bar.high),
       low: n(bar.low),
@@ -174,11 +170,10 @@ export async function runPostBarAutomation(
       vwap: n(bar.vwap),
       ema9: n(bar.ema9),
       ema21: n(bar.ema21),
-      regime: (bar.regime ?? 'RANGING') as import('../behaviour-engine/types').MarketRegime,
-      session: (bar.session ?? 'NEW_YORK') as import('../behaviour-engine/types').TradingSession,
+      regime: bar.regime ?? 'RANGING',
+      session: bar.session ?? 'NEW_YORK',
       recentBars: [],
-    };
-    await runBehaviourEngineShadow(processedBar);
+    });
     behaviourEngineCompleted = true;
   } catch (err) {
     const msg = `[postBarAutomation] behaviourEngine error: ${String(err)}`;
@@ -187,15 +182,43 @@ export async function runPostBarAutomation(
   }
 
   const durationMs = Date.now() - startMs;
+  const success = errors.length === 0;
+
+  if (!success) {
+    console.warn(
+      `[postBarAutomation] Completed with ${errors.length} error(s) in ${durationMs}ms. ` +
+      `liveLearn=${liveLearnCompleted} darwin=${darwinObservationCompleted} ` +
+      `behaviourEngine=${behaviourEngineCompleted}`
+    );
+  }
 
   return {
-    success: errors.length === 0,
-    triggerSource: bar.triggerSource,
-    authorityMode,
+    success,
     liveLearnCompleted,
     darwinObservationCompleted,
     behaviourEngineCompleted,
     durationMs,
     errors,
+    triggerSource: bar.triggerSource,
+    authorityMode: bar.authorityMode,
   };
+}
+
+/**
+ * Production entry point.
+ * Resolves real module dependencies and delegates to runPostBarAutomationWithDeps.
+ * Called from nexusRoutes.ts after a TradingView webhook bar is confirmed.
+ */
+export async function runPostBarAutomation(
+  bar: PostBarAutomationInput
+): Promise<PostBarAutomationResult> {
+  const { processLiveBar } = await import('../liveLearnEngine');
+  const { onNewBarObservation } = await import('../darwinAutonomous');
+  const { runBehaviourEngineShadow } = await import('../behaviour-engine/index');
+
+  return runPostBarAutomationWithDeps(bar, {
+    processLiveBar: processLiveBar as unknown as (bar: Record<string, unknown>) => Promise<void>,
+    onNewBarObservation,
+    runBehaviourEngineShadow: runBehaviourEngineShadow as unknown as (bar: Record<string, unknown>) => Promise<void>,
+  });
 }
