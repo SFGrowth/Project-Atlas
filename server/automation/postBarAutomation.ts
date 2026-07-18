@@ -1,6 +1,6 @@
 /**
  * postBarAutomation — Post-Bar Autonomous Processing
- * Sprint 123A.1 — Foundation (Gate G1 Revision 2)
+ * Sprint 123A.1 — Foundation (Gate G1 Revision 3)
  *
  * This module is the SINGLE EXCLUSIVE OWNER of all post-bar autonomous
  * processing. It replaces the direct liveLearnEngine.processLiveBar() call
@@ -206,16 +206,43 @@ export async function runPostBarAutomationWithDeps(
 
 /**
  * Production entry point.
- * Resolves real module dependencies and delegates to runPostBarAutomationWithDeps.
+ * Validates authority BEFORE importing or initialising any production dependency.
+ * If the authority check fails, the function returns immediately without loading
+ * liveLearnEngine, darwinAutonomous, or the Behaviour Engine.
+ *
  * Called from nexusRoutes.ts after a TradingView webhook bar is confirmed.
  */
 export async function runPostBarAutomation(
   bar: PostBarAutomationInput
 ): Promise<PostBarAutomationResult> {
+  const startMs = Date.now();
+
+  // ── Authority guard — BEFORE any dynamic import ───────────────────────────
+  // This is the critical invariant: no production dependency is loaded if the
+  // authority check fails. Dynamic imports are deferred until after this check.
+  const authError = validatePostBarTrigger(bar.triggerSource, bar.authorityMode);
+  if (authError) {
+    console.error(`[runPostBarAutomation] Authority violation — no dependencies loaded. ${authError}`);
+    return {
+      success: false,
+      liveLearnCompleted: false,
+      darwinObservationCompleted: false,
+      behaviourEngineCompleted: false,
+      durationMs: Date.now() - startMs,
+      errors: [authError],
+      triggerSource: bar.triggerSource,
+      authorityMode: bar.authorityMode,
+    };
+  }
+
+  // ── Load production dependencies only after authority is confirmed ─────────
   const { processLiveBar } = await import('../liveLearnEngine');
   const { onNewBarObservation } = await import('../darwinAutonomous');
   const { runBehaviourEngineShadow } = await import('../behaviour-engine/index');
 
+  // Delegate to the core implementation with injected real dependencies.
+  // The authority guard in runPostBarAutomationWithDeps will run again —
+  // this is intentional (defence in depth). The second check is fast (sync).
   return runPostBarAutomationWithDeps(bar, {
     processLiveBar: processLiveBar as unknown as (bar: Record<string, unknown>) => Promise<void>,
     onNewBarObservation,
