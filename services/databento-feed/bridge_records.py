@@ -35,8 +35,153 @@ from typing import Literal, Optional
 BRIDGE_PROTOCOL_VERSION = "123A.2"
 
 # ── Record schema identifiers ──────────────────────────────────────────────────
-BridgeSchema = Literal["trades", "ohlcv-1m", "definition", "symbol-mapping", "feed-health"]
+BridgeSchema = Literal[
+    "trades",
+    "ohlcv-1m",
+    "definition",
+    "symbol-mapping",
+    "feed-health",
+    "gap-detected",
+    "recovery-complete",
+    "recovery-partial",
+    "recovery-failed",
+]
 
+# ── Authoritative schemas — must never be silently dropped ────────────────────
+AUTHORITATIVE_SCHEMAS = frozenset({"trades", "ohlcv-1m", "definition", "symbol-mapping"})
+
+# ── Low-priority schemas — may be coalesced or dropped under backpressure ─────
+# Feed-health telemetry is informational only. Dropping a feed-health record
+# does NOT cause data loss or gap in market data. Under queue pressure,
+# these records may be silently discarded to protect authoritative data flow.
+LOW_PRIORITY_SCHEMAS = frozenset({"feed-health"})
+
+
+# ── Exceptions ─────────────────────────────────────────────────────────────────
+
+class RecoveryFailedError(Exception):
+    """
+    Raised when historical recovery for a gap cannot be completed.
+    Callers should emit a recovery-failed bridge record and mark the
+    feed as DEGRADED with manual intervention required.
+    """
+    def __init__(self, schema: str, reason: str) -> None:
+        self.schema = schema
+        self.reason = reason
+        super().__init__(f"Recovery failed for schema={schema}: {reason}")
+
+
+# ── Gap tracking ───────────────────────────────────────────────────────────────
+
+@dataclass
+class GapRecord:
+    """
+    Records a data gap caused by queue overflow on an authoritative schema.
+
+    Fields:
+        schema:                 The authoritative schema that experienced the gap.
+        detected_at_ms:         Wall-clock milliseconds when the gap was detected.
+        first_missing_ts_ns:    Nanosecond timestamp of the first record that was lost.
+        last_missing_ts_ns:     Nanosecond timestamp of the last record that was lost
+                                (may equal first_missing_ts_ns if only one record lost).
+        records_lost:           Number of records dropped due to overflow.
+        recovery_requested:     True after _request_recovery() has been called.
+        recovery_confirmed:     True after confirm_recovery() has been called.
+    """
+    schema: str
+    detected_at_ms: int
+    first_missing_ts_ns: int
+    last_missing_ts_ns: int
+    records_lost: int
+    recovery_requested: bool = False
+    recovery_confirmed: bool = False
+
+
+# ── Gap/recovery factory functions ─────────────────────────────────────────────
+
+def make_gap_detected_record(gap: GapRecord) -> "BridgeEnvelope":
+    """
+    Create a gap-detected bridge envelope from a GapRecord.
+    Emitted immediately when an authoritative schema overflows.
+    """
+    return BridgeEnvelope.wrap(
+        "gap-detected",
+        {
+            "schema": gap.schema,
+            "detected_at_ms": gap.detected_at_ms,
+            "first_missing_ts_ns": gap.first_missing_ts_ns,
+            "last_missing_ts_ns": gap.last_missing_ts_ns,
+            "records_lost": gap.records_lost,
+        },
+    )
+
+
+def make_recovery_complete_record(
+    schema: str,
+    records_recovered: int,
+    start_ts_ns: int,
+    end_ts_ns: int,
+) -> "BridgeEnvelope":
+    """
+    Create a recovery-complete bridge envelope.
+    Emitted after historical backfill successfully covers the gap.
+    """
+    return BridgeEnvelope.wrap(
+        "recovery-complete",
+        {
+            "schema": schema,
+            "records_recovered": records_recovered,
+            "start_ts_ns": start_ts_ns,
+            "end_ts_ns": end_ts_ns,
+        },
+    )
+
+
+def make_recovery_partial_record(
+    schema: str,
+    records_recovered: int,
+    start_ts_ns: int,
+    end_ts_ns: int,
+    actual_end_ts_ns: int,
+) -> "BridgeEnvelope":
+    """
+    Create a recovery-partial bridge envelope.
+    Emitted when the historical stream ends before the requested end_ts_ns.
+    """
+    return BridgeEnvelope.wrap(
+        "recovery-partial",
+        {
+            "schema": schema,
+            "records_recovered": records_recovered,
+            "start_ts_ns": start_ts_ns,
+            "end_ts_ns": end_ts_ns,
+            "actual_end_ts_ns": actual_end_ts_ns,
+        },
+    )
+
+
+def make_recovery_failed_record(
+    schema: str,
+    reason: str,
+    start_ts_ns: int,
+    end_ts_ns: int,
+) -> "BridgeEnvelope":
+    """
+    Create a recovery-failed bridge envelope.
+    Emitted after max retries are exhausted or an unrecoverable error occurs.
+    """
+    return BridgeEnvelope.wrap(
+        "recovery-failed",
+        {
+            "schema": schema,
+            "reason": reason,
+            "start_ts_ns": start_ts_ns,
+            "end_ts_ns": end_ts_ns,
+        },
+    )
+
+
+# ── Envelope ───────────────────────────────────────────────────────────────────
 
 @dataclass
 class BridgeEnvelope:

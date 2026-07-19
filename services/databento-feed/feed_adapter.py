@@ -22,6 +22,22 @@ SECRET SAFETY
 DATABENTO_API_KEY is read once from the environment at startup.
 It is NEVER logged, included in error messages, sent over the bridge,
 or stored in any variable named in a way that could be serialised.
+
+SCHEMA-AWARE OVERFLOW POLICY
+-----------------------------
+Authoritative schemas (trades, ohlcv-1m, definition, symbol-mapping):
+  When BRIDGE_QUEUE_MAX is reached, the adapter MUST NOT silently discard
+  records. Instead it:
+    1. Marks feed state as DEGRADED.
+    2. Records the gap in a GapRecord (schema, timestamp range, count).
+    3. Emits a gap-detected event to the bridge queue.
+    4. Increments the per-schema loss counter.
+    5. Clears data_continuity_confirmed.
+    6. Requests historical recovery via _request_recovery().
+
+Low-priority schemas (feed-health telemetry):
+  May be coalesced or silently dropped under backpressure. Dropping a
+  feed-health record does NOT cause a data gap. No DEGRADED state is set.
 """
 
 from __future__ import annotations
@@ -31,19 +47,24 @@ import json
 import logging
 import os
 import time
-from typing import Optional
+from enum import Enum
+from typing import Dict, List, Optional
 
 import databento as db
 import websockets
 from websockets.exceptions import ConnectionClosed
 
 from bridge_records import (
+    AUTHORITATIVE_SCHEMAS,
     BRIDGE_PROTOCOL_VERSION,
     BridgeEnvelope,
+    BridgeDefinitionRecord,
     BridgeFeedHealthRecord,
     BridgeOhlcv1mRecord,
     BridgeSymbolMappingRecord,
     BridgeTradeRecord,
+    GapRecord,
+    make_gap_detected_record,
 )
 from symbol_resolver import SymbolResolver
 
@@ -53,7 +74,7 @@ logger = logging.getLogger(__name__)
 DATABENTO_DATASET = "GLBX.MDP3"
 DATABENTO_SYMBOLS = ["MNQ.v.0"]  # front-month continuous; resolved dynamically
 
-BRIDGE_HOST = "127.0.0.1"  # private — never exposed externally
+BRIDGE_HOST = os.environ.get("BRIDGE_HOST", "127.0.0.1")  # private — never exposed externally
 BRIDGE_PORT_DEFAULT = 9876
 BRIDGE_PATH = "/databento-bridge"
 
@@ -63,7 +84,7 @@ RECONNECT_MAX_DELAY_S = 60.0
 RECONNECT_BACKOFF_FACTOR = 2.0
 MAX_RECONNECT_ATTEMPTS = 20
 
-# Backpressure: maximum records queued before dropping (oldest dropped first)
+# Backpressure: maximum records queued before overflow policy is triggered
 BRIDGE_QUEUE_MAX = 1000
 
 
@@ -73,6 +94,30 @@ def _redact_key(key: str) -> str:
         return "<not set>"
     return key[:4] + "****"
 
+
+# ── Feed state machine ─────────────────────────────────────────────────────────
+
+class FeedState(Enum):
+    """
+    Feed adapter state machine.
+
+    CONNECTED    — WebSocket to Databento is open; no records yet received.
+    LIVE         — Records are flowing normally; data continuity confirmed.
+    RECONNECTING — Connection lost; attempting to reconnect with backoff.
+    DEGRADED     — Authoritative schema overflow detected; gap recorded;
+                   recovery requested. Data continuity NOT confirmed.
+    RECOVERING   — Historical recovery in progress for one or more schemas.
+    OFFLINE      — Max reconnect attempts reached; manual intervention required.
+    """
+    CONNECTED = "CONNECTED"
+    LIVE = "LIVE"
+    RECONNECTING = "RECONNECTING"
+    DEGRADED = "DEGRADED"
+    RECOVERING = "RECOVERING"
+    OFFLINE = "OFFLINE"
+
+
+# ── Main adapter ───────────────────────────────────────────────────────────────
 
 class DatabentoFeedAdapter:
     """
@@ -84,7 +129,9 @@ class DatabentoFeedAdapter:
         await adapter.run()   # runs until stopped
 
     The adapter reconnects automatically on disconnection with exponential
-    backoff. Backpressure is handled by a bounded asyncio.Queue.
+    backoff. Backpressure on authoritative schemas triggers DEGRADED state
+    and historical recovery. Backpressure on low-priority schemas (feed-health)
+    silently drops records without affecting data continuity.
     """
 
     def __init__(self, config: "AdapterConfig") -> None:
@@ -95,6 +142,37 @@ class DatabentoFeedAdapter:
         self._reconnect_attempts = 0
         self._last_record_ts_ms: Optional[int] = None
         self._bridge_ws: Optional[websockets.WebSocketClientProtocol] = None
+
+        # Schema-aware overflow policy state
+        self._feed_state: FeedState = FeedState.CONNECTED
+        self._data_continuity_confirmed: bool = False
+        self._loss_counters: Dict[str, int] = {}   # per-schema overflow count
+        self._gaps: List[GapRecord] = []            # recorded data gaps
+        self._recovering_schemas: set = set()       # schemas currently in recovery
+
+    # ── Public properties ──────────────────────────────────────────────────────
+
+    @property
+    def feed_state(self) -> FeedState:
+        """Current feed state."""
+        return self._feed_state
+
+    @property
+    def data_continuity_confirmed(self) -> bool:
+        """True if data continuity has not been broken by an overflow."""
+        return self._data_continuity_confirmed
+
+    @property
+    def loss_counters(self) -> Dict[str, int]:
+        """Per-schema count of records lost due to queue overflow."""
+        return dict(self._loss_counters)
+
+    @property
+    def gaps(self) -> List[GapRecord]:
+        """List of all recorded data gaps."""
+        return list(self._gaps)
+
+    # ── Lifecycle ──────────────────────────────────────────────────────────────
 
     async def run(self) -> None:
         """Main entry point. Runs the feed adapter until stopped."""
@@ -119,6 +197,56 @@ class DatabentoFeedAdapter:
         """Signal the adapter to stop."""
         self._stopped = True
 
+    # ── Recovery API ──────────────────────────────────────────────────────────
+
+    async def confirm_recovery(self, schema: str) -> None:
+        """
+        Called by the historical client after a successful gap recovery.
+        If all schemas have recovered, transitions from RECOVERING → LIVE.
+        """
+        self._recovering_schemas.discard(schema)
+
+        # Mark the most recent gap for this schema as confirmed
+        for gap in reversed(self._gaps):
+            if gap.schema == schema and not gap.recovery_confirmed:
+                gap.recovery_confirmed = True
+                break
+
+        if not self._recovering_schemas:
+            # All schemas recovered — return to LIVE
+            self._feed_state = FeedState.LIVE
+            self._data_continuity_confirmed = True
+            logger.info("[FeedAdapter] All schemas recovered — state=LIVE")
+        else:
+            logger.info(
+                "[FeedAdapter] Schema %s recovered — still recovering: %s",
+                schema,
+                self._recovering_schemas,
+            )
+
+    async def _request_recovery(self, schema: str, gap: GapRecord) -> None:
+        """
+        Initiate historical recovery for a gap.
+        Transitions state to RECOVERING and marks the gap as recovery-requested.
+        The actual historical fetch is performed by DatabentoHistoricalClient.
+        """
+        gap.recovery_requested = True
+        self._recovering_schemas.add(schema)
+        self._feed_state = FeedState.RECOVERING
+
+        logger.warning(
+            "[FeedAdapter] Recovery requested: schema=%s gap=[%d, %d] lost=%d",
+            schema,
+            gap.first_missing_ts_ns,
+            gap.last_missing_ts_ns,
+            gap.records_lost,
+        )
+        # Historical client integration point:
+        # The caller (e.g. a supervisor task) should watch for RECOVERING state
+        # and invoke DatabentoHistoricalClient.backfill_ohlcv_1m() or
+        # DatabentoHistoricalClient.replay_trades() for the gap range,
+        # then call adapter.confirm_recovery(schema) on completion.
+
     # ── Databento receive loop ─────────────────────────────────────────────────
 
     async def _databento_receive_loop(self) -> None:
@@ -138,7 +266,10 @@ class DatabentoFeedAdapter:
                         "[FeedAdapter] Max reconnect attempts (%d) reached — stopping",
                         MAX_RECONNECT_ATTEMPTS,
                     )
-                    await self._enqueue_feed_health("OFFLINE", f"Max reconnects reached after {self._reconnect_attempts} attempts")
+                    self._feed_state = FeedState.OFFLINE
+                    await self._enqueue_low_priority(
+                        self._make_feed_health("OFFLINE", f"Max reconnects reached after {self._reconnect_attempts} attempts")
+                    )
                     break
 
                 logger.warning(
@@ -147,17 +278,21 @@ class DatabentoFeedAdapter:
                     type(exc).__name__,  # NEVER log exc directly — may contain key material
                     delay,
                 )
-                await self._enqueue_feed_health(
-                    "RECONNECTING",
-                    f"Reconnect attempt {self._reconnect_attempts}",
+                self._feed_state = FeedState.RECONNECTING
+                await self._enqueue_low_priority(
+                    self._make_feed_health(
+                        "RECONNECTING",
+                        f"Reconnect attempt {self._reconnect_attempts}",
+                    )
                 )
                 await asyncio.sleep(delay)
                 delay = min(delay * RECONNECT_BACKOFF_FACTOR, RECONNECT_MAX_DELAY_S)
 
     async def _connect_and_receive(self) -> None:
         """Open a single Databento Live session and receive records."""
-        await self._enqueue_feed_health("CONNECTED", None)
+        await self._enqueue_low_priority(self._make_feed_health("CONNECTED", None))
         self._reconnect_attempts = 0
+        self._feed_state = FeedState.CONNECTED
 
         # The official Databento Python SDK handles authentication internally.
         # The API key is passed to the client constructor only — never logged.
@@ -189,6 +324,9 @@ class DatabentoFeedAdapter:
             if self._stopped:
                 break
             self._last_record_ts_ms = int(time.time() * 1000)
+            if self._feed_state == FeedState.CONNECTED:
+                self._feed_state = FeedState.LIVE
+                self._data_continuity_confirmed = True
             await self._dispatch_record(record)
 
     async def _dispatch_record(self, record: object) -> None:
@@ -231,7 +369,7 @@ class DatabentoFeedAdapter:
             flags=getattr(record, "flags", 0),
         )
         envelope = BridgeEnvelope.wrap("trades", bridge_record.to_dict())
-        await self._enqueue(envelope.to_dict())
+        await self._enqueue_authoritative("trades", envelope.to_dict(), record.ts_event)
 
     async def _handle_ohlcv(self, record: db.OHLCVMsg) -> None:
         instrument_id = record.instrument_id
@@ -251,7 +389,7 @@ class DatabentoFeedAdapter:
             vwap_usd=None,  # not available in ohlcv-1m schema
         )
         envelope = BridgeEnvelope.wrap("ohlcv-1m", bridge_record.to_dict())
-        await self._enqueue(envelope.to_dict())
+        await self._enqueue_authoritative("ohlcv-1m", envelope.to_dict(), record.ts_event)
 
     async def _handle_definition(self, record: db.InstrumentDefMsg) -> None:
         instrument_id = record.instrument_id
@@ -266,7 +404,6 @@ class DatabentoFeedAdapter:
             expiration_ts_ns=expiration_ts_ns,
         )
 
-        from bridge_records import BridgeDefinitionRecord
         bridge_record = BridgeDefinitionRecord(
             instrument_id=instrument_id,
             raw_symbol=raw_symbol,
@@ -279,7 +416,7 @@ class DatabentoFeedAdapter:
             ts_recv_ns=record.ts_recv,
         )
         envelope = BridgeEnvelope.wrap("definition", bridge_record.to_dict())
-        await self._enqueue(envelope.to_dict())
+        await self._enqueue_authoritative("definition", envelope.to_dict(), record.ts_event)
 
     async def _handle_symbol_mapping(self, record: db.SymbolMappingMsg) -> None:
         instrument_id = record.instrument_id
@@ -300,7 +437,7 @@ class DatabentoFeedAdapter:
             end_ts_ns=getattr(record, "end_ts", 0),
         )
         envelope = BridgeEnvelope.wrap("symbol-mapping", bridge_record.to_dict())
-        await self._enqueue(envelope.to_dict())
+        await self._enqueue_authoritative("symbol-mapping", envelope.to_dict(), record.ts_event)
 
     # ── Bridge sender loop ─────────────────────────────────────────────────────
 
@@ -340,29 +477,100 @@ class DatabentoFeedAdapter:
 
     # ── Queue helpers ──────────────────────────────────────────────────────────
 
-    async def _enqueue(self, record: dict) -> None:
+    async def _enqueue_authoritative(
+        self,
+        schema: str,
+        record: dict,
+        ts_event_ns: int,
+    ) -> None:
         """
-        Enqueue a bridge record. If the queue is full (backpressure),
-        drop the oldest record and log a warning.
+        Enqueue a record from an authoritative schema (trades, ohlcv-1m,
+        definition, symbol-mapping).
+
+        If the queue is full, the adapter MUST NOT silently discard the record.
+        Instead it:
+          1. Marks feed state as DEGRADED.
+          2. Creates a GapRecord capturing the loss.
+          3. Emits a gap-detected event to the bridge queue (best-effort).
+          4. Increments the per-schema loss counter.
+          5. Clears data_continuity_confirmed.
+          6. Requests historical recovery.
+
+        The record that caused the overflow is NOT enqueued (it is the gap).
         """
         if self._queue.full():
+            # Overflow on authoritative schema — trigger DEGRADED policy
+            detected_at_ms = int(time.time() * 1000)
+            self._loss_counters[schema] = self._loss_counters.get(schema, 0) + 1
+            self._data_continuity_confirmed = False
+            self._feed_state = FeedState.DEGRADED
+
+            gap = GapRecord(
+                schema=schema,
+                detected_at_ms=detected_at_ms,
+                first_missing_ts_ns=ts_event_ns,
+                last_missing_ts_ns=ts_event_ns,
+                records_lost=1,
+            )
+            self._gaps.append(gap)
+
+            logger.error(
+                "[FeedAdapter] DEGRADED: authoritative overflow schema=%s ts_ns=%d loss_count=%d",
+                schema,
+                ts_event_ns,
+                self._loss_counters[schema],
+            )
+
+            # Emit gap-detected event (best-effort — drop oldest if still full)
+            gap_envelope = make_gap_detected_record(gap)
             try:
                 dropped = self._queue.get_nowait()
                 self._queue.task_done()
                 logger.warning(
-                    "[FeedAdapter] Backpressure: dropped oldest record schema=%s",
+                    "[FeedAdapter] Dropped oldest record to make room for gap-detected: schema=%s",
                     dropped.get("schema", "unknown"),
                 )
             except asyncio.QueueEmpty:
                 pass
+            await self._queue.put(gap_envelope.to_dict())
+
+            # Request historical recovery (non-blocking)
+            asyncio.ensure_future(self._request_recovery(schema, gap))
+            return
+
         await self._queue.put(record)
 
-    async def _enqueue_feed_health(
-        self,
-        status: str,
-        reason: Optional[str],
-    ) -> None:
-        """Enqueue a feed-health status update."""
+    async def _enqueue_low_priority(self, record: dict) -> None:
+        """
+        Enqueue a low-priority record (feed-health telemetry).
+
+        Low-priority records MAY be silently dropped under backpressure.
+        Dropping a feed-health record does NOT cause a data gap and does NOT
+        trigger DEGRADED state. This is intentional and documented behaviour.
+        """
+        if self._queue.full():
+            # Silently drop — feed-health is informational only
+            logger.debug(
+                "[FeedAdapter] Low-priority record dropped under backpressure: schema=%s",
+                record.get("schema", "unknown"),
+            )
+            return
+        await self._queue.put(record)
+
+    async def _enqueue(self, record: dict) -> None:
+        """
+        Legacy enqueue method — delegates to schema-aware methods.
+        Kept for backward compatibility with any callers that use it directly.
+        """
+        schema = record.get("schema", "unknown")
+        if schema in AUTHORITATIVE_SCHEMAS:
+            ts_event_ns = record.get("payload", {}).get("ts_event_ns", int(time.time() * 1_000_000_000))
+            await self._enqueue_authoritative(schema, record, ts_event_ns)
+        else:
+            await self._enqueue_low_priority(record)
+
+    def _make_feed_health(self, status: str, reason: Optional[str]) -> dict:
+        """Build a feed-health bridge record dict."""
         health = BridgeFeedHealthRecord(
             status=status,
             reason=reason,
@@ -370,18 +578,24 @@ class DatabentoFeedAdapter:
             last_record_ts_ms=self._last_record_ts_ms,
         )
         envelope = BridgeEnvelope.wrap("feed-health", health.to_dict())
-        await self._enqueue(envelope.to_dict())
+        return envelope.to_dict()
+
+    async def _enqueue_feed_health(
+        self,
+        status: str,
+        reason: Optional[str],
+    ) -> None:
+        """Enqueue a feed-health status update (low-priority)."""
+        await self._enqueue_low_priority(self._make_feed_health(status, reason))
 
 
 # ── Configuration ──────────────────────────────────────────────────────────────
-
 class AdapterConfig:
     """
     Configuration for the DatabentoFeedAdapter.
     Reads from environment variables. DATABENTO_API_KEY is never stored
     in a field with a name that could be serialised or logged accidentally.
     """
-
     def __init__(self) -> None:
         # Read API key from environment — stored in a private attribute
         # with a non-obvious name to reduce accidental logging risk.
@@ -393,7 +607,6 @@ class AdapterConfig:
             )
         # Store as a private attribute — never log this value
         self.__key = _raw
-
         self.bridge_port: int = int(os.environ.get("BRIDGE_PORT", str(BRIDGE_PORT_DEFAULT)))
         self.bridge_token: str = os.environ.get("BRIDGE_AUTH_TOKEN", "")
         if not self.bridge_token:
@@ -409,7 +622,6 @@ class AdapterConfig:
 
 
 # ── Entry point ────────────────────────────────────────────────────────────────
-
 async def main() -> None:
     logging.basicConfig(
         level=logging.INFO,
@@ -418,7 +630,6 @@ async def main() -> None:
     config = AdapterConfig()
     adapter = DatabentoFeedAdapter(config)
     await adapter.run()
-
 
 if __name__ == "__main__":
     asyncio.run(main())

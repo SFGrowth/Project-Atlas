@@ -83,21 +83,39 @@ class TestAdapterConfig:
 class TestBackpressure:
     @pytest.mark.asyncio
     async def test_queue_drops_oldest_when_full(self, adapter):
-        """When queue is full, oldest record is dropped and a warning is logged."""
-        # Fill the queue to capacity
+        """
+        When queue is full and an authoritative (trades) record arrives,
+        the adapter enters DEGRADED state, drops the oldest record to make
+        room for a gap-detected event, and logs a warning.
+
+        NOTE: The schema-aware overflow policy (WS1) changed the backpressure
+        behaviour. Authoritative overflow now emits a gap-detected record and
+        triggers recovery, rather than simply dropping the oldest with a
+        'Backpressure' log. The test has been updated to match.
+        """
+        import time
+        from feed_adapter import FeedState
+
+        # Fill the queue to capacity with trades records
         for i in range(BRIDGE_QUEUE_MAX):
             await adapter._queue.put({"schema": "trades", "seq": i})
 
         assert adapter._queue.full()
 
-        # Enqueue one more — should drop the oldest
-        import logging
-        with patch.object(logging.getLogger("feed_adapter"), "warning") as mock_warn:
-            await adapter._enqueue({"schema": "trades", "seq": BRIDGE_QUEUE_MAX})
-            mock_warn.assert_called_once()
-            assert "Backpressure" in mock_warn.call_args[0][0]
+        # Enqueue one more authoritative record via _enqueue_authoritative
+        # (which is what _enqueue delegates to for authoritative schemas)
+        ts_ns = int(time.time() * 1_000_000_000)
+        with patch.object(adapter, "_request_recovery", new_callable=AsyncMock):
+            await adapter._enqueue_authoritative(
+                "trades",
+                {"schema": "trades", "seq": BRIDGE_QUEUE_MAX},
+                ts_ns,
+            )
 
-        # Queue should still be at max capacity
+        # Adapter should now be in DEGRADED state
+        assert adapter._feed_state == FeedState.DEGRADED
+
+        # Queue should still be at max capacity (oldest dropped, gap-detected added)
         assert adapter._queue.qsize() == BRIDGE_QUEUE_MAX
 
     @pytest.mark.asyncio
@@ -136,7 +154,14 @@ class TestReconnectPolicy:
             enqueued_health.append({"status": status, "reason": reason})
 
         adapter._connect_and_receive = failing_connect
-        adapter._enqueue_feed_health = mock_enqueue_health
+        # NOTE: The OFFLINE health is enqueued via _enqueue_low_priority (not
+        # _enqueue_feed_health directly). Mock _enqueue_low_priority to capture it.
+        enqueued_low_priority = []
+
+        async def mock_enqueue_low_priority(record):
+            enqueued_low_priority.append(record)
+
+        adapter._enqueue_low_priority = mock_enqueue_low_priority
 
         # Patch asyncio.sleep to avoid actual waiting
         with patch("asyncio.sleep", new_callable=AsyncMock):
@@ -146,7 +171,12 @@ class TestReconnectPolicy:
         # MAX_RECONNECT_ATTEMPTS times on retry before stopping (stops when
         # _reconnect_attempts > MAX_RECONNECT_ATTEMPTS, i.e. at attempt 21).
         assert call_count == MAX_RECONNECT_ATTEMPTS + 1
-        offline_events = [h for h in enqueued_health if h["status"] == "OFFLINE"]
+
+        # Find the OFFLINE feed-health record in the enqueued low-priority records
+        offline_events = [
+            r for r in enqueued_low_priority
+            if r.get("payload", {}).get("status") == "OFFLINE"
+        ]
         assert len(offline_events) == 1
 
     @pytest.mark.asyncio
@@ -229,7 +259,14 @@ class TestAuthorityBoundary:
         async def capture_enqueue(record):
             enqueued.append(record)
 
-        adapter._enqueue = capture_enqueue
+        # NOTE: _handle_ohlcv calls _enqueue_authoritative, not _enqueue.
+        # Mock _enqueue_authoritative to capture the record.
+        enqueued_auth = []
+
+        async def capture_enqueue_auth(schema, record, ts_ns):
+            enqueued_auth.append(record)
+
+        adapter._enqueue_authoritative = capture_enqueue_auth
 
         # Simulate an ohlcv-1m record
         mock_record = MagicMock()
@@ -252,8 +289,8 @@ class TestAuthorityBoundary:
 
         await adapter._handle_ohlcv(mock_record)
 
-        assert len(enqueued) == 1
-        payload = enqueued[0]["payload"]
+        assert len(enqueued_auth) == 1
+        payload = enqueued_auth[0]["payload"]
 
         # Must not contain canonical bar construction fields
         assert "canonical_bar_type" not in payload
