@@ -34,6 +34,7 @@ import {
   FiveMinAggregator,
   WindowAccumulator,
   AggregationRejectionReason,
+  WindowState,
 } from '../five-min-aggregator.js';
 import { ContractManager } from '../contract-manager.js';
 import {
@@ -519,15 +520,16 @@ describe('Five-Minute Aggregation', () => {
     expect(fiveMinBar!.minuteBarCount).toBe(5);
   });
 
-  it('TEST-123A3-AGG011: WindowAccumulator discards window when UNRESOLVED bar is added', () => {
+  it('TEST-123A3-AGG011: WindowAccumulator transitions to BLOCKED_UNRESOLVED when UNRESOLVED bar is added', () => {
     const accumulator = new WindowAccumulator(aggregator);
     const bars = makeFiveConfirmedBars();
     accumulator.addBar(bars[0]);
     accumulator.addBar(bars[1]);
-    // Add an UNRESOLVED bar — window should be discarded
+    // Gate G3 Revision 2: UNRESOLVED bars transition window to BLOCKED_UNRESOLVED
     const unresolvedBar = makeConfirmedBar(BASE_TS_MS + 2 * 60_000, { lifecycle: BarLifecycle.UNRESOLVED });
     accumulator.addBar(unresolvedBar);
-    expect(accumulator.getWindowBarCount(BASE_TS_MS)).toBe(0); // Window discarded
+    expect(accumulator.getWindowBarCount(BASE_TS_MS)).toBe(3);
+    expect(accumulator.getWindowState(BASE_TS_MS)).toBe(WindowState.BLOCKED_UNRESOLVED);
   });
 
   it('TEST-123A3-AGG012: FIVE_MIN_WINDOW_SIZE constant is 5', () => {

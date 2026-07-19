@@ -9,16 +9,19 @@
  *   3. No bar in the window may have lifecycle === UNRESOLVED.
  *   4. Bars must be contiguous (each bar's open = previous bar's open + 60,000ms).
  *   5. The window must align to a five-minute boundary (barOpenTsMs % 300,000 === 0).
+ *   6. A five-minute bar is emitted exactly once per window.
  *
- * If any invariant is violated, the window is rejected and no FiveMinBar is produced.
- * This is the primary enforcement mechanism for the Gate G2 requirement:
- * "A five-minute window containing an unresolved minute must not produce a bar row."
+ * BLOCKED_UNRESOLVED State (Gate G3 Revision 2):
+ *   When an UNRESOLVED bar arrives for a window, the window transitions to
+ *   BLOCKED_UNRESOLVED rather than being discarded. This allows recovered bars
+ *   to be inserted later. When all 5 slots are filled with CONFIRMED bars,
+ *   the window is unblocked and the five-minute bar is emitted exactly once.
  *
  * AUTHORITY NOTE: This module is parity-data preparation only.
  * TradingView remains the production processBar and postBarAutomation trigger.
  * MARKET_DATA_AUTHORITY = TRADINGVIEW_ONLY throughout Sprint 123A.3.
  *
- * Sprint 123A.3 — Gate G3
+ * Sprint 123A.3 — Gate G3 Revision 2
  */
 
 import {
@@ -51,6 +54,31 @@ export enum AggregationRejectionReason {
   MIXED_INSTRUMENTS = 'MIXED_INSTRUMENTS',
 }
 
+// ─── Window State ─────────────────────────────────────────────────────────────
+
+/**
+ * The state of a five-minute window in the WindowAccumulator.
+ *
+ * ACCUMULATING:     Normal state — collecting confirmed bars.
+ * BLOCKED_UNRESOLVED: One or more bars are UNRESOLVED; window is held open
+ *                     pending recovery. Bars can still be inserted.
+ * EMITTED:          The five-minute bar has been emitted. No further emissions.
+ */
+export enum WindowState {
+  ACCUMULATING = 'ACCUMULATING',
+  BLOCKED_UNRESOLVED = 'BLOCKED_UNRESOLVED',
+  EMITTED = 'EMITTED',
+}
+
+/**
+ * An in-progress five-minute window.
+ */
+export interface WindowEntry {
+  /** Bars keyed by barOpenTsMs. Allows replacement when a recovered bar arrives. */
+  bars: Map<number, MinuteBar>;
+  state: WindowState;
+}
+
 // ─── Five-Minute Aggregator ───────────────────────────────────────────────────
 
 export class FiveMinAggregator {
@@ -61,8 +89,8 @@ export class FiveMinAggregator {
    * Returns `{ ok: true, bar }` on success, or `{ ok: false, reason, detail }` on rejection.
    *
    * This method is pure and stateless — it does not maintain any internal
-   * window state. The caller (BarPersistence or the orchestrator) is responsible
-   * for accumulating confirmed bars and calling this method when a window is complete.
+   * window state. The caller (WindowAccumulator) is responsible for
+   * accumulating confirmed bars and calling this method when a window is complete.
    */
   aggregate(bars: MinuteBar[]): AggregationResult {
     // Invariant 1: exactly 5 bars
@@ -162,11 +190,6 @@ export class FiveMinAggregator {
 
   /**
    * Check whether a set of confirmed bars forms a complete five-minute window.
-   * Returns true if exactly 5 contiguous confirmed bars are present and the
-   * window aligns to a five-minute boundary.
-   *
-   * This is a lightweight check for the orchestrator to use before calling
-   * `aggregate()`.
    */
   isWindowComplete(bars: MinuteBar[]): boolean {
     if (bars.length !== FIVE_MIN_WINDOW_SIZE) return false;
@@ -182,8 +205,6 @@ export class FiveMinAggregator {
   /**
    * Return the five-minute window boundary (open timestamp) for a given
    * one-minute bar open timestamp.
-   *
-   * Example: barOpenTsMs = 09:03:00 UTC → windowOpenTsMs = 09:00:00 UTC
    */
   getWindowOpenTsMs(barOpenTsMs: number): number {
     return barOpenTsMs - (barOpenTsMs % 300_000);
@@ -191,15 +212,6 @@ export class FiveMinAggregator {
 
   // ─── Private helpers ─────────────────────────────────────────────────────────
 
-  /**
-   * Aggregate OHLCV values from 5 one-minute bars.
-   * Open = first bar's open
-   * High = max of all highs
-   * Low  = min of all lows
-   * Close = last bar's close
-   * Volume = sum of all volumes
-   * TradeCount = sum of all trade counts
-   */
   private _aggregateOhlcv(sortedBars: MinuteBar[]): OhlcvPts100 {
     const openPts100 = sortedBars[0].ohlcv.openPts100;
     const closePts100 = sortedBars[sortedBars.length - 1].ohlcv.closePts100;
@@ -211,18 +223,10 @@ export class FiveMinAggregator {
     return { openPts100, highPts100, lowPts100, closePts100, volume, tradeCount };
   }
 
-  /**
-   * Determine the five-minute bar type based on the constituent bars.
-   * RECOVERED if any bar was recovered from a gap.
-   * CONTAINS_SYNTHETIC if any bar has zero volume (no-trade bar).
-   * LIVE_CONFIRMED otherwise.
-   */
   private _determineBarType(sortedBars: MinuteBar[]): FiveMinBarType {
-    // A recovered bar is identified by revision > 0 (set by recovery pipeline)
     if (sortedBars.some((b) => b.revision > 0)) {
       return FiveMinBarType.RECOVERED;
     }
-    // A synthetic bar has zero volume
     if (sortedBars.some((b) => b.ohlcv.volume === 0)) {
       return FiveMinBarType.CONTAINS_SYNTHETIC;
     }
@@ -237,68 +241,128 @@ export class FiveMinAggregator {
  * instrument. It accumulates confirmed one-minute bars and signals when a
  * complete window is ready for aggregation.
  *
- * Design: one WindowAccumulator per instrument per dataset.
+ * Gate G3 Revision 2: Windows containing UNRESOLVED bars transition to
+ * BLOCKED_UNRESOLVED state rather than being discarded. Recovered bars can
+ * replace the UNRESOLVED slot. When all 5 slots are CONFIRMED, the window
+ * is unblocked and the five-minute bar is emitted exactly once.
  */
 export class WindowAccumulator {
   private readonly aggregator: FiveMinAggregator;
-  private readonly windows = new Map<number, MinuteBar[]>();
+
+  /** Windows keyed by windowOpenTsMs. */
+  private readonly windows = new Map<number, WindowEntry>();
 
   constructor(aggregator: FiveMinAggregator) {
     this.aggregator = aggregator;
   }
 
   /**
-   * Add a confirmed one-minute bar to the accumulator.
-   * Returns a FiveMinBar if the window is now complete, or null otherwise.
+   * Add a bar to the accumulator.
    *
-   * INVARIANT: Only CONFIRMED bars are accepted.
-   * INVARIANT: UNRESOLVED bars are rejected and their window is discarded.
+   * CONFIRMED bars: added to the window. If the window is now complete, returns FiveMinBar.
+   * UNRESOLVED bars: window transitions to BLOCKED_UNRESOLVED. Returns null.
+   * Other lifecycle states: ignored.
+   *
+   * INVARIANT: A five-minute bar is emitted exactly once per window (EMITTED guard).
    */
   addBar(bar: MinuteBar): FiveMinBar | null {
+    const windowOpenTsMs = this.aggregator.getWindowOpenTsMs(bar.barOpenTsMs);
+    let entry = this.windows.get(windowOpenTsMs);
+
+    // Duplicate-completion guard: never emit from an already-emitted window
+    if (entry?.state === WindowState.EMITTED) {
+      return null;
+    }
+
     if (bar.lifecycle === BarLifecycle.UNRESOLVED) {
-      // Discard the entire window that contains this bar
-      const windowOpenTsMs = this.aggregator.getWindowOpenTsMs(bar.barOpenTsMs);
-      this.windows.delete(windowOpenTsMs);
+      // Transition window to BLOCKED_UNRESOLVED (create if needed)
+      if (!entry) {
+        entry = { bars: new Map(), state: WindowState.BLOCKED_UNRESOLVED };
+        this.windows.set(windowOpenTsMs, entry);
+      } else {
+        entry.state = WindowState.BLOCKED_UNRESOLVED;
+      }
+      // Store the UNRESOLVED bar in the slot (may be replaced by recovery)
+      entry.bars.set(bar.barOpenTsMs, bar);
       return null;
     }
 
     if (bar.lifecycle !== BarLifecycle.CONFIRMED) {
-      return null; // Only accept CONFIRMED bars
+      return null; // Only accept CONFIRMED or UNRESOLVED
     }
 
-    const windowOpenTsMs = this.aggregator.getWindowOpenTsMs(bar.barOpenTsMs);
-    const window = this.windows.get(windowOpenTsMs) ?? [];
-    window.push(bar);
-    this.windows.set(windowOpenTsMs, window);
-
-    if (this.aggregator.isWindowComplete(window)) {
-      this.windows.delete(windowOpenTsMs);
-      const result = this.aggregator.aggregate(window);
-      if (result.ok) {
-        return result.bar;
-      }
-      return null;
+    // CONFIRMED bar
+    if (!entry) {
+      entry = { bars: new Map(), state: WindowState.ACCUMULATING };
+      this.windows.set(windowOpenTsMs, entry);
     }
 
-    return null;
+    // Insert or replace the bar at this slot (recovery replaces UNRESOLVED)
+    entry.bars.set(bar.barOpenTsMs, bar);
+
+    // Check if window is now complete (all 5 slots filled with CONFIRMED bars)
+    return this._tryComplete(windowOpenTsMs, entry);
   }
 
   /**
-   * Discard a window when an UNRESOLVED bar is detected for that window.
-   * Called by the orchestrator when a bar transitions to UNRESOLVED.
+   * Insert a recovered bar into a BLOCKED_UNRESOLVED window.
+   * The recovered bar replaces the UNRESOLVED slot at the same barOpenTsMs.
+   * If all 5 slots are now CONFIRMED, emits the five-minute bar exactly once.
    */
-  discardWindow(barOpenTsMs: number): void {
-    const windowOpenTsMs = this.aggregator.getWindowOpenTsMs(barOpenTsMs);
-    this.windows.delete(windowOpenTsMs);
+  insertRecoveredBar(bar: MinuteBar): FiveMinBar | null {
+    if (bar.lifecycle !== BarLifecycle.CONFIRMED) {
+      return null; // Only CONFIRMED bars can unblock a window
+    }
+    return this.addBar(bar);
   }
 
-  /** Return the current state of all in-progress windows (for testing). */
-  getWindows(): ReadonlyMap<number, MinuteBar[]> {
+  /**
+   * Explicitly block a window (called when an UNRESOLVED bar is detected
+   * before the bar has been added via addBar).
+   */
+  blockWindow(barOpenTsMs: number): void {
+    const windowOpenTsMs = this.aggregator.getWindowOpenTsMs(barOpenTsMs);
+    const entry = this.windows.get(windowOpenTsMs);
+    if (entry && entry.state !== WindowState.EMITTED) {
+      entry.state = WindowState.BLOCKED_UNRESOLVED;
+    }
+  }
+
+  /**
+   * Return the current state of a window.
+   */
+  getWindowState(windowOpenTsMs: number): WindowState | null {
+    return this.windows.get(windowOpenTsMs)?.state ?? null;
+  }
+
+  /** Return all windows (for testing). */
+  getWindows(): ReadonlyMap<number, WindowEntry> {
     return this.windows;
   }
 
   /** Return the number of bars accumulated for a given window (for testing). */
   getWindowBarCount(windowOpenTsMs: number): number {
-    return this.windows.get(windowOpenTsMs)?.length ?? 0;
+    return this.windows.get(windowOpenTsMs)?.bars.size ?? 0;
+  }
+
+  // ─── Private helpers ─────────────────────────────────────────────────────────
+
+  private _tryComplete(windowOpenTsMs: number, entry: WindowEntry): FiveMinBar | null {
+    // Need exactly 5 bars
+    if (entry.bars.size !== FIVE_MIN_WINDOW_SIZE) return null;
+
+    // All bars must be CONFIRMED
+    const bars = Array.from(entry.bars.values());
+    if (bars.some((b) => b.lifecycle !== BarLifecycle.CONFIRMED)) return null;
+
+    // Attempt aggregation
+    const result = this.aggregator.aggregate(bars);
+    if (!result.ok) return null;
+
+    // Mark as EMITTED — duplicate-completion guard
+    entry.state = WindowState.EMITTED;
+    this.windows.delete(windowOpenTsMs);
+
+    return result.bar;
   }
 }
