@@ -54,9 +54,6 @@ from bridge_records import BRIDGE_PROTOCOL_VERSION
 START_NS = 1_700_000_000_000_000_000
 END_NS   = 1_700_000_060_000_000_000   # 60 seconds later
 
-pytestmark = pytest.mark.asyncio
-
-
 # ── Helpers ────────────────────────────────────────────────────────────────────
 
 def _make_mock_trade(
@@ -229,6 +226,7 @@ class TestReorderBuffer:
 
 # ── Integration tests via DatabentoReplayClient ────────────────────────────────
 
+@pytest.mark.asyncio
 async def test_ooo_records_buffered_and_emitted_in_order():
     """TEST-123A2-R002 (integration): OOO records within tolerance are buffered and emitted in order."""
     # Use a large tolerance so all records are buffered (patch the module-level constant)
@@ -244,6 +242,7 @@ async def test_ooo_records_buffered_and_emitted_in_order():
         assert len(trade_envs) == 3
 
 
+@pytest.mark.asyncio
 async def test_exact_duplicate_dropped_no_gap():
     """TEST-123A2-R003 (integration): Exact duplicate is dropped, no gap record emitted."""
     t1 = _make_mock_trade(ts_event=START_NS + 1_000_000_000, seq=1, price=19_500_000_000_000, size=1)
@@ -256,6 +255,7 @@ async def test_exact_duplicate_dropped_no_gap():
     assert len(gap_envs) == 0
 
 
+@pytest.mark.asyncio
 async def test_conflicting_duplicate_emits_anomaly_envelope():
     """TEST-123A2-R004 (integration): Conflicting duplicate emits gap-detected CONFLICTING_DUPLICATE."""
     t1 = _make_mock_trade(ts_event=START_NS + 1_000_000_000, seq=1, price=19_500_000_000_000)
@@ -267,6 +267,7 @@ async def test_conflicting_duplicate_emits_anomaly_envelope():
         f"No CONFLICTING_DUPLICATE in gap envelopes: {[e.payload for e in gap_envs]}"
 
 
+@pytest.mark.asyncio
 async def test_record_outside_tolerance_emits_gap_detected():
     """TEST-123A2-R005 (integration): Record outside tolerance emits gap-detected OUTSIDE_REORDER_TOLERANCE."""
     # t1 sets watermark at +10s, t2 is at START_NS (10s behind, outside default 500ms tolerance)
@@ -279,6 +280,7 @@ async def test_record_outside_tolerance_emits_gap_detected():
         f"No OUTSIDE_REORDER_TOLERANCE: {[e.payload for e in gap_envs]}"
 
 
+@pytest.mark.asyncio
 async def test_buffer_overflow_emits_gap_and_partial():
     """TEST-123A2-R006 (integration): Buffer overflow emits gap-detected and recovery-partial."""
     with patch("replay_client.REORDER_BUFFER_MAX", 2), \
@@ -294,6 +296,7 @@ async def test_buffer_overflow_emits_gap_and_partial():
         assert "recovery-partial" in schemas, f"No recovery-partial: {schemas}"
 
 
+@pytest.mark.asyncio
 async def test_recovery_request_after_unrecoverable_gap():
     """TEST-123A2-R008: Record outside tolerance triggers gap-detected (recovery request signal)."""
     t1 = _make_mock_trade(ts_event=START_NS + 10_000_000_000, seq=1)
@@ -308,6 +311,7 @@ async def test_recovery_request_after_unrecoverable_gap():
     assert "sequence" in gap or "recovery_id" in gap
 
 
+@pytest.mark.asyncio
 async def test_cancellation_via_event():
     """TEST-123A2-R010: Cancellation via asyncio.Event stops the stream."""
     cancel_event = asyncio.Event()
@@ -321,6 +325,7 @@ async def test_cancellation_via_event():
     assert envelopes[0].payload["error_code"] == "CANCELLED"
 
 
+@pytest.mark.asyncio
 async def test_invalid_range_raises():
     """TEST-123A2-R011: end_ts_ns <= start_ts_ns raises ValueError."""
     client = DatabentoReplayClient(api_key="test-key")
@@ -329,6 +334,7 @@ async def test_invalid_range_raises():
             pass
 
 
+@pytest.mark.asyncio
 async def test_window_too_large_raises():
     """TEST-123A2-R012: Replay window > 7 days raises ValueError."""
     client = DatabentoReplayClient(api_key="test-key")
@@ -338,6 +344,7 @@ async def test_window_too_large_raises():
             pass
 
 
+@pytest.mark.asyncio
 async def test_rate_limit_retry():
     """TEST-123A2-R013: 429 rate-limit error triggers exponential backoff and retry."""
     call_count = 0
@@ -366,6 +373,7 @@ async def test_rate_limit_retry():
     assert "recovery-complete" in schemas or "recovery-partial" in schemas
 
 
+@pytest.mark.asyncio
 async def test_max_retries_exhausted():
     """TEST-123A2-R014: After MAX_RETRIES failures, recovery-failed is emitted."""
     client = DatabentoReplayClient(api_key="test-key")
@@ -382,6 +390,7 @@ async def test_max_retries_exhausted():
     assert envelopes[0].payload["error_code"] == "MAX_RETRIES"
 
 
+@pytest.mark.asyncio
 async def test_definition_recovery():
     """TEST-123A2-R015: recover_definitions yields definition envelopes."""
     defn = _make_mock_definition(ts_recv=END_NS)
@@ -394,6 +403,7 @@ async def test_definition_recovery():
     assert "recovery-complete" in schemas or "recovery-partial" in schemas
 
 
+@pytest.mark.asyncio
 async def test_symbol_mapping_recovery():
     """TEST-123A2-R016: recover_symbol_mappings yields symbol-mapping envelopes."""
     mapping = _make_mock_symbol_mapping(ts_recv=END_NS)
@@ -404,6 +414,7 @@ async def test_symbol_mapping_recovery():
     assert mapping_envs[0].payload["stype_in_symbol"] == "MNQ.v.0"
 
 
+@pytest.mark.asyncio
 async def test_empty_result_recovery_complete():
     """TEST-123A2-R017: Empty historical response yields recovery-complete."""
     client = _make_client_with_records([])
@@ -413,6 +424,7 @@ async def test_empty_result_recovery_complete():
     assert envelopes[0].payload["records_recovered"] == 0
 
 
+@pytest.mark.asyncio
 async def test_partial_result_recovery_partial():
     """TEST-123A2-R018: Stream ending before end_ts_ns yields recovery-partial."""
     t1 = _make_mock_trade(ts_event=START_NS + 1_000, seq=1)
@@ -422,6 +434,7 @@ async def test_partial_result_recovery_partial():
     assert "recovery-partial" in schemas
 
 
+@pytest.mark.asyncio
 async def test_secret_safety_api_key_not_in_envelope():
     """TEST-123A2-R019: DATABENTO_API_KEY never appears in any bridge envelope."""
     api_key = "db-test-secret-key-12345"

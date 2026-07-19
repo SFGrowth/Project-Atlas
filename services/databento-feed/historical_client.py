@@ -83,7 +83,7 @@ def _is_retryable(exc: Exception) -> bool:
 def _ns_to_iso(ts_ns: int) -> str:
     """Convert nanosecond UTC timestamp to ISO 8601 string for Databento API."""
     ts_s = ts_ns / 1_000_000_000
-    dt = datetime.datetime.utcfromtimestamp(ts_s)
+    dt = datetime.datetime.fromtimestamp(ts_s, tz=datetime.timezone.utc)
     return dt.strftime("%Y-%m-%dT%H:%M:%S.") + f"{dt.microsecond:06d}" + "000Z"
 
 

@@ -47,7 +47,6 @@ from fixtures.dbn_fixtures import (
 from bridge_records import BridgeEnvelope, BRIDGE_PROTOCOL_VERSION
 from feed_adapter import DatabentoFeedAdapter
 
-pytestmark = pytest.mark.asyncio
 
 # Fixed-point scale factor (Databento uses 1e-9)
 FIXED_POINT_SCALE = 1_000_000_000
@@ -189,6 +188,7 @@ def test_def007_nanosecond_timestamps_retain_precision():
 
 # ── TEST-123A2-DEF008: production _handle_definition() accepts the record ─────
 
+@pytest.mark.asyncio
 async def test_def008_production_handle_definition_accepts_real_record():
     """
     TEST-123A2-DEF008: The production _handle_definition() path accepts
@@ -206,6 +206,7 @@ async def test_def008_production_handle_definition_accepts_real_record():
 
 # ── TEST-123A2-DEF009: bridge envelope matches versioned definition contract ───
 
+@pytest.mark.asyncio
 async def test_def009_bridge_envelope_matches_definition_contract():
     """
     TEST-123A2-DEF009: The bridge envelope produced by _handle_definition()
@@ -272,6 +273,7 @@ async def test_def009_bridge_envelope_matches_definition_contract():
 
 # ── TEST-123A2-DEF010: no secret in fixture or output ─────────────────────────
 
+@pytest.mark.asyncio
 async def test_def010_no_secret_in_fixture_or_output():
     """
     TEST-123A2-DEF010: No secret (API key, bridge token) appears in the

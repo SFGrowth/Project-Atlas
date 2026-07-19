@@ -56,7 +56,6 @@ from bridge_records import BridgeEnvelope, BRIDGE_PROTOCOL_VERSION
 from feed_adapter import DatabentoFeedAdapter, DATABENTO_DATASET
 from symbol_resolver import SymbolResolver
 
-pytestmark = pytest.mark.asyncio
 
 # Fixed-point scale factor (Databento uses 1e-9)
 FIXED_POINT_SCALE = 1_000_000_000
@@ -121,6 +120,7 @@ def test_symbol_mapping_msg_can_be_instantiated():
 
 # ── Nanosecond precision tests ─────────────────────────────────────────────────
 
+@pytest.mark.asyncio
 async def test_nanosecond_precision_preserved_in_trade():
     """ts_event_ns in normalised BridgeEnvelope payload == SAMPLE_TS_EVENT_NS."""
     adapter, _ = _make_adapter_with_resolver()
@@ -136,6 +136,7 @@ async def test_nanosecond_precision_preserved_in_trade():
     )
 
 
+@pytest.mark.asyncio
 async def test_nanosecond_precision_preserved_in_ohlcv():
     """ts_event_ns in normalised BridgeEnvelope payload == SAMPLE_TS_EVENT_NS."""
     adapter, _ = _make_adapter_with_resolver()
@@ -153,6 +154,7 @@ async def test_nanosecond_precision_preserved_in_ohlcv():
 
 # ── Fixed-point price conversion tests ────────────────────────────────────────
 
+@pytest.mark.asyncio
 async def test_trade_price_fixed_point_conversion():
     """
     Trade price is correctly converted from fixed-point integer to USD float.
@@ -170,6 +172,7 @@ async def test_trade_price_fixed_point_conversion():
     )
 
 
+@pytest.mark.asyncio
 async def test_ohlcv_price_fixed_point_conversion_all_fields():
     """
     All four OHLCV prices are correctly converted from fixed-point to USD float.
@@ -204,6 +207,7 @@ async def test_ohlcv_price_fixed_point_conversion_all_fields():
 
 # ── Production-path normalisation tests ───────────────────────────────────────
 
+@pytest.mark.asyncio
 async def test_symbol_mapping_resolves_correctly():
     """After processing SymbolMappingMsg, resolver.resolve_canonical(id) == 'MNQ1!'."""
     resolver = SymbolResolver()
@@ -219,6 +223,7 @@ async def test_symbol_mapping_resolves_correctly():
     )
 
 
+@pytest.mark.asyncio
 async def test_symbol_mapping_fixture_exercises_production_path():
     """
     make_symbol_mapping_msg() flows through _handle_symbol_mapping() and
@@ -240,6 +245,7 @@ async def test_symbol_mapping_fixture_exercises_production_path():
     assert sm_record["payload"]["stype_out_symbol"] == MNQ_RAW_SYMBOL
 
 
+@pytest.mark.asyncio
 async def test_definition_fixture_exercises_production_path():
     """
     make_instrument_def_msg() flows through _handle_definition() and
@@ -265,6 +271,7 @@ async def test_definition_fixture_exercises_production_path():
 
 # ── Secret safety tests ────────────────────────────────────────────────────────
 
+@pytest.mark.asyncio
 async def test_no_api_key_in_normalised_trade():
     """String 'DATABENTO_API_KEY' does not appear in normalised trade payload."""
     adapter, _ = _make_adapter_with_resolver()
@@ -280,6 +287,7 @@ async def test_no_api_key_in_normalised_trade():
     )
 
 
+@pytest.mark.asyncio
 async def test_no_bridge_token_in_normalised_trade():
     """String 'BRIDGE_AUTH_TOKEN' does not appear in normalised trade payload."""
     adapter, _ = _make_adapter_with_resolver()
