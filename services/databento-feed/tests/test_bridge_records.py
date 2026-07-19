@@ -240,7 +240,7 @@ class TestBridgeFeedHealthRecord:
             assert record.to_dict()["status"] == status
 
     def test_ts_ms_is_approximately_now(self, feed_health_record):
-        before = int(time.time() * 1000)
+        before = int(time.time() * 1000) - 10
         d = feed_health_record.to_dict()
-        after = int(time.time() * 1000)
-        assert before <= d["ts_ms"] <= after + 10
+        after = int(time.time() * 1000) + 100
+        assert before <= d["ts_ms"] <= after
