@@ -1,7 +1,9 @@
 # Sprint 123A.2 — Gate G2 Final Approval Submission (Revision 2)
 
 **Branch:** `sprint/123a-2-databento-adapter`  
-**Final committed SHA:** see commit below  
+**Final committed SHA (evidence lock):** `1b73c5d2e087b5a5228446df1bf8bd8298a69a4b`  
+**Implementation content SHA:** `4f9e9f0c32e8ccd2ca44f558e7bcac7ac12a6014`  
+**Gate G1 approved baseline SHA:** `08cca5232d40df9cf44a0629790ec6dd906e41b1`  
 **Submission date:** 2026-07-19  
 
 ---
@@ -29,6 +31,76 @@
 3. `pytest.mark.asyncio` removed from all synchronous test functions; per-function marks added to async tests only.
 4. `datetime.utcfromtimestamp()` deprecation warning fixed in `historical_client.py`.
 5. All test names reproduced verbatim from Vitest output — not paraphrased.
+
+---
+
+## 9. Changed-File List: Gate G1 Baseline → Final Evidence SHA
+
+**From:** `08cca5232d40df9cf44a0629790ec6dd906e41b1` (Sprint 123A.1 Gate G1 — Final Approval Submission Revision 3)  
+**To:** `1b73c5d2e087b5a5228446df1bf8bd8298a69a4b` (Gate G2 Final Revision 2 — evidence corrections)
+
+| Status | File |
+|--------|------|
+| M | `.gitignore` |
+| M | `package.json` |
+| M | `pnpm-lock.yaml` |
+| A | `docs/SPRINT-123A2-GATE-G2-REVISION-2-EVIDENCE.md` |
+| A | `docs/SPRINT-123A2-GATE-G2-REVISION-3-EVIDENCE.md` |
+| A | `docs/SPRINT-123A2-GATE-G2-ROUND2-EVIDENCE.md` |
+| A | `docs/architecture/BRIDGE_DEPLOYMENT_TOPOLOGY.md` |
+| A | `docs/reports/SPRINT_123A2_GATE_G2_EVIDENCE_SUBMISSION.md` |
+| A | `docs/reports/SPRINT_123A2_GATE_G2_FINAL_APPROVAL_SUBMISSION.md` |
+| A | `docs/reports/SPRINT_123A2_GATE_G2_FINAL_APPROVAL_SUBMISSION_REVISION_2.md` |
+| A | `server/market-data/bridge-readiness.ts` |
+| A | `server/market-data/bridge-server.ts` |
+| A | `server/market-data/tests/sprint-123a2.test.ts` |
+| A | `server/sprint-123a2.test.ts` |
+| A | `services/databento-feed/bridge_records.py` |
+| A | `services/databento-feed/feed_adapter.py` |
+| A | `services/databento-feed/historical_client.py` |
+| A | `services/databento-feed/recovery_manager.py` |
+| A | `services/databento-feed/replay_client.py` |
+| A | `services/databento-feed/requirements.txt` |
+| A | `services/databento-feed/symbol_resolver.py` |
+| A | `services/databento-feed/tests/conftest.py` |
+| A | `services/databento-feed/tests/fixtures/DBN_FIXTURE_MANIFEST.md` |
+| A | `services/databento-feed/tests/fixtures/__init__.py` |
+| A | `services/databento-feed/tests/fixtures/dbn_fixtures.py` |
+| A | `services/databento-feed/tests/fixtures/mnq_definition_record.dbn` |
+| A | `services/databento-feed/tests/test_bridge_records.py` |
+| A | `services/databento-feed/tests/test_dbn_fixtures.py` |
+| A | `services/databento-feed/tests/test_feed_adapter.py` |
+| A | `services/databento-feed/tests/test_health_states.py` |
+| A | `services/databento-feed/tests/test_historical_client.py` |
+| A | `services/databento-feed/tests/test_overflow_policy.py` |
+| A | `services/databento-feed/tests/test_real_definition_fixture.py` |
+| A | `services/databento-feed/tests/test_recovery_manager.py` |
+| A | `services/databento-feed/tests/test_replay_client.py` |
+| A | `services/databento-feed/tests/test_symbol_resolver.py` |
+
+**A** = Added (new file), **M** = Modified (existing file)
+
+### Production Authority Verification
+
+The following categories of files were **not changed** between the Gate G1 baseline and the final evidence SHA:
+
+| Category | Verification |
+|----------|--------------|
+| `nexusRoutes.ts` | Not changed |
+| Authority guard files (`marketDataAuthority`, `postBarAutomation`) | Not changed |
+| `liveLearnEngine`, `darwinAutonomous`, `behaviourEngine` | Not changed |
+| `processBar` execution path | Not changed |
+| Database migration files | Not changed |
+| Drizzle schema files | Not changed |
+
+**Confirmation:** `git diff --name-only 08cca5232d40df9cf44a0629790ec6dd906e41b1 1b73c5d2e087b5a5228446df1bf8bd8298a69a4b | grep -E "nexusRoutes|authority|migration|schema\.ts"` → **no output** (zero matches).
+
+All changes are confined to:
+- `services/databento-feed/` — new Python adapter service (transport and normalisation only)
+- `server/market-data/` — new bridge server (private bridge only, not connected to production)
+- `docs/` — evidence and architecture documentation
+- `package.json` / `pnpm-lock.yaml` — `ws` package addition for bridge server
+- `.gitignore` — Python `__pycache__` exclusion
 
 ---
 
