@@ -144,8 +144,13 @@ const VALID_SCHEMAS = new Set([
  * Private ranges (RFC 1918): 10.x.x.x, 172.16-31.x.x, 192.168.x.x
  * Loopback: 127.x.x.x, ::1
  * Docker internal: 172.17-31.x.x (subset of RFC 1918)
+ * IPv6 ULA: fc00::/7 (fc and fd prefixes)
+ * IPv6 link-local: fe80::/10
+ *
+ * NOTE: 0.0.0.0 and :: are NOT private — they are wildcard bind addresses
+ * and are explicitly rejected by validateBridgeTopology.
  */
-function isPrivateOrLoopback(host: string): boolean {
+export function isPrivateOrLoopback(host: string): boolean {
   if (host === '127.0.0.1' || host === 'localhost' || host === '::1') return true;
   // 10.x.x.x
   if (/^10\./.test(host)) return true;
@@ -153,29 +158,53 @@ function isPrivateOrLoopback(host: string): boolean {
   if (/^172\.(1[6-9]|2\d|3[01])\./.test(host)) return true;
   // 192.168.x.x
   if (/^192\.168\./.test(host)) return true;
+  // IPv6 link-local (fe80::/10)
+  if (/^fe80:/i.test(host)) return true;
+  // IPv6 ULA (fc00::/7 — fc and fd prefixes)
+  if (/^f[cd][0-9a-f]{2}:/i.test(host)) return true;
   return false;
+}
+
+/**
+ * Return true if the given host is a wildcard bind address.
+ * Wildcard addresses bind to ALL interfaces and are always rejected.
+ */
+export function isWildcard(host: string): boolean {
+  return host === '0.0.0.0' || host === '::' || host === '0:0:0:0:0:0:0:0';
 }
 
 /**
  * Validate the bridge deployment topology at startup.
  *
- * Rules:
- *   1. If BRIDGE_HOST is a private/loopback address → OK (Topologies 1 and 2).
+ * Rules (Revision 3 — hardened):
+ *   1. Wildcard addresses (0.0.0.0, ::) are ALWAYS rejected.
+ *      The bridge must bind to a specific interface.
+ *   2. If BRIDGE_HOST is a private/loopback address → OK (Topologies 1 and 2).
  *      Log a warning if it is not 127.0.0.1 (unusual but valid for private nets).
- *   2. If BRIDGE_HOST is a non-private address:
- *      - BRIDGE_TLS must be set to 'true' (Topology 3 with TLS).
- *      - If BRIDGE_TLS is not set → throw (bridge would be exposed without TLS).
+ *   3. If BRIDGE_HOST is a non-private address (including public IPv4 and
+ *      public IPv6 addresses) → ALWAYS rejected, regardless of TLS setting.
+ *      The bridge is a process-to-process transport and must never be
+ *      reachable from the public internet.
  *
  * This function is called in the DatabentoBridgeServer constructor.
  *
- * @throws Error if BRIDGE_HOST is non-private and BRIDGE_TLS is not set.
+ * @throws Error if BRIDGE_HOST is a wildcard or non-private address.
  */
 export function validateBridgeTopology(): void {
   const host = process.env.BRIDGE_HOST ?? '127.0.0.1';
-  const tlsEnabled = (process.env.BRIDGE_TLS ?? '').toLowerCase() === 'true';
 
+  // Rule 1: Reject wildcard bind addresses unconditionally.
+  if (isWildcard(host)) {
+    throw new Error(
+      `[BridgeServer] BRIDGE_HOST is set to the wildcard address (${host}). ` +
+      'The bridge must bind to a specific interface, not all interfaces. ' +
+      'Use 127.0.0.1 for loopback (Topology 1) or a private IP for LAN (Topology 2). ' +
+      'See docs/architecture/BRIDGE_DEPLOYMENT_TOPOLOGY.md for details.',
+    );
+  }
+
+  // Rule 2: Private/loopback addresses are always allowed.
   if (isPrivateOrLoopback(host)) {
-    // Topology 1 or 2 — safe
     if (host !== '127.0.0.1' && host !== 'localhost' && host !== '::1') {
       console.warn(
         '[BridgeServer] BRIDGE_HOST is a private network address (%s). ' +
@@ -186,22 +215,15 @@ export function validateBridgeTopology(): void {
     return;
   }
 
-  // Non-private address — Topology 3 requires TLS
-  if (!tlsEnabled) {
-    throw new Error(
-      `[BridgeServer] BRIDGE_HOST is set to a non-private address (${host}) ` +
-      'but BRIDGE_TLS is not enabled. ' +
-      'The bridge MUST use TLS when not on localhost or a private network. ' +
-      'Set BRIDGE_TLS=true and provide BRIDGE_TLS_CERT and BRIDGE_TLS_KEY, ' +
-      'or use a private/loopback address. ' +
-      'See docs/architecture/BRIDGE_DEPLOYMENT_TOPOLOGY.md for details.',
-    );
-  }
-
-  console.warn(
-    '[BridgeServer] BRIDGE_HOST is a non-private address (%s) with TLS enabled. ' +
-    'Ensure the bridge is NOT publicly accessible — restrict to the Python adapter only.',
-    host,
+  // Rule 3: Non-private addresses (public IPv4 and public IPv6) are ALWAYS rejected.
+  // TLS does not make a public binding safe — the bridge is a process-to-process
+  // transport and must never be reachable from the public internet.
+  throw new Error(
+    `[BridgeServer] BRIDGE_HOST is set to a non-private address (${host}). ` +
+    'The bridge must not be bound to a public IP address, even with TLS. ' +
+    'Use 127.0.0.1 for loopback (Topology 1) or a private IP for LAN (Topology 2). ' +
+    'Public binding is not a supported topology. ' +
+    'See docs/architecture/BRIDGE_DEPLOYMENT_TOPOLOGY.md for details.',
   );
 }
 

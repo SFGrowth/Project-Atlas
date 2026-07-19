@@ -1,6 +1,6 @@
 """
 Atlas Databento Feed Adapter — Recovery Manager
-Sprint 123A.2 Gate G2 Revision 2
+Sprint 123A.2 Gate G2 Revision 3
 
 Manages the lifecycle of data gap recovery:
 - Tracks active gaps per schema
@@ -10,6 +10,19 @@ Manages the lifecycle of data gap recovery:
 - Manages state transitions (DEGRADED → RECOVERING → LIVE)
 - Enforces recovery timeout
 - Prevents duplicate recovery requests for the same gap
+
+TERMINAL EVENT ROUTING (Revision 3):
+- RECOVERY_COMPLETE  → state.completed=True, state.partial=False
+                       → on_complete(schema) called
+                       → recovery_count incremented
+- RECOVERY_PARTIAL   → state.completed=False, state.partial=True
+                       → on_complete MUST NOT be called
+                       → on_failed(schema) called (partial is unresolved)
+                       → recovery_partial_count incremented
+                       → unresolved_range retained for downstream visibility
+- RECOVERY_FAILED    → state.failed=True, state.partial=False
+                       → on_failed(schema) called
+                       → recovery_failures incremented
 
 AUTHORITY BOUNDARY
 ------------------
@@ -56,7 +69,20 @@ MAX_ACTIVE_RECOVERIES: int = 4          # max concurrent schema recoveries
 
 @dataclass
 class RecoveryState:
-    """Tracks the state of a single schema recovery."""
+    """
+    Tracks the state of a single schema recovery.
+
+    Terminal state flags:
+        completed:  True only for RECOVERY_COMPLETE (full resolution)
+        partial:    True for RECOVERY_PARTIAL (gap not fully resolved)
+        failed:     True for RECOVERY_FAILED or RECOVERY_PARTIAL
+                    (both are forms of non-completion from the adapter's view)
+        cancelled:  True when cancel_recovery() was called
+
+    Unresolved range (set on RECOVERY_PARTIAL):
+        unresolved_start_ns: first nanosecond not recovered
+        unresolved_end_ns:   last nanosecond not recovered
+    """
     recovery_id: str
     schema: str
     gap: GapRecord
@@ -64,8 +90,11 @@ class RecoveryState:
     records_received: int = 0
     last_ts_ns: int = 0
     completed: bool = False
+    partial: bool = False
     failed: bool = False
     cancelled: bool = False
+    unresolved_start_ns: int = 0
+    unresolved_end_ns: int = 0
     cancel_event: asyncio.Event = field(default_factory=asyncio.Event)
 
 
@@ -100,16 +129,24 @@ class RecoveryManager:
         self._enqueue = enqueue_fn
         self._adapter_instance_id = adapter_instance_id or str(uuid.uuid4())[:8]
         self._active: Dict[str, RecoveryState] = {}   # schema → RecoveryState
-        self._recovery_count: int = 0
-        self._recovery_failures: int = 0
+        self._recovery_count: int = 0          # RECOVERY_COMPLETE events
+        self._recovery_partial_count: int = 0  # RECOVERY_PARTIAL events
+        self._recovery_failures: int = 0       # RECOVERY_FAILED events
         self._lock = asyncio.Lock()
 
     @property
     def recovery_count(self) -> int:
+        """Number of RECOVERY_COMPLETE terminal events received."""
         return self._recovery_count
 
     @property
+    def recovery_partial_count(self) -> int:
+        """Number of RECOVERY_PARTIAL terminal events received."""
+        return self._recovery_partial_count
+
+    @property
     def recovery_failures(self) -> int:
+        """Number of RECOVERY_FAILED terminal events received."""
         return self._recovery_failures
 
     @property
@@ -135,9 +172,10 @@ class RecoveryManager:
 
         Args:
             gap:               The GapRecord describing the missing data range.
-            historical_client: DatabentoHistoricalClient instance.
-            on_complete:       Optional callback when recovery completes (receives schema).
-            on_failed:         Optional callback when recovery fails (receives schema).
+            historical_client: DatabentoHistoricalClient or DatabentoReplayClient instance.
+            on_complete:       Callback when RECOVERY_COMPLETE is received (receives schema).
+                               MUST NOT be called for RECOVERY_PARTIAL.
+            on_failed:         Callback when RECOVERY_FAILED or RECOVERY_PARTIAL is received.
         """
         async with self._lock:
             if self.is_recovering(gap.schema):
@@ -266,7 +304,15 @@ class RecoveryManager:
         on_complete: Optional[Callable[[str], Coroutine]] = None,
         on_failed: Optional[Callable[[str], Coroutine]] = None,
     ) -> None:
-        """Stream records from the historical client into the bridge queue."""
+        """
+        Stream records from the historical client into the bridge queue.
+
+        Terminal event routing:
+        - RECOVERY_COMPLETE  → on_complete called, recovery_count++
+        - RECOVERY_PARTIAL   → on_failed called, recovery_partial_count++
+                               unresolved range retained, on_complete NOT called
+        - RECOVERY_FAILED    → on_failed called, recovery_failures++
+        """
         schema = state.schema
         gap = state.gap
 
@@ -326,31 +372,53 @@ class RecoveryManager:
                         ).to_dict()
                     )
             else:
-                # Terminal event received
+                # ── Terminal event received ──────────────────────────────────
                 if envelope.schema == "recovery-complete":
+                    # Full resolution: the entire gap was recovered.
                     state.completed = True
+                    state.partial = False
                     self._recovery_count += 1
                     logger.info(
                         "[RecoveryManager] Recovery complete: schema=%s id=%s records=%d",
                         schema, state.recovery_id, state.records_received,
                     )
+
                 elif envelope.schema == "recovery-partial":
-                    state.completed = True
-                    self._recovery_count += 1
-                    logger.warning(
-                        "[RecoveryManager] Recovery partial: schema=%s id=%s records=%d",
-                        schema, state.recovery_id, state.records_received,
+                    # Partial resolution: the gap was NOT fully resolved.
+                    # CRITICAL: on_complete MUST NOT be called.
+                    # The unresolved range is retained for downstream re-request.
+                    state.completed = False
+                    state.partial = True
+                    state.failed = True  # partial routes to on_failed
+                    state.unresolved_start_ns = envelope.payload.get(
+                        "actual_end_ts_ns", gap.first_missing_ts_ns
                     )
+                    state.unresolved_end_ns = gap.last_missing_ts_ns
+                    self._recovery_partial_count += 1
+                    logger.warning(
+                        "[RecoveryManager] Recovery partial: schema=%s id=%s records=%d "
+                        "unresolved=[%d, %d]",
+                        schema, state.recovery_id, state.records_received,
+                        state.unresolved_start_ns, state.unresolved_end_ns,
+                    )
+
                 elif envelope.schema == "recovery-failed":
+                    # Complete failure: no records recovered.
                     state.failed = True
+                    state.partial = False
                     self._recovery_failures += 1
                     logger.error(
                         "[RecoveryManager] Recovery failed: schema=%s id=%s reason=%s",
                         schema, state.recovery_id,
                         envelope.payload.get("reason", "unknown"),
                     )
-        # After the stream ends, invoke the appropriate callback
-        if state.completed and on_complete:
+
+        # ── Callback routing ─────────────────────────────────────────────────
+        # on_complete: ONLY called for RECOVERY_COMPLETE (full resolution)
+        # on_failed:   called for RECOVERY_PARTIAL and RECOVERY_FAILED
+        if state.completed and not state.partial and not state.failed and on_complete:
             await on_complete(schema)
         elif state.failed and on_failed:
+            # This covers both RECOVERY_PARTIAL (state.partial=True, state.failed=True)
+            # and RECOVERY_FAILED (state.partial=False, state.failed=True)
             await on_failed(schema)
