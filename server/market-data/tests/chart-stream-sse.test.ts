@@ -402,3 +402,242 @@ describe('Sprint 123A.4 — ChartStreamService SSE', () => {
     expect(eventWrite).toMatch(/^id: \d+\nevent: bar:1m-confirmed\ndata: \{.+\}\n\n$/);
   });
 });
+
+// ─── Option B reconnect scenario tests (SSE-020 through SSE-031) ─────────────
+// These tests prove the query cursor (?afterEventId=<seq>) design.
+// The server-side router injects ?afterEventId into Last-Event-ID header
+// before calling registerClient(). These tests prove the full round-trip
+// behaviour at the ChartStreamService level.
+
+describe('Sprint 123A.4 — ChartStreamService Option B Reconnect Scenarios', () => {
+
+  let svc: ChartStreamService;
+
+  beforeEach(() => {
+    svc = new ChartStreamService();
+    (svc as any).heartbeatTimer && clearInterval((svc as any).heartbeatTimer);
+    (svc as any).heartbeatTimer = null;
+  });
+
+  it('TEST-123A4-SSE-020: Initial connection (no cursor) receives no replay — only ping', () => {
+    // Pre-publish 3 confirmed bars before client connects
+    svc.publishBar1m(makeConfirmedBar({ barOpenTsMs: 1_000 }));
+    svc.publishBar1m(makeConfirmedBar({ barOpenTsMs: 2_000 }));
+    svc.publishBar1m(makeConfirmedBar({ barOpenTsMs: 3_000 }));
+
+    // New client with no Last-Event-ID (first connection, cursor = "0")
+    const req = makeMockReq(); // no lastEventId
+    const res = makeMockRes();
+    svc.registerClient(req, res);
+
+    // Should only receive the initial ping — no replay of pre-existing bars
+    const confirmedReplays = res.written.filter(w => w.includes('"type":"bar:1m-confirmed"'));
+    expect(confirmedReplays.length).toBe(0);
+    const pings = res.written.filter(w => w.includes('"type":"ping"'));
+    expect(pings.length).toBe(1);
+  });
+
+  it('TEST-123A4-SSE-021: Each confirmed event has a monotonically increasing id field', () => {
+    const req = makeMockReq();
+    const res = makeMockRes();
+    svc.registerClient(req, res);
+
+    svc.publishBar1m(makeConfirmedBar({ barOpenTsMs: 1_000 }));
+    svc.publishBar1m(makeConfirmedBar({ barOpenTsMs: 2_000 }));
+    svc.publishBar1m(makeConfirmedBar({ barOpenTsMs: 3_000 }));
+
+    const confirmedWrites = res.written.filter(w => w.includes('"type":"bar:1m-confirmed"'));
+    expect(confirmedWrites.length).toBe(3);
+
+    const ids = confirmedWrites.map(w => {
+      const match = w.match(/^id: (\d+)/);
+      return match ? parseInt(match[1], 10) : -1;
+    });
+
+    // IDs must be strictly increasing
+    for (let i = 1; i < ids.length; i++) {
+      expect(ids[i]).toBeGreaterThan(ids[i - 1]);
+    }
+  });
+
+  it('TEST-123A4-SSE-022: Reconnect with cursor replays only missed confirmed bars', () => {
+    // Publish bars 1, 2, 3 (seq 1, 2, 3)
+    svc.publishBar1m(makeConfirmedBar({ barOpenTsMs: 1_000 }));
+    svc.publishBar1m(makeConfirmedBar({ barOpenTsMs: 2_000 }));
+    svc.publishBar1m(makeConfirmedBar({ barOpenTsMs: 3_000 }));
+
+    // Client reconnects with afterEventId=2 (missed bar 3 only)
+    const req = makeMockReq('2'); // Last-Event-ID = 2 (injected from ?afterEventId=2)
+    const res = makeMockRes();
+    svc.registerClient(req, res);
+
+    const confirmedReplays = res.written.filter(w => w.includes('"type":"bar:1m-confirmed"'));
+    expect(confirmedReplays.length).toBe(1); // only bar 3 replayed
+
+    const parsed = JSON.parse(confirmedReplays[0].match(/data: (.+)/)?.[1] ?? '{}');
+    expect(parsed.barOpenTsMs).toBe(3_000);
+  });
+
+  it('TEST-123A4-SSE-023: Reconnect replays all missed events when cursor is 1 behind', () => {
+    svc.publishBar1m(makeConfirmedBar({ barOpenTsMs: 1_000 }));
+    svc.publishBar1m(makeConfirmedBar({ barOpenTsMs: 2_000 }));
+    svc.publishBar1m(makeConfirmedBar({ barOpenTsMs: 3_000 }));
+    svc.publishBar1m(makeConfirmedBar({ barOpenTsMs: 4_000 }));
+    svc.publishBar1m(makeConfirmedBar({ barOpenTsMs: 5_000 }));
+
+    // Client missed bars 3, 4, 5 (cursor = 2)
+    const req = makeMockReq('2');
+    const res = makeMockRes();
+    svc.registerClient(req, res);
+
+    const confirmedReplays = res.written.filter(w => w.includes('"type":"bar:1m-confirmed"'));
+    expect(confirmedReplays.length).toBe(3);
+  });
+
+  it('TEST-123A4-SSE-024: Developing bars are NOT replayed on reconnect', () => {
+    // Publish a confirmed anchor bar first (seq=1) so the ring buffer is non-empty
+    svc.publishBar1m(makeConfirmedBar({ barOpenTsMs: 500 })); // seq=1 — anchor
+
+    // Publish a developing bar — this increments sequence but does NOT go into the ring buffer
+    const devBar = makeConfirmedBar({ lifecycle: BarLifecycle.DEVELOPING, barOpenTsMs: 1_000 });
+    svc.publishDeveloping(devBar); // seq=2 — NOT buffered
+
+    // Publish a confirmed bar — this DOES go into the ring buffer (seq=3)
+    svc.publishBar1m(makeConfirmedBar({ barOpenTsMs: 2_000 })); // seq=3
+
+    // Reconnect with cursor=1 (oldest buffered = seq=1, so cursor=1 is within range)
+    // Replay: events with id > 1 that are in the ring buffer = seq=3 (confirmed bar only)
+    const req = makeMockReq('1');
+    const res = makeMockRes();
+    svc.registerClient(req, res);
+
+    // Developing bar must NOT be replayed (it was never buffered)
+    const developingReplays = res.written.filter(w => w.includes('"type":"bar:developing"'));
+    expect(developingReplays.length).toBe(0);
+
+    // Confirmed bars replayed: anchor (seq=1 is NOT > 1) and the second bar (seq=3 IS > 1)
+    // So only 1 confirmed bar replayed
+    const confirmedReplays = res.written.filter(w => w.includes('"type":"bar:1m-confirmed"'));
+    expect(confirmedReplays.length).toBe(1);
+  });
+
+  it('TEST-123A4-SSE-025: Expired cursor sends cursor-expired with expiredCursor in payload', () => {
+    // Publish 2 bars (seq 1, 2)
+    svc.publishBar1m(makeConfirmedBar({ barOpenTsMs: 1_000 }));
+    svc.publishBar1m(makeConfirmedBar({ barOpenTsMs: 2_000 }));
+
+    // Client reconnects with cursor=0 (before oldest buffered seq=1)
+    const req = makeMockReq('0');
+    const res = makeMockRes();
+    svc.registerClient(req, res);
+
+    const expiredWrite = res.written.find(w => w.includes('"type":"cursor-expired"'));
+    expect(expiredWrite).toBeDefined();
+
+    const parsed = JSON.parse(expiredWrite!.match(/data: (.+)/)?.[1] ?? '{}');
+    expect(parsed.payload.expiredCursor).toBe(0);
+    expect(typeof parsed.payload.oldestAvailable).toBe('number');
+    expect(parsed.payload.oldestAvailable).toBeGreaterThan(0);
+  });
+
+  it('TEST-123A4-SSE-026: After cursor-expired, client can re-register with fresh cursor and get replay', () => {
+    svc.publishBar1m(makeConfirmedBar({ barOpenTsMs: 1_000 }));
+    svc.publishBar1m(makeConfirmedBar({ barOpenTsMs: 2_000 }));
+    svc.publishBar1m(makeConfirmedBar({ barOpenTsMs: 3_000 }));
+
+    // First: expired cursor
+    const req1 = makeMockReq('0');
+    const res1 = makeMockRes();
+    svc.registerClient(req1, res1);
+    req1.emit('close'); // disconnect
+
+    // After history reload, reconnect with cursor = oldest available
+    const oldestSeq = svc.getOldestBufferedSeq()!;
+    const req2 = makeMockReq(String(oldestSeq)); // cursor = oldest seq
+    const res2 = makeMockRes();
+    svc.registerClient(req2, res2);
+
+    // Should replay bars after oldestSeq (bars 2 and 3)
+    const confirmedReplays = res2.written.filter(w => w.includes('"type":"bar:1m-confirmed"'));
+    expect(confirmedReplays.length).toBe(2);
+  });
+
+  it('TEST-123A4-SSE-027: No duplicate confirmed candles on reconnect (cursor is exact)', () => {
+    svc.publishBar1m(makeConfirmedBar({ barOpenTsMs: 1_000 }));
+    svc.publishBar1m(makeConfirmedBar({ barOpenTsMs: 2_000 }));
+    svc.publishBar1m(makeConfirmedBar({ barOpenTsMs: 3_000 }));
+
+    const seqAfterThree = svc.getSequence(); // = 3
+
+    // Client reconnects with cursor = seqAfterThree (has all bars)
+    const req = makeMockReq(String(seqAfterThree));
+    const res = makeMockRes();
+    svc.registerClient(req, res);
+
+    // Should receive NO confirmed replays (already has all bars)
+    const confirmedReplays = res.written.filter(w => w.includes('"type":"bar:1m-confirmed"'));
+    expect(confirmedReplays.length).toBe(0);
+  });
+
+  it('TEST-123A4-SSE-028: Malformed cursor (non-numeric) is ignored — no replay, no crash', () => {
+    svc.publishBar1m(makeConfirmedBar({ barOpenTsMs: 1_000 }));
+    svc.publishBar1m(makeConfirmedBar({ barOpenTsMs: 2_000 }));
+
+    // Malformed cursor
+    const req = makeMockReq('not-a-number');
+    const res = makeMockRes();
+    expect(() => svc.registerClient(req, res)).not.toThrow();
+
+    // No replay should occur (cursor ignored)
+    const confirmedReplays = res.written.filter(w => w.includes('"type":"bar:1m-confirmed"'));
+    expect(confirmedReplays.length).toBe(0);
+  });
+
+  it('TEST-123A4-SSE-029: 5m confirmed bars are replayed on reconnect', () => {
+    // Publish a 1m bar first to establish seq=1 as the oldest buffered event
+    svc.publishBar1m(makeConfirmedBar({ barOpenTsMs: 1_000 })); // seq=1
+    svc.publishBar5m(makeFiveMinBar()); // seq=2
+    svc.publishBar5m(makeFiveMinBar()); // seq=3
+
+    // Client reconnects with cursor=1 (within ring buffer range)
+    // Should replay: 5m bar at seq=2 and seq=3
+    const req = makeMockReq('1');
+    const res = makeMockRes();
+    svc.registerClient(req, res);
+
+    const fiveMinReplays = res.written.filter(w => w.includes('"type":"bar:5m-confirmed"'));
+    expect(fiveMinReplays.length).toBe(2);
+  });
+
+  it('TEST-123A4-SSE-030: contract-roll events are replayed on reconnect', () => {
+    // Publish a 1m bar first to establish seq=1 as oldest buffered
+    svc.publishBar1m(makeConfirmedBar({ barOpenTsMs: 1_000 })); // seq=1
+    svc.publishContractRoll({ oldSymbol: 'MNQM5', newSymbol: 'MNQU5' }); // seq=2
+
+    // Client reconnects with cursor=1 (within ring buffer range)
+    // Should replay: contract-roll at seq=2
+    const req = makeMockReq('1');
+    const res = makeMockRes();
+    svc.registerClient(req, res);
+
+    const rollReplays = res.written.filter(w => w.includes('"type":"contract-roll"'));
+    expect(rollReplays.length).toBe(1);
+  });
+
+  it('TEST-123A4-SSE-031: SSE event data never contains DATABENTO_API_KEY or BRIDGE_AUTH_TOKEN', () => {
+    const req = makeMockReq();
+    const res = makeMockRes();
+    svc.registerClient(req, res);
+
+    svc.publishBar1m(makeConfirmedBar());
+    svc.publishBar5m(makeFiveMinBar());
+    svc.publishHealth({ status: 'LIVE' });
+    svc.publishContractRoll({ oldSymbol: 'MNQM5', newSymbol: 'MNQU5' });
+
+    const allData = res.written.join('\n');
+    expect(allData).not.toContain('DATABENTO_API_KEY');
+    expect(allData).not.toContain('BRIDGE_AUTH_TOKEN');
+    expect(allData).not.toContain('api_key');
+    expect(allData).not.toContain('auth_token');
+  });
+});

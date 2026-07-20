@@ -209,12 +209,73 @@ describe('Sprint 123A.4 — HealthStateMachine', () => {
     expect(newState).toBe('STALE');
   });
 
-  it('TEST-123A4-HSM-024: tick() returns null when state unchanged', () => {
+    it('TEST-123A4-HSM-024: tick() returns null when state unchanged', () => {
     const now = Date.now();
     sm.onBarReceived(now);
     // Advance time but not enough to trigger staleness
     vi.setSystemTime(now + 30_000);
     const newState = sm.tick();
     expect(newState).toBeNull();
+  });
+
+  // ─── LIVE/READY guard condition tests (Gate G4 chart-authority activation) ──
+  //
+  // These tests prove the canonical name mapping:
+  //   Gate G4 "READY"  →  HealthState.LIVE
+  //
+  // isReadyForChartAuthority() is the single gate for DATABENTO_CHART_AUTHORITY.
+
+  it('TEST-123A4-HSM-025: isReadyForChartAuthority() returns true only in LIVE state', () => {
+    // INITIALISING — not ready
+    expect(sm.isReadyForChartAuthority()).toBe(false);
+
+    // After receiving a recent bar — LIVE
+    sm.onBarReceived(Date.now());
+    expect(sm.getState()).toBe('LIVE');
+    expect(sm.isReadyForChartAuthority()).toBe(true);
+  });
+
+  it('TEST-123A4-HSM-026: isReadyForChartAuthority() returns false in DEGRADED state', () => {
+    const now = Date.now();
+    sm.onBarReceived(now);
+    expect(sm.isReadyForChartAuthority()).toBe(true);
+
+    // Advance time past 2x interval → DEGRADED
+    vi.advanceTimersByTime(HEALTH_THRESHOLDS.barIntervalMs * HEALTH_THRESHOLDS.degradedMultiplier + 1);
+    sm.tick();
+    expect(sm.getState()).toBe('DEGRADED');
+    expect(sm.isReadyForChartAuthority()).toBe(false);
+  });
+
+  it('TEST-123A4-HSM-027: isReadyForChartAuthority() returns false in GAP_RECOVERY state', () => {
+    sm.onBarReceived(Date.now());
+    expect(sm.isReadyForChartAuthority()).toBe(true);
+
+    sm.onGapRecoveryStarted();
+    expect(sm.getState()).toBe('GAP_RECOVERY');
+    expect(sm.isReadyForChartAuthority()).toBe(false);
+  });
+
+  it('TEST-123A4-HSM-028: isReadyForChartAuthority() returns false in all non-LIVE states', () => {
+    const nonLiveStates = [
+      'INITIALISING',
+      'DEGRADED',
+      'STALE',
+      'OFFLINE',
+      'RECONNECTING',
+      'GAP_RECOVERY',
+      'CONTRACT_ROLL',
+      'SHUTDOWN',
+    ] as const;
+
+    for (const state of nonLiveStates) {
+      // Force the state via internal access
+      (sm as any).state = state;
+      expect(sm.isReadyForChartAuthority()).toBe(false);
+    }
+
+    // Only LIVE returns true
+    (sm as any).state = 'LIVE';
+    expect(sm.isReadyForChartAuthority()).toBe(true);
   });
 });

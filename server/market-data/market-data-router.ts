@@ -133,6 +133,14 @@ export function createMarketDataRouter(
       return;
     }
 
+    // Option B: accept afterEventId query param as cursor (client-controlled reconnect)
+    // This is more reliable than relying on the browser to send Last-Event-ID automatically
+    // because EventSource does not allow application code to set custom headers.
+    const afterEventId = req.query['afterEventId'];
+    if (afterEventId && typeof afterEventId === 'string' && !req.headers['last-event-id']) {
+      req.headers['last-event-id'] = afterEventId;
+    }
+
     // Register SSE client — handles headers, replay, and disconnect
     streamService.registerClient(req, res);
   });

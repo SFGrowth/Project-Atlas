@@ -191,6 +191,30 @@ export class HealthStateMachine {
     return Date.now() - this.lastBarTsMs;
   }
 
+  /**
+   * Returns true when the feed is in a state that satisfies the Gate G4
+   * chart-authority activation guard condition.
+   *
+   * CANONICAL NAME MAPPING
+   * ----------------------
+   * The Gate G4 requirement uses the term "READY" to describe the state
+   * where Databento may be promoted to chart authority. In this implementation,
+   * "READY" maps to the LIVE state:
+   *
+   *   Gate G4 "READY"  →  HealthState.LIVE
+   *
+   * DEGRADED is intentionally excluded: a feed with delayed bars is not
+   * suitable for chart authority even though it is still delivering data.
+   * STALE, OFFLINE, RECONNECTING, INITIALISING, SHUTDOWN are all excluded.
+   * GAP_RECOVERY and CONTRACT_ROLL are excluded because they are transient
+   * states that may produce incomplete bar sequences.
+   *
+   * This method is the single authoritative gate for chart-authority readiness.
+   */
+  isReadyForChartAuthority(): boolean {
+    return this.state === 'LIVE';
+  }
+
   getSnapshot(): HealthSnapshot {
     const now = Date.now();
     return {

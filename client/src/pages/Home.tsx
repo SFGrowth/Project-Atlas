@@ -14,6 +14,7 @@ import {
 } from "@/components/HudComponents";
 import PipelineOrb from "@/components/PipelineOrb";
 import LiveChart from "@/components/LiveChart";
+import DatabentoLiveChart from "@/components/DatabentoLiveChart";
 import { useEffect, useRef, useState } from "react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -502,6 +503,10 @@ export default function Home() {
         </div>
 
         {/* ── Row 4: Live Candlestick Chart ── */}
+        {/* DatabentoLiveChart is mounted in DATABENTO_SHADOW and DATABENTO_CHART_AUTHORITY modes.
+             LiveChart (TradingView webhook) is shown in all other modes as the primary chart.
+             Both are rendered here; the DatabentoLiveChart hides itself when the feed is not active. */}
+        <DatabentoLiveChart symbol="MNQM5" />
         <LiveChart />
 
         {/* ── Row 5: Pipeline Orb — full width ── */}

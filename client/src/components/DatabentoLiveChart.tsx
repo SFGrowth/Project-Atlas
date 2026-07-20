@@ -12,7 +12,11 @@
  *   FE-005  Provisional-to-confirmed replacement (revision=1 replaces revision=0)
  *   FE-006  Corrected-revision replacement (revision=N replaces revision=N-1)
  *   FE-007  1m / 5m view switch (separate history queries and SSE event types)
- *   FE-008  Reconnect with Last-Event-ID cursor (ring buffer replay)
+ *   FE-008  Reconnect with Option B query cursor (?afterEventId=<seq>)
+ *            Native EventSource does not allow app code to set Last-Event-ID.
+ *            On reconnect, cursor is appended as ?afterEventId=<seq> so the
+ *            server can replay missed confirmed events from the ring buffer.
+ *            cursor-expired event triggers a full history resync.
  *   FE-009  Duplicate suppression (same barOpenTsMs + revision already applied)
  *   FE-010  Contract-roll handling (rawSymbol change → clear chart, re-seed)
  *   FE-011  Stale/degraded/offline status states
@@ -419,7 +423,9 @@ export default function DatabentoLiveChart({
 
   // ── FE-001: History loader ────────────────────────────────────────────────
 
-  useEffect(() => {
+  /** Fetch confirmed history and seed the chart. Returns a Promise so callers
+   *  can await it (e.g. cursor-expired resync in connectSSE). */
+  const loadHistory = useCallback((): Promise<void> => {
     dispatch({ type: "RESET" });
 
     const endTsMs   = Date.now();
@@ -433,7 +439,7 @@ export default function DatabentoLiveChart({
       limit:     "500",
     });
 
-    fetch(`/api/market-data/bars?${params.toString()}`, {
+    return fetch(`/api/market-data/bars?${params.toString()}`, {
       credentials: "include",
     })
       .then(r => {
@@ -445,8 +451,13 @@ export default function DatabentoLiveChart({
       })
       .catch(err => {
         console.warn("[DatabentoLiveChart] History fetch error:", err);
+        throw err;
       });
   }, [symbol, interval]);
+
+  useEffect(() => {
+    loadHistory();
+  }, [loadHistory]);
 
   // ── Apply seeded bars to chart ────────────────────────────────────────────
 
@@ -510,14 +521,15 @@ export default function DatabentoLiveChart({
 
     setStreamStatus("CONNECTING");
 
-    const url = `/api/market-data/stream?symbol=${encodeURIComponent(symbol)}&interval=${interval}`;
-    const es = new EventSource(url, {
-      // FE-008: Pass Last-Event-ID via query param since EventSource doesn't
-      // support custom headers — the server reads ?lastEventId as fallback
-    });
-
-    // Attach Last-Event-ID as query param on reconnect
-    // (browsers send it automatically via the standard Last-Event-ID header)
+    // FE-008: Option B — query cursor reconnect
+    // Native EventSource does not allow application code to set the Last-Event-ID
+    // header on a newly created connection. We use ?afterEventId=<seq> instead.
+    // The server reads this query param and injects it as Last-Event-ID before
+    // calling registerClient(), which then replays missed buffered events.
+    const cursor = lastEventIdRef.current;
+    const cursorParam = cursor !== "0" ? `&afterEventId=${encodeURIComponent(cursor)}` : "";
+    const url = `/api/market-data/stream?symbol=${encodeURIComponent(symbol)}&interval=${interval}${cursorParam}`;
+    const es = new EventSource(url);
     sseRef.current = es;
 
     es.addEventListener("open", () => {
@@ -574,6 +586,23 @@ export default function DatabentoLiveChart({
       } catch {}
     });
 
+    // FE-008: cursor-expired — server ring buffer does not contain our cursor
+    // Trigger a full history resync to close the gap
+    es.addEventListener("cursor-expired", () => {
+      lastEventIdRef.current = "0"; // reset cursor
+      loadHistory().then(() => {
+        // After history reload, reconnect with fresh cursor
+        es.close();
+        sseRef.current = null;
+        connectSSE();
+      }).catch(() => {
+        // History reload failed — reconnect anyway
+        es.close();
+        sseRef.current = null;
+        connectSSE();
+      });
+    });
+
     es.addEventListener("error", () => {
       es.close();
       sseRef.current = null;
@@ -586,7 +615,7 @@ export default function DatabentoLiveChart({
         connectSSE();
       }, delay);
     });
-  }, [symbol, interval]);
+  }, [symbol, interval, loadHistory]);
 
   useEffect(() => {
     connectSSE();
