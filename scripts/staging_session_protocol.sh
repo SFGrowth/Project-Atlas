@@ -5,7 +5,7 @@
 #
 # Run this script on the live server to collect the required staging metrics.
 # Prerequisites:
-#   - Atlas Nexus server running with SPRINT_123A_AUTHORITY_MODE=DATABENTO_SHADOW
+#   - Atlas Nexus server running with MARKET_DATA_AUTHORITY=DATABENTO_SHADOW
 #   - Databento bridge connected and receiving MNQ 1m bars
 #   - MySQL atlas_memory database accessible
 #
@@ -28,9 +28,9 @@ echo ""
 
 # ─── S1: Verify authority mode ───────────────────────────────────────────────
 echo "--- S1: Authority Mode Verification ---"
-echo "SPRINT_123A_AUTHORITY_MODE=${SPRINT_123A_AUTHORITY_MODE:-NOT_SET}"
-if [ "${SPRINT_123A_AUTHORITY_MODE:-}" != "DATABENTO_SHADOW" ]; then
-  echo "ERROR: Expected DATABENTO_SHADOW, got ${SPRINT_123A_AUTHORITY_MODE:-NOT_SET}"
+echo "MARKET_DATA_AUTHORITY=${MARKET_DATA_AUTHORITY:-NOT_SET}"
+if [ "${MARKET_DATA_AUTHORITY:-}" != "DATABENTO_SHADOW" ]; then
+  echo "ERROR: Expected DATABENTO_SHADOW, got ${MARKET_DATA_AUTHORITY:-NOT_SET}"
   exit 1
 fi
 echo "PASS: Authority mode is DATABENTO_SHADOW"

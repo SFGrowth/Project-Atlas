@@ -42,7 +42,7 @@
  *
  * ─── G4 FEATURE FLAG ──────────────────────────────────────────────────────────
  *
- * DATABENTO_CHART_AUTHORITY_ENABLED=true
+ * ATLAS_GATE_G4_CHART_AUTHORITY_ENABLED=true
  *
  * This flag must be set to 'true' AND MARKET_DATA_AUTHORITY=DATABENTO_CHART_AUTHORITY
  * for chart authority mode to be active. If the flag is absent or false,
@@ -50,7 +50,7 @@
  *
  * Production activation requires:
  *   1. Phil's explicit written Gate G4 approval.
- *   2. DATABENTO_CHART_AUTHORITY_ENABLED=true set in the production environment.
+ *   2. ATLAS_GATE_G4_CHART_AUTHORITY_ENABLED=true set in the production environment.
  *   3. MARKET_DATA_AUTHORITY=DATABENTO_CHART_AUTHORITY set in the production environment.
  *
  * The flag is intentionally separate from the mode so that code paths can be
@@ -113,11 +113,11 @@ export function getMarketDataAuthority(): Sprint123AAuthorityMode {
 
 /**
  * Returns true if the Gate G4 deployment feature flag is enabled.
- * Requires DATABENTO_CHART_AUTHORITY_ENABLED=true in the environment.
+ * Requires ATLAS_GATE_G4_CHART_AUTHORITY_ENABLED=true in the environment.
  * This flag is intentionally separate from the authority mode.
  */
 export function isGate4FeatureFlagEnabled(): boolean {
-  return process.env.DATABENTO_CHART_AUTHORITY_ENABLED === 'true';
+  return process.env.ATLAS_GATE_G4_CHART_AUTHORITY_ENABLED === 'true';
 }
 
 // ─── Authority mode predicates ────────────────────────────────────────────────
@@ -339,7 +339,7 @@ export function assertSprint123A1Invariants(): void {
  *
  * Gate G3 approved: DATABENTO_SHADOW is permitted.
  * Gate G4 pending: DATABENTO_CHART_AUTHORITY is implemented but deployment-disabled.
- *   - Permitted only when DATABENTO_CHART_AUTHORITY_ENABLED=true (G4 feature flag).
+ *   - Permitted only when ATLAS_GATE_G4_CHART_AUTHORITY_ENABLED=true (G4 feature flag).
  *   - Without the feature flag, DATABENTO_CHART_AUTHORITY throws even if the mode is set.
  * Gate G6A not approved: DATABENTO_LEARNING_AUTHORITY is blocked.
  * DATABENTO_DECISION_AUTHORITY: Sprint 123B only, always blocked.
@@ -370,8 +370,8 @@ export function assertSprint123A4Invariants(): void {
       throw new Error(
         '[Atlas invariant] DATABENTO_CHART_AUTHORITY requires Gate G4 approval. ' +
         'Gate G4 has not been approved. ' +
-        'Set DATABENTO_CHART_AUTHORITY_ENABLED=true after receiving explicit written approval. ' +
-        'Current state: DATABENTO_CHART_AUTHORITY_ENABLED is absent or false.'
+        'Set ATLAS_GATE_G4_CHART_AUTHORITY_ENABLED=true after receiving explicit written approval. ' +
+        'Current state: ATLAS_GATE_G4_CHART_AUTHORITY_ENABLED is absent or false.'
       );
     }
     // Feature flag is present — DATABENTO_CHART_AUTHORITY is permitted.

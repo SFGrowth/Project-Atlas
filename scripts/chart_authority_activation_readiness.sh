@@ -28,8 +28,8 @@ echo ""
 
 # ─── GATE 1: Authority mode is DATABENTO_SHADOW ──────────────────────────────
 echo "--- Gate 1: Current authority mode ---"
-CURRENT_MODE="${SPRINT_123A_AUTHORITY_MODE:-NOT_SET}"
-echo "  SPRINT_123A_AUTHORITY_MODE = $CURRENT_MODE"
+CURRENT_MODE="${MARKET_DATA_AUTHORITY:-NOT_SET}"
+echo "  MARKET_DATA_AUTHORITY = $CURRENT_MODE"
 if [ "$CURRENT_MODE" = "DATABENTO_SHADOW" ]; then
   pass "Current mode is DATABENTO_SHADOW (correct pre-activation state)"
 else
@@ -161,7 +161,7 @@ if [ "$FAIL" -eq 0 ] && [ "$WARN" -eq 0 ]; then
   echo " VERDICT: READY FOR CHART AUTHORITY ACTIVATION"
   echo ""
   echo " To activate:"
-  echo "   1. Set SPRINT_123A_AUTHORITY_MODE=DATABENTO_CHART_AUTHORITY"
+  echo "   1. Set MARKET_DATA_AUTHORITY=DATABENTO_CHART_AUTHORITY"
   echo "   2. Set ATLAS_GATE_G4_CHART_AUTHORITY_ENABLED=true"
   echo "   3. Restart the Atlas Nexus server"
   echo "   4. Verify health state transitions to LIVE"

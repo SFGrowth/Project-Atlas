@@ -53,7 +53,7 @@
  *   TEST-123A4-048  Authority matrix: getChartSource DATABENTO_CHART_AUTHORITY → DATABENTO
  *   TEST-123A4-049  Authority matrix: getChartSource DATABENTO_LEARNING_AUTHORITY → DATABENTO
  *   TEST-123A4-050  G4 feature flag: isGate4FeatureFlagEnabled false when env absent
- *   TEST-123A4-051  G4 feature flag: isGate4FeatureFlagEnabled true when DATABENTO_CHART_AUTHORITY_ENABLED=true
+ *   TEST-123A4-051  G4 feature flag: isGate4FeatureFlagEnabled true when ATLAS_GATE_G4_CHART_AUTHORITY_ENABLED=true
  *   TEST-123A4-052  G4 feature flag: isDatabentoChartAuthorityActive false when mode set but flag absent
  *   TEST-123A4-053  G4 feature flag: isDatabentoChartAuthorityActive true when mode set AND flag set
  *   TEST-123A4-054  G4 feature flag: assertSprint123A4Invariants does NOT throw when mode=DATABENTO_CHART_AUTHORITY AND flag=true
@@ -807,7 +807,7 @@ describe('Sprint 123A.4 — Authority matrix: getChartSource', () => {
 
 // ─── TEST-123A4-050 through TEST-123A4-055: G4 feature flag behaviour ─────────
 
-describe('Sprint 123A.4 — G4 feature flag: DATABENTO_CHART_AUTHORITY_ENABLED', () => {
+describe('Sprint 123A.4 — G4 feature flag: ATLAS_GATE_G4_CHART_AUTHORITY_ENABLED', () => {
   const originalEnv = { ...process.env };
 
   afterEach(() => {
@@ -817,14 +817,14 @@ describe('Sprint 123A.4 — G4 feature flag: DATABENTO_CHART_AUTHORITY_ENABLED',
   });
 
   it('TEST-123A4-050: isGate4FeatureFlagEnabled returns false when env absent', async () => {
-    delete process.env.DATABENTO_CHART_AUTHORITY_ENABLED;
+    delete process.env.ATLAS_GATE_G4_CHART_AUTHORITY_ENABLED;
     vi.resetModules();
     const { isGate4FeatureFlagEnabled } = await import('../config.js');
     expect(isGate4FeatureFlagEnabled()).toBe(false);
   });
 
-  it('TEST-123A4-051: isGate4FeatureFlagEnabled returns true when DATABENTO_CHART_AUTHORITY_ENABLED=true', async () => {
-    process.env.DATABENTO_CHART_AUTHORITY_ENABLED = 'true';
+  it('TEST-123A4-051: isGate4FeatureFlagEnabled returns true when ATLAS_GATE_G4_CHART_AUTHORITY_ENABLED=true', async () => {
+    process.env.ATLAS_GATE_G4_CHART_AUTHORITY_ENABLED = 'true';
     vi.resetModules();
     const { isGate4FeatureFlagEnabled } = await import('../config.js');
     expect(isGate4FeatureFlagEnabled()).toBe(true);
@@ -832,7 +832,7 @@ describe('Sprint 123A.4 — G4 feature flag: DATABENTO_CHART_AUTHORITY_ENABLED',
 
   it('TEST-123A4-052: isDatabentoChartAuthorityActive false when mode=DATABENTO_CHART_AUTHORITY but flag absent', async () => {
     process.env.MARKET_DATA_AUTHORITY = 'DATABENTO_CHART_AUTHORITY';
-    delete process.env.DATABENTO_CHART_AUTHORITY_ENABLED;
+    delete process.env.ATLAS_GATE_G4_CHART_AUTHORITY_ENABLED;
     vi.resetModules();
     const { isDatabentoChartAuthorityActive } = await import('../config.js');
     expect(isDatabentoChartAuthorityActive()).toBe(false);
@@ -840,7 +840,7 @@ describe('Sprint 123A.4 — G4 feature flag: DATABENTO_CHART_AUTHORITY_ENABLED',
 
   it('TEST-123A4-053: isDatabentoChartAuthorityActive true when mode=DATABENTO_CHART_AUTHORITY AND flag=true', async () => {
     process.env.MARKET_DATA_AUTHORITY = 'DATABENTO_CHART_AUTHORITY';
-    process.env.DATABENTO_CHART_AUTHORITY_ENABLED = 'true';
+    process.env.ATLAS_GATE_G4_CHART_AUTHORITY_ENABLED = 'true';
     vi.resetModules();
     const { isDatabentoChartAuthorityActive } = await import('../config.js');
     expect(isDatabentoChartAuthorityActive()).toBe(true);
@@ -848,7 +848,7 @@ describe('Sprint 123A.4 — G4 feature flag: DATABENTO_CHART_AUTHORITY_ENABLED',
 
   it('TEST-123A4-054: assertSprint123A4Invariants does NOT throw when mode=DATABENTO_CHART_AUTHORITY AND flag=true', async () => {
     process.env.MARKET_DATA_AUTHORITY = 'DATABENTO_CHART_AUTHORITY';
-    process.env.DATABENTO_CHART_AUTHORITY_ENABLED = 'true';
+    process.env.ATLAS_GATE_G4_CHART_AUTHORITY_ENABLED = 'true';
     vi.resetModules();
     const { assertSprint123A4Invariants } = await import('../config.js');
     expect(() => assertSprint123A4Invariants()).not.toThrow();
@@ -856,7 +856,7 @@ describe('Sprint 123A.4 — G4 feature flag: DATABENTO_CHART_AUTHORITY_ENABLED',
 
   it('TEST-123A4-055: assertSprint123A4Invariants THROWS when mode=DATABENTO_CHART_AUTHORITY AND flag absent', async () => {
     process.env.MARKET_DATA_AUTHORITY = 'DATABENTO_CHART_AUTHORITY';
-    delete process.env.DATABENTO_CHART_AUTHORITY_ENABLED;
+    delete process.env.ATLAS_GATE_G4_CHART_AUTHORITY_ENABLED;
     vi.resetModules();
     const { assertSprint123A4Invariants } = await import('../config.js');
     expect(() => assertSprint123A4Invariants()).toThrow('Gate G4');
@@ -876,7 +876,7 @@ describe('Sprint 123A.4 — Authority matrix: processBar and postBarAutomation i
 
   it('TEST-123A4-056: isDatabentoProcessBarTrigger always false in DATABENTO_CHART_AUTHORITY mode', async () => {
     process.env.MARKET_DATA_AUTHORITY = 'DATABENTO_CHART_AUTHORITY';
-    process.env.DATABENTO_CHART_AUTHORITY_ENABLED = 'true';
+    process.env.ATLAS_GATE_G4_CHART_AUTHORITY_ENABLED = 'true';
     vi.resetModules();
     const { isDatabentoProcessBarTrigger } = await import('../config.js');
     // processBar is ALWAYS owned by TradingView in Sprint 123A — even in chart authority mode
@@ -885,7 +885,7 @@ describe('Sprint 123A.4 — Authority matrix: processBar and postBarAutomation i
 
   it('TEST-123A4-057: validatePostBarTrigger rejects DATABENTO trigger in DATABENTO_CHART_AUTHORITY mode', async () => {
     process.env.MARKET_DATA_AUTHORITY = 'DATABENTO_CHART_AUTHORITY';
-    process.env.DATABENTO_CHART_AUTHORITY_ENABLED = 'true';
+    process.env.ATLAS_GATE_G4_CHART_AUTHORITY_ENABLED = 'true';
     vi.resetModules();
     const { validatePostBarTrigger } = await import('../config.js');
     // Databento must NOT trigger postBarAutomation in chart authority mode
@@ -896,7 +896,7 @@ describe('Sprint 123A.4 — Authority matrix: processBar and postBarAutomation i
 
   it('TEST-123A4-058: validatePostBarTrigger accepts TRADINGVIEW trigger in DATABENTO_CHART_AUTHORITY mode', async () => {
     process.env.MARKET_DATA_AUTHORITY = 'DATABENTO_CHART_AUTHORITY';
-    process.env.DATABENTO_CHART_AUTHORITY_ENABLED = 'true';
+    process.env.ATLAS_GATE_G4_CHART_AUTHORITY_ENABLED = 'true';
     vi.resetModules();
     const { validatePostBarTrigger } = await import('../config.js');
     // TradingView is the correct trigger in chart authority mode
@@ -935,7 +935,7 @@ describe('Sprint 123A.4 — Orchestrator: DATABENTO_CHART_AUTHORITY with G4 feat
 
   it('TEST-123A4-061: orchestrator starts in DATABENTO_CHART_AUTHORITY mode when G4 flag is set', () => {
     process.env.MARKET_DATA_AUTHORITY = 'DATABENTO_CHART_AUTHORITY';
-    process.env.DATABENTO_CHART_AUTHORITY_ENABLED = 'true';
+    process.env.ATLAS_GATE_G4_CHART_AUTHORITY_ENABLED = 'true';
     const deps = makeMockDeps();
     const orch = new MarketDataRuntimeOrchestrator(deps);
     expect(() => orch.start()).not.toThrow();
@@ -945,12 +945,92 @@ describe('Sprint 123A.4 — Orchestrator: DATABENTO_CHART_AUTHORITY with G4 feat
 
   it('TEST-123A4-062: orchestrator disabled in DATABENTO_CHART_AUTHORITY mode when G4 flag is absent (fails closed)', () => {
     process.env.MARKET_DATA_AUTHORITY = 'DATABENTO_CHART_AUTHORITY';
-    delete process.env.DATABENTO_CHART_AUTHORITY_ENABLED;
+    delete process.env.ATLAS_GATE_G4_CHART_AUTHORITY_ENABLED;
     const deps = makeMockDeps();
     const orch = new MarketDataRuntimeOrchestrator(deps);
     // assertSprint123A4Invariants throws — orchestrator must propagate the error
     expect(() => orch.start()).toThrow('Gate G4');
     const health = orch.getHealth();
     expect(health.status).toBe('STOPPED');
+  });
+});
+
+// ─── TEST-123A4-063 through TEST-123A4-070: Canonical env var invariants ──────
+
+describe('Sprint 123A.4 — Canonical env var invariants (TEST-123A4-063 to 070)', () => {
+  const originalEnv = { ...process.env };
+
+  afterEach(() => {
+    Object.keys(process.env).forEach(k => delete process.env[k]);
+    Object.assign(process.env, originalEnv);
+    vi.resetModules();
+  });
+
+  it('TEST-123A4-063: missing ATLAS_GATE_G4_CHART_AUTHORITY_ENABLED fails closed (returns false)', async () => {
+    delete process.env.ATLAS_GATE_G4_CHART_AUTHORITY_ENABLED;
+    vi.resetModules();
+    const { isGate4FeatureFlagEnabled } = await import('../config.js');
+    expect(isGate4FeatureFlagEnabled()).toBe(false);
+  });
+
+  it('TEST-123A4-064: ATLAS_GATE_G4_CHART_AUTHORITY_ENABLED=false fails closed', async () => {
+    process.env.ATLAS_GATE_G4_CHART_AUTHORITY_ENABLED = 'false';
+    vi.resetModules();
+    const { isGate4FeatureFlagEnabled } = await import('../config.js');
+    expect(isGate4FeatureFlagEnabled()).toBe(false);
+  });
+
+  it('TEST-123A4-065: ATLAS_GATE_G4_CHART_AUTHORITY_ENABLED=true permits chart authority only — learning remains prohibited', async () => {
+    process.env.ATLAS_GATE_G4_CHART_AUTHORITY_ENABLED = 'true';
+    process.env.MARKET_DATA_AUTHORITY = 'DATABENTO_CHART_AUTHORITY';
+    vi.resetModules();
+    const { isGate4FeatureFlagEnabled, isDatabentoChartAuthorityActive, isDatabentoLearningAuthority } = await import('../config.js');
+    expect(isGate4FeatureFlagEnabled()).toBe(true);
+    expect(isDatabentoChartAuthorityActive()).toBe(true);
+    expect(isDatabentoLearningAuthority()).toBe(false);
+  });
+
+  it('TEST-123A4-066: malformed MARKET_DATA_AUTHORITY fails closed (getAuthorityMode throws)', async () => {
+    process.env.MARKET_DATA_AUTHORITY = 'INVALID_AUTHORITY_VALUE';
+    vi.resetModules();
+    const { getAuthorityMode } = await import('../config.js');
+    expect(() => getAuthorityMode()).toThrow();
+  });
+
+  it('TEST-123A4-067: DATABENTO_LEARNING_AUTHORITY remains prohibited regardless of G4 flag — assertSprint123A4Invariants throws', async () => {
+    process.env.ATLAS_GATE_G4_CHART_AUTHORITY_ENABLED = 'true';
+    process.env.MARKET_DATA_AUTHORITY = 'DATABENTO_LEARNING_AUTHORITY';
+    vi.resetModules();
+    const { isDatabentoLearningAuthority, assertSprint123A4Invariants } = await import('../config.js');
+    // isDatabentoLearningAuthority is a mode detector — it correctly reports the mode as true.
+    // The prohibition is enforced by assertSprint123A4Invariants throwing Gate G6A.
+    expect(isDatabentoLearningAuthority()).toBe(true);
+    expect(() => assertSprint123A4Invariants()).toThrow('Gate G6A');
+  });
+
+  it('TEST-123A4-068: DATABENTO_DECISION_AUTHORITY remains prohibited regardless of G4 flag', async () => {
+    process.env.ATLAS_GATE_G4_CHART_AUTHORITY_ENABLED = 'true';
+    process.env.MARKET_DATA_AUTHORITY = 'DATABENTO_DECISION_AUTHORITY';
+    vi.resetModules();
+    const { assertSprint123A4Invariants } = await import('../config.js');
+    expect(() => assertSprint123A4Invariants()).toThrow();
+  });
+
+  it('TEST-123A4-069: Databento processBar trigger remains false in DATABENTO_CHART_AUTHORITY mode', async () => {
+    process.env.MARKET_DATA_AUTHORITY = 'DATABENTO_CHART_AUTHORITY';
+    process.env.ATLAS_GATE_G4_CHART_AUTHORITY_ENABLED = 'true';
+    vi.resetModules();
+    const { isDatabentoProcessBarTrigger } = await import('../config.js');
+    expect(isDatabentoProcessBarTrigger()).toBe(false);
+  });
+
+  it('TEST-123A4-070: Databento postBarAutomation trigger remains rejected in DATABENTO_CHART_AUTHORITY mode', async () => {
+    process.env.MARKET_DATA_AUTHORITY = 'DATABENTO_CHART_AUTHORITY';
+    process.env.ATLAS_GATE_G4_CHART_AUTHORITY_ENABLED = 'true';
+    vi.resetModules();
+    const { validatePostBarTrigger } = await import('../config.js');
+    const result = validatePostBarTrigger('DATABENTO', 'DATABENTO_CHART_AUTHORITY');
+    expect(result).not.toBeNull();
+    expect(result).toContain('INVARIANT VIOLATION');
   });
 });

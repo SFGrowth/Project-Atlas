@@ -6,7 +6,7 @@
  *   ATLAS_BASE_URL=https://your-server.com npx playwright test scripts/browser_tests/chart_behaviours.spec.ts
  *
  * Prerequisites:
- *   - Server running with SPRINT_123A_AUTHORITY_MODE=DATABENTO_SHADOW
+ *   - Server running with MARKET_DATA_AUTHORITY=DATABENTO_SHADOW
  *   - User authenticated (set ATLAS_SESSION_COOKIE env var)
  *   - At least 10 confirmed bars in atlas_bars_1m
  */
