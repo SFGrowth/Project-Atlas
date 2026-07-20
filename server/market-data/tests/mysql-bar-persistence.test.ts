@@ -1,20 +1,20 @@
 /**
  * mysql-bar-persistence.test.ts — Real MySQL 8 Persistence Tests
  *
- * Gate G3 Revision 4 — Sprint 123A.3
+ * Gate G3 Revision 5 — Sprint 123A.3
  *
  * Uses a disposable MySQL 8 instance at /tmp/mysql_test.sock
  * with migrations 0026 + 0027 applied. No production connection.
  *
- * EMPIRICAL DRIVER SEMANTICS (Gate G3 Revision 4 verification):
+ * EMPIRICAL DRIVER SEMANTICS (Gate G3 Revision 5 verification):
  *   ON DUPLICATE KEY UPDATE id=id returns affectedRows=1 for BOTH a new insert
  *   AND an exact duplicate (CLIENT_FOUND_ROWS not set). insertId is 0 for
  *   duplicates but this is fragile. Therefore all inserts use plain INSERT and
  *   catch ER_DUP_ENTRY (errno 1062) explicitly.
  *
- * CANONICAL IDENTITY KEY (7 columns — interval_ms does NOT exist):
+ * CANONICAL IDENTITY KEY (8 columns — interval_ms IS part of the key):
  *   atlas_bars_1m / atlas_bars_5m:
- *     (source, dataset, raw_symbol, instrument_id, bar_open_ts_ms, revision, mapping_version)
+ *     (source, dataset, raw_symbol, instrument_id, interval_ms, bar_open_ts_ms, revision, mapping_version)
  *   atlas_bar_processing_ledger:
  *     (source, dataset, raw_symbol, instrument_id, bar_open_ts_ms,
  *      revision, mapping_version, consumer_name, consumer_version)
@@ -76,7 +76,7 @@ async function insert1m(overrides: Record<string, unknown> = {}): Promise<{
 }> {
   const defaults = {
     source: 'DATABENTO', dataset: 'GLBX.MDP3', raw_symbol: 'MNQM5',
-    instrument_id: 10001, bar_open_ts_ms: BASE_TS,
+    instrument_id: 10001, interval_ms: 60000, bar_open_ts_ms: BASE_TS,
     bar_open_ts_ns: String(BigInt(BASE_TS) * 1_000_000n),
     bar_close_ts_ms: BASE_TS + 60000,
     open_price_pts100: 1900000, high_price_pts100: 1901000,
@@ -117,7 +117,7 @@ async function insert5m(overrides: Record<string, unknown> = {}): Promise<{
 }> {
   const defaults = {
     source: 'DATABENTO', dataset: 'GLBX.MDP3', raw_symbol: 'MNQM5',
-    instrument_id: 10001, bar_open_ts_ms: BASE_TS,
+    instrument_id: 10001, interval_ms: 300000, bar_open_ts_ms: BASE_TS,
     bar_close_ts_ms: BASE_TS + 300000,
     open_price_pts100: 1900000, high_price_pts100: 1905000,
     low_price_pts100: 1895000, close_price_pts100: 1902000,
@@ -205,7 +205,7 @@ describe('Basic Persistence (plain INSERT + ER_DUP_ENTRY)', () => {
     expect(rows[0].cnt).toBe(0);
   });
 
-  it('TEST-123A3-PER008: migration 0027 unique key includes raw_symbol', async () => {
+  it('TEST-123A3-PER008: migration 0027 unique key includes interval_ms (8-column key)', async () => {
     const [rows] = await pool.execute<mysql.RowDataPacket[]>(
       "SHOW INDEX FROM atlas_bars_1m WHERE Key_name = 'uq_atlas_bars_1m_canonical_identity'",
     );
@@ -214,11 +214,11 @@ describe('Basic Persistence (plain INSERT + ER_DUP_ENTRY)', () => {
     expect(cols).toContain('source');
     expect(cols).toContain('dataset');
     expect(cols).toContain('instrument_id');
+    expect(cols).toContain('interval_ms');
     expect(cols).toContain('bar_open_ts_ms');
     expect(cols).toContain('revision');
     expect(cols).toContain('mapping_version');
-    // interval_ms does NOT exist in this table
-    expect(cols).not.toContain('interval_ms');
+    expect(cols).toHaveLength(8);
   });
 });
 
@@ -320,9 +320,9 @@ describe('Failure-Path Tests (non-duplicate errors must fail loudly)', () => {
   it('TEST-123A3-PER018: malformed numeric value fails', async () => {
     await expect(
       pool.execute(
-        `INSERT INTO atlas_bars_1m (source, dataset, raw_symbol, instrument_id, bar_open_ts_ms,
+        `INSERT INTO atlas_bars_1m (source, dataset, raw_symbol, instrument_id, interval_ms, bar_open_ts_ms,
            bar_open_ts_ns, bar_close_ts_ms, reconciliation_status, revision, mapping_version, atlas_ts_ms)
-         VALUES ('DATABENTO','GLBX.MDP3','MNQM5','not_a_number',?,?,?,'MATCHED',0,'v1',?)`,
+         VALUES ('DATABENTO','GLBX.MDP3','MNQM5','not_a_number',60000,?,?,?,'MATCHED',0,'v1',?)`,
         [BASE_TS + 1000, '0', BASE_TS + 61000, BASE_TS],
       ),
     ).rejects.toThrow();
@@ -331,9 +331,9 @@ describe('Failure-Path Tests (non-duplicate errors must fail loudly)', () => {
   it('TEST-123A3-PER019: invalid enum value fails', async () => {
     await expect(
       pool.execute(
-        `INSERT INTO atlas_bars_1m (source, dataset, raw_symbol, instrument_id, bar_open_ts_ms,
+        `INSERT INTO atlas_bars_1m (source, dataset, raw_symbol, instrument_id, interval_ms, bar_open_ts_ms,
            bar_open_ts_ns, bar_close_ts_ms, reconciliation_status, revision, mapping_version, atlas_ts_ms)
-         VALUES ('DATABENTO','GLBX.MDP3','MNQM5',10001,?,?,?,'INVALID_STATUS',0,'v1',?)`,
+         VALUES ('DATABENTO','GLBX.MDP3','MNQM5',10001,60000,?,?,?,'INVALID_STATUS',0,'v1',?)`,
         [BASE_TS + 2000, '0', BASE_TS + 62000, BASE_TS],
       ),
     ).rejects.toThrow();
@@ -342,9 +342,9 @@ describe('Failure-Path Tests (non-duplicate errors must fail loudly)', () => {
   it('TEST-123A3-PER020: NOT NULL violation fails (missing atlas_ts_ms)', async () => {
     await expect(
       pool.execute(
-        `INSERT INTO atlas_bars_1m (source, dataset, raw_symbol, instrument_id, bar_open_ts_ms,
+        `INSERT INTO atlas_bars_1m (source, dataset, raw_symbol, instrument_id, interval_ms, bar_open_ts_ms,
            bar_open_ts_ns, bar_close_ts_ms, reconciliation_status, revision, mapping_version)
-         VALUES ('DATABENTO','GLBX.MDP3','MNQM5',10001,?,?,?,'MATCHED',0,'v1')`,
+         VALUES ('DATABENTO','GLBX.MDP3','MNQM5',10001,60000,?,?,?,'MATCHED',0,'v1')`,
         [BASE_TS + 3000, '0', BASE_TS + 63000],
       ),
     ).rejects.toThrow();
@@ -366,9 +366,9 @@ describe('Failure-Path Tests (non-duplicate errors must fail loudly)', () => {
     await conn.beginTransaction();
     try {
       await conn.execute(
-        `INSERT INTO atlas_bars_1m (source, dataset, raw_symbol, instrument_id, bar_open_ts_ms,
+        `INSERT INTO atlas_bars_1m (source, dataset, raw_symbol, instrument_id, interval_ms, bar_open_ts_ms,
            bar_open_ts_ns, bar_close_ts_ms, reconciliation_status, revision, mapping_version, atlas_ts_ms)
-         VALUES ('DATABENTO','GLBX.MDP3','MNQM5',10001,?,?,?,'MATCHED',0,'v1',?)`,
+         VALUES ('DATABENTO','GLBX.MDP3','MNQM5',10001,60000,?,?,?,'MATCHED',0,'v1',?)`,
         [BASE_TS + 4000, '0', BASE_TS + 64000, BASE_TS],
       );
       await conn.execute('SELECT * FROM nonexistent_table_xyz_abc');
@@ -388,9 +388,9 @@ describe('Failure-Path Tests (non-duplicate errors must fail loudly)', () => {
     let threw = false;
     try {
       await pool.execute(
-        `INSERT INTO atlas_bars_1m (source, dataset, raw_symbol, instrument_id, bar_open_ts_ms,
+        `INSERT INTO atlas_bars_1m (source, dataset, raw_symbol, instrument_id, interval_ms, bar_open_ts_ms,
            bar_open_ts_ns, bar_close_ts_ms, reconciliation_status, revision, mapping_version, atlas_ts_ms)
-         VALUES ('DATABENTO','GLBX.MDP3','MNQM5',10001,?,?,?,'GARBAGE_VALUE',0,'v1',?)`,
+         VALUES ('DATABENTO','GLBX.MDP3','MNQM5',10001,60000,?,?,?,'GARBAGE_VALUE',0,'v1',?)`,
         [BASE_TS + 5000, '0', BASE_TS + 65000, BASE_TS],
       );
     } catch {
@@ -425,9 +425,9 @@ describe('Failure-Path Tests (non-duplicate errors must fail loudly)', () => {
   it('TEST-123A3-PER026: 5m CONTAINS_UNRESOLVED enum value is rejected', async () => {
     await expect(
       pool.execute(
-        `INSERT INTO atlas_bars_5m (source, dataset, raw_symbol, instrument_id, bar_open_ts_ms,
+        `INSERT INTO atlas_bars_5m (source, dataset, raw_symbol, instrument_id, interval_ms, bar_open_ts_ms,
            bar_close_ts_ms, minute_bar_count, canonical_bar_type, revision, mapping_version, atlas_ts_ms)
-         VALUES ('DATABENTO','GLBX.MDP3','MNQM5',10001,?,?,5,'CONTAINS_UNRESOLVED',0,'v1',?)`,
+         VALUES ('DATABENTO','GLBX.MDP3','MNQM5',10001,300000,?,?,5,'CONTAINS_UNRESOLVED',0,'v1',?)`,
         [BASE_TS + 8000, BASE_TS + 308000, BASE_TS],
       ),
     ).rejects.toThrow();
@@ -482,9 +482,9 @@ describe('UNRESOLVED Bar Policy', () => {
   it('TEST-123A3-PER031: only CONFIRMED revision can complete a blocked 5m window (CONTAINS_UNRESOLVED rejected)', async () => {
     await expect(
       pool.execute(
-        `INSERT INTO atlas_bars_5m (source, dataset, raw_symbol, instrument_id, bar_open_ts_ms,
+        `INSERT INTO atlas_bars_5m (source, dataset, raw_symbol, instrument_id, interval_ms, bar_open_ts_ms,
            bar_close_ts_ms, minute_bar_count, canonical_bar_type, revision, mapping_version, atlas_ts_ms)
-         VALUES ('DATABENTO','GLBX.MDP3','MNQM5',10001,?,?,5,'CONTAINS_UNRESOLVED',0,'v1',?)`,
+         VALUES ('DATABENTO','GLBX.MDP3','MNQM5',10001,300000,?,?,5,'CONTAINS_UNRESOLVED',0,'v1',?)`,
         [BASE_TS + 14000, BASE_TS + 314000, BASE_TS],
       ),
     ).rejects.toThrow();
@@ -561,9 +561,9 @@ describe('TEST-123A3-TXN: Transaction Rollback Tests', () => {
     try {
       await conn.beginTransaction();
       await conn.execute(
-        `INSERT INTO atlas_bars_1m (source, dataset, raw_symbol, instrument_id, bar_open_ts_ms,
+        `INSERT INTO atlas_bars_1m (source, dataset, raw_symbol, instrument_id, interval_ms, bar_open_ts_ms,
            bar_open_ts_ns, bar_close_ts_ms, reconciliation_status, revision, mapping_version, atlas_ts_ms)
-         VALUES ('DATABENTO','GLBX.MDP3','MNQM5',10001,?,?,?,'MATCHED',0,'v1',?)`,
+         VALUES ('DATABENTO','GLBX.MDP3','MNQM5',10001,60000,?,?,?,'MATCHED',0,'v1',?)`,
         [ts, '0', ts + 60000, BASE_TS],
       );
       await conn.execute(
@@ -590,9 +590,9 @@ describe('TEST-123A3-TXN: Transaction Rollback Tests', () => {
     try {
       await conn.beginTransaction();
       await conn.execute(
-        `INSERT INTO atlas_bars_1m (source, dataset, raw_symbol, instrument_id, bar_open_ts_ms,
+        `INSERT INTO atlas_bars_1m (source, dataset, raw_symbol, instrument_id, interval_ms, bar_open_ts_ms,
            bar_open_ts_ns, bar_close_ts_ms, reconciliation_status, revision, mapping_version, atlas_ts_ms)
-         VALUES ('DATABENTO','GLBX.MDP3','MNQM5',10001,?,?,?,'MATCHED',0,'v1',?)`,
+         VALUES ('DATABENTO','GLBX.MDP3','MNQM5',10001,60000,?,?,?,'MATCHED',0,'v1',?)`,
         [ts, '0', ts + 60000, BASE_TS],
       );
       // Force ledger failure: consumer_name is NOT NULL
@@ -642,9 +642,9 @@ describe('TEST-123A3-TXN: Transaction Rollback Tests', () => {
     try {
       await conn1.beginTransaction();
       await conn1.execute(
-        `INSERT INTO atlas_bars_1m (source, dataset, raw_symbol, instrument_id, bar_open_ts_ms,
+        `INSERT INTO atlas_bars_1m (source, dataset, raw_symbol, instrument_id, interval_ms, bar_open_ts_ms,
            bar_open_ts_ns, bar_close_ts_ms, reconciliation_status, revision, mapping_version, atlas_ts_ms)
-         VALUES ('DATABENTO','GLBX.MDP3','MNQM5',10001,?,?,?,'MATCHED',0,'v1',?)`,
+         VALUES ('DATABENTO','GLBX.MDP3','MNQM5',10001,60000,?,?,?,'MATCHED',0,'v1',?)`,
         [ts, '0', ts + 60000, BASE_TS],
       );
       await conn1.execute(
@@ -666,9 +666,9 @@ describe('TEST-123A3-TXN: Transaction Rollback Tests', () => {
       await conn2.beginTransaction();
       try {
         await conn2.execute(
-          `INSERT INTO atlas_bars_1m (source, dataset, raw_symbol, instrument_id, bar_open_ts_ms,
+          `INSERT INTO atlas_bars_1m (source, dataset, raw_symbol, instrument_id, interval_ms, bar_open_ts_ms,
              bar_open_ts_ns, bar_close_ts_ms, reconciliation_status, revision, mapping_version, atlas_ts_ms)
-           VALUES ('DATABENTO','GLBX.MDP3','MNQM5',10001,?,?,?,'MATCHED',0,'v1',?)`,
+           VALUES ('DATABENTO','GLBX.MDP3','MNQM5',10001,60000,?,?,?,'MATCHED',0,'v1',?)`,
           [ts, '0', ts + 60000, BASE_TS],
         );
       } catch (err) {
@@ -731,7 +731,7 @@ describe('TEST-123A3-TXN: Transaction Rollback Tests', () => {
 // ─── SCH001–SCH003: Schema Verification ──────────────────────────────────────
 
 describe('TEST-123A3-SCH: Schema Verification (SHOW CREATE TABLE)', () => {
-  it('TEST-123A3-SCH001: atlas_bars_1m unique key is exactly 7 columns (no interval_ms)', async () => {
+  it('TEST-123A3-SCH001: atlas_bars_1m unique key is exactly 8 columns (includes interval_ms)', async () => {
     const [rows] = await pool.query<mysql.RowDataPacket[]>('SHOW CREATE TABLE atlas_bars_1m');
     const ddl: string = rows[0]['Create Table'];
     expect(ddl).toContain('uq_atlas_bars_1m_canonical_identity');
@@ -739,17 +739,17 @@ describe('TEST-123A3-SCH: Schema Verification (SHOW CREATE TABLE)', () => {
     expect(ddl).toContain('`dataset`');
     expect(ddl).toContain('`raw_symbol`');
     expect(ddl).toContain('`instrument_id`');
+    expect(ddl).toContain('`interval_ms`');
     expect(ddl).toContain('`bar_open_ts_ms`');
     expect(ddl).toContain('`revision`');
     expect(ddl).toContain('`mapping_version`');
-    expect(ddl).not.toContain('`interval_ms`');
   });
 
-  it('TEST-123A3-SCH002: atlas_bars_5m unique key is exactly 7 columns (no interval_ms)', async () => {
+  it('TEST-123A3-SCH002: atlas_bars_5m unique key includes interval_ms (8-column key)', async () => {
     const [rows] = await pool.query<mysql.RowDataPacket[]>('SHOW CREATE TABLE atlas_bars_5m');
     const ddl: string = rows[0]['Create Table'];
     expect(ddl).toContain('uq_atlas_bars_5m_canonical_identity');
-    expect(ddl).not.toContain('`interval_ms`');
+    expect(ddl).toContain('`interval_ms`');
   });
 
   it('TEST-123A3-SCH003: atlas_bar_processing_ledger unique key is exactly 9 columns', async () => {

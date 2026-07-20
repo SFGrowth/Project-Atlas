@@ -104,6 +104,8 @@ export interface MinuteBar {
   dataset: string;
   rawSymbol: string;
   instrumentId: number;
+  /** Bar interval in milliseconds. Always 60000 for one-minute bars. */
+  intervalMs: 60000;
   /** Bar open timestamp (UTC milliseconds). */
   barOpenTsMs: number;
   /** Raw Databento bar open timestamp (nanoseconds). Stored as string to avoid precision loss. */
@@ -169,6 +171,8 @@ export interface FiveMinBar {
   dataset: string;
   rawSymbol: string;
   instrumentId: number;
+  /** Bar interval in milliseconds. Always 300000 for five-minute bars. */
+  intervalMs: 300000;
   barOpenTsMs: number;
   barCloseTsMs: number;
   ohlcv: OhlcvPts100;

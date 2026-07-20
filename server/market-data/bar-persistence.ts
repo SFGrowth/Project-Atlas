@@ -8,23 +8,23 @@
  * ACTUAL SCHEMA (from SHOW CREATE TABLE — verified against disposable MySQL 8):
  *
  *   atlas_bars_1m: UNIQUE KEY uq_atlas_bars_1m_canonical_identity
- *     (source, dataset, raw_symbol, instrument_id, bar_open_ts_ms, revision, mapping_version)
- *     — 7 columns. NOTE: interval_ms does NOT exist in this table.
+ *     (source, dataset, raw_symbol, instrument_id, interval_ms, bar_open_ts_ms, revision, mapping_version)
+ *     — 8 columns. interval_ms INT NOT NULL DEFAULT 60000.
  *
  *   atlas_bars_5m: UNIQUE KEY uq_atlas_bars_5m_canonical_identity
- *     (source, dataset, raw_symbol, instrument_id, bar_open_ts_ms, revision, mapping_version)
- *     — 7 columns.
+ *     (source, dataset, raw_symbol, instrument_id, interval_ms, bar_open_ts_ms, revision, mapping_version)
+ *     — 8 columns. interval_ms INT NOT NULL DEFAULT 300000.
  *
  *   atlas_bar_processing_ledger: UNIQUE KEY uq_atlas_bar_processing_ledger
  *     (source, dataset, raw_symbol, instrument_id, bar_open_ts_ms, revision,
  *      mapping_version, consumer_name, consumer_version)
  *     — 9 columns.
  *
- * DUPLICATE HANDLING POLICY (Gate G3 Revision 4):
+ * DUPLICATE HANDLING POLICY (Gate G3 Revision 5):
  *   Effectively-once is implemented via plain INSERT followed by ER_DUP_ENTRY
  *   (errno 1062) catch. This is the preferred robust approach because:
  *
- *   EMPIRICAL FINDING (Gate G3 Revision 4 verification):
+ *   EMPIRICAL FINDING (Gate G3 Revision 5 verification):
  *     ON DUPLICATE KEY UPDATE id = id returns affectedRows=1 for BOTH a new
  *     insert AND an exact duplicate when CLIENT_FOUND_ROWS is not set.
  *     The only distinguishing field is insertId (> 0 for new rows, 0 for
@@ -35,10 +35,14 @@
  *   - Duplicate: INSERT throws ER_DUP_ENTRY (errno 1062) → { inserted: false }
  *   - Any other error: re-thrown immediately (NOT silently swallowed)
  *
- * TRANSACTION POLICY (Gate G3 Revision 4):
+ *   INSERT IGNORE is PROHIBITED. It silently swallows non-duplicate errors
+ *   (e.g., NOT NULL violations, oversized strings) and must never be used.
+ *
+ * TRANSACTION POLICY (Gate G3 Revision 5):
  *   Any operation that writes more than one row (bar + ledger) uses an explicit
- *   transaction. If any write fails, the entire transaction is rolled back and
- *   neither row remains.
+ *   transaction via pool.getConnection() + conn.beginTransaction().
+ *   If any write fails for a non-duplicate reason, the entire transaction is
+ *   rolled back via conn.rollback() and neither row remains.
  *
  * UNRESOLVED BAR POLICY (Gate G3 Revision 3):
  *   UNRESOLVED bars MAY be persisted to atlas_bars_1m as evidence rows.
@@ -58,7 +62,7 @@
  *   been applied. These migrations must NOT be run against the production
  *   database without Phil's explicit written approval at Gate G3.
  *
- * Sprint 123A.3 — Gate G3 Revision 4
+ * Sprint 123A.3 — Gate G3 Revision 5
  */
 
 import { MinuteBar, FiveMinBar, ReconciliationStatus, BarLifecycle } from './types/bar-lifecycle.js';
@@ -85,9 +89,9 @@ export function isDuplicateKeyError(err: unknown): boolean {
  * In production, this is backed by the Drizzle ORM connection.
  * In tests, this is backed by a disposable MySQL 8 instance or in-memory adapter.
  *
- * DUPLICATE HANDLING CONTRACT (Gate G3 Revision 4):
- *   All insert methods use plain INSERT (no ON DUPLICATE KEY) and catch
- *   ER_DUP_ENTRY (errno 1062) to return { inserted: false }.
+ * DUPLICATE HANDLING CONTRACT (Gate G3 Revision 5):
+ *   All insert methods use plain INSERT (no ON DUPLICATE KEY, no INSERT IGNORE)
+ *   and catch ER_DUP_ENTRY (errno 1062) to return { inserted: false }.
  *   All other errors are re-thrown immediately.
  *   warningStatus must be 0 for every successful write.
  */
@@ -99,6 +103,7 @@ export interface BarDatabaseAdapter {
 
   /**
    * Persist a bar and mark it as processed in a single explicit transaction.
+   * Uses pool.getConnection() + conn.beginTransaction() / conn.commit() / conn.rollback().
    * If the ledger insert fails for any reason other than ER_DUP_ENTRY, the
    * entire transaction is rolled back and neither row remains.
    */
@@ -115,6 +120,8 @@ export interface InsertBar1mRow {
   dataset: string;
   rawSymbol: string;
   instrumentId: number;
+  /** Bar interval in milliseconds. Always 60000 for atlas_bars_1m. */
+  intervalMs: 60000;
   barOpenTsMs: number;
   barOpenTsNs: string;
   barCloseTsMs: number;
@@ -141,6 +148,8 @@ export interface InsertBar5mRow {
   dataset: string;
   rawSymbol: string;
   instrumentId: number;
+  /** Bar interval in milliseconds. Always 300000 for atlas_bars_5m. */
+  intervalMs: 300000;
   barOpenTsMs: number;
   barCloseTsMs: number;
   openPricePts100: number | null;
@@ -247,6 +256,7 @@ export class BarPersistence {
 
   /**
    * Persist a bar and atomically mark it as processed in a single transaction.
+   * Uses explicit BEGIN/COMMIT/ROLLBACK via pool.getConnection().
    * If the ledger insert fails for any reason other than ER_DUP_ENTRY, the
    * entire transaction is rolled back and neither row remains.
    */
@@ -299,6 +309,7 @@ export class BarPersistence {
       dataset: bar.dataset,
       rawSymbol: bar.rawSymbol,
       instrumentId: bar.instrumentId,
+      intervalMs: 60000,
       barOpenTsMs: bar.barOpenTsMs,
       barOpenTsNs: bar.barOpenTsNs,
       barCloseTsMs: bar.barCloseTsMs,
@@ -327,6 +338,7 @@ export class BarPersistence {
       dataset: bar.dataset,
       rawSymbol: bar.rawSymbol,
       instrumentId: bar.instrumentId,
+      intervalMs: 300000,
       barOpenTsMs: bar.barOpenTsMs,
       barCloseTsMs: bar.barCloseTsMs,
       openPricePts100: bar.ohlcv.openPts100,
@@ -344,7 +356,7 @@ export class BarPersistence {
   }
 
   private _bar1mKey(bar: MinuteBar): string {
-    return `${bar.source}:${bar.dataset}:${bar.rawSymbol}:${bar.instrumentId}:${bar.barOpenTsMs}:${bar.revision}:${bar.mappingVersion}`;
+    return `${bar.source}:${bar.dataset}:${bar.rawSymbol}:${bar.instrumentId}:${bar.intervalMs}:${bar.barOpenTsMs}:${bar.revision}:${bar.mappingVersion}`;
   }
 }
 
@@ -364,7 +376,7 @@ export class InMemoryBarDatabaseAdapter implements BarDatabaseAdapter {
   private nextId = 1;
 
   async insertBar1m(row: InsertBar1mRow): Promise<PersistenceResult> {
-    const key = `${row.source}:${row.dataset}:${row.rawSymbol}:${row.instrumentId}:${row.barOpenTsMs}:${row.revision}:${row.mappingVersion}`;
+    const key = `${row.source}:${row.dataset}:${row.rawSymbol}:${row.instrumentId}:${row.intervalMs}:${row.barOpenTsMs}:${row.revision}:${row.mappingVersion}`;
     if (this.bars1m.has(key)) return { inserted: false, rowId: null, warningStatus: 0 };
     const id = this.nextId++;
     this.bars1m.set(key, { id, row });
@@ -372,7 +384,7 @@ export class InMemoryBarDatabaseAdapter implements BarDatabaseAdapter {
   }
 
   async insertBar5m(row: InsertBar5mRow): Promise<PersistenceResult> {
-    const key = `${row.source}:${row.dataset}:${row.rawSymbol}:${row.instrumentId}:${row.barOpenTsMs}:${row.revision}:${row.mappingVersion}`;
+    const key = `${row.source}:${row.dataset}:${row.rawSymbol}:${row.instrumentId}:${row.intervalMs}:${row.barOpenTsMs}:${row.revision}:${row.mappingVersion}`;
     if (this.bars5m.has(key)) return { inserted: false, rowId: null, warningStatus: 0 };
     const id = this.nextId++;
     this.bars5m.set(key, { id, row });
@@ -394,7 +406,7 @@ export class InMemoryBarDatabaseAdapter implements BarDatabaseAdapter {
     bar1mRow: InsertBar1mRow,
     ledgerRow: InsertLedgerRow,
   ): Promise<TransactionResult> {
-    const barKey = `${bar1mRow.source}:${bar1mRow.dataset}:${bar1mRow.rawSymbol}:${bar1mRow.instrumentId}:${bar1mRow.barOpenTsMs}:${bar1mRow.revision}:${bar1mRow.mappingVersion}`;
+    const barKey = `${bar1mRow.source}:${bar1mRow.dataset}:${bar1mRow.rawSymbol}:${bar1mRow.instrumentId}:${bar1mRow.intervalMs}:${bar1mRow.barOpenTsMs}:${bar1mRow.revision}:${bar1mRow.mappingVersion}`;
     const ledgerKey = `${ledgerRow.consumerName}:${ledgerRow.consumerVersion}:${barKey}`;
     const barInserted = !this.bars1m.has(barKey);
     const ledgerInserted = !this.ledger.has(ledgerKey);

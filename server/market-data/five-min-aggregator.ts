@@ -174,6 +174,7 @@ export class FiveMinAggregator {
       dataset: firstBar.dataset,
       rawSymbol: firstBar.rawSymbol,
       instrumentId: firstBar.instrumentId,
+      intervalMs: 300000,
       barOpenTsMs: windowOpenTsMs,
       barCloseTsMs: windowCloseTsMs,
       ohlcv: aggregatedOhlcv,

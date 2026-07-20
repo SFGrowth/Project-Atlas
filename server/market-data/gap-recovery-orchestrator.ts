@@ -211,6 +211,7 @@ export class GapRecoveryOrchestrator extends EventEmitter {
       dataset: record.dataset,
       rawSymbol: record.raw_symbol,
       instrumentId: record.instrument_id,
+      intervalMs: 60000,
       barOpenTsMs: Number(BigInt(record.ts_event_ns) / 1_000_000n),
       barOpenTsNs: record.ts_event_ns,
       barCloseTsMs: Number(BigInt(record.ts_event_ns) / 1_000_000n) + 60_000,

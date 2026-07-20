@@ -170,6 +170,7 @@ export class BarBuilder extends EventEmitter {
       dataset: this.config.dataset,
       rawSymbol: this.config.rawSymbol,
       instrumentId: this.config.instrumentId,
+      intervalMs: 60000,
       barOpenTsMs,
       barOpenTsNs: payload.ts_event_ns,
       barCloseTsMs,

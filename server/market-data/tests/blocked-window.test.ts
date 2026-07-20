@@ -27,6 +27,7 @@ function makeConfirmedBar(barOpenTsMs: number): MinuteBar {
     dataset: 'GLBX.MDP3',
     rawSymbol: 'MNQH4',
     instrumentId: 372107,
+    intervalMs: 60000,
     barOpenTsMs,
     barOpenTsNs: String(BigInt(barOpenTsMs) * 1_000_000n),
     barCloseTsMs: barOpenTsMs + 60_000,
