@@ -162,12 +162,14 @@ describe('Sprint 123A.1 — Feature Flag Configuration', () => {
     expect(() => assertSprint123A1Invariants()).toThrow('DATABENTO_DECISION_AUTHORITY');
   });
 
-  it('TEST-123A1-006: assertSprint123A1Invariants throws on DATABENTO_SHADOW (requires Gate G3)', async () => {
+  it('TEST-123A1-006: assertSprint123A1Invariants does NOT throw on DATABENTO_SHADOW (Gate G3 APPROVED 2026-07-20)', async () => {
     delete process.env.DATABENTO_LIVE_ENABLED;
     process.env.MARKET_DATA_AUTHORITY = 'DATABENTO_SHADOW';
     vi.resetModules();
     const { assertSprint123A1Invariants } = await import('./market-data/config.js');
-    expect(() => assertSprint123A1Invariants()).toThrow('Gate G3');
+    // Gate G3 was approved 2026-07-20. DATABENTO_SHADOW is now a valid Sprint 123A.4 mode.
+    // assertSprint123A1Invariants() must not throw on DATABENTO_SHADOW.
+    expect(() => assertSprint123A1Invariants()).not.toThrow();
   });
 });
 

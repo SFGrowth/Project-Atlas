@@ -1,14 +1,16 @@
 /**
  * Atlas Market Data Authority — Feature Flag Configuration
  * Sprint 123A.1 — Foundation (Gate G1 Revision 2)
+ * Sprint 123A.4 — Gate G3 Approved: DATABENTO_SHADOW now permitted
  *
  * MARKET_DATA_AUTHORITY controls which feed is the source of truth
  * for each processing function. The default is TRADINGVIEW_ONLY.
  *
  * Sprint 123A authority modes (the ONLY valid values in Sprint 123A):
  *   TRADINGVIEW_ONLY           — TradingView is the sole data source.
- *   DATABENTO_SHADOW           — Databento runs in parallel but does not
- *                                trigger any processing. Requires Gate G3.
+ *   DATABENTO_SHADOW           — Databento runs in parallel for chart/parity only.
+ *                                Gate G3 APPROVED. TradingView remains the
+ *                                processBar and postBarAutomation trigger.
  *   DATABENTO_CHART_AUTHORITY  — Databento drives AtlasLiveChart.
  *                                TradingView remains the processBar trigger.
  *                                Requires Gate G4.
@@ -19,7 +21,7 @@
  *
  * DATABENTO_DECISION_AUTHORITY is Sprint 123B only.
  * It is NOT a valid Sprint 123A value. Setting it will cause
- * getMarketDataAuthority() and assertSprint123A1Invariants() to throw.
+ * getMarketDataAuthority() and assertSprint123A4Invariants() to throw.
  *
  * postBarAutomation authority matrix (enforced at runtime):
  *   TRADINGVIEW_ONLY           → triggerSource must be TRADINGVIEW
@@ -92,7 +94,7 @@ export function isTradingViewOnly(): boolean {
   return getMarketDataAuthority() === 'TRADINGVIEW_ONLY';
 }
 
-/** True when Databento is connected in shadow mode (Sprint 123A.3+, Gate G3). */
+/** True when Databento is connected in shadow mode (Sprint 123A.4, Gate G3 approved). */
 export function isDatabentoShadow(): boolean {
   return getMarketDataAuthority() === 'DATABENTO_SHADOW';
 }
@@ -206,16 +208,21 @@ export function isDatabentoProcessBarTrigger(): false {
   return false;
 }
 
-// ─── Sprint 123A.1 hard invariant checks ─────────────────────────────────────
+// ─── Sprint 123A.1 hard invariant checks (retained for backward compatibility) ─
 
 /**
+ * @deprecated Use assertSprint123A4Invariants() in Sprint 123A.4+.
+ *
+ * Retained for backward compatibility with Sprint 123A.1 tests.
+ * The DATABENTO_SHADOW check has been removed because Gate G3 is approved.
+ *
  * Throws a hard error if any Sprint 123A.1 invariant is violated.
  * Call this at application startup to fail fast on misconfiguration.
  *
  * Invariants checked:
  *   - DATABENTO_LIVE_ENABLED must not be set to 'true'
  *   - MARKET_DATA_AUTHORITY must not be DATABENTO_DECISION_AUTHORITY
- *   - DATABENTO_SHADOW requires Gate G3 (not yet approved)
+ *   - DATABENTO_SHADOW: Gate G3 APPROVED — no longer blocked
  *   - DATABENTO_CHART_AUTHORITY requires Gate G4 (not yet approved)
  *   - DATABENTO_LEARNING_AUTHORITY requires Gate G6A (not yet approved)
  */
@@ -236,13 +243,10 @@ export function assertSprint123A1Invariants(): void {
     );
   }
 
-  // Check 3: DATABENTO_SHADOW requires Gate G3
-  if (process.env.MARKET_DATA_AUTHORITY === 'DATABENTO_SHADOW') {
-    throw new Error(
-      '[Atlas invariant] DATABENTO_SHADOW requires Gate G3 approval. ' +
-      'Gate G3 has not been approved. Set MARKET_DATA_AUTHORITY=TRADINGVIEW_ONLY.'
-    );
-  }
+  // Check 3: DATABENTO_SHADOW — Gate G3 APPROVED (2026-07-20).
+  // This check is intentionally removed. DATABENTO_SHADOW is now a valid
+  // Sprint 123A.4 mode. The guard is preserved in assertSprint123A4Invariants()
+  // for DATABENTO_CHART_AUTHORITY and DATABENTO_LEARNING_AUTHORITY.
 
   // Check 4: DATABENTO_CHART_AUTHORITY requires Gate G4
   if (process.env.MARKET_DATA_AUTHORITY === 'DATABENTO_CHART_AUTHORITY') {
@@ -259,4 +263,40 @@ export function assertSprint123A1Invariants(): void {
       'Gate G6A has not been approved. Set MARKET_DATA_AUTHORITY=TRADINGVIEW_ONLY.'
     );
   }
+}
+
+/**
+ * Sprint 123A.4 hard invariant checks.
+ * Gate G3 approved: DATABENTO_SHADOW is now permitted.
+ * Gate G4 not yet approved: DATABENTO_CHART_AUTHORITY is still blocked.
+ * Gate G6A not yet approved: DATABENTO_LEARNING_AUTHORITY is still blocked.
+ * DATABENTO_DECISION_AUTHORITY remains prohibited (Sprint 123B only).
+ */
+export function assertSprint123A4Invariants(): void {
+  // Check 1: DATABENTO_DECISION_AUTHORITY is Sprint 123B only
+  if (process.env.MARKET_DATA_AUTHORITY === 'DATABENTO_DECISION_AUTHORITY') {
+    throw new Error(
+      '[Atlas invariant] DATABENTO_DECISION_AUTHORITY is reserved for Sprint 123B. ' +
+      'It is not a valid Sprint 123A authority mode.'
+    );
+  }
+
+  // Check 2: DATABENTO_LEARNING_AUTHORITY is not authorised in Sprint 123A.4
+  if (process.env.MARKET_DATA_AUTHORITY === 'DATABENTO_LEARNING_AUTHORITY') {
+    throw new Error(
+      '[Atlas invariant] DATABENTO_LEARNING_AUTHORITY is not authorised in Sprint 123A.4. ' +
+      'It requires Gate G6A approval.'
+    );
+  }
+
+  // Check 3: DATABENTO_CHART_AUTHORITY requires Gate G4
+  if (process.env.MARKET_DATA_AUTHORITY === 'DATABENTO_CHART_AUTHORITY') {
+    throw new Error(
+      '[Atlas invariant] DATABENTO_CHART_AUTHORITY requires Gate G4 approval. ' +
+      'Gate G4 has not been approved. Set MARKET_DATA_AUTHORITY=TRADINGVIEW_ONLY or DATABENTO_SHADOW.'
+    );
+  }
+
+  // DATABENTO_SHADOW: Gate G3 APPROVED (2026-07-20). No check needed.
+  // TRADINGVIEW_ONLY: always valid.
 }
