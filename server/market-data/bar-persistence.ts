@@ -3,25 +3,42 @@
  *
  * Writes one-minute bars and five-minute bars to the database with
  * effectively-once semantics using the unique constraints defined in
- * migrations 0026 + 0027:
+ * migrations 0026 + 0027.
+ *
+ * ACTUAL SCHEMA (from SHOW CREATE TABLE — verified against disposable MySQL 8):
  *
  *   atlas_bars_1m: UNIQUE KEY uq_atlas_bars_1m_canonical_identity
  *     (source, dataset, raw_symbol, instrument_id, bar_open_ts_ms, revision, mapping_version)
+ *     — 7 columns. NOTE: interval_ms does NOT exist in this table.
  *
  *   atlas_bars_5m: UNIQUE KEY uq_atlas_bars_5m_canonical_identity
  *     (source, dataset, raw_symbol, instrument_id, bar_open_ts_ms, revision, mapping_version)
+ *     — 7 columns.
  *
  *   atlas_bar_processing_ledger: UNIQUE KEY uq_atlas_bar_processing_ledger
  *     (source, dataset, raw_symbol, instrument_id, bar_open_ts_ms, revision,
  *      mapping_version, consumer_name, consumer_version)
+ *     — 9 columns.
  *
- * DUPLICATE HANDLING POLICY (Gate G3 Revision 3):
- *   Effectively-once is implemented via INSERT ... ON DUPLICATE KEY UPDATE
- *   with a no-op update (id = id). This suppresses ONLY the expected
- *   duplicate-key error (ER_DUP_ENTRY / errno 1062). All other database
- *   errors (malformed values, CHECK violations, NOT NULL violations,
- *   foreign-key violations, unexpected SQL errors) must fail loudly and
- *   roll back the transaction.
+ * DUPLICATE HANDLING POLICY (Gate G3 Revision 4):
+ *   Effectively-once is implemented via plain INSERT followed by ER_DUP_ENTRY
+ *   (errno 1062) catch. This is the preferred robust approach because:
+ *
+ *   EMPIRICAL FINDING (Gate G3 Revision 4 verification):
+ *     ON DUPLICATE KEY UPDATE id = id returns affectedRows=1 for BOTH a new
+ *     insert AND an exact duplicate when CLIENT_FOUND_ROWS is not set.
+ *     The only distinguishing field is insertId (> 0 for new rows, 0 for
+ *     duplicates), but this is fragile with multi-row inserts and auto-increment
+ *     gaps. Therefore, plain INSERT + ER_DUP_ENTRY catch is used instead.
+ *
+ *   - New row: INSERT succeeds → { inserted: true, rowId: N }
+ *   - Duplicate: INSERT throws ER_DUP_ENTRY (errno 1062) → { inserted: false }
+ *   - Any other error: re-thrown immediately (NOT silently swallowed)
+ *
+ * TRANSACTION POLICY (Gate G3 Revision 4):
+ *   Any operation that writes more than one row (bar + ledger) uses an explicit
+ *   transaction. If any write fails, the entire transaction is rolled back and
+ *   neither row remains.
  *
  * UNRESOLVED BAR POLICY (Gate G3 Revision 3):
  *   UNRESOLVED bars MAY be persisted to atlas_bars_1m as evidence rows.
@@ -33,8 +50,7 @@
  *   overwriting the evidence row (the unique key includes revision).
  *
  * AUTHORITY NOTE: This module writes to atlas_bars_1m and atlas_bars_5m only.
- *   It does NOT write to atlas_canonical_bars (that is the Canonical Router's
- *   responsibility, gated on MARKET_DATA_AUTHORITY).
+ *   It does NOT write to atlas_canonical_bars.
  *   It does NOT trigger processBar or postBarAutomation.
  *   MARKET_DATA_AUTHORITY = TRADINGVIEW_ONLY throughout Sprint 123A.3.
  *
@@ -42,10 +58,25 @@
  *   been applied. These migrations must NOT be run against the production
  *   database without Phil's explicit written approval at Gate G3.
  *
- * Sprint 123A.3 — Gate G3 Revision 3
+ * Sprint 123A.3 — Gate G3 Revision 4
  */
 
 import { MinuteBar, FiveMinBar, ReconciliationStatus, BarLifecycle } from './types/bar-lifecycle.js';
+
+// ─── MySQL Error Codes ────────────────────────────────────────────────────────
+
+/** MySQL error code for duplicate key violation. */
+export const ER_DUP_ENTRY = 1062;
+
+/** Type guard for MySQL errors with an errno field. */
+export function isMySQLError(err: unknown): err is { errno: number; code: string; message: string } {
+  return typeof err === 'object' && err !== null && 'errno' in err && 'code' in err;
+}
+
+/** Returns true if the error is a duplicate-key violation (ER_DUP_ENTRY). */
+export function isDuplicateKeyError(err: unknown): boolean {
+  return isMySQLError(err) && err.errno === ER_DUP_ENTRY;
+}
 
 // ─── Database Adapter Interface ───────────────────────────────────────────────
 
@@ -54,43 +85,27 @@ import { MinuteBar, FiveMinBar, ReconciliationStatus, BarLifecycle } from './typ
  * In production, this is backed by the Drizzle ORM connection.
  * In tests, this is backed by a disposable MySQL 8 instance or in-memory adapter.
  *
- * DUPLICATE HANDLING CONTRACT:
- *   insertBar1m and insertBar5m must implement INSERT ... ON DUPLICATE KEY
- *   UPDATE id = id (or equivalent). They must:
- *   - Return { inserted: true, rowId: N } when a new row is inserted.
- *   - Return { inserted: false, rowId: null } when the row already exists
- *     (duplicate key on the canonical identity unique key).
- *   - THROW for any other database error (malformed values, CHECK violations,
- *     NOT NULL violations, foreign-key violations, unexpected SQL errors).
- *   The adapter must NEVER convert non-duplicate errors into success.
+ * DUPLICATE HANDLING CONTRACT (Gate G3 Revision 4):
+ *   All insert methods use plain INSERT (no ON DUPLICATE KEY) and catch
+ *   ER_DUP_ENTRY (errno 1062) to return { inserted: false }.
+ *   All other errors are re-thrown immediately.
+ *   warningStatus must be 0 for every successful write.
  */
 export interface BarDatabaseAdapter {
-  /**
-   * Insert a one-minute bar into atlas_bars_1m using ON DUPLICATE KEY UPDATE.
-   * Returns { inserted: true } for new rows, { inserted: false } for duplicates.
-   * Throws for all other database errors.
-   */
   insertBar1m(row: InsertBar1mRow): Promise<PersistenceResult>;
-
-  /**
-   * Insert a five-minute bar into atlas_bars_5m using ON DUPLICATE KEY UPDATE.
-   * Returns { inserted: true } for new rows, { inserted: false } for duplicates.
-   * Throws for all other database errors.
-   */
   insertBar5m(row: InsertBar5mRow): Promise<PersistenceResult>;
-
-  /**
-   * Check whether a bar has already been processed by a given consumer.
-   * Used for effectively-once downstream event dispatch.
-   */
   isAlreadyProcessed(consumerId: string, consumerVersion: string, eventKey: string): Promise<boolean>;
+  markProcessed(consumerId: string, consumerVersion: string, eventType: string, eventKey: string): Promise<LedgerResult>;
 
   /**
-   * Mark a bar as processed by a given consumer.
-   * Uses ON DUPLICATE KEY UPDATE id = id semantics.
-   * Throws for non-duplicate errors.
+   * Persist a bar and mark it as processed in a single explicit transaction.
+   * If the ledger insert fails for any reason other than ER_DUP_ENTRY, the
+   * entire transaction is rolled back and neither row remains.
    */
-  markProcessed(consumerId: string, consumerVersion: string, eventType: string, eventKey: string): Promise<void>;
+  persistBarWithLedger(
+    bar1mRow: InsertBar1mRow,
+    ledgerRow: InsertLedgerRow,
+  ): Promise<TransactionResult>;
 }
 
 // ─── Row Types ────────────────────────────────────────────────────────────────
@@ -141,13 +156,46 @@ export interface InsertBar5mRow {
   atlasTsMs: number;
 }
 
-// ─── Persistence Result ───────────────────────────────────────────────────────
+export interface InsertLedgerRow {
+  source: 'DATABENTO';
+  dataset: string;
+  rawSymbol: string;
+  instrumentId: number;
+  barOpenTsMs: number;
+  revision: number;
+  mappingVersion: string;
+  consumerName: string;
+  consumerVersion: string;
+  processedAtMs: number;
+  success: boolean;
+  errorMessage: string | null;
+  atlasTsMs: number;
+}
+
+// ─── Result Types ─────────────────────────────────────────────────────────────
 
 export interface PersistenceResult {
   /** Whether the row was newly inserted (true) or was a duplicate (false). */
   inserted: boolean;
-  /** The row ID of the inserted row, or null if it was a duplicate. */
+  /** The auto-increment row ID of the inserted row, or null if it was a duplicate. */
   rowId: number | null;
+  /** warningStatus from the MySQL driver — must be 0 for clean writes. */
+  warningStatus: number;
+}
+
+export interface LedgerResult {
+  /** Whether the ledger entry was newly inserted (true) or was a duplicate (false). */
+  alreadyProcessed: boolean;
+  /** warningStatus from the MySQL driver — must be 0 for clean writes. */
+  warningStatus: number;
+}
+
+export interface TransactionResult {
+  barInserted: boolean;
+  ledgerInserted: boolean;
+  barRowId: number | null;
+  /** True if the entire transaction was rolled back due to a non-duplicate error. */
+  rolledBack: boolean;
 }
 
 // ─── Bar Persistence ──────────────────────────────────────────────────────────
@@ -176,7 +224,7 @@ export class BarPersistence {
    */
   async persistBar1m(bar: MinuteBar): Promise<PersistenceResult> {
     if (bar.lifecycle !== BarLifecycle.CONFIRMED && bar.lifecycle !== BarLifecycle.UNRESOLVED) {
-      return { inserted: false, rowId: null };
+      return { inserted: false, rowId: null, warningStatus: 0 };
     }
     const row = this._toBar1mRow(bar);
     return this.db.insertBar1m(row);
@@ -191,15 +239,42 @@ export class BarPersistence {
    */
   async persistBar5m(bar: FiveMinBar): Promise<PersistenceResult> {
     if (bar.minuteBarCount !== 5) {
-      return { inserted: false, rowId: null };
+      return { inserted: false, rowId: null, warningStatus: 0 };
     }
     const row = this._toBar5mRow(bar);
     return this.db.insertBar5m(row);
   }
 
   /**
+   * Persist a bar and atomically mark it as processed in a single transaction.
+   * If the ledger insert fails for any reason other than ER_DUP_ENTRY, the
+   * entire transaction is rolled back and neither row remains.
+   */
+  async persistBar1mWithLedger(bar: MinuteBar, consumerId: string): Promise<TransactionResult> {
+    if (bar.lifecycle !== BarLifecycle.CONFIRMED && bar.lifecycle !== BarLifecycle.UNRESOLVED) {
+      return { barInserted: false, ledgerInserted: false, barRowId: null, rolledBack: false };
+    }
+    const bar1mRow = this._toBar1mRow(bar);
+    const ledgerRow: InsertLedgerRow = {
+      source: 'DATABENTO',
+      dataset: bar.dataset,
+      rawSymbol: bar.rawSymbol,
+      instrumentId: bar.instrumentId,
+      barOpenTsMs: bar.barOpenTsMs,
+      revision: bar.revision,
+      mappingVersion: bar.mappingVersion,
+      consumerName: consumerId,
+      consumerVersion: this.consumerVersion,
+      processedAtMs: Date.now(),
+      success: true,
+      errorMessage: null,
+      atlasTsMs: Date.now(),
+    };
+    return this.db.persistBarWithLedger(bar1mRow, ledgerRow);
+  }
+
+  /**
    * Check whether a bar has already been processed by a downstream consumer.
-   * Used to implement effectively-once semantics for event dispatch.
    */
   async isAlreadyProcessed(consumerId: string, bar: MinuteBar): Promise<boolean> {
     const key = this._bar1mKey(bar);
@@ -210,7 +285,7 @@ export class BarPersistence {
    * Mark a bar as processed by a downstream consumer.
    * Throws for all non-duplicate database errors.
    */
-  async markProcessed(consumerId: string, eventType: string, bar: MinuteBar): Promise<void> {
+  async markProcessed(consumerId: string, eventType: string, bar: MinuteBar): Promise<LedgerResult> {
     const key = this._bar1mKey(bar);
     return this.db.markProcessed(consumerId, this.consumerVersion, eventType, key);
   }
@@ -289,52 +364,61 @@ export class InMemoryBarDatabaseAdapter implements BarDatabaseAdapter {
   private nextId = 1;
 
   async insertBar1m(row: InsertBar1mRow): Promise<PersistenceResult> {
-    // Canonical identity key includes raw_symbol (migration 0027)
     const key = `${row.source}:${row.dataset}:${row.rawSymbol}:${row.instrumentId}:${row.barOpenTsMs}:${row.revision}:${row.mappingVersion}`;
-    if (this.bars1m.has(key)) return { inserted: false, rowId: null };
+    if (this.bars1m.has(key)) return { inserted: false, rowId: null, warningStatus: 0 };
     const id = this.nextId++;
     this.bars1m.set(key, { id, row });
-    return { inserted: true, rowId: id };
+    return { inserted: true, rowId: id, warningStatus: 0 };
   }
 
   async insertBar5m(row: InsertBar5mRow): Promise<PersistenceResult> {
-    // Canonical identity key includes raw_symbol (migration 0027)
     const key = `${row.source}:${row.dataset}:${row.rawSymbol}:${row.instrumentId}:${row.barOpenTsMs}:${row.revision}:${row.mappingVersion}`;
-    if (this.bars5m.has(key)) return { inserted: false, rowId: null };
+    if (this.bars5m.has(key)) return { inserted: false, rowId: null, warningStatus: 0 };
     const id = this.nextId++;
     this.bars5m.set(key, { id, row });
-    return { inserted: true, rowId: id };
+    return { inserted: true, rowId: id, warningStatus: 0 };
   }
 
   async isAlreadyProcessed(consumerId: string, consumerVersion: string, eventKey: string): Promise<boolean> {
     return this.ledger.has(`${consumerId}:${consumerVersion}:${eventKey}`);
   }
 
-  async markProcessed(consumerId: string, consumerVersion: string, _eventType: string, eventKey: string): Promise<void> {
-    this.ledger.add(`${consumerId}:${consumerVersion}:${eventKey}`);
+  async markProcessed(consumerId: string, consumerVersion: string, _eventType: string, eventKey: string): Promise<LedgerResult> {
+    const key = `${consumerId}:${consumerVersion}:${eventKey}`;
+    if (this.ledger.has(key)) return { alreadyProcessed: true, warningStatus: 0 };
+    this.ledger.add(key);
+    return { alreadyProcessed: false, warningStatus: 0 };
   }
 
-  /** Test helper: return all persisted 1m bars. */
+  async persistBarWithLedger(
+    bar1mRow: InsertBar1mRow,
+    ledgerRow: InsertLedgerRow,
+  ): Promise<TransactionResult> {
+    const barKey = `${bar1mRow.source}:${bar1mRow.dataset}:${bar1mRow.rawSymbol}:${bar1mRow.instrumentId}:${bar1mRow.barOpenTsMs}:${bar1mRow.revision}:${bar1mRow.mappingVersion}`;
+    const ledgerKey = `${ledgerRow.consumerName}:${ledgerRow.consumerVersion}:${barKey}`;
+    const barInserted = !this.bars1m.has(barKey);
+    const ledgerInserted = !this.ledger.has(ledgerKey);
+    if (barInserted) {
+      const id = this.nextId++;
+      this.bars1m.set(barKey, { id, row: bar1mRow });
+    }
+    if (ledgerInserted) {
+      this.ledger.add(ledgerKey);
+    }
+    return { barInserted, ledgerInserted, barRowId: barInserted ? (this.nextId - 1) : null, rolledBack: false };
+  }
+
   getAllBars1m(): InsertBar1mRow[] {
     return Array.from(this.bars1m.values()).map((v) => v.row);
   }
 
-  /** Test helper: return all persisted 5m bars. */
   getAllBars5m(): InsertBar5mRow[] {
     return Array.from(this.bars5m.values()).map((v) => v.row);
   }
 
-  /** Test helper: return the count of 1m bars. */
-  getBar1mCount(): number {
-    return this.bars1m.size;
-  }
+  getBar1mCount(): number { return this.bars1m.size; }
+  getBar5mCount(): number { return this.bars5m.size; }
 
-  /** Test helper: return the count of 5m bars. */
-  getBar5mCount(): number {
-    return this.bars5m.size;
-  }
-
-  /** Test helper: clear all data. */
   clear(): void {
     this.bars1m.clear();
     this.bars5m.clear();
