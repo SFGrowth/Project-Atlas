@@ -1,0 +1,296 @@
+
+ RUN  v2.1.9 /home/ubuntu/atlas-nexus
+
+ ✓ server/market-data/tests/recovery-reconciliation-enforcement.test.ts > TEST-123A3-RRE: Recovered-Bar Reconciliation Enforcement > TEST-123A3-RRE001: recovery:complete containing unreconciled trade data does not unblock a window
+ ✓ server/market-data/tests/recovery-reconciliation-enforcement.test.ts > TEST-123A3-RRE: Recovered-Bar Reconciliation Enforcement > TEST-123A3-RRE002: recovery:complete without official ohlcv-1m does not create CONFIRMED
+ ✓ server/market-data/tests/recovery-reconciliation-enforcement.test.ts > TEST-123A3-RRE: Recovered-Bar Reconciliation Enforcement > TEST-123A3-RRE003: PARTIAL recovery does not unblock a window
+ ✓ server/market-data/tests/recovery-reconciliation-enforcement.test.ts > TEST-123A3-RRE: Recovered-Bar Reconciliation Enforcement > TEST-123A3-RRE004: FAILED recovery does not unblock
+ ✓ server/market-data/tests/recovery-reconciliation-enforcement.test.ts > TEST-123A3-RRE: Recovered-Bar Reconciliation Enforcement > TEST-123A3-RRE005: PROVISIONAL recovered data remains ineligible
+ ✓ server/market-data/tests/recovery-reconciliation-enforcement.test.ts > TEST-123A3-RRE: Recovered-Bar Reconciliation Enforcement > TEST-123A3-RRE006: UNRESOLVED recovered data remains ineligible
+ ✓ server/market-data/tests/recovery-reconciliation-enforcement.test.ts > TEST-123A3-RRE: Recovered-Bar Reconciliation Enforcement > TEST-123A3-RRE007: only lifecycleState=CONFIRMED and reconciliationStatus=MATCHED may call insertRecoveredBar()
+ ✓ server/market-data/tests/recovery-reconciliation-enforcement.test.ts > TEST-123A3-RRE: Recovered-Bar Reconciliation Enforcement > TEST-123A3-RRE008: recovered revision is stored separately from unresolved evidence
+ ✓ server/market-data/tests/recovery-reconciliation-enforcement.test.ts > TEST-123A3-RRE: Recovered-Bar Reconciliation Enforcement > TEST-123A3-RRE009: duplicate recovery completion emits no second five-minute bar
+ ✓ server/market-data/tests/recovery-reconciliation-enforcement.test.ts > TEST-123A3-RRE: Recovered-Bar Reconciliation Enforcement > TEST-123A3-RRE010: official reconciliation failure leaves the window blocked
+ ✓ server/market-data/tests/recovery-reconciliation-enforcement.test.ts > TEST-123A3-RRE: Recovered-Bar Reconciliation Enforcement > TEST-123A3-RRE011: exact official reconciliation completes the window once
+ ✓ server/sprint-123a1.test.ts > Sprint 123A.1 — Feature Flag Configuration > TEST-123A1-001: defaults to TRADINGVIEW_ONLY when MARKET_DATA_AUTHORITY is unset
+ ✓ server/sprint-123a1.test.ts > Sprint 123A.1 — Feature Flag Configuration > TEST-123A1-002: isTradingViewOnly returns true by default; all Databento predicates return false
+ ✓ server/sprint-123a1.test.ts > Sprint 123A.1 — Feature Flag Configuration > TEST-123A1-003: isDatabentoProcessBarTrigger always returns false in all Sprint 123A modes
+ ✓ server/sprint-123a1.test.ts > Sprint 123A.1 — Feature Flag Configuration > TEST-123A1-004: assertSprint123A1Invariants throws when DATABENTO_LIVE_ENABLED=true
+ ✓ server/sprint-123a1.test.ts > Sprint 123A.1 — Feature Flag Configuration > TEST-123A1-005: assertSprint123A1Invariants throws on DATABENTO_DECISION_AUTHORITY (Sprint 123B only)
+ ✓ server/sprint-123a1.test.ts > Sprint 123A.1 — Feature Flag Configuration > TEST-123A1-006: assertSprint123A1Invariants throws on DATABENTO_SHADOW (requires Gate G3)
+ ✓ server/sprint-123a1.test.ts > Sprint 123A.1 — DATABENTO_DECISION_AUTHORITY removed from Sprint 123A > TEST-123A1-027: Sprint123AAuthorityMode type does not include DATABENTO_DECISION_AUTHORITY
+ ✓ server/sprint-123a1.test.ts > Sprint 123A.1 — DATABENTO_DECISION_AUTHORITY removed from Sprint 123A > TEST-123A1-028: getMarketDataAuthority throws on DATABENTO_DECISION_AUTHORITY (fail closed)
+stderr | server/sprint-123a1.test.ts > Sprint 123A.1 — postBarAutomation Authority Matrix (behavioural) > TEST-123A1-007: Databento rejected in TRADINGVIEW_ONLY mode — no subsystem called
+[Atlas config] INVARIANT VIOLATION: In TRADINGVIEW_ONLY mode, postBarAutomation must be triggered by TRADINGVIEW. Got triggerSource=DATABENTO. Databento must not trigger postBarAutomation in shadow or chart-authority modes. Aborting.
+
+ ✓ server/market-data/tests/sprint-123a3.test.ts > One-Minute Bar Lifecycle > TEST-123A3-BAR001: processOhlcv1m emits bar:provisional for a new bar
+ ✓ server/market-data/tests/sprint-123a3.test.ts > One-Minute Bar Lifecycle > TEST-123A3-BAR002: bar transitions to CONFIRMED when OHLCV is internally consistent
+ ✓ server/market-data/tests/sprint-123a3.test.ts > One-Minute Bar Lifecycle > TEST-123A3-BAR003: bar transitions to UNRESOLVED when high < open
+ ✓ server/market-data/tests/sprint-123a3.test.ts > One-Minute Bar Lifecycle > TEST-123A3-BAR004: bar transitions to UNRESOLVED when low > close
+ ✓ server/market-data/tests/sprint-123a3.test.ts > One-Minute Bar Lifecycle > TEST-123A3-BAR005: duplicate bar (same ts_event_ns) is silently ignored
+ ✓ server/market-data/tests/sprint-123a3.test.ts > One-Minute Bar Lifecycle > TEST-123A3-BAR006: nanosecond timestamp is preserved in barOpenTsNs
+ ✓ server/market-data/tests/sprint-123a3.test.ts > One-Minute Bar Lifecycle > TEST-123A3-BAR007: barOpenTsMs is correctly derived from ts_event_ns
+ ✓ server/market-data/tests/sprint-123a3.test.ts > One-Minute Bar Lifecycle > TEST-123A3-BAR008: barCloseTsMs = barOpenTsMs + 60000
+ ✓ server/market-data/tests/sprint-123a3.test.ts > One-Minute Bar Lifecycle > TEST-123A3-BAR009: bar for wrong instrument is ignored
+ ✓ server/market-data/tests/sprint-123a3.test.ts > One-Minute Bar Lifecycle > TEST-123A3-BAR010: reconciliation detail is attached to CONFIRMED bar
+ ✓ server/market-data/tests/sprint-123a3.test.ts > One-Minute Bar Lifecycle > TEST-123A3-BAR011: reconciliation detail is attached to UNRESOLVED bar
+ ✓ server/market-data/tests/sprint-123a3.test.ts > One-Minute Bar Lifecycle > TEST-123A3-BAR012: expirePendingBar transitions PROVISIONAL to UNRESOLVED
+ ✓ server/market-data/tests/sprint-123a3.test.ts > Official Bar Reconciliation > TEST-123A3-REC001: MATCHED when all deltas are within tolerance
+ ✓ server/market-data/tests/sprint-123a3.test.ts > Official Bar Reconciliation > TEST-123A3-REC002: UNMATCHED when high < open
+ ✓ server/market-data/tests/sprint-123a3.test.ts > Official Bar Reconciliation > TEST-123A3-REC003: UNMATCHED when low > close
+ ✓ server/market-data/tests/sprint-123a3.test.ts > Official Bar Reconciliation > TEST-123A3-REC004: UNMATCHED when open price is zero
+ ✓ server/market-data/tests/sprint-123a3.test.ts > Official Bar Reconciliation > TEST-123A3-REC005: default tolerance is 25 pts100 (0.25 points)
+ ✓ server/market-data/tests/sprint-123a3.test.ts > Official Bar Reconciliation > TEST-123A3-REC006: reconcile returns CONFIRMED when timestamps match and within tolerance
+ ✓ server/market-data/tests/sprint-123a3.test.ts > Official Bar Reconciliation > TEST-123A3-REC007: reconcile returns UNRESOLVED when timestamps do not match
+ ✓ server/market-data/tests/sprint-123a3.test.ts > Official Bar Reconciliation > TEST-123A3-REC008: reconcile returns UNRESOLVED when close delta exceeds tolerance
+ ✓ server/market-data/tests/sprint-123a3.test.ts > Official Bar Reconciliation > TEST-123A3-REC009: markUnavailable transitions bar to UNRESOLVED with UNAVAILABLE status
+ ✓ server/market-data/tests/sprint-123a3.test.ts > Official Bar Reconciliation > TEST-123A3-REC010: already-CONFIRMED bar is returned unchanged by reconcile
+ ✓ server/market-data/tests/sprint-123a3.test.ts > Five-Minute Aggregation > TEST-123A3-AGG001: aggregate succeeds with exactly 5 confirmed contiguous aligned bars
+ ✓ server/market-data/tests/sprint-123a3.test.ts > Five-Minute Aggregation > TEST-123A3-AGG002: aggregate rejects window with UNRESOLVED bar
+ ✓ server/market-data/tests/sprint-123a3.test.ts > Five-Minute Aggregation > TEST-123A3-AGG003: aggregate rejects window with PROVISIONAL bar
+ ✓ server/market-data/tests/sprint-123a3.test.ts > Five-Minute Aggregation > TEST-123A3-AGG004: aggregate rejects window with wrong bar count (4 bars)
+ ✓ server/market-data/tests/sprint-123a3.test.ts > Five-Minute Aggregation > TEST-123A3-AGG005: aggregate rejects non-contiguous window (gap between bars)
+ ✓ server/market-data/tests/sprint-123a3.test.ts > Five-Minute Aggregation > TEST-123A3-AGG006: aggregate rejects misaligned window (not on 5-min boundary)
+ ✓ server/market-data/tests/sprint-123a3.test.ts > Five-Minute Aggregation > TEST-123A3-AGG007: aggregated OHLCV is correct (open=first, close=last, high=max, low=min)
+ ✓ server/market-data/tests/sprint-123a3.test.ts > Five-Minute Aggregation > TEST-123A3-AGG008: barType is CONTAINS_SYNTHETIC when any bar has zero volume
+ ✓ server/market-data/tests/sprint-123a3.test.ts > Five-Minute Aggregation > TEST-123A3-AGG009: barType is RECOVERED when any bar has revision > 0
+ ✓ server/market-data/tests/sprint-123a3.test.ts > Five-Minute Aggregation > TEST-123A3-AGG010: WindowAccumulator accumulates bars and returns FiveMinBar on window completion
+ ✓ server/market-data/tests/sprint-123a3.test.ts > Five-Minute Aggregation > TEST-123A3-AGG011: WindowAccumulator transitions to BLOCKED_UNRESOLVED when UNRESOLVED bar is added
+ ✓ server/market-data/tests/sprint-123a3.test.ts > Five-Minute Aggregation > TEST-123A3-AGG012: FIVE_MIN_WINDOW_SIZE constant is 5
+ ✓ server/market-data/tests/sprint-123a3.test.ts > Gap Detection and Recovery Integration > TEST-123A3-GAP001: gap is detected when a bar arrives more than 1 minute after the last confirmed bar
+ ✓ server/market-data/tests/sprint-123a3.test.ts > Gap Detection and Recovery Integration > TEST-123A3-GAP002: no gap is detected for consecutive bars (1 minute apart)
+ ✓ server/market-data/tests/sprint-123a3.test.ts > Gap Detection and Recovery Integration > TEST-123A3-GAP003: gap event contains correct gapStartTsMs and gapEndTsMs
+ ✓ server/market-data/tests/sprint-123a3.test.ts > Gap Detection and Recovery Integration > TEST-123A3-GAP004: no gap is detected for the very first bar (no prior confirmed bar)
+ ✓ server/market-data/tests/sprint-123a3.test.ts > Gap Detection and Recovery Integration > TEST-123A3-GAP005: lastConfirmedBarOpenTsMs is updated after each CONFIRMED bar
+ ✓ server/market-data/tests/sprint-123a3.test.ts > Gap Detection and Recovery Integration > TEST-123A3-GAP006: lastConfirmedBarOpenTsMs is NOT updated for UNRESOLVED bar
+ ✓ server/market-data/tests/sprint-123a3.test.ts > Contract Definition and Symbol Mapping > TEST-123A3-CTR001: processDefinition stores and returns a ContractDefinition
+ ✓ server/market-data/tests/sprint-123a3.test.ts > Contract Definition and Symbol Mapping > TEST-123A3-CTR002: expiry timestamp is correctly decoded from nanoseconds
+ ✓ server/market-data/tests/sprint-123a3.test.ts > Contract Definition and Symbol Mapping > TEST-123A3-CTR003: null expiry_ts_ns produces null expiryTsMs
+ ✓ server/market-data/tests/sprint-123a3.test.ts > Contract Definition and Symbol Mapping > TEST-123A3-CTR004: processSymbolMapping stores and returns a SymbolMapping
+ ✓ server/market-data/tests/sprint-123a3.test.ts > Contract Definition and Symbol Mapping > TEST-123A3-CTR005: contract roll is detected when active symbol changes
+ ✓ server/market-data/tests/sprint-123a3.test.ts > Contract Definition and Symbol Mapping > TEST-123A3-CTR006: no roll is detected when symbol does not change
+ ✓ server/market-data/tests/sprint-123a3.test.ts > Contract Definition and Symbol Mapping > TEST-123A3-CTR007: getDefinition returns null when no definition has been received
+ ✓ server/market-data/tests/sprint-123a3.test.ts > Contract Definition and Symbol Mapping > TEST-123A3-CTR008: isNearExpiry returns true when expiry is within 7 days
+ ✓ server/market-data/tests/sprint-123a3.test.ts > Effectively-Once Persistence > TEST-123A3-PER001: persistBar1m inserts a CONFIRMED bar and returns inserted=true
+ ✓ server/market-data/tests/sprint-123a3.test.ts > Effectively-Once Persistence > TEST-123A3-PER002: persistBar1m accepts UNRESOLVED bar as evidence row (Revision 3 policy)
+ ✓ server/market-data/tests/sprint-123a3.test.ts > Effectively-Once Persistence > TEST-123A3-PER003: duplicate insert returns inserted=false (effectively-once)
+ ✓ server/market-data/tests/sprint-123a3.test.ts > Effectively-Once Persistence > TEST-123A3-PER004: persistBar5m inserts a five-minute bar and returns inserted=true
+ ✓ server/market-data/tests/sprint-123a3.test.ts > Effectively-Once Persistence > TEST-123A3-PER005: duplicate 5m bar insert returns inserted=false
+ ✓ server/market-data/tests/sprint-123a3.test.ts > Effectively-Once Persistence > TEST-123A3-PER006: isAlreadyProcessed returns false before markProcessed
+ ✓ server/market-data/tests/sprint-123a3.test.ts > Effectively-Once Persistence > TEST-123A3-PER007: isAlreadyProcessed returns true after markProcessed
+ ✓ server/market-data/tests/sprint-123a3.test.ts > Effectively-Once Persistence > TEST-123A3-PER008: persisted bar row contains correct reconciliation fields
+ ✓ server/market-data/tests/sprint-123a3.test.ts > Authority Invariants > TEST-123A3-AUTH001: BarBuilder does not emit processBar or postBarAutomation events
+ ✓ server/market-data/tests/sprint-123a3.test.ts > Authority Invariants > TEST-123A3-AUTH002: FiveMinAggregator does not emit processBar or postBarAutomation events
+ ✓ server/market-data/tests/sprint-123a3.test.ts > Authority Invariants > TEST-123A3-AUTH003: BarPersistence writes only to atlas_bars_1m and atlas_bars_5m (not atlas_canonical_bars)
+ ✓ server/market-data/tests/sprint-123a3.test.ts > Authority Invariants > TEST-123A3-AUTH004: UNRESOLVED bar is persisted as evidence row (Revision 3 policy)
+ ✓ server/market-data/tests/sprint-123a3.test.ts > Authority Invariants > TEST-123A3-AUTH005: FiveMinAggregator rejects window containing UNRESOLVED bar (primary aggregation gate)
+ ✓ server/market-data/tests/sprint-123a3.test.ts > Authority Invariants > TEST-123A3-AUTH006: source field on all produced records is always DATABENTO
+stderr | server/sprint-123a1.test.ts > Sprint 123A.1 — postBarAutomation Subsystem Isolation (behavioural) > TEST-123A1-017: liveLearnEngine failure does not stop DARWIN or behaviourEngine
+[postBarAutomation] liveLearnEngine error: Error: liveLearn DB error
+[postBarAutomation] Completed with 1 error(s) in 0ms. liveLearn=false darwin=true behaviourEngine=true
+
+ ✓ server/sprint-123a1.test.ts > Sprint 123A.1 — postBarAutomation Authority Matrix (behavioural) > TEST-123A1-007: Databento rejected in TRADINGVIEW_ONLY mode — no subsystem called
+ ✓ server/sprint-123a1.test.ts > Sprint 123A.1 — postBarAutomation Authority Matrix (behavioural) > TEST-123A1-008: TradingView accepted in TRADINGVIEW_ONLY mode — authority guard passes
+ ✓ server/sprint-123a1.test.ts > Sprint 123A.1 — postBarAutomation Authority Matrix (behavioural) > TEST-123A1-009: TradingView accepted in DATABENTO_SHADOW mode
+ ✓ server/sprint-123a1.test.ts > Sprint 123A.1 — postBarAutomation Authority Matrix (behavioural) > TEST-123A1-009B: Databento rejected in DATABENTO_SHADOW mode — triggerSource must be TRADINGVIEW
+ ✓ server/sprint-123a1.test.ts > Sprint 123A.1 — postBarAutomation Authority Matrix (behavioural) > TEST-123A1-010: TradingView accepted in DATABENTO_CHART_AUTHORITY mode
+ ✓ server/sprint-123a1.test.ts > Sprint 123A.1 — postBarAutomation Authority Matrix (behavioural) > TEST-123A1-010B: Databento rejected in DATABENTO_CHART_AUTHORITY mode — triggerSource must be TRADINGVIEW
+ ✓ server/sprint-123a1.test.ts > Sprint 123A.1 — postBarAutomation Authority Matrix (behavioural) > TEST-123A1-011: TradingView rejected in DATABENTO_LEARNING_AUTHORITY mode — triggerSource must be DATABENTO
+ ✓ server/sprint-123a1.test.ts > Sprint 123A.1 — postBarAutomation Authority Matrix (behavioural) > TEST-123A1-012: Databento accepted in DATABENTO_LEARNING_AUTHORITY mode
+ ✓ server/sprint-123a1.test.ts > Sprint 123A.1 — postBarAutomation Authority Matrix (behavioural) > TEST-123A1-013: authorityMode payload mismatch is rejected before any subsystem is called
+ ✓ server/sprint-123a1.test.ts > Sprint 123A.1 — postBarAutomation Subsystem Isolation (behavioural) > TEST-123A1-014: liveLearnEngine.processLiveBar called exactly once per bar
+ ✓ server/sprint-123a1.test.ts > Sprint 123A.1 — postBarAutomation Subsystem Isolation (behavioural) > TEST-123A1-015: darwinAutonomous.onNewBarObservation called exactly once per bar (G-001 fix)
+ ✓ server/sprint-123a1.test.ts > Sprint 123A.1 — postBarAutomation Subsystem Isolation (behavioural) > TEST-123A1-016: behaviourEngine.runBehaviourEngineShadow called exactly once per bar
+ ✓ server/sprint-123a1.test.ts > Sprint 123A.1 — postBarAutomation Subsystem Isolation (behavioural) > TEST-123A1-017: liveLearnEngine failure does not stop DARWIN or behaviourEngine
+stderr | server/sprint-123a1.test.ts > Sprint 123A.1 — postBarAutomation Subsystem Isolation (behavioural) > TEST-123A1-018: DARWIN failure does not stop behaviourEngine
+[postBarAutomation] DARWIN onNewBarObservation error: Error: DARWIN error
+[postBarAutomation] Completed with 1 error(s) in 0ms. liveLearn=true darwin=false behaviourEngine=true
+
+stderr | server/sprint-123a1.test.ts > Sprint 123A.1 — postBarAutomation Subsystem Isolation (behavioural) > TEST-123A1-019: no subsystem runs after authority violation
+[Atlas config] INVARIANT VIOLATION: In TRADINGVIEW_ONLY mode, postBarAutomation must be triggered by TRADINGVIEW. Got triggerSource=DATABENTO. Databento must not trigger postBarAutomation in shadow or chart-authority modes. Aborting.
+
+stderr | server/sprint-123a1.test.ts > Sprint 123A.1 — Nexus TradingView Flow (runtime source-boundary) > TEST-123A1-032: invalid authority — dependency loaders not invoked (runtime)
+[Atlas config] INVARIANT VIOLATION: In TRADINGVIEW_ONLY mode, postBarAutomation must be triggered by TRADINGVIEW. Got triggerSource=DATABENTO. Databento must not trigger postBarAutomation in shadow or chart-authority modes. Aborting.
+
+ ✓ server/sprint-123a1.test.ts > Sprint 123A.1 — postBarAutomation Subsystem Isolation (behavioural) > TEST-123A1-018: DARWIN failure does not stop behaviourEngine
+ ✓ server/sprint-123a1.test.ts > Sprint 123A.1 — postBarAutomation Subsystem Isolation (behavioural) > TEST-123A1-019: no subsystem runs after authority violation
+ ✓ server/sprint-123a1.test.ts > Sprint 123A.1 — postBarAutomation Subsystem Isolation (behavioural) > TEST-123A1-020: processBar is never called by postBarAutomation (source boundary)
+ ✓ server/sprint-123a1.test.ts > Sprint 123A.1 — Monthly Review Handler (G-002 fix, runtime) > TEST-123A1-021: handleMonthlyReview calls runMonthlyAudit exactly once and returns real result
+ ✓ server/sprint-123a1.test.ts > Sprint 123A.1 — Monthly Review Handler (G-002 fix, runtime) > TEST-123A1-021B: handleMonthlyReview surfaces audit failure correctly
+ ✓ server/sprint-123a1.test.ts > Sprint 123A.1 — Nexus TradingView Flow (runtime source-boundary) > TEST-123A1-029: nexusRoutes.ts invokes runPostBarAutomation (not liveLearnEngine directly)
+ ✓ server/sprint-123a1.test.ts > Sprint 123A.1 — Nexus TradingView Flow (runtime source-boundary) > TEST-123A1-030: nexusRoutes.ts still invokes processBar exactly once (TradingView execution path)
+ ✓ server/sprint-123a1.test.ts > Sprint 123A.1 — Nexus TradingView Flow (runtime source-boundary) > TEST-123A1-031: no direct liveLearnEngine.processLiveBar call in nexusRoutes.ts at runtime
+ ✓ server/sprint-123a1.test.ts > Sprint 123A.1 — Nexus TradingView Flow (runtime source-boundary) > TEST-123A1-032: invalid authority — dependency loaders not invoked (runtime)
+ ✓ server/sprint-123a1.test.ts > Sprint 123A.1 — Migration 0026 Structure > TEST-123A1-022: CONTAINS_UNRESOLVED is absent from all ENUMs in migration 0026
+ ✓ server/sprint-123a1.test.ts > Sprint 123A.1 — Migration 0026 Structure > TEST-123A1-023: all source bar tables have effective-once unique constraints
+ ✓ server/sprint-123a1.test.ts > Sprint 123A.1 — Migration 0026 Structure > TEST-123A1-024: nanosecond timestamps stored as DECIMAL(20,0) for full precision
+ ✓ server/sprint-123a1.test.ts > Sprint 123A.1 — Migration 0026 Structure > TEST-123A1-025: reconciliation_status is an ENUM column (not a boolean)
+ ✓ server/sprint-123a1.test.ts > Sprint 123A.1 — Migration 0026 Structure > TEST-123A1-026: migration has separated rollback tiers (operational and destructive)
+ ✓ server/market-data/tests/mysql-bar-persistence.test.ts > Basic Persistence (plain INSERT + ER_DUP_ENTRY) > TEST-123A3-PER001: migrations 0026 and 0027 tables exist
+ ✓ server/market-data/tests/mysql-bar-persistence.test.ts > Basic Persistence (plain INSERT + ER_DUP_ENTRY) > TEST-123A3-PER002: insert 1m bar returns inserted=true with insertId > 0
+ ✓ server/market-data/tests/mysql-bar-persistence.test.ts > Basic Persistence (plain INSERT + ER_DUP_ENTRY) > TEST-123A3-PER003: exact duplicate 1m bar returns inserted=false (ER_DUP_ENTRY caught)
+ ✓ server/market-data/tests/mysql-bar-persistence.test.ts > Basic Persistence (plain INSERT + ER_DUP_ENTRY) > TEST-123A3-PER004: insert 5m bar returns inserted=true with insertId > 0
+ ✓ server/market-data/tests/mysql-bar-persistence.test.ts > Basic Persistence (plain INSERT + ER_DUP_ENTRY) > TEST-123A3-PER005: exact duplicate 5m bar returns inserted=false
+ ✓ server/market-data/tests/mysql-bar-persistence.test.ts > Basic Persistence (plain INSERT + ER_DUP_ENTRY) > TEST-123A3-PER006: bar_open_ts_ms precision preserved (milliseconds)
+ ✓ server/market-data/tests/mysql-bar-persistence.test.ts > Basic Persistence (plain INSERT + ER_DUP_ENTRY) > TEST-123A3-PER007: atlas_canonical_bars is NOT written by this adapter
+ ✓ server/market-data/tests/mysql-bar-persistence.test.ts > Basic Persistence (plain INSERT + ER_DUP_ENTRY) > TEST-123A3-PER008: migration 0027 unique key includes interval_ms (8-column key)
+ ✓ server/market-data/tests/mysql-bar-persistence.test.ts > Canonical Identity Dimensions > TEST-123A3-PER009: exact replay duplicate is idempotently rejected (inserted=false)
+ ✓ server/market-data/tests/mysql-bar-persistence.test.ts > Canonical Identity Dimensions > TEST-123A3-PER010: different revision is not suppressed
+ ✓ server/market-data/tests/mysql-bar-persistence.test.ts > Canonical Identity Dimensions > TEST-123A3-PER011: different mapping_version is not suppressed
+ ✓ server/market-data/tests/mysql-bar-persistence.test.ts > Canonical Identity Dimensions > TEST-123A3-PER012: different raw_symbol (contract roll) is not suppressed
+ ✓ server/market-data/tests/mysql-bar-persistence.test.ts > Canonical Identity Dimensions > TEST-123A3-PER013: same instrument and timestamp across different datasets do not collide
+ ✓ server/market-data/tests/mysql-bar-persistence.test.ts > Canonical Identity Dimensions > TEST-123A3-PER014: 1m and 5m records cannot collide (separate tables)
+ ✓ server/market-data/tests/mysql-bar-persistence.test.ts > Canonical Identity Dimensions > TEST-123A3-PER015: contract roll cannot overwrite previous contract bar at same timestamp
+ ✓ server/market-data/tests/mysql-bar-persistence.test.ts > Canonical Identity Dimensions > TEST-123A3-PER016: consumer ledger identity includes consumer_name and consumer_version
+ ✓ server/market-data/tests/mysql-bar-persistence.test.ts > Canonical Identity Dimensions > TEST-123A3-PER017: duplicate insert does not throw, returns inserted=false, row count stays at 1
+ ✓ server/market-data/tests/mysql-bar-persistence.test.ts > Failure-Path Tests (non-duplicate errors must fail loudly) > TEST-123A3-PER018: malformed numeric value fails
+ ✓ server/market-data/tests/mysql-bar-persistence.test.ts > Failure-Path Tests (non-duplicate errors must fail loudly) > TEST-123A3-PER019: invalid enum value fails
+ ✓ server/market-data/tests/mysql-bar-persistence.test.ts > Failure-Path Tests (non-duplicate errors must fail loudly) > TEST-123A3-PER020: NOT NULL violation fails (missing atlas_ts_ms)
+ ✓ server/market-data/tests/mysql-bar-persistence.test.ts > Failure-Path Tests (non-duplicate errors must fail loudly) > TEST-123A3-PER021: foreign-key violation fails (atlas_consumer_processing_ledger)
+ ✓ server/market-data/tests/mysql-bar-persistence.test.ts > Failure-Path Tests (non-duplicate errors must fail loudly) > TEST-123A3-PER022: unexpected SQL error rolls back transaction
+ ✓ server/market-data/tests/mysql-bar-persistence.test.ts > Failure-Path Tests (non-duplicate errors must fail loudly) > TEST-123A3-PER023: invalid enum in 1m bar is not silently accepted
+ ✓ server/market-data/tests/mysql-bar-persistence.test.ts > Failure-Path Tests (non-duplicate errors must fail loudly) > TEST-123A3-PER024: zero unexpected SQL warnings after clean insert
+ ✓ server/market-data/tests/mysql-bar-persistence.test.ts > Failure-Path Tests (non-duplicate errors must fail loudly) > TEST-123A3-PER025: no Warning-level entries after duplicate insert (ER_DUP_ENTRY is Error-level, not Warning-level)
+ ✓ server/market-data/tests/mysql-bar-persistence.test.ts > Failure-Path Tests (non-duplicate errors must fail loudly) > TEST-123A3-PER026: 5m CONTAINS_UNRESOLVED enum value is rejected
+ ✓ server/market-data/tests/mysql-bar-persistence.test.ts > UNRESOLVED Bar Policy > TEST-123A3-PER027: UNRESOLVED evidence row may be retained in atlas_bars_1m
+ ✓ server/market-data/tests/mysql-bar-persistence.test.ts > UNRESOLVED Bar Policy > TEST-123A3-PER028: UNRESOLVED row excluded from confirmed-bar query
+ ✓ server/market-data/tests/mysql-bar-persistence.test.ts > UNRESOLVED Bar Policy > TEST-123A3-PER029: recovered confirmed revision stored separately (revision+1)
+ ✓ server/market-data/tests/mysql-bar-persistence.test.ts > UNRESOLVED Bar Policy > TEST-123A3-PER030: UNRESOLVED and recovered rows do not collide
+ ✓ server/market-data/tests/mysql-bar-persistence.test.ts > UNRESOLVED Bar Policy > TEST-123A3-PER031: only CONFIRMED revision can complete a blocked 5m window (CONTAINS_UNRESOLVED rejected)
+ ✓ server/market-data/tests/mysql-bar-persistence.test.ts > TEST-123A3-MYS: MySQL Driver Semantics (empirical ER_DUP_ENTRY verification) > TEST-123A3-MYS001: first insert returns inserted=true with insertId > 0 and warningStatus=0
+ ✓ server/market-data/tests/mysql-bar-persistence.test.ts > TEST-123A3-MYS: MySQL Driver Semantics (empirical ER_DUP_ENTRY verification) > TEST-123A3-MYS002: exact duplicate returns inserted=false (ER_DUP_ENTRY caught, no throw)
+ ✓ server/market-data/tests/mysql-bar-persistence.test.ts > TEST-123A3-MYS: MySQL Driver Semantics (empirical ER_DUP_ENTRY verification) > TEST-123A3-MYS003: new revision returns inserted=true (different revision = different identity)
+ ✓ server/market-data/tests/mysql-bar-persistence.test.ts > TEST-123A3-MYS: MySQL Driver Semantics (empirical ER_DUP_ENTRY verification) > TEST-123A3-MYS004: new mapping version returns inserted=true
+ ✓ server/market-data/tests/mysql-bar-persistence.test.ts > TEST-123A3-MYS: MySQL Driver Semantics (empirical ER_DUP_ENTRY verification) > TEST-123A3-MYS005: concurrent duplicate inserts produce exactly one inserted=true
+ ✓ server/market-data/tests/mysql-bar-persistence.test.ts > TEST-123A3-MYS: MySQL Driver Semantics (empirical ER_DUP_ENTRY verification) > TEST-123A3-MYS006: no duplicate creates a second row (idempotency invariant)
+ ✓ server/market-data/tests/mysql-bar-persistence.test.ts > TEST-123A3-TXN: Transaction Rollback Tests > TEST-123A3-TXN001: successful bar+ledger transaction commits both rows
+ ✓ server/market-data/tests/mysql-bar-persistence.test.ts > TEST-123A3-TXN: Transaction Rollback Tests > TEST-123A3-TXN002: ledger NOT NULL violation rolls back — neither bar nor ledger row remains
+ ✓ server/market-data/tests/mysql-bar-persistence.test.ts > TEST-123A3-TXN: Transaction Rollback Tests > TEST-123A3-TXN003: connection is returned cleanly to pool after rollback
+ ✓ server/market-data/tests/mysql-bar-persistence.test.ts > TEST-123A3-TXN: Transaction Rollback Tests > TEST-123A3-TXN004: duplicate bar + new ledger is idempotent (bar=false, ledger=true)
+ ✓ server/market-data/tests/mysql-bar-persistence.test.ts > TEST-123A3-TXN: Transaction Rollback Tests > TEST-123A3-TXN005: duplicate bar + duplicate ledger is fully idempotent
+ ✓ server/market-data/tests/mysql-bar-persistence.test.ts > TEST-123A3-SCH: Schema Verification (SHOW CREATE TABLE) > TEST-123A3-SCH001: atlas_bars_1m unique key is exactly 8 columns (includes interval_ms)
+ ✓ server/market-data/tests/mysql-bar-persistence.test.ts > TEST-123A3-SCH: Schema Verification (SHOW CREATE TABLE) > TEST-123A3-SCH002: atlas_bars_5m unique key includes interval_ms (8-column key)
+ ✓ server/market-data/tests/mysql-bar-persistence.test.ts > TEST-123A3-SCH: Schema Verification (SHOW CREATE TABLE) > TEST-123A3-SCH003: atlas_bar_processing_ledger unique key is exactly 9 columns
+ ✓ server/market-data/tests/mysql-bar-persistence.test.ts > TEST-123A3-MIG: Migration Recovery Tests > TEST-123A3-MIG001: table is writable after 0027 applied (migration idempotency)
+ ✓ server/market-data/tests/mysql-bar-persistence.test.ts > TEST-123A3-LEG: Ledger INSERT Semantics (plain INSERT + ER_DUP_ENTRY) > TEST-123A3-LEG001: first ledger insert returns inserted=true with insertId > 0
+ ✓ server/market-data/tests/mysql-bar-persistence.test.ts > TEST-123A3-LEG: Ledger INSERT Semantics (plain INSERT + ER_DUP_ENTRY) > TEST-123A3-LEG002: exact ledger duplicate returns inserted=false (ER_DUP_ENTRY caught)
+ ✓ server/market-data/tests/mysql-bar-persistence.test.ts > TEST-123A3-LEG: Ledger INSERT Semantics (plain INSERT + ER_DUP_ENTRY) > TEST-123A3-LEG003: different consumer_name is not a duplicate
+ ✓ server/market-data/tests/mysql-bar-persistence.test.ts > TEST-123A3-LEG: Ledger INSERT Semantics (plain INSERT + ER_DUP_ENTRY) > TEST-123A3-LEG004: different consumer_version is not a duplicate
+ ✓ server/market-data/tests/mysql-bar-persistence.test.ts > TEST-123A3-LEG: Ledger INSERT Semantics (plain INSERT + ER_DUP_ENTRY) > TEST-123A3-LEG005: NOT NULL violation (consumer_name=NULL) throws — not silently swallowed
+ ✓ server/market-data/tests/mysql-bar-persistence.test.ts > TEST-123A3-LEG: Ledger INSERT Semantics (plain INSERT + ER_DUP_ENTRY) > TEST-123A3-LEG006: foreign-key violation (atlas_consumer_processing_ledger nonexistent id) throws
+ ✓ server/market-data/tests/mysql-bar-persistence.test.ts > TEST-123A3-LEG: Ledger INSERT Semantics (plain INSERT + ER_DUP_ENTRY) > TEST-123A3-LEG007: malformed timestamp (string instead of BIGINT) throws
+ ✓ server/market-data/tests/mysql-bar-persistence.test.ts > TEST-123A3-LEG: Ledger INSERT Semantics (plain INSERT + ER_DUP_ENTRY) > TEST-123A3-LEG008: oversized consumer_name (> 100 chars) throws
+ ✓ server/market-data/tests/mysql-bar-persistence.test.ts > TEST-123A3-LEG: Ledger INSERT Semantics (plain INSERT + ER_DUP_ENTRY) > TEST-123A3-LEG009: unexpected SQL error (bad table) throws — not silently swallowed
+ ✓ server/market-data/tests/mysql-bar-persistence.test.ts > TEST-123A3-LEG: Ledger INSERT Semantics (plain INSERT + ER_DUP_ENTRY) > TEST-123A3-LEG010: zero Warning-level entries after clean ledger insert
+ ✓ server/market-data/tests/mysql-bar-persistence.test.ts > TEST-123A3-TXN-EXT: Extended Transaction Rollback Tests > TEST-123A3-TXN006: failure before bar insert — no bar row, no ledger row remains
+ ✓ server/market-data/tests/mysql-bar-persistence.test.ts > TEST-123A3-TXN-EXT: Extended Transaction Rollback Tests > TEST-123A3-TXN007: failure after bar insert but before ledger — no partial state remains
+ ✓ server/market-data/tests/mysql-bar-persistence.test.ts > TEST-123A3-TXN-EXT: Extended Transaction Rollback Tests > TEST-123A3-TXN008: rollback leaves connection usable — subsequent transaction commits successfully
+ ✓ server/market-data/tests/mysql-bar-persistence.test.ts > TEST-123A3-TXN-EXT: Extended Transaction Rollback Tests > TEST-123A3-TXN009: connection released exactly once — pool remains healthy after rollback
+ ✓ server/market-data/tests/mysql-bar-persistence.test.ts > TEST-123A3-TXN-EXT: Extended Transaction Rollback Tests > TEST-123A3-TXN010: no partial state after concurrent transaction failures
+ ✓ server/market-data/tests/trade-bar-builder.test.ts > Trade-Built Bar Lifecycle (Gate G3 Revision 2) > TEST-123A3-TBB001: first trade creates a DEVELOPING bar
+ ✓ server/market-data/tests/trade-bar-builder.test.ts > Trade-Built Bar Lifecycle (Gate G3 Revision 2) > TEST-123A3-TBB002: subsequent trades update OHLCV correctly
+ ✓ server/market-data/tests/trade-bar-builder.test.ts > Trade-Built Bar Lifecycle (Gate G3 Revision 2) > TEST-123A3-TBB003: minute boundary creates PROVISIONAL only (not CONFIRMED)
+ ✓ server/market-data/tests/trade-bar-builder.test.ts > Trade-Built Bar Lifecycle (Gate G3 Revision 2) > TEST-123A3-TBB004: official record is required for CONFIRMED (internally consistent provisional is not confirmed without it)
+ ✓ server/market-data/tests/trade-bar-builder.test.ts > Trade-Built Bar Lifecycle (Gate G3 Revision 2) > TEST-123A3-TBB005: exact official match confirms the bar
+ ✓ server/market-data/tests/trade-bar-builder.test.ts > Trade-Built Bar Lifecycle (Gate G3 Revision 2) > TEST-123A3-TBB006: one-tick tolerance (25 pts100) confirms the bar
+ ✓ server/market-data/tests/trade-bar-builder.test.ts > Trade-Built Bar Lifecycle (Gate G3 Revision 2) > TEST-123A3-TBB007: excessive close delta (26 pts100) becomes UNRESOLVED
+ ✓ server/market-data/tests/trade-bar-builder.test.ts > Trade-Built Bar Lifecycle (Gate G3 Revision 2) > TEST-123A3-TBB008: missing official record causes UNRESOLVED after timeout
+ ✓ server/market-data/tests/trade-bar-builder.test.ts > Trade-Built Bar Lifecycle (Gate G3 Revision 2) > TEST-123A3-TBB009: nanosecond timestamps retain precision in DEVELOPING bar
+ ✓ server/market-data/tests/trade-bar-builder.test.ts > Trade-Built Bar Lifecycle (Gate G3 Revision 2) > TEST-123A3-TBB010: confirmed event is emitted exactly once per bar
+ ✓ server/market-data/tests/trade-bar-builder.test.ts > Trade-Built Bar Lifecycle (Gate G3 Revision 2) > TEST-123A3-TBB011: trade for wrong instrument is ignored
+ ✓ server/market-data/tests/trade-bar-builder.test.ts > Trade-Built Bar Lifecycle (Gate G3 Revision 2) > TEST-123A3-TBB012: trade in next minute auto-closes the previous developing bar
+stderr | server/market-data/tests/sprint-123a2.test.ts > validateBridgeTopology > TEST-123A2-TS005: passes for Docker private address (10.x.x.x) without TLS
+[BridgeServer] BRIDGE_HOST is a private network address (10.0.0.2). Ensure the bridge is not reachable from outside the private network.
+
+stderr | server/market-data/tests/sprint-123a2.test.ts > validateBridgeTopology > TEST-123A2-TS006: passes for private 192.168.x.x without TLS
+[BridgeServer] BRIDGE_HOST is a private network address (192.168.1.100). Ensure the bridge is not reachable from outside the private network.
+
+stderr | server/market-data/tests/sprint-123a2.test.ts > validateBridgeTopology > TEST-123A2-TS007: passes for 172.17.x.x Docker bridge without TLS
+[BridgeServer] BRIDGE_HOST is a private network address (172.17.0.2). Ensure the bridge is not reachable from outside the private network.
+
+ ✓ server/market-data/tests/sprint-123a2.test.ts > validateBridgeTopology > TEST-123A2-TS001: passes for default localhost (Topology 1/2)
+ ✓ server/market-data/tests/sprint-123a2.test.ts > validateBridgeTopology > TEST-123A2-TS002: passes for explicit 127.0.0.1 (Topology 1/2)
+ ✓ server/market-data/tests/sprint-123a2.test.ts > validateBridgeTopology > TEST-123A2-TS003: throws for public IPv4 without TLS (public binding always rejected)
+ ✓ server/market-data/tests/sprint-123a2.test.ts > validateBridgeTopology > TEST-123A2-TS004: throws for public IPv4 even WITH TLS (Revision 3 — public binding prohibited)
+ ✓ server/market-data/tests/sprint-123a2.test.ts > validateBridgeTopology > TEST-123A2-TS005: passes for Docker private address (10.x.x.x) without TLS
+ ✓ server/market-data/tests/sprint-123a2.test.ts > validateBridgeTopology > TEST-123A2-TS006: passes for private 192.168.x.x without TLS
+ ✓ server/market-data/tests/sprint-123a2.test.ts > validateBridgeTopology > TEST-123A2-TS007: passes for 172.17.x.x Docker bridge without TLS
+ ✓ server/market-data/tests/sprint-123a2.test.ts > validateBridgeTopology > TEST-123A2-TS008: throws for 172.32.x.x (not RFC 1918, public range) — always rejected
+ ✓ server/market-data/tests/sprint-123a2.test.ts > validateBridgeTopology > TEST-123A2-TS021: throws for wildcard 0.0.0.0 (binds all interfaces — always rejected)
+ ✓ server/market-data/tests/sprint-123a2.test.ts > validateBridgeTopology > TEST-123A2-TS022: throws for IPv6 wildcard :: (binds all interfaces — always rejected)
+ ✓ server/market-data/tests/sprint-123a2.test.ts > isPrivateOrLoopback > TEST-123A2-TS023: 127.0.0.1 is private
+ ✓ server/market-data/tests/sprint-123a2.test.ts > isPrivateOrLoopback > TEST-123A2-TS024: ::1 is private (IPv6 loopback)
+ ✓ server/market-data/tests/sprint-123a2.test.ts > isPrivateOrLoopback > TEST-123A2-TS025: fe80::1 is private (IPv6 link-local)
+ ✓ server/market-data/tests/sprint-123a2.test.ts > isPrivateOrLoopback > TEST-123A2-TS026: fd00::1 is private (IPv6 ULA)
+ ✓ server/market-data/tests/sprint-123a2.test.ts > isPrivateOrLoopback > TEST-123A2-TS027: 2001:db8::1 is NOT private (IPv6 documentation range)
+ ✓ server/market-data/tests/sprint-123a2.test.ts > isPrivateOrLoopback > TEST-123A2-TS028: 0.0.0.0 is NOT private (wildcard)
+ ✓ server/market-data/tests/sprint-123a2.test.ts > isWildcard > TEST-123A2-TS029: 0.0.0.0 is a wildcard
+ ✓ server/market-data/tests/sprint-123a2.test.ts > isWildcard > TEST-123A2-TS030: :: is a wildcard
+ ✓ server/market-data/tests/sprint-123a2.test.ts > isWildcard > TEST-123A2-TS031: 127.0.0.1 is NOT a wildcard
+ ✓ server/market-data/tests/sprint-123a2.test.ts > DatabentoBridgeServer — authentication > TEST-123A2-TS009: throws at construction if BRIDGE_AUTH_TOKEN is not set
+ ✓ server/market-data/tests/sprint-123a2.test.ts > DatabentoBridgeServer — authentication > TEST-123A2-TS010: bridge session ID is a non-empty UUID string
+ ✓ server/market-data/tests/sprint-123a2.test.ts > DatabentoBridgeServer — authentication > TEST-123A2-TS011: two server instances have different bridge session IDs
+ ✓ server/market-data/tests/sprint-123a2.test.ts > DatabentoBridgeServer — secret redaction > TEST-123A2-TS012: getStats() does not contain BRIDGE_AUTH_TOKEN
+ ✓ server/market-data/tests/sprint-123a2.test.ts > DatabentoBridgeServer — secret redaction > TEST-123A2-TS013: toJSON() does not contain BRIDGE_AUTH_TOKEN
+ ✓ server/market-data/tests/sprint-123a2.test.ts > DatabentoBridgeServer — authority boundary > TEST-123A2-TS014: isReadyToReceive returns false when server is not started
+ ✓ server/market-data/tests/sprint-123a2.test.ts > DatabentoBridgeServer — authority boundary > TEST-123A2-TS015: getStats reflects initial state correctly
+ ✓ server/market-data/tests/sprint-123a2.test.ts > BRIDGE_PROTOCOL_VERSION > TEST-123A2-TS016: protocol version is 123A.2
+ ✓ server/market-data/tests/sprint-123a2.test.ts > DatabentoBridgeServer — schema validation (unit) > TEST-123A2-TS017: server constructs successfully with valid token and localhost
+ ✓ server/market-data/tests/sprint-123a2.test.ts > DatabentoBridgeServer — schema validation (unit) > TEST-123A2-TS018: bridgeSessionId is set at construction time
+ ✓ server/market-data/tests/sprint-123a2.test.ts > BRIDGE_HOST > TEST-123A2-TS019: BRIDGE_HOST defaults to 127.0.0.1 when env not set
+ ✓ server/market-data/tests/sprint-123a2.test.ts > DatabentoBridgeServer — graceful shutdown > TEST-123A2-TS020: stop() on a non-started server does not throw
+ ✓ server/market-data/tests/gap-recovery-orchestrator.test.ts > GapRecoveryOrchestrator (Gate G3 Revision 2) > TEST-123A3-GRO001: gap detection emits recovery:requested event
+ ✓ server/market-data/tests/gap-recovery-orchestrator.test.ts > GapRecoveryOrchestrator (Gate G3 Revision 2) > TEST-123A3-GRO002: duplicate gap request is suppressed
+ ✓ server/market-data/tests/gap-recovery-orchestrator.test.ts > GapRecoveryOrchestrator (Gate G3 Revision 2) > TEST-123A3-GRO003: recovery record is injected into bar pipeline via callback
+ ✓ server/market-data/tests/gap-recovery-orchestrator.test.ts > GapRecoveryOrchestrator (Gate G3 Revision 2) > TEST-123A3-GRO004: recovery:progress emitted for each record
+ ✓ server/market-data/tests/gap-recovery-orchestrator.test.ts > GapRecoveryOrchestrator (Gate G3 Revision 2) > TEST-123A3-GRO005: COMPLETE recovery emits recovery:complete and invokes onRecoveryComplete
+ ✓ server/market-data/tests/gap-recovery-orchestrator.test.ts > GapRecoveryOrchestrator (Gate G3 Revision 2) > TEST-123A3-GRO006: PARTIAL recovery emits recovery:partial and invokes onRecoveryComplete
+ ✓ server/market-data/tests/gap-recovery-orchestrator.test.ts > GapRecoveryOrchestrator (Gate G3 Revision 2) > TEST-123A3-GRO007: FAILED recovery does NOT invoke onRecoveryComplete
+ ✓ server/market-data/tests/gap-recovery-orchestrator.test.ts > GapRecoveryOrchestrator (Gate G3 Revision 2) > TEST-123A3-GRO008: end-to-end integration with TradeBarBuilder
+ ✓ server/market-data/tests/gap-recovery-orchestrator.test.ts > GapRecoveryOrchestrator (Gate G3 Revision 2) > TEST-123A3-GRO009: unknown recoveryId in record is ignored gracefully
+ ✓ server/market-data/tests/contract-roll-integration.test.ts > Contract Roll Integration — DBN-Decoded Fixture (Gate G3 Revision 2) > TEST-123A3-CRL001: real DBN-decoded definition accepted and stored
+ ✓ server/market-data/tests/contract-roll-integration.test.ts > Contract Roll Integration — DBN-Decoded Fixture (Gate G3 Revision 2) > TEST-123A3-CRL002: expiry decoded correctly from nanosecond timestamp
+ ✓ server/market-data/tests/contract-roll-integration.test.ts > Contract Roll Integration — DBN-Decoded Fixture (Gate G3 Revision 2) > TEST-123A3-CRL003: min_price_increment stored correctly (fixed-point)
+ ✓ server/market-data/tests/contract-roll-integration.test.ts > Contract Roll Integration — DBN-Decoded Fixture (Gate G3 Revision 2) > TEST-123A3-CRL004: currency and instrument_class stored correctly
+ ✓ server/market-data/tests/contract-roll-integration.test.ts > Contract Roll Integration — DBN-Decoded Fixture (Gate G3 Revision 2) > TEST-123A3-CRL005: symbol mapping accepted and linked to contract
+ ✓ server/market-data/tests/contract-roll-integration.test.ts > Contract Roll Integration — DBN-Decoded Fixture (Gate G3 Revision 2) > TEST-123A3-CRL006: contract roll detected when active symbol changes via symbol mapping
+ ✓ server/market-data/tests/contract-roll-integration.test.ts > Contract Roll Integration — DBN-Decoded Fixture (Gate G3 Revision 2) > TEST-123A3-CRL007: isNearExpiry returns true when within 7 days of expiry
+ ✓ server/market-data/tests/blocked-window.test.ts > BLOCKED_UNRESOLVED Window State (Gate G3 Revision 2) > TEST-123A3-BLK001: UNRESOLVED bar transitions window to BLOCKED_UNRESOLVED (not discarded)
+ ✓ server/market-data/tests/blocked-window.test.ts > BLOCKED_UNRESOLVED Window State (Gate G3 Revision 2) > TEST-123A3-BLK002: recovered bar replaces UNRESOLVED slot and unblocks window
+ ✓ server/market-data/tests/blocked-window.test.ts > BLOCKED_UNRESOLVED Window State (Gate G3 Revision 2) > TEST-123A3-BLK003: window emits exactly once — duplicate insertion is ignored
+ ✓ server/market-data/tests/blocked-window.test.ts > BLOCKED_UNRESOLVED Window State (Gate G3 Revision 2) > TEST-123A3-BLK004: BLOCKED window with all 5 slots filled (4 confirmed + 1 recovered) emits once
+ ✓ server/market-data/tests/blocked-window.test.ts > BLOCKED_UNRESOLVED Window State (Gate G3 Revision 2) > TEST-123A3-BLK005: UNRESOLVED bar without prior confirmed bars creates BLOCKED window
+ ✓ server/market-data/tests/price-units.test.ts > Databento Price Unit Standardisation > TEST-123A3-PRC001: FIXED_PRICE_SCALE is 1_000_000_000 (1e9)
+ ✓ server/market-data/tests/price-units.test.ts > Databento Price Unit Standardisation > TEST-123A3-PRC002: MNQ min_price_increment raw fixture value is 250_000_000 (not 2_500_000)
+ ✓ server/market-data/tests/price-units.test.ts > Databento Price Unit Standardisation > TEST-123A3-PRC003: MNQ min_price_increment converts to 0.25 pts (25 pts100)
+ ✓ server/market-data/tests/price-units.test.ts > Databento Price Unit Standardisation > TEST-123A3-PRC004: OHLCV price raw value converts correctly to pts100
+ ✓ server/market-data/tests/price-units.test.ts > Databento Price Unit Standardisation > TEST-123A3-PRC005: price scale applies uniformly to all OHLCV fields
+ ✓ server/market-data/tests/price-units.test.ts > Databento Price Unit Standardisation > TEST-123A3-PRC006: min_price_increment scale is identical to OHLCV price scale
+ ✓ server/market-data/tests/price-units.test.ts > Databento Price Unit Standardisation > TEST-123A3-PRC007: incorrect 2_500_000 fixture value would produce wrong tick size
+ ✓ server/market-data/tests/price-units.test.ts > Databento Price Unit Standardisation > TEST-123A3-PRC008: pts100 round-trip is lossless for all MNQ tick multiples
+stderr | server/sprint-123a1-integration.test.ts > Sprint 123A.1 — Nexus Webhook Integration Tests > INT-006: automation failure does not suppress processBar
+[POST_BAR_AUTO] runPostBarAutomation error: Error: Automation failure
+    at /home/ubuntu/atlas-nexus/server/sprint-123a1-integration.test.ts:273:48
+    at file:///home/ubuntu/atlas-nexus/node_modules/.pnpm/@vitest+runner@2.1.9/node_modules/@vitest/runner/dist/index.js:146:14
+    at file:///home/ubuntu/atlas-nexus/node_modules/.pnpm/@vitest+runner@2.1.9/node_modules/@vitest/runner/dist/index.js:533:11
+    at runWithTimeout (file:///home/ubuntu/atlas-nexus/node_modules/.pnpm/@vitest+runner@2.1.9/node_modules/@vitest/runner/dist/index.js:39:7)
+    at runTest (file:///home/ubuntu/atlas-nexus/node_modules/.pnpm/@vitest+runner@2.1.9/node_modules/@vitest/runner/dist/index.js:1056:17)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at runSuite (file:///home/ubuntu/atlas-nexus/node_modules/.pnpm/@vitest+runner@2.1.9/node_modules/@vitest/runner/dist/index.js:1205:15)
+    at runSuite (file:///home/ubuntu/atlas-nexus/node_modules/.pnpm/@vitest+runner@2.1.9/node_modules/@vitest/runner/dist/index.js:1205:15)
+    at runFiles (file:///home/ubuntu/atlas-nexus/node_modules/.pnpm/@vitest+runner@2.1.9/node_modules/@vitest/runner/dist/index.js:1262:5)
+    at startTests (file:///home/ubuntu/atlas-nexus/node_modules/.pnpm/@vitest+runner@2.1.9/node_modules/@vitest/runner/dist/index.js:1271:3)
+
+ ✓ server/sprint-123a1-integration.test.ts > Sprint 123A.1 — Nexus Webhook Integration Tests > INT-001: processBar called exactly once per valid TradingView bar 561ms
+ ✓ server/sprint-123a1-integration.test.ts > Sprint 123A.1 — Nexus Webhook Integration Tests > INT-002: runPostBarAutomation called exactly once per valid TradingView bar
+ ✓ server/sprint-123a1-integration.test.ts > Sprint 123A.1 — Nexus Webhook Integration Tests > INT-003: liveLearnEngine.processLiveBar NOT called directly from nexusRoutes
+ ✓ server/sprint-123a1-integration.test.ts > Sprint 123A.1 — Nexus Webhook Integration Tests > INT-004: persisted bar payload passed correctly to runPostBarAutomation
+ ✓ server/sprint-123a1-integration.test.ts > Sprint 123A.1 — Nexus Webhook Integration Tests > INT-005: webhook response is not blocked by post-bar processing
+ ✓ server/sprint-123a1-integration.test.ts > Sprint 123A.1 — Nexus Webhook Integration Tests > INT-006: automation failure does not suppress processBar
+ ✓ server/sprint-123a1-integration.test.ts > Sprint 123A.1 — Nexus Webhook Integration Tests > INT-007: duplicate webhook returns 200 duplicate — no second postBarAutomation call
+
+ Test Files  11 passed (11)
+      Tests  248 passed (248)
+   Start at  19:51:15
+   Duration  1.29s (transform 1.05s, setup 0ms, collect 1.69s, tests 1.11s, environment 2ms, prepare 909ms)
+
