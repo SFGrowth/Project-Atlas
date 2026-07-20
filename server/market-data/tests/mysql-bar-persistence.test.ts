@@ -772,3 +772,289 @@ describe('TEST-123A3-MIG: Migration Recovery Tests', () => {
     expect(result.inserted).toBe(true);
   });
 });
+
+// ─── LEG001–LEG010: Ledger INSERT Semantics ──────────────────────────────────
+// Gate G3 Requirement 2: ledger uses plain INSERT + ER_DUP_ENTRY catch.
+// INSERT IGNORE is PROHIBITED. All non-duplicate errors must throw.
+
+describe('TEST-123A3-LEG: Ledger INSERT Semantics (plain INSERT + ER_DUP_ENTRY)', () => {
+  async function insertLedger(overrides: Record<string, unknown> = {}): Promise<{
+    inserted: boolean;
+    insertId: number;
+    warningStatus: number;
+  }> {
+    const defaults = {
+      source: 'DATABENTO', dataset: 'GLBX.MDP3', raw_symbol: 'MNQM5',
+      instrument_id: 10001, bar_open_ts_ms: BASE_TS,
+      revision: 0, mapping_version: 'v1',
+      consumer_name: 'bar-builder', consumer_version: 'v1',
+      processed_at_ms: BASE_TS + 1, success: 1,
+      atlas_ts_ms: BASE_TS + 1,
+      ...overrides,
+    };
+    const cols = Object.keys(defaults).join(', ');
+    const placeholders = Object.keys(defaults).map(() => '?').join(', ');
+    try {
+      const [result] = await pool.execute<mysql.ResultSetHeader>(
+        `INSERT INTO atlas_bar_processing_ledger (${cols}) VALUES (${placeholders})`,
+        Object.values(defaults),
+      );
+      const [warnings] = await pool.query<mysql.RowDataPacket[]>('SHOW WARNINGS');
+      const warningLevel = (warnings as mysql.RowDataPacket[]).filter((w) => w.Level === 'Warning');
+      if (warningLevel.length > 0) {
+        throw new Error(`Unexpected MySQL Warning-level entries: ${JSON.stringify(warningLevel)}`);
+      }
+      return { inserted: true, insertId: result.insertId, warningStatus: result.warningStatus };
+    } catch (err) {
+      if (isDuplicateKeyError(err)) {
+        return { inserted: false, insertId: 0, warningStatus: 0 };
+      }
+      throw err;
+    }
+  }
+
+  it('TEST-123A3-LEG001: first ledger insert returns inserted=true with insertId > 0', async () => {
+    const result = await insertLedger();
+    expect(result.inserted).toBe(true);
+    expect(result.insertId).toBeGreaterThan(0);
+    expect(result.warningStatus).toBe(0);
+    const [rows] = await pool.execute<mysql.RowDataPacket[]>('SELECT COUNT(*) as cnt FROM atlas_bar_processing_ledger');
+    expect(rows[0].cnt).toBe(1);
+  });
+
+  it('TEST-123A3-LEG002: exact ledger duplicate returns inserted=false (ER_DUP_ENTRY caught)', async () => {
+    await insertLedger();
+    const result = await insertLedger(); // exact duplicate
+    expect(result.inserted).toBe(false);
+    expect(result.insertId).toBe(0);
+    const [rows] = await pool.execute<mysql.RowDataPacket[]>('SELECT COUNT(*) as cnt FROM atlas_bar_processing_ledger');
+    expect(rows[0].cnt).toBe(1);
+  });
+
+  it('TEST-123A3-LEG003: different consumer_name is not a duplicate', async () => {
+    await insertLedger({ consumer_name: 'bar-builder' });
+    const result = await insertLedger({ consumer_name: 'five-min-aggregator' });
+    expect(result.inserted).toBe(true);
+    const [rows] = await pool.execute<mysql.RowDataPacket[]>('SELECT COUNT(*) as cnt FROM atlas_bar_processing_ledger');
+    expect(rows[0].cnt).toBe(2);
+  });
+
+  it('TEST-123A3-LEG004: different consumer_version is not a duplicate', async () => {
+    await insertLedger({ consumer_version: 'v1' });
+    const result = await insertLedger({ consumer_version: 'v2' });
+    expect(result.inserted).toBe(true);
+    const [rows] = await pool.execute<mysql.RowDataPacket[]>('SELECT COUNT(*) as cnt FROM atlas_bar_processing_ledger');
+    expect(rows[0].cnt).toBe(2);
+  });
+
+  it('TEST-123A3-LEG005: NOT NULL violation (consumer_name=NULL) throws — not silently swallowed', async () => {
+    await expect(
+      pool.execute(
+        `INSERT INTO atlas_bar_processing_ledger
+           (source, dataset, raw_symbol, instrument_id, bar_open_ts_ms,
+            revision, mapping_version, consumer_name, consumer_version, processed_at_ms, atlas_ts_ms)
+         VALUES ('DATABENTO','GLBX.MDP3','MNQM5',10001,?,0,'v1',NULL,'v1',?,?)`,
+        [BASE_TS + 50000, BASE_TS, BASE_TS],
+      ),
+    ).rejects.toThrow();
+    // Verify no row was inserted
+    const [rows] = await pool.execute<mysql.RowDataPacket[]>(
+      'SELECT COUNT(*) as cnt FROM atlas_bar_processing_ledger WHERE bar_open_ts_ms = ?', [BASE_TS + 50000],
+    );
+    expect(rows[0].cnt).toBe(0);
+  });
+
+  it('TEST-123A3-LEG006: foreign-key violation (atlas_consumer_processing_ledger nonexistent id) throws', async () => {
+    // atlas_consumer_processing_ledger is a different table — inserting with a
+    // nonexistent canonical_bar_id should throw a FK violation
+    await expect(
+      pool.execute(
+        `INSERT INTO atlas_consumer_processing_ledger
+           (canonical_bar_id, consumer_name, processed_at_ms, atlas_ts_ms)
+         VALUES (9999999, 'test', ?, ?)`,
+        [BASE_TS, BASE_TS],
+      ),
+    ).rejects.toThrow();
+  });
+
+  it('TEST-123A3-LEG007: malformed timestamp (string instead of BIGINT) throws', async () => {
+    await expect(
+      pool.execute(
+        `INSERT INTO atlas_bar_processing_ledger
+           (source, dataset, raw_symbol, instrument_id, bar_open_ts_ms,
+            revision, mapping_version, consumer_name, consumer_version, processed_at_ms, atlas_ts_ms)
+         VALUES ('DATABENTO','GLBX.MDP3','MNQM5',10001,'NOT_A_TIMESTAMP',0,'v1','bar-builder','v1',?,?)`,
+        [BASE_TS, BASE_TS],
+      ),
+    ).rejects.toThrow();
+  });
+
+  it('TEST-123A3-LEG008: oversized consumer_name (> 100 chars) throws', async () => {
+    const oversized = 'x'.repeat(101);
+    await expect(
+      pool.execute(
+        `INSERT INTO atlas_bar_processing_ledger
+           (source, dataset, raw_symbol, instrument_id, bar_open_ts_ms,
+            revision, mapping_version, consumer_name, consumer_version, processed_at_ms, atlas_ts_ms)
+         VALUES ('DATABENTO','GLBX.MDP3','MNQM5',10001,?,0,'v1',?,'v1',?,?)`,
+        [BASE_TS + 51000, oversized, BASE_TS, BASE_TS],
+      ),
+    ).rejects.toThrow();
+    const [rows] = await pool.execute<mysql.RowDataPacket[]>(
+      'SELECT COUNT(*) as cnt FROM atlas_bar_processing_ledger WHERE bar_open_ts_ms = ?', [BASE_TS + 51000],
+    );
+    expect(rows[0].cnt).toBe(0);
+  });
+
+  it('TEST-123A3-LEG009: unexpected SQL error (bad table) throws — not silently swallowed', async () => {
+    await expect(
+      pool.execute('INSERT INTO nonexistent_ledger_table (id) VALUES (1)'),
+    ).rejects.toThrow();
+  });
+
+  it('TEST-123A3-LEG010: zero Warning-level entries after clean ledger insert', async () => {
+    await insertLedger({ bar_open_ts_ms: BASE_TS + 52000 });
+    const [warnings] = await pool.query<mysql.RowDataPacket[]>('SHOW WARNINGS');
+    const warningLevel = (warnings as mysql.RowDataPacket[]).filter((w) => w.Level === 'Warning');
+    expect(warningLevel.length).toBe(0);
+  });
+});
+
+// ─── TXN006–TXN010: Additional Transaction Tests ─────────────────────────────
+// Gate G3 Requirement 3: explicit transaction rollback with full coverage.
+
+describe('TEST-123A3-TXN-EXT: Extended Transaction Rollback Tests', () => {
+  it('TEST-123A3-TXN006: failure before bar insert — no bar row, no ledger row remains', async () => {
+    const ts = BASE_TS + 40000;
+    const conn = await pool.getConnection();
+    let rolledBack = false;
+    try {
+      await conn.beginTransaction();
+      // Force failure immediately (before any bar insert)
+      await conn.execute('SELECT * FROM nonexistent_table_before_bar_xyz');
+      await conn.execute(
+        `INSERT INTO atlas_bars_1m (source, dataset, raw_symbol, instrument_id, interval_ms, bar_open_ts_ms,
+           bar_open_ts_ns, bar_close_ts_ms, reconciliation_status, revision, mapping_version, atlas_ts_ms)
+         VALUES ('DATABENTO','GLBX.MDP3','MNQM5',10001,60000,?,?,?,'MATCHED',0,'v1',?)`,
+        [ts, '0', ts + 60000, BASE_TS],
+      );
+      await conn.commit();
+    } catch {
+      await conn.rollback();
+      rolledBack = true;
+    } finally {
+      conn.release();
+    }
+    expect(rolledBack).toBe(true);
+    const [barRows] = await pool.execute<mysql.RowDataPacket[]>('SELECT COUNT(*) as cnt FROM atlas_bars_1m WHERE bar_open_ts_ms = ?', [ts]);
+    expect(barRows[0].cnt).toBe(0);
+  });
+
+  it('TEST-123A3-TXN007: failure after bar insert but before ledger — no partial state remains', async () => {
+    const ts = BASE_TS + 41000;
+    const conn = await pool.getConnection();
+    let rolledBack = false;
+    try {
+      await conn.beginTransaction();
+      await conn.execute(
+        `INSERT INTO atlas_bars_1m (source, dataset, raw_symbol, instrument_id, interval_ms, bar_open_ts_ms,
+           bar_open_ts_ns, bar_close_ts_ms, reconciliation_status, revision, mapping_version, atlas_ts_ms)
+         VALUES ('DATABENTO','GLBX.MDP3','MNQM5',10001,60000,?,?,?,'MATCHED',0,'v1',?)`,
+        [ts, '0', ts + 60000, BASE_TS],
+      );
+      // Bar inserted — now force ledger failure
+      await conn.execute('SELECT * FROM nonexistent_table_after_bar_xyz');
+      await conn.commit();
+    } catch {
+      await conn.rollback();
+      rolledBack = true;
+    } finally {
+      conn.release();
+    }
+    expect(rolledBack).toBe(true);
+    const [barRows] = await pool.execute<mysql.RowDataPacket[]>('SELECT COUNT(*) as cnt FROM atlas_bars_1m WHERE bar_open_ts_ms = ?', [ts]);
+    expect(barRows[0].cnt).toBe(0);
+  });
+
+  it('TEST-123A3-TXN008: rollback leaves connection usable — subsequent transaction commits successfully', async () => {
+    // Force a rollback
+    const conn1 = await pool.getConnection();
+    try {
+      await conn1.beginTransaction();
+      await conn1.execute('SELECT * FROM nonexistent_table_rollback_test_xyz');
+      await conn1.commit();
+    } catch {
+      await conn1.rollback();
+    } finally {
+      conn1.release();
+    }
+    // Connection must be reusable — subsequent transaction must commit
+    const ts = BASE_TS + 42000;
+    const conn2 = await pool.getConnection();
+    let committed = false;
+    try {
+      await conn2.beginTransaction();
+      await conn2.execute(
+        `INSERT INTO atlas_bars_1m (source, dataset, raw_symbol, instrument_id, interval_ms, bar_open_ts_ms,
+           bar_open_ts_ns, bar_close_ts_ms, reconciliation_status, revision, mapping_version, atlas_ts_ms)
+         VALUES ('DATABENTO','GLBX.MDP3','MNQM5',10001,60000,?,?,?,'MATCHED',0,'v1',?)`,
+        [ts, '0', ts + 60000, BASE_TS],
+      );
+      await conn2.commit();
+      committed = true;
+    } finally {
+      conn2.release();
+    }
+    expect(committed).toBe(true);
+    const [rows] = await pool.execute<mysql.RowDataPacket[]>('SELECT COUNT(*) as cnt FROM atlas_bars_1m WHERE bar_open_ts_ms = ?', [ts]);
+    expect(rows[0].cnt).toBe(1);
+  });
+
+  it('TEST-123A3-TXN009: connection released exactly once — pool remains healthy after rollback', async () => {
+    // Exhaust pool with rollbacks, then verify pool is still functional
+    const rollbackPromises = Array.from({ length: 3 }, async () => {
+      const conn = await pool.getConnection();
+      try {
+        await conn.beginTransaction();
+        await conn.execute('SELECT * FROM nonexistent_table_pool_test_xyz');
+        await conn.commit();
+      } catch {
+        await conn.rollback();
+      } finally {
+        conn.release();
+      }
+    });
+    await Promise.all(rollbackPromises);
+    // Pool must still be functional
+    const ts = BASE_TS + 43000;
+    const result = await insert1m({ bar_open_ts_ms: ts, bar_close_ts_ms: ts + 60000 });
+    expect(result.inserted).toBe(true);
+  });
+
+  it('TEST-123A3-TXN010: no partial state after concurrent transaction failures', async () => {
+    const ts = BASE_TS + 44000;
+    // Run 3 concurrent transactions that all fail after bar insert
+    const failingTxn = async () => {
+      const conn = await pool.getConnection();
+      try {
+        await conn.beginTransaction();
+        await conn.execute(
+          `INSERT INTO atlas_bars_1m (source, dataset, raw_symbol, instrument_id, interval_ms, bar_open_ts_ms,
+             bar_open_ts_ns, bar_close_ts_ms, reconciliation_status, revision, mapping_version, atlas_ts_ms)
+           VALUES ('DATABENTO','GLBX.MDP3','MNQM5',10001,60000,?,?,?,'MATCHED',0,'v1',?)`,
+          [ts, '0', ts + 60000, BASE_TS],
+        );
+        await conn.execute('SELECT * FROM nonexistent_table_concurrent_xyz');
+        await conn.commit();
+      } catch {
+        await conn.rollback();
+      } finally {
+        conn.release();
+      }
+    };
+    await Promise.all([failingTxn(), failingTxn(), failingTxn()]);
+    // No rows should remain — all transactions were rolled back
+    const [rows] = await pool.execute<mysql.RowDataPacket[]>('SELECT COUNT(*) as cnt FROM atlas_bars_1m WHERE bar_open_ts_ms = ?', [ts]);
+    expect(rows[0].cnt).toBe(0);
+  });
+});

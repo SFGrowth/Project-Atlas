@@ -30,6 +30,7 @@ import {
   FiveMinBarType,
   OhlcvPts100,
   BarLifecycle,
+  ReconciliationStatus,
   FIVE_MIN_WINDOW_SIZE,
 } from './types/bar-lifecycle.js';
 
@@ -311,8 +312,19 @@ export class WindowAccumulator {
    * If all 5 slots are now CONFIRMED, emits the five-minute bar exactly once.
    */
   insertRecoveredBar(bar: MinuteBar): FiveMinBar | null {
+    // Gate 1: lifecycle must be CONFIRMED
     if (bar.lifecycle !== BarLifecycle.CONFIRMED) {
-      return null; // Only CONFIRMED bars can unblock a window
+      return null; // PROVISIONAL, UNRESOLVED, or DEVELOPING bars are ineligible
+    }
+    // Gate 2: reconciliation must be present and status must be MATCHED.
+    // A CONFIRMED bar with reconciliation=null or reconciliation.status !== MATCHED
+    // cannot unblock a window. This prevents unreconciled trade data from bypassing
+    // the official ohlcv-1m reconciliation path.
+    if (
+      bar.reconciliation === null ||
+      bar.reconciliation.status !== ReconciliationStatus.MATCHED
+    ) {
+      return null; // Unreconciled or UNMATCHED bars are ineligible
     }
     return this.addBar(bar);
   }
