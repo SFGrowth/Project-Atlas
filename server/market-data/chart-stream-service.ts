@@ -22,23 +22,36 @@
  *   health             — feed/bridge health update
  *   contract-roll      — contract roll notification
  *   recovery           — gap recovery correction
+ *   ping               — heartbeat (every 30s)
+ *   cursor-expired     — sent when Last-Event-ID is older than the ring buffer
  *
  * RECONNECT SUPPORT
  * -----------------
  * Every event includes an `id` field (monotonically increasing sequence number).
  * Clients send `Last-Event-ID` on reconnect. The service replays missed
  * confirmed events from the in-memory ring buffer (last 1000 events).
+ * If the Last-Event-ID is older than the oldest buffered event, a
+ * `cursor-expired` event is sent so the client knows to re-seed from history.
  *
  * BACKPRESSURE
  * ------------
  * Each client has a write queue. If the queue exceeds MAX_QUEUE_DEPTH,
  * the client is disconnected as stale.
  *
+ * HEARTBEAT
+ * ---------
+ * A ping event is sent to all clients every HEARTBEAT_INTERVAL_MS.
+ * This keeps the connection alive through proxies and load balancers.
+ *
+ * GRACEFUL SHUTDOWN
+ * -----------------
+ * Call shutdown() to end all client connections cleanly and stop the heartbeat.
+ *
  * SECRET SAFETY
  * -------------
  * No Databento credentials or bridge tokens are ever included in SSE events.
  *
- * Sprint 123A.4 — Gate G3 Approved
+ * Sprint 123A.4 — Gate G4
  */
 
 import type { Request, Response } from 'express';
@@ -50,7 +63,8 @@ import { BarLifecycle, ReconciliationStatus } from './types/bar-lifecycle.js';
 const PROTOCOL_VERSION = '123A.4';
 const MAX_QUEUE_DEPTH = 50;
 const RING_BUFFER_SIZE = 1000;
-const STALE_CLIENT_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
+const STALE_CLIENT_TIMEOUT_MS = 5 * 60 * 1000;  // 5 minutes
+const HEARTBEAT_INTERVAL_MS   = 30 * 1000;       // 30 seconds
 
 // ─── Event types ─────────────────────────────────────────────────────────────
 
@@ -62,7 +76,8 @@ export type ChartEventType =
   | 'health'
   | 'contract-roll'
   | 'recovery'
-  | 'ping';
+  | 'ping'
+  | 'cursor-expired';
 
 export interface ChartStreamEvent {
   /** Monotonically increasing sequence number for Last-Event-ID reconnect. */
@@ -102,6 +117,59 @@ export class ChartStreamService {
   /** Ring buffer of recent confirmed events for reconnect replay. */
   private ringBuffer: ChartStreamEvent[] = [];
   private clientIdCounter = 0;
+  private heartbeatTimer: ReturnType<typeof setInterval> | null = null;
+  private isShutdown = false;
+
+  constructor() {
+    this._startHeartbeat();
+  }
+
+  // ─── Heartbeat ───────────────────────────────────────────────────────────
+
+  private _startHeartbeat(): void {
+    this.heartbeatTimer = setInterval(() => {
+      this._sendHeartbeat();
+    }, HEARTBEAT_INTERVAL_MS);
+    // Don't block process exit
+    if (this.heartbeatTimer.unref) this.heartbeatTimer.unref();
+  }
+
+  private _sendHeartbeat(): void {
+    if (this.isShutdown) return;
+    const event: ChartStreamEvent = {
+      id: ++this.sequence,
+      type: 'ping',
+      protocolVersion: PROTOCOL_VERSION,
+      source: 'DATABENTO',
+      dataset: '',
+      instrumentId: 0,
+      rawSymbol: '',
+      canonicalSymbol: '',
+      intervalMs: 0,
+      barOpenTsMs: null,
+      revision: 0,
+      mappingVersion: '',
+      lifecycle: '',
+      reconciliationStatus: null,
+      atlasTsMs: Date.now(),
+      payload: { heartbeat: true },
+    };
+    this._broadcast(event, false);
+  }
+
+  // ─── Graceful shutdown ───────────────────────────────────────────────────
+
+  shutdown(): void {
+    this.isShutdown = true;
+    if (this.heartbeatTimer) {
+      clearInterval(this.heartbeatTimer);
+      this.heartbeatTimer = null;
+    }
+    for (const [clientId, client] of this.clients) {
+      try { client.res.end(); } catch { /* ignore */ }
+      this.clients.delete(clientId);
+    }
+  }
 
   // ─── Client management ───────────────────────────────────────────────────
 
@@ -130,12 +198,18 @@ export class ChartStreamService {
     };
     this.clients.set(clientId, client);
 
-    // Replay missed events from Last-Event-ID
+    // Handle Last-Event-ID reconnect
     const lastEventId = req.headers['last-event-id'];
     if (lastEventId) {
       const lastId = parseInt(lastEventId as string, 10);
       if (!isNaN(lastId)) {
-        this._replayMissedEvents(client, lastId);
+        const oldestSeq = this._getOldestBufferedSeq();
+        if (oldestSeq !== null && lastId < oldestSeq) {
+          // Cursor is older than the ring buffer — send cursor-expired
+          this._sendCursorExpired(client, lastId);
+        } else {
+          this._replayMissedEvents(client, lastId);
+        }
       }
     }
 
@@ -249,7 +323,7 @@ export class ChartStreamService {
       dataset: bar.dataset,
       instrumentId: bar.instrumentId,
       rawSymbol: bar.rawSymbol,
-      canonicalSymbol: bar.rawSymbol, // canonical symbol = rawSymbol in Sprint 123A.4
+      canonicalSymbol: bar.rawSymbol,
       intervalMs: bar.intervalMs,
       barOpenTsMs: bar.barOpenTsMs,
       revision: bar.revision,
@@ -268,6 +342,7 @@ export class ChartStreamService {
       },
     };
   }
+
   private _makeBar5mEvent(bar: FiveMinBar): ChartStreamEvent {
     return {
       id: ++this.sequence,
@@ -360,6 +435,32 @@ export class ChartStreamService {
     }
   }
 
+  private _sendCursorExpired(client: SSEClient, expiredId: number): void {
+    const event: ChartStreamEvent = {
+      id: ++this.sequence,
+      type: 'cursor-expired',
+      protocolVersion: PROTOCOL_VERSION,
+      source: 'DATABENTO',
+      dataset: '',
+      instrumentId: 0,
+      rawSymbol: '',
+      canonicalSymbol: '',
+      intervalMs: 0,
+      barOpenTsMs: null,
+      revision: 0,
+      mappingVersion: '',
+      lifecycle: '',
+      reconciliationStatus: null,
+      atlasTsMs: Date.now(),
+      payload: {
+        expiredCursor: expiredId,
+        oldestAvailable: this._getOldestBufferedSeq(),
+        message: 'Cursor is older than the ring buffer. Re-seed from history.',
+      },
+    };
+    this._sendToClient(client, event);
+  }
+
   // ─── Diagnostics ─────────────────────────────────────────────────────────
 
   getRingBufferSize(): number {
@@ -368,5 +469,15 @@ export class ChartStreamService {
 
   getSequence(): number {
     return this.sequence;
+  }
+
+  /** Returns the sequence number of the oldest event in the ring buffer, or null if empty. */
+  getOldestBufferedSeq(): number | null {
+    return this._getOldestBufferedSeq();
+  }
+
+  private _getOldestBufferedSeq(): number | null {
+    if (this.ringBuffer.length === 0) return null;
+    return this.ringBuffer[0].id;
   }
 }

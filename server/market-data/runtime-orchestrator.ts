@@ -46,6 +46,7 @@
 import {
   getMarketDataAuthority,
   isDatabentoShadow,
+  isDatabentoChartAuthorityActive,
   assertSprint123A4Invariants,
 } from './config.js';
 import type { AtlasEventBus } from './event-bus.js';
@@ -165,11 +166,15 @@ export class MarketDataRuntimeOrchestrator {
 
     const mode = getMarketDataAuthority();
 
-    // Remain disabled in TRADINGVIEW_ONLY mode
-    if (!isDatabentoShadow()) {
+    // Remain disabled in TRADINGVIEW_ONLY mode.
+    // Enable in DATABENTO_SHADOW (Gate G3 approved) or DATABENTO_CHART_AUTHORITY
+    // (Gate G4 pending — requires feature flag DATABENTO_CHART_AUTHORITY_ENABLED=true).
+    const runtimeEnabled = isDatabentoShadow() || isDatabentoChartAuthorityActive();
+    if (!runtimeEnabled) {
       console.log(
         `[RuntimeOrchestrator] Disabled — MARKET_DATA_AUTHORITY=${mode}. ` +
-        'Set MARKET_DATA_AUTHORITY=DATABENTO_SHADOW to enable shadow pipeline.'
+        'Set MARKET_DATA_AUTHORITY=DATABENTO_SHADOW to enable shadow pipeline, ' +
+        'or DATABENTO_CHART_AUTHORITY with DATABENTO_CHART_AUTHORITY_ENABLED=true (Gate G4 required).'
       );
       return;
     }
@@ -181,13 +186,14 @@ export class MarketDataRuntimeOrchestrator {
 
     this.status = 'STARTING';
     this.startedAt = Date.now();
-    console.log('[RuntimeOrchestrator] Starting shadow pipeline...');
+    const pipelineLabel = isDatabentoChartAuthorityActive() ? 'chart-authority pipeline' : 'shadow pipeline';
+    console.log(`[RuntimeOrchestrator] Starting ${pipelineLabel}...`);
 
     // Attach listeners (idempotent guard prevents duplicates after reconnect)
     this._attachListeners();
 
     this.status = 'READY';
-    console.log('[RuntimeOrchestrator] Shadow pipeline READY.');
+    console.log(`[RuntimeOrchestrator] ${pipelineLabel} READY.`);
   }
 
   stop(): void {

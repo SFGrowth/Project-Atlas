@@ -15,10 +15,17 @@
  *
  * QUERY RULES
  * -----------
- *   - Only CONFIRMED bars with reconciliation_status = MATCHED are returned
- *   - DEVELOPING, PROVISIONAL, UNRESOLVED bars are excluded
- *   - For each logical bar (same canonical identity excluding revision),
- *     the highest eligible confirmed revision is selected
+ * 1m bars (atlas_bars_1m):
+ *   - Only bars with reconciliation_status = 'MATCHED' are returned
+ *   - PENDING, UNMATCHED, UNAVAILABLE bars are excluded
+ *   - For each logical bar, the highest eligible revision is selected
+ *
+ * 5m bars (atlas_bars_5m):
+ *   - Only bars with canonical_bar_type IN ('LIVE_CONFIRMED', 'RECOVERED') are returned
+ *   - CONTAINS_SYNTHETIC bars are excluded (FE-5m eligibility contract)
+ *   - For each logical bar, the highest eligible revision is selected
+ *
+ * Common rules:
  *   - Bars are returned in ascending barOpenTsMs order
  *   - Maximum range: 7 days
  *   - Maximum rows: 10,000
@@ -54,16 +61,20 @@ export interface HistoricalBarRecord {
   intervalMs: number;
   barOpenTsMs: number;
   barCloseTsMs: number;
-  open: number | null;
-  high: number | null;
-  low: number | null;
-  close: number | null;
+  openPts100: number | null;
+  highPts100: number | null;
+  lowPts100: number | null;
+  closePts100: number | null;
   volume: number | null;
   tradeCount: number | null;
   revision: number;
   mappingVersion: string;
-  reconciliationStatus: string;
-  recovered: boolean;
+  /** Only present for 1m bars. */
+  reconciliationStatus: string | null;
+  /** Only present for 5m bars. */
+  canonicalBarType: string | null;
+  /** True if this bar was gap-recovered (1m only). */
+  isRecovered: boolean;
   dataQuality: 'GOOD' | 'DEGRADED' | 'UNAVAILABLE';
 }
 
@@ -128,19 +139,30 @@ export class ChartHistoryService {
     validateRequest(req);
 
     const limit = Math.min(req.limit ?? DEFAULT_LIMIT, MAX_LIMIT);
-    const table = req.interval === '1m' ? 'atlas_bars_1m' : 'atlas_bars_5m';
     const requestedAt = Date.now();
 
-    // Build the query:
-    // - Only CONFIRMED lifecycle (reconciliation_status = 'MATCHED')
-    // - Select highest revision per logical bar
-    // - Filter by symbol (raw_symbol), time range, cursor
-    // - Order by barOpenTsMs ASC
-    // - Limit + 1 to detect hasMore
+    const bars = req.interval === '1m'
+      ? await this._query1m(req, limit)
+      : await this._query5m(req, limit);
 
-    const cursorClause = req.cursor !== undefined
-      ? 'AND b.bar_open_ts_ms > ?'
-      : '';
+    const hasMore = bars.length > limit;
+    const resultBars = hasMore ? bars.slice(0, limit) : bars;
+
+    return {
+      bars: resultBars,
+      total: resultBars.length,
+      hasMore,
+      nextCursor: hasMore && resultBars.length > 0
+        ? resultBars[resultBars.length - 1].barOpenTsMs
+        : null,
+      requestedAt,
+    };
+  }
+
+  // ── 1m query: filter by reconciliation_status = 'MATCHED' ─────────────────
+
+  private async _query1m(req: HistoricalBarRequest, limit: number): Promise<HistoricalBarRecord[]> {
+    const cursorClause = req.cursor !== undefined ? 'AND bar_open_ts_ms > ?' : '';
 
     const sql = `
       SELECT
@@ -160,8 +182,8 @@ export class ChartHistoryService {
         b.revision,
         b.mapping_version,
         b.reconciliation_status,
-        b.is_recovered
-      FROM ${table} b
+        NULL AS canonical_bar_type
+      FROM atlas_bars_1m b
       INNER JOIN (
         SELECT
           raw_symbol,
@@ -170,7 +192,7 @@ export class ChartHistoryService {
           bar_open_ts_ms,
           mapping_version,
           MAX(revision) AS max_revision
-        FROM ${table}
+        FROM atlas_bars_1m
         WHERE raw_symbol = ?
           AND reconciliation_status = 'MATCHED'
           AND bar_open_ts_ms >= ?
@@ -189,55 +211,125 @@ export class ChartHistoryService {
       LIMIT ?
     `;
 
-    const params: unknown[] = [
-      req.symbol.trim(),
-      req.startTsMs,
-      req.endTsMs,
-    ];
+    const params: unknown[] = [req.symbol.trim(), req.startTsMs, req.endTsMs];
     if (req.cursor !== undefined) params.push(req.cursor);
     params.push(limit + 1);
 
-    const [rows] = await this.pool.execute(sql, params) as [any[], any];
+    const [rows] = await this.pool.query(sql, params) as [any[], any];
+    return rows.map((row: any) => _map1mRow(row));
+  }
 
-    const hasMore = rows.length > limit;
-    const resultRows = hasMore ? rows.slice(0, limit) : rows;
+  // ── 5m query: filter by canonical_bar_type IN ('LIVE_CONFIRMED', 'RECOVERED') ─
 
-    const bars: HistoricalBarRecord[] = resultRows.map((row: any) => ({
-      source: row.source,
-      dataset: row.dataset,
-      canonicalSymbol: row.raw_symbol,
-      rawSymbol: row.raw_symbol,
-      instrumentId: row.instrument_id,
-      intervalMs: row.interval_ms,
-      barOpenTsMs: Number(row.bar_open_ts_ms),
-      barCloseTsMs: Number(row.bar_close_ts_ms),
-      open: row.open_price_pts100 !== null ? row.open_price_pts100 / 100 : null,
-      high: row.high_price_pts100 !== null ? row.high_price_pts100 / 100 : null,
-      low: row.low_price_pts100 !== null ? row.low_price_pts100 / 100 : null,
-      close: row.close_price_pts100 !== null ? row.close_price_pts100 / 100 : null,
-      volume: row.volume,
-      tradeCount: row.trade_count,
-      revision: row.revision,
-      mappingVersion: row.mapping_version,
-      reconciliationStatus: row.reconciliation_status,
-      recovered: Boolean(row.is_recovered),
-      dataQuality: _computeDataQuality(row),
-    }));
+  private async _query5m(req: HistoricalBarRequest, limit: number): Promise<HistoricalBarRecord[]> {
+    const cursorClause = req.cursor !== undefined ? 'AND bar_open_ts_ms > ?' : '';
 
-    return {
-      bars,
-      total: bars.length,
-      hasMore,
-      nextCursor: hasMore && bars.length > 0
-        ? bars[bars.length - 1].barOpenTsMs
-        : null,
-      requestedAt,
-    };
+    // FE-5m eligibility contract: CONTAINS_SYNTHETIC bars are excluded
+    const sql = `
+      SELECT
+        b.source,
+        b.dataset,
+        b.raw_symbol,
+        b.instrument_id,
+        b.interval_ms,
+        b.bar_open_ts_ms,
+        b.bar_close_ts_ms,
+        b.open_price_pts100,
+        b.high_price_pts100,
+        b.low_price_pts100,
+        b.close_price_pts100,
+        b.volume,
+        b.trade_count,
+        b.revision,
+        b.mapping_version,
+        NULL AS reconciliation_status,
+        b.canonical_bar_type
+      FROM atlas_bars_5m b
+      INNER JOIN (
+        SELECT
+          raw_symbol,
+          instrument_id,
+          interval_ms,
+          bar_open_ts_ms,
+          mapping_version,
+          MAX(revision) AS max_revision
+        FROM atlas_bars_5m
+        WHERE raw_symbol = ?
+          AND canonical_bar_type IN ('LIVE_CONFIRMED', 'RECOVERED')
+          AND bar_open_ts_ms >= ?
+          AND bar_open_ts_ms <= ?
+          ${cursorClause}
+        GROUP BY raw_symbol, instrument_id, interval_ms, bar_open_ts_ms, mapping_version
+      ) latest ON
+        b.raw_symbol = latest.raw_symbol
+        AND b.instrument_id = latest.instrument_id
+        AND b.interval_ms = latest.interval_ms
+        AND b.bar_open_ts_ms = latest.bar_open_ts_ms
+        AND b.mapping_version = latest.mapping_version
+        AND b.revision = latest.max_revision
+      WHERE b.canonical_bar_type IN ('LIVE_CONFIRMED', 'RECOVERED')
+      ORDER BY b.bar_open_ts_ms ASC
+      LIMIT ?
+    `;
+
+    const params: unknown[] = [req.symbol.trim(), req.startTsMs, req.endTsMs];
+    if (req.cursor !== undefined) params.push(req.cursor);
+    params.push(limit + 1);
+
+    const [rows] = await this.pool.query(sql, params) as [any[], any];
+    return rows.map((row: any) => _map5mRow(row));
   }
 }
 
-function _computeDataQuality(row: any): 'GOOD' | 'DEGRADED' | 'UNAVAILABLE' {
-  if (row.reconciliation_status === 'MATCHED') return 'GOOD';
-  if (row.reconciliation_status === 'WITHIN_TOLERANCE') return 'DEGRADED';
-  return 'UNAVAILABLE';
+// ─── Row mappers ──────────────────────────────────────────────────────────────
+
+function _map1mRow(row: any): HistoricalBarRecord {
+  return {
+    source:               row.source,
+    dataset:              row.dataset,
+    canonicalSymbol:      row.raw_symbol,
+    rawSymbol:            row.raw_symbol,
+    instrumentId:         Number(row.instrument_id),
+    intervalMs:           Number(row.interval_ms),
+    barOpenTsMs:          Number(row.bar_open_ts_ms),
+    barCloseTsMs:         Number(row.bar_close_ts_ms),
+    openPts100:           row.open_price_pts100 !== null ? Number(row.open_price_pts100) : null,
+    highPts100:           row.high_price_pts100 !== null ? Number(row.high_price_pts100) : null,
+    lowPts100:            row.low_price_pts100 !== null ? Number(row.low_price_pts100) : null,
+    closePts100:          row.close_price_pts100 !== null ? Number(row.close_price_pts100) : null,
+    volume:               row.volume !== null ? Number(row.volume) : null,
+    tradeCount:           row.trade_count !== null ? Number(row.trade_count) : null,
+    revision:             Number(row.revision),
+    mappingVersion:       row.mapping_version,
+    reconciliationStatus: row.reconciliation_status ?? null,
+    canonicalBarType:     null,
+    isRecovered:          false, // 1m bars use gap recovery via GapRecoveryOrchestrator — not a column
+    dataQuality:          row.reconciliation_status === 'MATCHED' ? 'GOOD' : 'DEGRADED',
+  };
+}
+
+function _map5mRow(row: any): HistoricalBarRecord {
+  const barType = row.canonical_bar_type as string;
+  return {
+    source:               row.source,
+    dataset:              row.dataset,
+    canonicalSymbol:      row.raw_symbol,
+    rawSymbol:            row.raw_symbol,
+    instrumentId:         Number(row.instrument_id),
+    intervalMs:           Number(row.interval_ms),
+    barOpenTsMs:          Number(row.bar_open_ts_ms),
+    barCloseTsMs:         Number(row.bar_close_ts_ms),
+    openPts100:           row.open_price_pts100 !== null ? Number(row.open_price_pts100) : null,
+    highPts100:           row.high_price_pts100 !== null ? Number(row.high_price_pts100) : null,
+    lowPts100:            row.low_price_pts100 !== null ? Number(row.low_price_pts100) : null,
+    closePts100:          row.close_price_pts100 !== null ? Number(row.close_price_pts100) : null,
+    volume:               row.volume !== null ? Number(row.volume) : null,
+    tradeCount:           row.trade_count !== null ? Number(row.trade_count) : null,
+    revision:             Number(row.revision),
+    mappingVersion:       row.mapping_version,
+    reconciliationStatus: null,
+    canonicalBarType:     barType ?? null,
+    isRecovered:          barType === 'RECOVERED',
+    dataQuality:          barType === 'LIVE_CONFIRMED' ? 'GOOD' : 'DEGRADED',
+  };
 }

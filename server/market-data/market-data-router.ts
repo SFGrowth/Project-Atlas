@@ -39,7 +39,7 @@ import { ChartHistoryService, ValidationError } from './chart-history-service.js
 import { ChartStreamService } from './chart-stream-service.js';
 import { ParityService } from './parity-service.js';
 import type { MarketDataRuntimeOrchestrator } from './runtime-orchestrator.js';
-import { isDatabentoShadow } from './config.js';
+import { isDatabentoShadow, isDatabentoChartAuthorityActive } from './config.js';
 
 // ─── Auth middleware ──────────────────────────────────────────────────────────
 
@@ -71,12 +71,12 @@ export function createMarketDataRouter(
   router.get('/bars', async (req: Request, res: Response) => {
     if (!(await requireAuth(req, res))) return;
 
-    // Only available in DATABENTO_SHADOW mode or higher
-    if (!isDatabentoShadow()) {
+    // Only available in DATABENTO_SHADOW or DATABENTO_CHART_AUTHORITY (G4 flag required)
+    if (!isDatabentoShadow() && !isDatabentoChartAuthorityActive()) {
       res.status(503).json({
         error: 'Service unavailable',
-        code: 'DATABENTO_SHADOW_REQUIRED',
-        message: 'Historical Databento bars are only available in DATABENTO_SHADOW mode or higher.',
+        code: 'DATABENTO_REQUIRED',
+        message: 'Historical Databento bars require DATABENTO_SHADOW or DATABENTO_CHART_AUTHORITY mode.',
       });
       return;
     }
@@ -123,12 +123,12 @@ export function createMarketDataRouter(
   router.get('/stream', async (req: Request, res: Response) => {
     if (!(await requireAuth(req, res))) return;
 
-    // Only available in DATABENTO_SHADOW mode or higher
-    if (!isDatabentoShadow()) {
+    // Only available in DATABENTO_SHADOW or DATABENTO_CHART_AUTHORITY (G4 flag required)
+    if (!isDatabentoShadow() && !isDatabentoChartAuthorityActive()) {
       res.status(503).json({
         error: 'Service unavailable',
-        code: 'DATABENTO_SHADOW_REQUIRED',
-        message: 'Live chart stream is only available in DATABENTO_SHADOW mode or higher.',
+        code: 'DATABENTO_REQUIRED',
+        message: 'Live chart stream requires DATABENTO_SHADOW or DATABENTO_CHART_AUTHORITY mode.',
       });
       return;
     }
@@ -158,11 +158,11 @@ export function createMarketDataRouter(
   router.get('/parity', async (req: Request, res: Response) => {
     if (!(await requireAuth(req, res))) return;
 
-    if (!isDatabentoShadow()) {
+    if (!isDatabentoShadow() && !isDatabentoChartAuthorityActive()) {
       res.status(503).json({
         error: 'Service unavailable',
-        code: 'DATABENTO_SHADOW_REQUIRED',
-        message: 'Parity metrics are only available in DATABENTO_SHADOW mode or higher.',
+        code: 'DATABENTO_REQUIRED',
+        message: 'Parity metrics require DATABENTO_SHADOW or DATABENTO_CHART_AUTHORITY mode.',
       });
       return;
     }
