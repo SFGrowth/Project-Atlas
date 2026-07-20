@@ -264,9 +264,11 @@ async def test_definition_fixture_exercises_production_path():
     assert def_record["payload"]["instrument_id"] == MNQ_INSTRUMENT_ID
     assert def_record["payload"]["raw_symbol"] == MNQ_RAW_SYMBOL
     assert def_record["payload"]["currency"] == "USD"
-    # min_price_increment is converted from fixed-point: 2_500_000 / 1e9 = 0.0025
-    assert abs(def_record["payload"]["min_price_increment"] - 0.0025) < 1e-9, \
-        f"Expected min_price_increment=0.0025, got {def_record['payload']['min_price_increment']}"
+    # Gate G3 Revision 3: min_price_increment = 250_000_000 / 1e9 = 0.25 pts (MNQ tick size)
+    # TIER 3 mock uses SAMPLE_MIN_PRICE_INC = 250_000_000 (corrected from 2_500_000)
+    expected_mpi = 250_000_000 / 1_000_000_000  # = 0.25
+    assert abs(def_record["payload"]["min_price_increment"] - expected_mpi) < 1e-9, \
+        f"Expected min_price_increment=0.25 (MNQ tick), got {def_record['payload']['min_price_increment']}"
 
 
 # ── Secret safety tests ────────────────────────────────────────────────────────

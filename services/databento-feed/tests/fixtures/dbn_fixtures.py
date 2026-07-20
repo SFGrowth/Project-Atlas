@@ -53,7 +53,7 @@ import databento_dbn
 
 # ── Test constants ─────────────────────────────────────────────────────────────
 
-MNQ_INSTRUMENT_ID = 12345
+MNQ_INSTRUMENT_ID = 10001  # Matches mnq_definition_record.dbn (regenerated Revision 3 with correct min_price_increment)
 MNQ_CANONICAL_SYMBOL = "MNQ1!"
 MNQ_RAW_SYMBOL = "MNQM5"
 MNQ_CONTINUOUS_SYMBOL = "MNQ.v.0"
@@ -77,7 +77,8 @@ SAMPLE_CLOSE_INT = 18_505_000_000_000  # 18505.00
 SAMPLE_VOLUME = 250
 
 # Definition record constants
-SAMPLE_MIN_PRICE_INC = 2_500_000    # 0.0025 USD in fixed-point (1e-9 scale)
+# Gate G3 Revision 3 correction: MNQ tick = 0.25 pts × 1e9 = 250_000_000 (not 2_500_000)
+SAMPLE_MIN_PRICE_INC = 250_000_000  # 0.25 pts in fixed-point (1e-9 scale) — MNQ tick size
 SAMPLE_DISPLAY_FACTOR = 1_000_000_000  # 1.0 in fixed-point (1e-9 scale)
 
 # Path to the official DBN-decoded fixture file
@@ -192,12 +193,12 @@ def make_real_instrument_def_msg() -> databento_dbn.InstrumentDefMsg:
     -------
     databento_dbn.InstrumentDefMsg
         A real SDK-decoded InstrumentDefMsg record with the following values:
-        - instrument_id: 12345
+        - instrument_id: 10001 (regenerated Revision 3)
         - raw_symbol: "MNQM5"
         - asset: "MNQ"
         - currency: "USD"
         - instrument_class: InstrumentClass.FUTURE ('F')
-        - min_price_increment: 2_500_000 (0.0025 USD at 1e-9 scale)
+        - min_price_increment: 250_000_000 (0.25 pts at 1e-9 scale — corrected Revision 3)
         - display_factor: 1_000_000_000 (1.0 at 1e-9 scale)
         - expiration: 1_748_649_600_000_000_000 (2025-05-30T00:00:00Z)
         - ts_event: 1_700_000_000_000_000_000 (2023-11-14T22:13:20Z)

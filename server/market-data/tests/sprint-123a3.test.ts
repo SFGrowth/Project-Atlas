@@ -787,11 +787,13 @@ describe('Effectively-Once Persistence', () => {
     expect(db.getBar1mCount()).toBe(1);
   });
 
-  it('TEST-123A3-PER002: persistBar1m rejects a non-CONFIRMED bar', async () => {
+  it('TEST-123A3-PER002: persistBar1m accepts UNRESOLVED bar as evidence row (Revision 3 policy)', async () => {
+    // Gate G3 Revision 3: UNRESOLVED bars are stored as evidence rows in atlas_bars_1m.
+    // Only DEVELOPING and PROVISIONAL bars (not yet terminal) are rejected.
     const bar = makeConfirmedBar(BASE_TS_MS, { lifecycle: BarLifecycle.UNRESOLVED });
     const result = await persistence.persistBar1m(bar);
-    expect(result.inserted).toBe(false);
-    expect(db.getBar1mCount()).toBe(0);
+    expect(result.inserted).toBe(true); // Evidence row IS stored
+    expect(db.getBar1mCount()).toBe(1);
   });
 
   it('TEST-123A3-PER003: duplicate insert returns inserted=false (effectively-once)', async () => {
@@ -880,12 +882,16 @@ describe('Authority Invariants', () => {
     expect(db.getBar5mCount()).toBe(0);
   });
 
-  it('TEST-123A3-AUTH004: UNRESOLVED bar is not persisted by BarPersistence', async () => {
+  it('TEST-123A3-AUTH004: UNRESOLVED bar is persisted as evidence row (Revision 3 policy)', async () => {
+    // Gate G3 Revision 3 policy: UNRESOLVED bars ARE stored in atlas_bars_1m as
+    // evidence rows. They are NOT promoted to atlas_canonical_bars. A recovered
+    // bar is stored as a separate row with revision+1 (no collision).
     const db = new InMemoryBarDatabaseAdapter();
     const persistence = new BarPersistence(db);
     const bar = makeConfirmedBar(BASE_TS_MS, { lifecycle: BarLifecycle.UNRESOLVED });
     await persistence.persistBar1m(bar);
-    expect(db.getBar1mCount()).toBe(0);
+    expect(db.getBar1mCount()).toBe(1); // Evidence row IS stored
+    expect(db.getBar5mCount()).toBe(0); // NOT promoted to 5m
   });
 
   it('TEST-123A3-AUTH005: FiveMinAggregator rejects window containing UNRESOLVED bar (primary aggregation gate)', () => {

@@ -131,17 +131,20 @@ def test_def005_min_price_increment_decoded_correctly():
     """
     TEST-123A2-DEF005: minimum price increment is decoded correctly.
 
-    SAMPLE_MIN_PRICE_INC = 2_500_000 (0.0025 USD at 1e-9 scale).
+    Gate G3 Revision 3 correction:
+    SAMPLE_MIN_PRICE_INC = 250_000_000 (0.25 pts at 1e-9 scale).
+    MNQ tick size is 0.25 index points, NOT 0.0025.
+    Previous fixture had 2_500_000 which incorrectly represented 0.0025 pts.
     """
     record = make_real_instrument_def_msg()
     assert record.min_price_increment == SAMPLE_MIN_PRICE_INC, (
         f"Expected min_price_increment={SAMPLE_MIN_PRICE_INC}, "
         f"got {record.min_price_increment}"
     )
-    # Also verify the USD conversion
-    usd_value = record.min_price_increment / FIXED_POINT_SCALE
-    assert abs(usd_value - 0.0025) < 1e-12, (
-        f"Expected min_price_increment USD=0.0025, got {usd_value}"
+    # Verify the pts conversion: 250_000_000 / 1e9 = 0.25 pts
+    pts_value = record.min_price_increment / FIXED_POINT_SCALE
+    assert abs(pts_value - 0.25) < 1e-12, (
+        f"Expected min_price_increment pts=0.25, got {pts_value}"
     )
 
 
@@ -252,10 +255,10 @@ async def test_def009_bridge_envelope_matches_definition_contract():
         f"Expected currency='USD', got '{payload['currency']}'"
     )
 
-    # min_price_increment: fixed-point → USD float
-    expected_mpi = SAMPLE_MIN_PRICE_INC / FIXED_POINT_SCALE  # 0.0025
+    # min_price_increment: fixed-point → pts float (Gate G3 Revision 3: 0.25 pts, not 0.0025)
+    expected_mpi = SAMPLE_MIN_PRICE_INC / FIXED_POINT_SCALE  # 250_000_000 / 1e9 = 0.25
     assert abs(payload["min_price_increment"] - expected_mpi) < 1e-12, (
-        f"Expected min_price_increment={expected_mpi}, "
+        f"Expected min_price_increment={expected_mpi} (0.25 pts), "
         f"got {payload['min_price_increment']}"
     )
 

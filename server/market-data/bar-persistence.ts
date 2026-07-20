@@ -1,30 +1,48 @@
 /**
  * bar-persistence.ts — Effectively-Once Persistence Layer
  *
- * Writes confirmed one-minute bars and five-minute bars to the database
- * with effectively-once semantics using the unique constraints defined in
- * migration 0026:
+ * Writes one-minute bars and five-minute bars to the database with
+ * effectively-once semantics using the unique constraints defined in
+ * migrations 0026 + 0027:
  *
- *   atlas_bars_1m: UNIQUE KEY (source, dataset, instrument_id, bar_open_ts_ms,
- *                              revision, mapping_version)
- *   atlas_bars_5m: UNIQUE KEY (source, dataset, instrument_id, bar_open_ts_ms,
- *                              revision, mapping_version)
+ *   atlas_bars_1m: UNIQUE KEY uq_atlas_bars_1m_canonical_identity
+ *     (source, dataset, raw_symbol, instrument_id, bar_open_ts_ms, revision, mapping_version)
  *
- * Duplicate inserts are silently ignored via INSERT IGNORE (MySQL) semantics.
- * The persistence layer also writes to the atlas_consumer_processing_ledger
- * to prevent downstream consumers from processing the same bar twice.
+ *   atlas_bars_5m: UNIQUE KEY uq_atlas_bars_5m_canonical_identity
+ *     (source, dataset, raw_symbol, instrument_id, bar_open_ts_ms, revision, mapping_version)
+ *
+ *   atlas_bar_processing_ledger: UNIQUE KEY uq_atlas_bar_processing_ledger
+ *     (source, dataset, raw_symbol, instrument_id, bar_open_ts_ms, revision,
+ *      mapping_version, consumer_name, consumer_version)
+ *
+ * DUPLICATE HANDLING POLICY (Gate G3 Revision 3):
+ *   Effectively-once is implemented via INSERT ... ON DUPLICATE KEY UPDATE
+ *   with a no-op update (id = id). This suppresses ONLY the expected
+ *   duplicate-key error (ER_DUP_ENTRY / errno 1062). All other database
+ *   errors (malformed values, CHECK violations, NOT NULL violations,
+ *   foreign-key violations, unexpected SQL errors) must fail loudly and
+ *   roll back the transaction.
+ *
+ * UNRESOLVED BAR POLICY (Gate G3 Revision 3):
+ *   UNRESOLVED bars MAY be persisted to atlas_bars_1m as evidence rows.
+ *   They are clearly non-canonical (reconciliation_status = UNMATCHED or
+ *   UNAVAILABLE). They are NEVER forwarded to the five-minute aggregator
+ *   as confirmed inputs. They are NEVER written to atlas_canonical_bars.
+ *   They cannot trigger processBar or postBarAutomation.
+ *   Recovery can later create a new revision (revision + 1) without
+ *   overwriting the evidence row (the unique key includes revision).
  *
  * AUTHORITY NOTE: This module writes to atlas_bars_1m and atlas_bars_5m only.
- * It does NOT write to atlas_canonical_bars (that is the Canonical Router's
- * responsibility, gated on MARKET_DATA_AUTHORITY).
- * It does NOT trigger processBar or postBarAutomation.
- * MARKET_DATA_AUTHORITY = TRADINGVIEW_ONLY throughout Sprint 123A.3.
+ *   It does NOT write to atlas_canonical_bars (that is the Canonical Router's
+ *   responsibility, gated on MARKET_DATA_AUTHORITY).
+ *   It does NOT trigger processBar or postBarAutomation.
+ *   MARKET_DATA_AUTHORITY = TRADINGVIEW_ONLY throughout Sprint 123A.3.
  *
- * PRODUCTION SAFETY: This module requires migration 0026 to have been applied.
- * Migration 0026 must NOT be run against the production database without
- * Phil's explicit written approval at Gate G3.
+ * PRODUCTION SAFETY: This module requires migrations 0026 and 0027 to have
+ *   been applied. These migrations must NOT be run against the production
+ *   database without Phil's explicit written approval at Gate G3.
  *
- * Sprint 123A.3 — Gate G3
+ * Sprint 123A.3 — Gate G3 Revision 3
  */
 
 import { MinuteBar, FiveMinBar, ReconciliationStatus, BarLifecycle } from './types/bar-lifecycle.js';
@@ -34,36 +52,45 @@ import { MinuteBar, FiveMinBar, ReconciliationStatus, BarLifecycle } from './typ
 /**
  * Minimal database adapter interface for persistence.
  * In production, this is backed by the Drizzle ORM connection.
- * In tests, this is backed by a disposable in-memory or test database.
+ * In tests, this is backed by a disposable MySQL 8 instance or in-memory adapter.
  *
- * Using an interface rather than importing the Drizzle connection directly
- * allows the persistence layer to be tested without a live database.
+ * DUPLICATE HANDLING CONTRACT:
+ *   insertBar1m and insertBar5m must implement INSERT ... ON DUPLICATE KEY
+ *   UPDATE id = id (or equivalent). They must:
+ *   - Return { inserted: true, rowId: N } when a new row is inserted.
+ *   - Return { inserted: false, rowId: null } when the row already exists
+ *     (duplicate key on the canonical identity unique key).
+ *   - THROW for any other database error (malformed values, CHECK violations,
+ *     NOT NULL violations, foreign-key violations, unexpected SQL errors).
+ *   The adapter must NEVER convert non-duplicate errors into success.
  */
 export interface BarDatabaseAdapter {
   /**
-   * Insert a one-minute bar into atlas_bars_1m.
-   * Must use INSERT IGNORE (or equivalent) to silently skip duplicates.
-   * Returns the inserted row ID, or null if the row already existed.
+   * Insert a one-minute bar into atlas_bars_1m using ON DUPLICATE KEY UPDATE.
+   * Returns { inserted: true } for new rows, { inserted: false } for duplicates.
+   * Throws for all other database errors.
    */
-  insertBar1m(row: InsertBar1mRow): Promise<number | null>;
+  insertBar1m(row: InsertBar1mRow): Promise<PersistenceResult>;
 
   /**
-   * Insert a five-minute bar into atlas_bars_5m.
-   * Must use INSERT IGNORE (or equivalent) to silently skip duplicates.
-   * Returns the inserted row ID, or null if the row already existed.
+   * Insert a five-minute bar into atlas_bars_5m using ON DUPLICATE KEY UPDATE.
+   * Returns { inserted: true } for new rows, { inserted: false } for duplicates.
+   * Throws for all other database errors.
    */
-  insertBar5m(row: InsertBar5mRow): Promise<number | null>;
+  insertBar5m(row: InsertBar5mRow): Promise<PersistenceResult>;
 
   /**
    * Check whether a bar has already been processed by a given consumer.
    * Used for effectively-once downstream event dispatch.
    */
-  isAlreadyProcessed(consumerId: string, eventKey: string): Promise<boolean>;
+  isAlreadyProcessed(consumerId: string, consumerVersion: string, eventKey: string): Promise<boolean>;
 
   /**
    * Mark a bar as processed by a given consumer.
+   * Uses ON DUPLICATE KEY UPDATE id = id semantics.
+   * Throws for non-duplicate errors.
    */
-  markProcessed(consumerId: string, eventType: string, eventKey: string): Promise<void>;
+  markProcessed(consumerId: string, consumerVersion: string, eventType: string, eventKey: string): Promise<void>;
 }
 
 // ─── Row Types ────────────────────────────────────────────────────────────────
@@ -119,7 +146,7 @@ export interface InsertBar5mRow {
 export interface PersistenceResult {
   /** Whether the row was newly inserted (true) or was a duplicate (false). */
   inserted: boolean;
-  /** The row ID of the inserted or existing row. */
+  /** The row ID of the inserted row, or null if it was a duplicate. */
   rowId: number | null;
 }
 
@@ -127,27 +154,32 @@ export interface PersistenceResult {
 
 export class BarPersistence {
   private readonly db: BarDatabaseAdapter;
+  private readonly consumerVersion: string;
 
-  constructor(db: BarDatabaseAdapter) {
+  constructor(db: BarDatabaseAdapter, consumerVersion = 'v1') {
     this.db = db;
+    this.consumerVersion = consumerVersion;
   }
 
   // ─── Public API ─────────────────────────────────────────────────────────────
 
   /**
-   * Persist a confirmed one-minute bar to atlas_bars_1m.
+   * Persist a one-minute bar to atlas_bars_1m.
    *
-   * INVARIANT: Only CONFIRMED bars are persisted. UNRESOLVED bars are rejected.
-   * Returns { inserted: false } if the bar is not CONFIRMED or is a duplicate.
+   * CONFIRMED bars: persisted as canonical evidence.
+   * UNRESOLVED bars: persisted as non-canonical evidence (reconciliation_status
+   *   = UNMATCHED or UNAVAILABLE). Never forwarded to the five-minute aggregator.
+   *   Never written to atlas_canonical_bars. Cannot trigger processBar.
+   *
+   * Returns { inserted: false } if the bar lifecycle is not CONFIRMED or UNRESOLVED.
+   * Throws for all non-duplicate database errors.
    */
   async persistBar1m(bar: MinuteBar): Promise<PersistenceResult> {
-    if (bar.lifecycle !== BarLifecycle.CONFIRMED) {
+    if (bar.lifecycle !== BarLifecycle.CONFIRMED && bar.lifecycle !== BarLifecycle.UNRESOLVED) {
       return { inserted: false, rowId: null };
     }
-
     const row = this._toBar1mRow(bar);
-    const rowId = await this.db.insertBar1m(row);
-    return { inserted: rowId !== null, rowId };
+    return this.db.insertBar1m(row);
   }
 
   /**
@@ -155,35 +187,32 @@ export class BarPersistence {
    *
    * INVARIANT: The FiveMinBar must have minuteBarCount === 5.
    * INVARIANT: All constituent bars must be CONFIRMED (enforced by FiveMinAggregator).
+   * Throws for all non-duplicate database errors.
    */
   async persistBar5m(bar: FiveMinBar): Promise<PersistenceResult> {
     if (bar.minuteBarCount !== 5) {
       return { inserted: false, rowId: null };
     }
-
     const row = this._toBar5mRow(bar);
-    const rowId = await this.db.insertBar5m(row);
-    return { inserted: rowId !== null, rowId };
+    return this.db.insertBar5m(row);
   }
 
   /**
    * Check whether a bar has already been processed by a downstream consumer.
    * Used to implement effectively-once semantics for event dispatch.
-   *
-   * @param consumerId - Identifies the downstream consumer (e.g., 'parity-monitor')
-   * @param bar - The bar to check
    */
   async isAlreadyProcessed(consumerId: string, bar: MinuteBar): Promise<boolean> {
     const key = this._bar1mKey(bar);
-    return this.db.isAlreadyProcessed(consumerId, key);
+    return this.db.isAlreadyProcessed(consumerId, this.consumerVersion, key);
   }
 
   /**
    * Mark a bar as processed by a downstream consumer.
+   * Throws for all non-duplicate database errors.
    */
   async markProcessed(consumerId: string, eventType: string, bar: MinuteBar): Promise<void> {
     const key = this._bar1mKey(bar);
-    return this.db.markProcessed(consumerId, eventType, key);
+    return this.db.markProcessed(consumerId, this.consumerVersion, eventType, key);
   }
 
   // ─── Private helpers ─────────────────────────────────────────────────────────
@@ -240,16 +269,18 @@ export class BarPersistence {
   }
 
   private _bar1mKey(bar: MinuteBar): string {
-    return `${bar.source}:${bar.dataset}:${bar.instrumentId}:${bar.barOpenTsMs}:${bar.revision}:${bar.mappingVersion}`;
+    return `${bar.source}:${bar.dataset}:${bar.rawSymbol}:${bar.instrumentId}:${bar.barOpenTsMs}:${bar.revision}:${bar.mappingVersion}`;
   }
 }
 
 // ─── In-Memory Test Adapter ───────────────────────────────────────────────────
 
 /**
- * In-memory database adapter for unit tests.
- * Does not require a live database connection.
- * Enforces the same unique constraints as the production schema.
+ * In-memory database adapter for unit tests that do not require MySQL.
+ * Enforces the same canonical identity unique constraints as the production schema.
+ *
+ * DUPLICATE HANDLING: Returns { inserted: false } for exact duplicates.
+ * Does NOT simulate other database errors (use MySQLBarDatabaseAdapter for that).
  */
 export class InMemoryBarDatabaseAdapter implements BarDatabaseAdapter {
   private readonly bars1m = new Map<string, { id: number; row: InsertBar1mRow }>();
@@ -257,28 +288,30 @@ export class InMemoryBarDatabaseAdapter implements BarDatabaseAdapter {
   private readonly ledger = new Set<string>();
   private nextId = 1;
 
-  async insertBar1m(row: InsertBar1mRow): Promise<number | null> {
-    const key = `${row.source}:${row.dataset}:${row.instrumentId}:${row.barOpenTsMs}:${row.revision}:${row.mappingVersion}`;
-    if (this.bars1m.has(key)) return null; // Duplicate — INSERT IGNORE
+  async insertBar1m(row: InsertBar1mRow): Promise<PersistenceResult> {
+    // Canonical identity key includes raw_symbol (migration 0027)
+    const key = `${row.source}:${row.dataset}:${row.rawSymbol}:${row.instrumentId}:${row.barOpenTsMs}:${row.revision}:${row.mappingVersion}`;
+    if (this.bars1m.has(key)) return { inserted: false, rowId: null };
     const id = this.nextId++;
     this.bars1m.set(key, { id, row });
-    return id;
+    return { inserted: true, rowId: id };
   }
 
-  async insertBar5m(row: InsertBar5mRow): Promise<number | null> {
-    const key = `${row.source}:${row.dataset}:${row.instrumentId}:${row.barOpenTsMs}:${row.revision}:${row.mappingVersion}`;
-    if (this.bars5m.has(key)) return null; // Duplicate — INSERT IGNORE
+  async insertBar5m(row: InsertBar5mRow): Promise<PersistenceResult> {
+    // Canonical identity key includes raw_symbol (migration 0027)
+    const key = `${row.source}:${row.dataset}:${row.rawSymbol}:${row.instrumentId}:${row.barOpenTsMs}:${row.revision}:${row.mappingVersion}`;
+    if (this.bars5m.has(key)) return { inserted: false, rowId: null };
     const id = this.nextId++;
     this.bars5m.set(key, { id, row });
-    return id;
+    return { inserted: true, rowId: id };
   }
 
-  async isAlreadyProcessed(consumerId: string, eventKey: string): Promise<boolean> {
-    return this.ledger.has(`${consumerId}:${eventKey}`);
+  async isAlreadyProcessed(consumerId: string, consumerVersion: string, eventKey: string): Promise<boolean> {
+    return this.ledger.has(`${consumerId}:${consumerVersion}:${eventKey}`);
   }
 
-  async markProcessed(consumerId: string, _eventType: string, eventKey: string): Promise<void> {
-    this.ledger.add(`${consumerId}:${eventKey}`);
+  async markProcessed(consumerId: string, consumerVersion: string, _eventType: string, eventKey: string): Promise<void> {
+    this.ledger.add(`${consumerId}:${consumerVersion}:${eventKey}`);
   }
 
   /** Test helper: return all persisted 1m bars. */
