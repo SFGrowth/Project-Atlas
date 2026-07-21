@@ -1,15 +1,17 @@
 # Sprint 123A.4 — Gate G4 Live Validation Operator Handoff
 
-**Document version:** 2.0  
+**Document version:** 3.0  
 **Date:** 2026-07-21  
 **Branch:** `sprint/123a-2-databento-adapter`  
-**Status:** PENDING — awaiting live Databento entitlement and operator-controlled staging host
+**Status:** PENDING — awaiting operator execution on staging host with live.databento.com access
 
 ---
 
-> **GATE G4: OPERATIONAL VALIDATION BLOCKED BY EXTERNAL INFRASTRUCTURE**
+> **GATE G4: PENDING — DATABENTO ENTITLEMENT ACTIVE, LIVE SESSION REQUIRED ON OPERATOR HOST**
 >
 > Gate G4 is not approved. Sprint 123A.5 is not authorised. `DATABENTO_CHART_AUTHORITY` remains inactive. TradingView remains the sole `processBar` and `postBarAutomation` authority. Do not activate any production authority change. Do not run migrations against production. Do not fabricate live-session results.
+>
+> **Key rotation notice:** The Databento API key previously exposed in chat (`db-FH6bid8UKJYNyvVtyAGQUNWFVSFXR`) was rotated on 2026-07-21 and is permanently invalidated. Retrieve the new key from [databento.com/portal/keys](https://databento.com/portal/keys). Do not paste it in chat.
 
 ---
 
@@ -423,8 +425,10 @@ These steps do not need to be re-run on the staging host unless the implementati
 | Python pytest (143 tests) | **PASS — 143/143** | `0f770762` |
 | TypeScript compilation | **PASS — 0 errors** | `0f770762` |
 | Frontend production build | **PASS — 31.15s, 870.6 kB** | `0f770762` |
-| Databento REST authentication | **PASS — HTTP 200** | Session |
-| Source-file secret scan | **PASS — 0 exposures** | Session |
+| Databento REST authentication | **PASS — HTTP 200** | 2026-07-21 |
+| Source-file secret scan | **PASS — 0 exposures** | 2026-07-21 |
+| GLBX.MDP3 live entitlement | **ACTIVE** — Standard plan, signed by Phillip Street | 2026-07-21 |
+| CME ILA attestation | **COMPLETED** — personal use, non-professional | 2026-07-21 |
 
 ---
 
@@ -440,6 +444,17 @@ These steps do not need to be re-run on the staging host unless the implementati
 | Providing credentials through chat, email, or any logged channel |
 | Pre-filling pending sections of the evidence template as passing |
 | Fabricating any metric or test result |
+
+---
+
+## Key Rotation Record
+
+| Event | Date | Detail |
+|---|---|---|
+| Original key created | 2026-07-17 | `prod-001` |
+| Key exposed in chat | 2026-07-21 | Key pasted by user during session |
+| Key rotated | 2026-07-21 | Rotated via Databento portal — old key permanently invalidated |
+| New key location | — | Retrieve from [databento.com/portal/keys](https://databento.com/portal/keys) — do not paste in chat |
 
 ---
 
