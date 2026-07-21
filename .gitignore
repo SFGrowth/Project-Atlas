@@ -118,6 +118,3 @@ __pycache__/
 *.pyc
 *.pyo
 .pytest_cache/
-
-# Gate G4 staging evidence — never committed to Git
-evidence/
