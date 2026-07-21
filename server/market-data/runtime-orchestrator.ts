@@ -321,7 +321,8 @@ export class MarketDataRuntimeOrchestrator {
    * Called by TradeBarBuilder event 'bar:confirmed'.
    * Routes confirmed 1m bars through WindowAccumulator and persistence.
    */
-  private readonly _onBarConfirmed = (bar: MinuteBar): void => {
+  private readonly _onBarConfirmed = (event: { type: 'bar:confirmed'; bar: MinuteBar }): void => {
+    const bar = event.bar;
     if (this.status !== 'READY') return;
     this.lastConfirmed1mTs = Date.now();
 
@@ -351,7 +352,8 @@ export class MarketDataRuntimeOrchestrator {
     this._persistBar1m(bar);
   };
 
-  private readonly _onBarDeveloping = (bar: MinuteBar): void => {
+  private readonly _onBarDeveloping = (event: { type: 'bar:developing'; bar: MinuteBar }): void => {
+    const bar = event.bar;
     if (this.status !== 'READY') return;
     try {
       this.deps.chartStream.publishDeveloping(bar);

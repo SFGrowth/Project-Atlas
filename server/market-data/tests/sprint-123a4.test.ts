@@ -348,7 +348,7 @@ describe('Sprint 123A.4 — MarketDataRuntimeOrchestrator', () => {
     const orch = new MarketDataRuntimeOrchestrator(deps);
     orch.start();
     const bar = makeConfirmedBar();
-    deps.tradeBarBuilder.emit('bar:confirmed', bar);
+    deps.tradeBarBuilder.emit('bar:confirmed', { type: 'bar:confirmed', bar });
     // Allow async persistence to settle
     await new Promise(r => setTimeout(r, 10));
     expect(deps.chartStream.publishBar1m).toHaveBeenCalledWith(bar);
@@ -360,7 +360,7 @@ describe('Sprint 123A.4 — MarketDataRuntimeOrchestrator', () => {
     const orch = new MarketDataRuntimeOrchestrator(deps);
     orch.start();
     const bar = makeConfirmedBar();
-    deps.tradeBarBuilder.emit('bar:confirmed', bar);
+    deps.tradeBarBuilder.emit('bar:confirmed', { type: 'bar:confirmed', bar });
     await new Promise(r => setTimeout(r, 10));
     expect(deps.barDb.persistBar1m).toHaveBeenCalledWith(bar);
     orch.stop();
@@ -371,7 +371,7 @@ describe('Sprint 123A.4 — MarketDataRuntimeOrchestrator', () => {
     const orch = new MarketDataRuntimeOrchestrator(deps);
     orch.start();
     const bar = makeConfirmedBar();
-    deps.tradeBarBuilder.emit('bar:confirmed', bar);
+    deps.tradeBarBuilder.emit('bar:confirmed', { type: 'bar:confirmed', bar });
     await new Promise(r => setTimeout(r, 10));
     expect(deps.windowAccumulator.addBar).toHaveBeenCalledWith(bar);
     orch.stop();
@@ -384,7 +384,7 @@ describe('Sprint 123A.4 — MarketDataRuntimeOrchestrator', () => {
     const orch = new MarketDataRuntimeOrchestrator(deps);
     orch.start();
     const bar = makeConfirmedBar();
-    deps.tradeBarBuilder.emit('bar:confirmed', bar);
+    deps.tradeBarBuilder.emit('bar:confirmed', { type: 'bar:confirmed', bar });
     await new Promise(r => setTimeout(r, 10));
     expect(deps.chartStream.publishBar5m).toHaveBeenCalledWith(fiveMinBar);
     expect(deps.barDb.persistBar5m).toHaveBeenCalledWith(fiveMinBar);
@@ -396,7 +396,7 @@ describe('Sprint 123A.4 — MarketDataRuntimeOrchestrator', () => {
     const orch = new MarketDataRuntimeOrchestrator(deps);
     orch.start();
     const bar = makeConfirmedBar({ lifecycle: BarLifecycle.DEVELOPING as any });
-    deps.tradeBarBuilder.emit('bar:developing', bar);
+    deps.tradeBarBuilder.emit('bar:developing', { type: 'bar:developing', bar });
     expect(deps.chartStream.publishDeveloping).toHaveBeenCalledWith(bar);
     orch.stop();
   });
@@ -407,7 +407,7 @@ describe('Sprint 123A.4 — MarketDataRuntimeOrchestrator', () => {
     const orch = new MarketDataRuntimeOrchestrator(deps);
     orch.start();
     const bar = makeConfirmedBar();
-    deps.tradeBarBuilder.emit('bar:confirmed', bar);
+    deps.tradeBarBuilder.emit('bar:confirmed', { type: 'bar:confirmed', bar });
     await new Promise(r => setTimeout(r, 20));
     const health = orch.getHealth();
     expect(health.persistenceErrors).toBe(1);
