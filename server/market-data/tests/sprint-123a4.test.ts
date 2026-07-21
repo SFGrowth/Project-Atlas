@@ -274,33 +274,61 @@ describe('Sprint 123A.4 — MarketDataRuntimeOrchestrator', () => {
     expect(orch.isReady).toBe(false);
   });
 
-  it('TEST-123A4-012: routes databento:trade to TradeBarBuilder.processTrade', () => {
+  it('TEST-123A4-012: routes databento:trade to TradeBarBuilder.processTrade (normalised to pts100)', () => {
     const deps = makeMockDeps();
     const orch = new MarketDataRuntimeOrchestrator(deps);
     orch.start();
-    const payload = { ts_event_ns: '1700000000000000000', raw_symbol: 'MNQM5', instrument_id: 12345 };
-    deps.eventBus.emit('databento:trade', payload);
-    expect(deps.tradeBarBuilder.processTrade).toHaveBeenCalledWith(payload);
+    // Raw bridge-server payload uses price_usd (float) and numeric ts_event_ns
+    const rawPayload = { ts_event_ns: 1700000000000000000, raw_symbol: 'MNQM5', instrument_id: 12345, price_usd: 19500.25, size: 2 };
+    deps.eventBus.emit('databento:trade', rawPayload);
+    expect(deps.tradeBarBuilder.processTrade).toHaveBeenCalledWith(
+      expect.objectContaining({
+        schema: 'trade',
+        raw_symbol: 'MNQM5',
+        instrument_id: 12345,
+        price_pts100: 1950025,
+        size: 2,
+      })
+    );
     orch.stop();
   });
 
-  it('TEST-123A4-013: routes databento:ohlcv-1m to TradeBarBuilder.processOfficialOhlcv1m', () => {
+  it('TEST-123A4-013: routes databento:ohlcv-1m to TradeBarBuilder.processOfficialOhlcv1m (normalised to pts100)', () => {
     const deps = makeMockDeps();
     const orch = new MarketDataRuntimeOrchestrator(deps);
     orch.start();
-    const payload = { ts_event_ns: '1700000000000000000', raw_symbol: 'MNQM5', instrument_id: 12345 };
-    deps.eventBus.emit('databento:ohlcv-1m', payload);
-    expect(deps.tradeBarBuilder.processOfficialOhlcv1m).toHaveBeenCalledWith(payload);
+    // Raw bridge-server payload uses open_usd (float) and numeric ts_event_ns
+    const rawPayload = { ts_event_ns: 1700000000000000000, raw_symbol: 'MNQM5', instrument_id: 12345, open_usd: 19490.0, high_usd: 19510.0, low_usd: 19485.0, close_usd: 19500.25, volume: 150 };
+    deps.eventBus.emit('databento:ohlcv-1m', rawPayload);
+    expect(deps.tradeBarBuilder.processOfficialOhlcv1m).toHaveBeenCalledWith(
+      expect.objectContaining({
+        schema: 'ohlcv-1m',
+        raw_symbol: 'MNQM5',
+        instrument_id: 12345,
+        open_pts100: 1949000,
+        close_pts100: 1950025,
+        volume: 150,
+      })
+    );
     orch.stop();
   });
 
-  it('TEST-123A4-014: routes databento:definition to ContractManager.processDefinition', () => {
+  it('TEST-123A4-014: routes databento:definition to ContractManager.processDefinition (normalised to pts100)', () => {
     const deps = makeMockDeps();
     const orch = new MarketDataRuntimeOrchestrator(deps);
     orch.start();
-    const payload = { raw_symbol: 'MNQM5', instrument_id: 12345, dataset: 'GLBX.MDP3' };
-    deps.eventBus.emit('databento:definition', payload);
-    expect(deps.contractManager.processDefinition).toHaveBeenCalledWith(payload);
+    // Raw bridge-server payload uses min_price_increment (float) and expiration_ts_ns (number)
+    const rawPayload = { raw_symbol: 'MNQM5', instrument_id: 12345, min_price_increment: 0.25, currency: 'USD', instrument_class: 'FUT', expiration_ts_ns: 0 };
+    deps.eventBus.emit('databento:definition', rawPayload);
+    expect(deps.contractManager.processDefinition).toHaveBeenCalledWith(
+      expect.objectContaining({
+        schema: 'definition',
+        raw_symbol: 'MNQM5',
+        instrument_id: 12345,
+        min_price_increment_pts100: 25,
+        currency: 'USD',
+      })
+    );
     orch.stop();
   });
 

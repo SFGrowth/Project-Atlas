@@ -60,6 +60,58 @@ import type { BarPersistence } from './bar-persistence.js';
 import type { ChartStreamService } from './chart-stream-service.js';
 import type { MinuteBar, FiveMinBar } from './types/bar-lifecycle.js';
 import type { BridgeDefinitionPayload, BridgeSymbolMappingPayload } from './contract-manager.js';
+import type {
+  BridgeTradePayload as RawBridgeTradePayload,
+  BridgeOhlcv1mPayload as RawBridgeOhlcv1mPayload,
+  BridgeDefinitionPayload as RawBridgeDefinitionPayload,
+} from './bridge-server.js';
+
+// ─── Payload normalisation (bridge-server → trade-bar-builder / contract-manager)
+// The bridge-server emits raw Python adapter payloads (USD floats, numeric ns).
+// The trade-bar-builder and contract-manager expect normalised internal formats
+// (pts100 integers, nanosecond strings, atlas_processing_ts_ms).
+function normaliseTrade(p: RawBridgeTradePayload): BridgeTradePayload {
+  return {
+    schema: 'trade',
+    dataset: 'GLBX.MDP3',
+    raw_symbol: p.raw_symbol,
+    instrument_id: p.instrument_id,
+    ts_event_ns: String(p.ts_event_ns),
+    price_pts100: Math.round(p.price_usd * 100),
+    size: p.size,
+    atlas_processing_ts_ms: Date.now(),
+  };
+}
+function normaliseOhlcv1m(p: RawBridgeOhlcv1mPayload): BridgeOhlcv1mPayload {
+  return {
+    schema: 'ohlcv-1m',
+    dataset: 'GLBX.MDP3',
+    raw_symbol: p.raw_symbol,
+    instrument_id: p.instrument_id,
+    ts_event_ns: String(p.ts_event_ns),
+    ts_recv_ns: String(p.ts_event_ns),
+    open_pts100: Math.round(p.open_usd * 100),
+    high_pts100: Math.round(p.high_usd * 100),
+    low_pts100: Math.round(p.low_usd * 100),
+    close_pts100: Math.round(p.close_usd * 100),
+    volume: p.volume,
+    trade_count: 0,
+    atlas_processing_ts_ms: Date.now(),
+  };
+}
+function normaliseDefinition(p: RawBridgeDefinitionPayload): BridgeDefinitionPayload {
+  return {
+    schema: 'definition',
+    dataset: 'GLBX.MDP3',
+    instrument_id: p.instrument_id,
+    raw_symbol: p.raw_symbol,
+    expiry_ts_ns: p.expiration_ts_ns ? String(p.expiration_ts_ns) : null,
+    min_price_increment_pts100: Math.round(p.min_price_increment * 100),
+    currency: p.currency,
+    instrument_class: p.instrument_class,
+    atlas_processing_ts_ms: Date.now(),
+  };
+}
 
 // ─── Bridge gap/recovery payload types ───────────────────────────────────────
 
@@ -207,30 +259,30 @@ export class MarketDataRuntimeOrchestrator {
 
   // ─── Listener handlers ─────────────────────────────────────────────────────
 
-  private readonly _onTrade = (payload: BridgeTradePayload): void => {
+  private readonly _onTrade = (payload: RawBridgeTradePayload): void => {
     if (this.status !== 'READY') return;
     this.lastTradeTs = Date.now();
     try {
-      this.deps.tradeBarBuilder.processTrade(payload);
+      this.deps.tradeBarBuilder.processTrade(normaliseTrade(payload));
     } catch (err) {
       this._recordError('trade', err);
     }
   };
 
-  private readonly _onOhlcv1m = (payload: BridgeOhlcv1mPayload): void => {
+  private readonly _onOhlcv1m = (payload: RawBridgeOhlcv1mPayload): void => {
     if (this.status !== 'READY') return;
     this.lastOfficialBarTs = Date.now();
     try {
-      this.deps.tradeBarBuilder.processOfficialOhlcv1m(payload);
+      this.deps.tradeBarBuilder.processOfficialOhlcv1m(normaliseOhlcv1m(payload));
     } catch (err) {
       this._recordError('ohlcv-1m', err);
     }
   };
 
-  private readonly _onDefinition = (payload: BridgeDefinitionPayload): void => {
+  private readonly _onDefinition = (payload: RawBridgeDefinitionPayload): void => {
     if (this.status !== 'READY') return;
     try {
-      this.deps.contractManager.processDefinition(payload);
+      this.deps.contractManager.processDefinition(normaliseDefinition(payload));
     } catch (err) {
       this._recordError('definition', err);
     }
