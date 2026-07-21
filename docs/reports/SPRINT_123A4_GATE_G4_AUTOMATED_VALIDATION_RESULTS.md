@@ -1,10 +1,11 @@
-# Sprint 123A.4 — Gate G4 Automated Validation Results (Interim)
+# Sprint 123A.4 — Gate G4 Automated Validation Results (Interim, Revision 2)
 
-**Document version:** 1.0  
+**Document version:** 2.0  
 **Date:** 2026-07-21  
 **Branch:** `sprint/123a-2-databento-adapter`  
-**Implementation SHA:** `0f770762654c067998cf7e8adc984eb5a06e4b8b`  
-**Preparation SHA:** `bde4aacbfd390b60b57efd78543fcbec2c9fd361`  
+**Gate G4 implementation SHA:** `0f770762654c067998cf7e8adc984eb5a06e4b8b`  
+**Staging tooling and evidence SHA:** `f86d82495b3004c90b359a22c010d3821ceb18c8`  
+**Operator checkout SHA:** `f86d82495b3004c90b359a22c010d3821ceb18c8` (see Section 7)  
 **Staging database:** `atlas_staging_g4` (MySQL 8, all 28 migrations applied)  
 **Prepared by:** Atlas Nexus automated session
 
@@ -19,11 +20,11 @@
 
 | Category | Result |
 |---|---|
-| Gate G1–G4 targeted Vitest suite (447 tests) | **PASS** |
+| Gate G1–G4 targeted Vitest suite (447 tests, 18 files) | **PASS** |
 | Python Databento feed suite (143 tests) | **PASS** |
 | TypeScript compilation | **PASS** |
 | Frontend production build | **PASS** |
-| Environment preflight — variable presence | **PASS** (sandbox only — see Section 4) |
+| Environment preflight — variable presence | **PASS** (sandbox only — see Section 5) |
 | Environment preflight — live credentials | **UNVERIFIED** (no real credentials in sandbox) |
 | Live Databento shadow session | **OPERATIONAL VALIDATION PENDING** |
 | Latency and continuity metrics | **OPERATIONAL VALIDATION PENDING** |
@@ -42,11 +43,11 @@
 
 **Command:**
 ```
-pnpm vitest run <18 files listed in Section 2.1.1>
+pnpm vitest run <18 files — exact list in table below>
 ```
 
 **Environment:**
-- `DATABASE_URL`: `atlas_staging_g4` via MySQL 8 Unix socket
+- `DATABASE_URL`: `atlas_staging_g4` via MySQL 8 Unix socket (all 28 migrations applied)
 - `MARKET_DATA_AUTHORITY`: `DATABENTO_SHADOW`
 - `ATLAS_GATE_G4_CHART_AUTHORITY_ENABLED`: `false`
 - `NODE_ENV`: `test`
@@ -75,7 +76,7 @@ pnpm vitest run <18 files listed in Section 2.1.1>
 | G4 | `server/market-data/tests/parity-service.test.ts` | 19 | PASS |
 | **TOTAL** | | **447** | **447 / 447 PASS** |
 
-**Verdict: Approved Gate regression: PASS.**
+**Verdict: Approved Gate regression: PASS — 447/447.**
 
 ### 2.2 Python Databento Feed Suite
 
@@ -84,9 +85,7 @@ pnpm vitest run <18 files listed in Section 2.1.1>
 python3 -m pytest services/databento-feed/tests/ -v
 ```
 
-**Result: 143 / 143 PASS** (3.94s)
-
-**Verdict: PASS.**
+**Result: 143 / 143 PASS** (3.94 s). Verdict: PASS.
 
 ### 2.3 TypeScript Compilation
 
@@ -95,9 +94,7 @@ python3 -m pytest services/databento-feed/tests/ -v
 pnpm tsc --noEmit
 ```
 
-**Result: 0 errors, 0 warnings. Exit code 0.**
-
-**Verdict: PASS.**
+**Result: 0 errors, 0 warnings. Exit code 0.** Verdict: PASS.
 
 ### 2.4 Frontend Production Build
 
@@ -105,8 +102,6 @@ pnpm tsc --noEmit
 ```
 pnpm build
 ```
-
-**Result: PASS**
 
 | Metric | Value |
 |---|---|
@@ -116,19 +111,38 @@ pnpm build
 | Errors | 0 |
 | Warnings | Chunk size advisory only (not a failure) |
 
-**Verdict: PASS.**
+Verdict: PASS.
 
 ---
 
-## 3. Full Repository Test Suite — Non-Gate Failures
+## 3. Full Repository Test Suite — Complete Failure Accounting
 
-The full repository test suite (`pnpm vitest run` without file arguments) reports **696 tests, 38 failed** across 5 test files. Two of these files are outside the Gate G4 scope. They are documented here in full.
+**Full repository command:**
+```
+pnpm vitest run --reporter=verbose
+```
 
-**Verdict: Full repository regression: NOT CLEAN, with two documented non-Gate failures.**
+**Full repository result: 4 failing files, 27 failed tests, 669 passed, 696 total.**
 
-### 3.1 `server/sprint-123a2.test.ts` — 15 failures
+**Verdict: Full repository regression: NOT CLEAN — 4 failing files, 27 failures, complete accounting below.**
 
-**Nature:** This file is an **obsolete root-level duplicate** of the approved Gate G2 test file `server/market-data/tests/sprint-123a2.test.ts`. The two files test the same `DatabentoBridgeServer` class but the root-level file was not updated when `handleMessage` gained a second parameter.
+No failure is a genuine regression in code modified during Sprint 123A.4. No Gate G4 blocker has been identified.
+
+### 3.1 Summary Table
+
+| # | File | Isolation result | Full-suite result | Failed tests | Category |
+|---|---|---|---|---|---|
+| 1 | `server/sprint-123a2.test.ts` | 15 fail / 13 pass | 15 fail | 15 | Obsolete duplicate — signature mismatch |
+| 2 | `server/massive-api.test.ts` | 1 fail | 1 fail | 1 | Credential-dependent integration test |
+| 3 | `server/market-data/tests/mysql-bar-persistence.test.ts` | **61 pass** | 4 fail | 4 | Shared-database parallel execution interference |
+| 4 | `server/market-data/tests/chart-history-mysql.test.ts` | **21 pass** | 7 fail | 7 | Shared-database parallel execution interference |
+| | **TOTAL** | | | **27** | |
+
+### 3.2 File 1: `server/sprint-123a2.test.ts` — 15 failures
+
+**Category:** Obsolete duplicate coverage.
+
+**Nature:** This file is an obsolete root-level duplicate of the approved Gate G2 test file `server/market-data/tests/sprint-123a2.test.ts`. Both test the same `DatabentoBridgeServer` class. The root-level file was not updated when `handleMessage` gained a second parameter at Gate G2 Revision 3.
 
 **Exact failure cause:** `DatabentoBridgeServer.handleMessage` has the signature:
 ```typescript
@@ -138,9 +152,9 @@ The root-level test file defines:
 ```typescript
 type HandleMessageFn = { handleMessage: (d: Buffer) => void };
 ```
-and calls `handleMessage` with only one argument. When the second argument (`connState`) is `undefined`, any access to `connState.recordsReceived` or `connState.recordsRejected` throws `TypeError: Cannot read properties of undefined`.
+and calls `handleMessage` with only one argument. When `connState` is `undefined`, any access to `connState.recordsReceived` or `connState.recordsRejected` throws `TypeError: Cannot read properties of undefined`.
 
-**When the signature changed:** `handleMessage` gained the `connState` parameter at commit `39db508` (Gate G2 Revision 3 — hardened topology). The root-level test file was last modified at commit `b9f3386` (Sprint 123A.2 foundation) and has never been updated since.
+**When the signature changed:** Commit `39db508` (Gate G2 Revision 3). The root-level file was last modified at commit `b9f3386` (Sprint 123A.2 foundation) and has never been updated.
 
 **Failing tests (15):**
 
@@ -162,13 +176,15 @@ and calls `handleMessage` with only one argument. When the second argument (`con
 | TEST-123A2-016 | Multiple records increment counter correctly: recordsReceived increments for each valid record |
 | TEST-123A2-017 | Mixed valid and invalid records: Counts valid and rejected records independently |
 
-**Recommendation:** This file should be **archived or removed** in a future sprint. The canonical Gate G2 test coverage is provided by `server/market-data/tests/sprint-123a2.test.ts` (31 tests, all passing). The root-level file adds no unique coverage. It must not be modified as part of this evidence-only step.
-
 **Gate G4 impact:** None. This file is not part of the approved 447-test Gate G1–G4 suite.
 
-### 3.2 `server/massive-api.test.ts` — 1 failure
+**Recommended future treatment:** Archive or remove in a future sprint. Canonical Gate G2 coverage is provided by `server/market-data/tests/sprint-123a2.test.ts` (31 tests, all passing). Not modified in this evidence step.
 
-**Nature:** This is an **optional credential-dependent integration test** that requires a `MASSIVE_API_KEY` environment variable to be set. It is not part of the Atlas Nexus core trading system and is not referenced in any Gate G1–G4 requirement.
+### 3.3 File 2: `server/massive-api.test.ts` — 1 failure
+
+**Category:** Credential-dependent integration test / external service dependency.
+
+**Nature:** An optional integration test that requires a `MASSIVE_API_KEY` environment variable. It is not part of the Atlas Nexus core trading system and is not referenced in any Gate G1–G4 requirement.
 
 **Exact failure cause:**
 ```
@@ -177,17 +193,83 @@ AssertionError: MASSIVE_API_KEY must be set: expected undefined to be truthy
 
 The test unconditionally asserts that `MASSIVE_API_KEY` is present. It does not use `vi.skipIf` or any conditional skip mechanism.
 
-**Expected CI policy:** This test should be skipped in CI environments where `MASSIVE_API_KEY` is not available, using `vi.skipIf(!process.env.MASSIVE_API_KEY, ...)` or by moving it to a separate integration test suite that is only run when the credential is explicitly provided. It must not be modified as part of this evidence-only step.
+**Failing test (1):**
+
+| Test name |
+|---|
+| Massive.com API Key: should authenticate and return futures data |
 
 **Gate G4 impact:** None. This file is not part of the approved 447-test Gate G1–G4 suite.
 
-### 3.3 Other failing test files
+**Recommended future treatment:** Add `vi.skipIf(!process.env.MASSIVE_API_KEY, ...)` or move to a separate credential-gated integration suite. Not modified in this evidence step.
 
-The remaining 3 failing test files (`server/ard.test.ts`, `server/nexusRoutes.test.ts`, `server/sb1.test.ts`) fail when `DATABASE_URL` points to a database that does not have the full application schema (i.e., when `atlas_test_123a3` is used instead of a fully-migrated database). These failures are resolved when `DATABASE_URL` points to `atlas_staging_g4` (all 28 migrations applied). They are not relevant to Gate G4.
+### 3.4 File 3: `server/market-data/tests/mysql-bar-persistence.test.ts` — 4 failures in full suite, 0 in isolation
+
+**Category:** Shared-database parallel execution interference (test isolation gap, not a code regression).
+
+**Isolation result:** 61 / 61 PASS.
+
+**Full-suite result:** 4 failures.
+
+**Exact failure cause:** Vitest runs test files in parallel by default. Both `mysql-bar-persistence.test.ts` and `chart-history-mysql.test.ts` use `DELETE FROM atlas_bars_1m` and `DELETE FROM atlas_bars_5m` in their `beforeEach` hooks against the same shared `atlas_staging_g4` database. When both files run concurrently, one file's `beforeEach` cleanup deletes rows that the other file's test has just inserted, causing count assertions to fail non-deterministically.
+
+**Failing tests in full suite (4):**
+
+| Test ID | Test name | Failure |
+|---|---|---|
+| TEST-123A3-MYS002 | Exact duplicate returns inserted=false (ER_DUP_ENTRY caught, no throw) | `expected true to be false` — row was deleted by concurrent cleanup |
+| TEST-123A3-MYS005 | Concurrent duplicate inserts produce exactly one inserted=true | Count mismatch due to concurrent cleanup |
+| TEST-123A3-TXN004 | Duplicate bar + new ledger is idempotent (bar=false, ledger=true) | `expected +0 to be 1` — ledger row deleted by concurrent cleanup |
+| TEST-123A3-TXN005 | Duplicate bar + duplicate ledger is fully idempotent | `expected true to be false` — state corrupted by concurrent cleanup |
+
+**Gate G4 impact:** None. These tests pass 100% when run as part of the approved 18-file Gate G1–G4 suite (which Vitest runs with sufficient isolation because the suite is specified as an explicit file list). The failures only appear when the full repository suite runs all 31 test files in parallel.
+
+**Recommended future treatment:** Add `--pool=forks` or `--sequence.concurrent=false` to the full-suite run command, or use per-test-file database schemas to eliminate shared-state interference. Not modified in this evidence step.
+
+### 3.5 File 4: `server/market-data/tests/chart-history-mysql.test.ts` — 7 failures in full suite, 0 in isolation
+
+**Category:** Shared-database parallel execution interference (test isolation gap, not a code regression).
+
+**Isolation result:** 21 / 21 PASS.
+
+**Full-suite result:** 7 failures.
+
+**Exact failure cause:** Same root cause as Section 3.4. The `beforeEach` hook in this file executes `DELETE FROM atlas_bars_1m` and `DELETE FROM atlas_bars_5m`. When `mysql-bar-persistence.test.ts` runs concurrently and inserts rows into those tables, this file's cleanup deletes them before the other file's assertions can verify them, and vice versa.
+
+**Failing tests in full suite (7):**
+
+| Test ID | Test name | Failure |
+|---|---|---|
+| TEST-123A4-HIS-001 | Returns MATCHED bars in ascending order | `expected +0 to be 3` — rows deleted by concurrent cleanup |
+| TEST-123A4-HIS-002 | Excludes PENDING bars | `expected +0 to be 1` — rows deleted by concurrent cleanup |
+| TEST-123A4-HIS-007 | Respects cursor (pagination) | `expected 1 to be 2` — partial row deletion |
+| TEST-123A4-HIS-011 | Isolates by symbol (different symbols do not bleed) | `expected +0 to be 1` — rows deleted by concurrent cleanup |
+| TEST-123A4-HIS-019 | dataQuality=GOOD for MATCHED bars | `Cannot read properties of undefined (reading 'dataQuality')` — row deleted before assertion |
+| TEST-123A4-HIS-016 | Respects startTsMs / endTsMs range for 5m | Count mismatch due to concurrent cleanup |
+| TEST-123A4-HIS-017 | Cursor pagination for 5m | Count mismatch due to concurrent cleanup |
+
+**Gate G4 impact:** None. These tests pass 100% when run as part of the approved 18-file Gate G1–G4 suite.
+
+**Recommended future treatment:** Same as Section 3.4. Not modified in this evidence step.
 
 ---
 
-## 4. Environment Preflight — Credential Quality Assessment
+## 4. Gate G4 Blocker Assessment
+
+No failure in the full repository suite is a genuine regression in code modified during Sprint 123A.4.
+
+| File | Is it a Sprint 123A.4 regression? | Reason |
+|---|---|---|
+| `server/sprint-123a2.test.ts` | No | Pre-existing since Gate G2 Revision 3 (commit `39db508`) |
+| `server/massive-api.test.ts` | No | Pre-existing credential-dependent test; not related to Sprint 123A.4 |
+| `server/market-data/tests/mysql-bar-persistence.test.ts` | No | Passes 61/61 in isolation; parallel interference only |
+| `server/market-data/tests/chart-history-mysql.test.ts` | No | Passes 21/21 in isolation; parallel interference only |
+
+**No Gate G4 blocker has been identified.**
+
+---
+
+## 5. Environment Preflight — Credential Quality Assessment
 
 The preflight was run in the Manus sandbox, which does not hold real Databento or bridge credentials. The following table records the accurate credential quality assessment.
 
@@ -204,11 +286,9 @@ The preflight was run in the Manus sandbox, which does not hold real Databento o
 | BRIDGE_AUTHENTICATION_VERIFIED | UNVERIFIED | No real bridge token in sandbox |
 | **LIVE_CREDENTIALS_READY** | **UNVERIFIED** | Real credentials must be loaded on the staging host |
 
-The preflight script has been updated to distinguish all five credential quality levels. It will not report `LIVE_CREDENTIALS_READY=true` unless an authenticated Databento API request succeeds, the bridge completes an authenticated handshake, and the database connection is verified. Common placeholders are rejected at the `SECRET_VALUE_NON_PLACEHOLDER` check.
-
 ---
 
-## 5. Authority Boundary Confirmations
+## 6. Authority Boundary Confirmations
 
 | Boundary | Status |
 |---|---|
@@ -222,7 +302,34 @@ The preflight script has been updated to distinguish all five credential quality
 
 ---
 
-## 6. Pending Live Validations
+## 7. Operator Checkout SHA — Correction
+
+The previous revision of this document incorrectly instructed the operator to check out the implementation-only SHA `0f770762654c067998cf7e8adc984eb5a06e4b8b`. That commit contains the Gate G4 implementation but predates the hardened staging scripts, preflight checks, interim report, and operator handoff document.
+
+The operator must check out the staging tooling SHA, which contains all required files:
+
+```bash
+git checkout f86d82495b3004c90b359a22c010d3821ceb18c8
+```
+
+After checkout, verify the following files are present:
+
+```
+scripts/run_gate_g4_staging_validation.sh
+scripts/staging_session_protocol.sh
+scripts/chart_authority_activation_readiness.sh
+docs/runbooks/SPRINT_123A4_GATE_G4_LIVE_VALIDATION_HANDOFF.md
+docs/reports/SPRINT_123A4_GATE_G4_AUTOMATED_VALIDATION_RESULTS.md
+```
+
+| SHA | Role |
+|---|---|
+| `0f770762654c067998cf7e8adc984eb5a06e4b8b` | Gate G4 implementation (Gate G4 Revision 3) |
+| `f86d82495b3004c90b359a22c010d3821ceb18c8` | Staging tooling and interim evidence — **operator must check out this SHA** |
+
+---
+
+## 8. Pending Live Validations
 
 The following validations require a live Databento connection on the staging host and cannot be completed in the Manus sandbox. All are **OPERATIONAL VALIDATION PENDING**.
 
@@ -230,20 +337,20 @@ The following validations require a live Databento connection on the staging hos
 |---|---|
 | Authenticated Databento API connection | HTTP 200 from `metadata.list_datasets` |
 | Authenticated bridge handshake | HTTP 200 from `/api/market-data/bridge/health` |
-| Live shadow session duration | One full RTH session or >= 500 eligible 1m comparisons |
+| Live shadow session duration | >= 500 eligible 1m comparisons (one full RTH session preferred) |
 | Latency metrics | p50, p90, p95, p99, p99.9, max for all 8 pipeline stages |
 | Continuity metrics | >= 99% bar continuity rate, 0 unresolved gaps at session end |
 | Playwright browser tests | CB-001 to CB-020 all pass, 0 skipped blocking tests |
-| SSE reconnect proof | All 12 reconnect properties proven (see Section 7 of template) |
+| SSE reconnect proof | All 12 reconnect properties proven |
 | Parity threshold | >= 500 comparisons, mismatch rate <= 2%, DB_ONLY <= 5%, TV_ONLY <= 1% |
 | Chart-authority readiness | All 7 gates pass |
 | Final evidence secret scan | 0 credential exposures in evidence directory |
 
 ---
 
-## 7. Next Action
+## 9. Next Action
 
-The operator must follow `docs/runbooks/SPRINT_123A4_GATE_G4_LIVE_VALIDATION_HANDOFF.md` to complete the live staging session. Upon completion, the operator must fill in `docs/reports/SPRINT_123A4_GATE_G4_LIVE_VALIDATION_RESULTS_TEMPLATE.md` and commit the completed evidence report.
+The operator must follow `docs/runbooks/SPRINT_123A4_GATE_G4_LIVE_VALIDATION_HANDOFF.md` to complete the live staging session, checking out SHA `f86d82495b3004c90b359a22c010d3821ceb18c8`. Upon completion, the operator must fill in `docs/reports/SPRINT_123A4_GATE_G4_LIVE_VALIDATION_RESULTS_TEMPLATE.md` and commit the completed evidence report.
 
 Gate G4 approval requires written approval from Phil. Sprint 123A.5 must not begin until Gate G4 is approved.
 

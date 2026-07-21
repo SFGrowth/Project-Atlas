@@ -15,15 +15,25 @@
 
 | Artefact | SHA |
 |---|---|
-| Implementation (Gate G4 Revision 3) | `0f770762654c067998cf7e8adc984eb5a06e4b8b` |
-| Staging preparation (this handoff) | `bde4aacbfd390b60b57efd78543fcbec2c9fd361` |
+| Gate G4 implementation (Gate G4 Revision 3) | `0f770762654c067998cf7e8adc984eb5a06e4b8b` |
+| Staging tooling and interim evidence | `f86d82495b3004c90b359a22c010d3821ceb18c8` |
 | Branch | `sprint/123a-2-databento-adapter` |
 
-The staging host must be checked out to the **implementation SHA** before running any validation step.
+The staging host must be checked out to the **staging tooling SHA** (`f86d82495b3004c90b359a22c010d3821ceb18c8`). This commit contains the Gate G4 implementation plus all hardened staging scripts, the preflight, the interim evidence report, and this handoff document. The implementation-only SHA (`0f770762654c067998cf7e8adc984eb5a06e4b8b`) predates the staging tooling and must not be used as the operator checkout target.
 
 ```bash
 git fetch origin
-git checkout 0f770762654c067998cf7e8adc984eb5a06e4b8b
+git checkout f86d82495b3004c90b359a22c010d3821ceb18c8
+```
+
+After checkout, verify the following files are present before proceeding:
+
+```
+scripts/run_gate_g4_staging_validation.sh
+scripts/staging_session_protocol.sh
+scripts/chart_authority_activation_readiness.sh
+docs/runbooks/SPRINT_123A4_GATE_G4_LIVE_VALIDATION_HANDOFF.md
+docs/reports/SPRINT_123A4_GATE_G4_AUTOMATED_VALIDATION_RESULTS.md
 ```
 
 ---
