@@ -438,3 +438,209 @@ export class InMemoryBarDatabaseAdapter implements BarDatabaseAdapter {
     this.nextId = 1;
   }
 }
+
+
+// ─── MySQL Bar Database Adapter ───────────────────────────────────────────────
+
+/**
+ * MySQLBarDatabaseAdapter — Production BarDatabaseAdapter backed by a mysql2 Pool.
+ *
+ * Implements the BarDatabaseAdapter interface for use in the live server startup
+ * wiring. Uses the same INSERT + ER_DUP_ENTRY pattern as the test helpers in
+ * mysql-bar-persistence.test.ts.
+ *
+ * Sprint 123A.4 — Gate G4
+ */
+import type { Pool, PoolConnection, ResultSetHeader, RowDataPacket } from 'mysql2/promise';
+
+export class MySQLBarDatabaseAdapter implements BarDatabaseAdapter {
+  constructor(private readonly pool: Pool) {}
+
+  async insertBar1m(row: InsertBar1mRow): Promise<PersistenceResult> {
+    const cols = [
+      'source', 'dataset', 'raw_symbol', 'instrument_id', 'interval_ms',
+      'bar_open_ts_ms', 'bar_open_ts_ns', 'bar_close_ts_ms',
+      'open_price_pts100', 'high_price_pts100', 'low_price_pts100', 'close_price_pts100',
+      'volume', 'trade_count', 'reconciliation_status',
+      'recon_close_delta_pts100', 'recon_high_delta_pts100', 'recon_low_delta_pts100',
+      'recon_volume_delta', 'recon_within_tolerance', 'recon_tolerance_pts100',
+      'revision', 'mapping_version', 'atlas_ts_ms',
+    ];
+    const values = [
+      row.source, row.dataset, row.rawSymbol, row.instrumentId, row.intervalMs,
+      row.barOpenTsMs, row.barOpenTsNs, row.barCloseTsMs,
+      row.openPricePts100, row.highPricePts100, row.lowPricePts100, row.closePricePts100,
+      row.volume, row.tradeCount, row.reconciliationStatus,
+      row.reconCloseDeltaPts100, row.reconHighDeltaPts100, row.reconLowDeltaPts100,
+      row.reconVolumeDelta,
+      row.reconWithinTolerance === null ? null : (row.reconWithinTolerance ? 1 : 0),
+      row.reconTolerancePts100, row.revision, row.mappingVersion, row.atlasTsMs,
+    ];
+    const placeholders = cols.map(() => '?').join(', ');
+    try {
+      const [result] = await this.pool.execute<ResultSetHeader>(
+        `INSERT INTO atlas_bars_1m (${cols.join(', ')}) VALUES (${placeholders})`,
+        values,
+      );
+      return { inserted: true, rowId: result.insertId, warningStatus: result.warningStatus };
+    } catch (err) {
+      if (isDuplicateKeyError(err)) {
+        return { inserted: false, rowId: null, warningStatus: 0 };
+      }
+      throw err;
+    }
+  }
+
+  async insertBar5m(row: InsertBar5mRow): Promise<PersistenceResult> {
+    const cols = [
+      'source', 'dataset', 'raw_symbol', 'instrument_id', 'interval_ms',
+      'bar_open_ts_ms', 'bar_close_ts_ms',
+      'open_price_pts100', 'high_price_pts100', 'low_price_pts100', 'close_price_pts100',
+      'volume', 'trade_count', 'minute_bar_count', 'canonical_bar_type',
+      'revision', 'mapping_version', 'atlas_ts_ms',
+    ];
+    const values = [
+      row.source, row.dataset, row.rawSymbol, row.instrumentId, row.intervalMs,
+      row.barOpenTsMs, row.barCloseTsMs,
+      row.openPricePts100, row.highPricePts100, row.lowPricePts100, row.closePricePts100,
+      row.volume, row.tradeCount, row.minuteBarCount, row.canonicalBarType,
+      row.revision, row.mappingVersion, row.atlasTsMs,
+    ];
+    const placeholders = cols.map(() => '?').join(', ');
+    try {
+      const [result] = await this.pool.execute<ResultSetHeader>(
+        `INSERT INTO atlas_bars_5m (${cols.join(', ')}) VALUES (${placeholders})`,
+        values,
+      );
+      return { inserted: true, rowId: result.insertId, warningStatus: result.warningStatus };
+    } catch (err) {
+      if (isDuplicateKeyError(err)) {
+        return { inserted: false, rowId: null, warningStatus: 0 };
+      }
+      throw err;
+    }
+  }
+
+  async isAlreadyProcessed(consumerId: string, consumerVersion: string, eventKey: string): Promise<boolean> {
+    // eventKey format: "source:dataset:rawSymbol:instrumentId:intervalMs:barOpenTsMs:revision:mappingVersion"
+    const parts = eventKey.split(':');
+    if (parts.length < 8) return false;
+    const [source, dataset, rawSymbol, instrumentId, , barOpenTsMs, revision, mappingVersion] = parts;
+    const [rows] = await this.pool.execute<RowDataPacket[]>(
+      `SELECT 1 FROM atlas_bar_processing_ledger
+       WHERE source = ? AND dataset = ? AND raw_symbol = ? AND instrument_id = ?
+         AND bar_open_ts_ms = ? AND revision = ? AND mapping_version = ?
+         AND consumer_name = ? AND consumer_version = ?
+       LIMIT 1`,
+      [source, dataset, rawSymbol, Number(instrumentId), Number(barOpenTsMs),
+       Number(revision), mappingVersion, consumerId, consumerVersion],
+    );
+    return rows.length > 0;
+  }
+
+  async markProcessed(
+    consumerId: string,
+    consumerVersion: string,
+    _eventType: string,
+    eventKey: string,
+  ): Promise<LedgerResult> {
+    const parts = eventKey.split(':');
+    if (parts.length < 8) throw new Error(`Invalid eventKey format: ${eventKey}`);
+    const [source, dataset, rawSymbol, instrumentId, , barOpenTsMs, revision, mappingVersion] = parts;
+    try {
+      const [result] = await this.pool.execute<ResultSetHeader>(
+        `INSERT INTO atlas_bar_processing_ledger
+           (source, dataset, raw_symbol, instrument_id, bar_open_ts_ms, revision, mapping_version,
+            consumer_name, consumer_version, processed_at_ms, success, error_message, atlas_ts_ms)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [source, dataset, rawSymbol, Number(instrumentId), Number(barOpenTsMs),
+         Number(revision), mappingVersion, consumerId, consumerVersion,
+         Date.now(), 1, null, Date.now()],
+      );
+      return { alreadyProcessed: false, warningStatus: result.warningStatus };
+    } catch (err) {
+      if (isDuplicateKeyError(err)) {
+        return { alreadyProcessed: true, warningStatus: 0 };
+      }
+      throw err;
+    }
+  }
+
+  async persistBarWithLedger(
+    bar1mRow: InsertBar1mRow,
+    ledgerRow: InsertLedgerRow,
+  ): Promise<TransactionResult> {
+    let conn: PoolConnection | null = null;
+    try {
+      conn = await this.pool.getConnection();
+      await conn.beginTransaction();
+
+      // Insert bar
+      const barCols = [
+        'source', 'dataset', 'raw_symbol', 'instrument_id', 'interval_ms',
+        'bar_open_ts_ms', 'bar_open_ts_ns', 'bar_close_ts_ms',
+        'open_price_pts100', 'high_price_pts100', 'low_price_pts100', 'close_price_pts100',
+        'volume', 'trade_count', 'reconciliation_status',
+        'recon_close_delta_pts100', 'recon_high_delta_pts100', 'recon_low_delta_pts100',
+        'recon_volume_delta', 'recon_within_tolerance', 'recon_tolerance_pts100',
+        'revision', 'mapping_version', 'atlas_ts_ms',
+      ];
+      const barValues = [
+        bar1mRow.source, bar1mRow.dataset, bar1mRow.rawSymbol, bar1mRow.instrumentId, bar1mRow.intervalMs,
+        bar1mRow.barOpenTsMs, bar1mRow.barOpenTsNs, bar1mRow.barCloseTsMs,
+        bar1mRow.openPricePts100, bar1mRow.highPricePts100, bar1mRow.lowPricePts100, bar1mRow.closePricePts100,
+        bar1mRow.volume, bar1mRow.tradeCount, bar1mRow.reconciliationStatus,
+        bar1mRow.reconCloseDeltaPts100, bar1mRow.reconHighDeltaPts100, bar1mRow.reconLowDeltaPts100,
+        bar1mRow.reconVolumeDelta,
+        bar1mRow.reconWithinTolerance === null ? null : (bar1mRow.reconWithinTolerance ? 1 : 0),
+        bar1mRow.reconTolerancePts100, bar1mRow.revision, bar1mRow.mappingVersion, bar1mRow.atlasTsMs,
+      ];
+      const barPlaceholders = barCols.map(() => '?').join(', ');
+
+      let barInserted = false;
+      let barRowId: number | null = null;
+      try {
+        const [barResult] = await conn.execute<ResultSetHeader>(
+          `INSERT INTO atlas_bars_1m (${barCols.join(', ')}) VALUES (${barPlaceholders})`,
+          barValues,
+        );
+        barInserted = true;
+        barRowId = barResult.insertId;
+      } catch (err) {
+        if (!isDuplicateKeyError(err)) {
+          await conn.rollback();
+          return { barInserted: false, ledgerInserted: false, barRowId: null, rolledBack: true };
+        }
+        // Duplicate bar — continue to ledger insert
+      }
+
+      // Insert ledger
+      let ledgerInserted = false;
+      try {
+        await conn.execute<ResultSetHeader>(
+          `INSERT INTO atlas_bar_processing_ledger
+             (source, dataset, raw_symbol, instrument_id, bar_open_ts_ms, revision, mapping_version,
+              consumer_name, consumer_version, processed_at_ms, success, error_message, atlas_ts_ms)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [ledgerRow.source, ledgerRow.dataset, ledgerRow.rawSymbol, ledgerRow.instrumentId,
+           ledgerRow.barOpenTsMs, ledgerRow.revision, ledgerRow.mappingVersion,
+           ledgerRow.consumerName, ledgerRow.consumerVersion,
+           ledgerRow.processedAtMs, ledgerRow.success ? 1 : 0,
+           ledgerRow.errorMessage, ledgerRow.atlasTsMs],
+        );
+        ledgerInserted = true;
+      } catch (err) {
+        if (!isDuplicateKeyError(err)) {
+          await conn.rollback();
+          return { barInserted: false, ledgerInserted: false, barRowId: null, rolledBack: true };
+        }
+        // Duplicate ledger — already processed
+      }
+
+      await conn.commit();
+      return { barInserted, ledgerInserted, barRowId, rolledBack: false };
+    } finally {
+      if (conn) conn.release();
+    }
+  }
+}

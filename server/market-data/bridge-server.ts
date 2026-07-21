@@ -587,7 +587,7 @@ export class DatabentoBridgeServer {
       }
 
       connState.lastHeartbeatAt = Date.now();
-      this.handleMessage(data, connState);
+      this._handleMessage(data, connState);
     });
 
     ws.on('close', () => {
@@ -633,9 +633,29 @@ export class DatabentoBridgeServer {
   }
 
   /**
-   * Handle an incoming bridge message from the Python adapter.
+   * Public test-injection shim.
+   * Allows unit tests to inject raw Buffer messages without a live WebSocket
+   * connection. Creates a minimal no-op ConnectionState so _handleMessage can
+   * be exercised in isolation.
+   *
+   * @internal — test use only. Do not call from production code.
    */
-  private handleMessage(data: Buffer, connState: ConnectionState): void {
+  handleMessage(data: Buffer): void {
+    const dummyConnState: ConnectionState = {
+      sessionId: 'test',
+      adapterInstanceId: null,
+      authenticated: true,
+      connectedAt: Date.now(),
+      lastHeartbeatAt: Date.now(),
+      recordsReceived: 0,
+      recordsRejected: 0,
+      authTimer: null,
+      staleTimer: null,
+    };
+    this._handleMessage(data, dummyConnState);
+  }
+
+  private _handleMessage(data: Buffer, connState: ConnectionState): void {
     let envelope: BridgeEnvelope;
     try {
       envelope = JSON.parse(data.toString('utf8')) as BridgeEnvelope;
