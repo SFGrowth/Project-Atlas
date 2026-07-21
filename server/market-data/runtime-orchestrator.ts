@@ -360,6 +360,20 @@ export class MarketDataRuntimeOrchestrator {
     }
   };
 
+  private readonly _onContractDefinitionUpdated = (event: { type: 'contract:definition-updated'; definition: import('./types/bar-lifecycle.js').ContractDefinition }): void => {
+    // Auto-update TradeBarBuilder config when a new definition record arrives
+    // (initial startup or contract roll). This ensures the builder filters on
+    // the correct instrument_id and raw_symbol without requiring a server restart.
+    const def = event.definition;
+    this.deps.tradeBarBuilder.updateConfig({
+      dataset: def.dataset,
+      rawSymbol: def.rawSymbol,
+      instrumentId: def.instrumentId,
+      mappingVersion: def.mappingVersion,
+    });
+    console.log(`[RuntimeOrchestrator] TradeBarBuilder config updated: ${def.dataset}/${def.rawSymbol}/${def.instrumentId}`);
+  };
+
   private _onBar5mReady(bar: FiveMinBar): void {
     this.lastConfirmed5mTs = Date.now();
     try {
@@ -383,10 +397,11 @@ export class MarketDataRuntimeOrchestrator {
     bus.on('databento:gap-detected', this._onGapDetected);
     bus.on('databento:recovery', this._onRecovery);
 
-    // Subscribe to bar builder output events
+        // Subscribe to bar builder output events
     this.deps.tradeBarBuilder.on('bar:confirmed', this._onBarConfirmed);
     this.deps.tradeBarBuilder.on('bar:developing', this._onBarDeveloping);
-
+    // Subscribe to contract manager events for auto-config update on definition / roll
+    this.deps.contractManager.on('contract:definition-updated', this._onContractDefinitionUpdated);
     this.listenersAttached = true;
   }
 
@@ -400,9 +415,9 @@ export class MarketDataRuntimeOrchestrator {
     bus.off('databento:gap-detected', this._onGapDetected);
     bus.off('databento:recovery', this._onRecovery);
 
-    this.deps.tradeBarBuilder.off('bar:confirmed', this._onBarConfirmed);
+        this.deps.tradeBarBuilder.off('bar:confirmed', this._onBarConfirmed);
     this.deps.tradeBarBuilder.off('bar:developing', this._onBarDeveloping);
-
+    this.deps.contractManager.off('contract:definition-updated', this._onContractDefinitionUpdated);
     this.listenersAttached = false;
   }
 

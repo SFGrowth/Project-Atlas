@@ -132,8 +132,9 @@ function makeMockDeps(overrides: Partial<OrchestratorDeps> = {}): OrchestratorDe
   const tradeBarBuilder = new EventEmitter() as any;
   tradeBarBuilder.processTrade = vi.fn();
   tradeBarBuilder.processOfficialOhlcv1m = vi.fn();
+  tradeBarBuilder.updateConfig = vi.fn();
 
-  const contractManager = { processDefinition: vi.fn(), processSymbolMapping: vi.fn() } as any;
+  const contractManager = { processDefinition: vi.fn(), processSymbolMapping: vi.fn(), on: vi.fn(), off: vi.fn() } as any;
   const barReconciler = {} as any;
   const gapRecovery = { onGapDetected: vi.fn(), onRecoveryRecord: vi.fn() } as any;
   const windowAccumulator = { addBar: vi.fn().mockReturnValue(null) } as any;

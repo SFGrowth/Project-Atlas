@@ -337,6 +337,19 @@ export class TradeBarBuilder extends EventEmitter {
   }
 
   // ─── Accessors (for testing) ─────────────────────────────────────────────────
+  /**
+   * Update the active instrument config (e.g. on contract roll or initial
+   * definition record from the Python adapter). Safe to call at any time.
+   * In-flight PROVISIONAL bars for the old instrument are left to timeout.
+   */
+  updateConfig(patch: Partial<Pick<TradeBarBuilderConfig, 'dataset' | 'rawSymbol' | 'instrumentId' | 'mappingVersion'>>): void {
+    const cfg = this.config as Partial<Required<TradeBarBuilderConfig>>;
+    if (patch.dataset !== undefined) cfg.dataset = patch.dataset;
+    if (patch.rawSymbol !== undefined) cfg.rawSymbol = patch.rawSymbol;
+    if (patch.instrumentId !== undefined) cfg.instrumentId = patch.instrumentId;
+    if (patch.mappingVersion !== undefined) cfg.mappingVersion = patch.mappingVersion;
+  }
+
 
   getDevelopingBar(): AtlasBarDeveloping | null {
     return this.developingBar;
