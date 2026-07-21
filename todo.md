@@ -1183,3 +1183,56 @@
 - [x] TypeScript: 0 errors confirmed
 - [x] Push Sprint 122B to GitHub
 - [x] Checkpoint Sprint 122B
+
+## Sprint 123A — Databento Live Data Adapter (Gate G4 Staging Validation)
+
+### Sprint 123A.1–123A.3 — Implementation [COMPLETE]
+- [x] Implement Databento Python feed adapter (services/databento-feed/)
+- [x] Implement bridge server WebSocket layer
+- [x] Implement TypeScript market-data ingestion pipeline
+- [x] Implement bar lifecycle: developing → provisional → confirmed
+- [x] Implement 1m and 5m persistence
+- [x] Implement parity evaluation (Databento shadow vs TradingView)
+- [x] Implement SSE reconnect with cursor replay
+- [x] Implement chart-authority readiness check (7 gates)
+- [x] Write 447 Gate G1–G4 Vitest tests — 447/447 passing
+- [x] Write 143 Python pytest tests — 143/143 passing
+- [x] TypeScript compilation: 0 errors
+- [x] Frontend production build: PASS
+- [x] Implementation SHA: 0f770762654c067998cf7e8adc984eb5a06e4b8b
+
+### Sprint 123A.4 — Gate G4 Staging Preparation [COMPLETE — PENDING LIVE VALIDATION]
+- [x] Write staging provisioning runbook (docs/runbooks/SPRINT_123A4_STAGING_PROVISIONING_RUNBOOK.md)
+- [x] Harden staging_session_protocol.sh (check_secret, redact, DATABASE_URL, non-zero exit)
+- [x] Harden chart_authority_activation_readiness.sh (same hardening + credential quality checks)
+- [x] Write run_gate_g4_staging_validation.sh (master wrapper, 12 steps, stops on blocking failure)
+- [x] Write SPRINT_123A4_GATE_G4_LIVE_VALIDATION_RESULTS_TEMPLATE.md (21-section evidence template)
+- [x] Add evidence/ to .gitignore
+- [x] Staging tooling SHA: f86d82495b3004c90b359a22c010d3821ceb18c8
+- [x] Confirm 447/447 Vitest, 143/143 pytest, 0 TSC errors, build PASS in sandbox
+- [x] Identify full repository failure accounting (4 files, 27 failures — all pre-existing, none Gate-targeted)
+- [x] Identify infrastructure constraints: no live GLBX.MDP3 entitlement, live.databento.com unreachable from sandbox
+- [x] Write infrastructure constraint report (docs/reports/SPRINT_123A4_GATE_G4_INFRASTRUCTURE_CONSTRAINT_AND_HANDOFF.md)
+- [x] Write interim automated validation results (docs/reports/SPRINT_123A4_GATE_G4_AUTOMATED_VALIDATION_RESULTS.md)
+- [x] Update operator handoff to v2.0 with full 17-step protocol
+- [x] Add Sprint 123A section to todo.md
+
+### Sprint 123A.4 — Gate G4 Live Validation [BLOCKED — PENDING OPERATOR EXECUTION]
+- [ ] Operator provisions staging host with DNS access to live.databento.com
+- [ ] Operator activates live GLBX.MDP3 entitlement on Databento account (contact Databento support)
+- [ ] Run preflight: bash scripts/run_gate_g4_staging_validation.sh --preflight-only
+- [ ] Run full live shadow session (>=500 eligible 1-min comparisons)
+- [ ] Capture latency percentiles for all 8 pipeline stages
+- [ ] Verify bar continuity >=99%, unresolved gaps = 0
+- [ ] Verify parity thresholds (mismatch <=2%, DB_ONLY <=5%, TV_ONLY <=1%)
+- [ ] Run Playwright CB-001 to CB-020 — all must pass
+- [ ] Prove SSE reconnect 14-step procedure in live environment
+- [ ] Run chart-authority readiness check (all 7 gates)
+- [ ] Run staging-only failover test
+- [ ] Run final regression (447/447, 143/143, 0 TSC, build pass)
+- [ ] Run final secret scan — 0 credential exposures
+- [ ] Complete SPRINT_123A4_GATE_G4_LIVE_VALIDATION_RESULTS.md
+- [ ] Phil provides written Gate G4 approval
+
+### Sprint 123A.5 — Chart Authority Activation [NOT STARTED — REQUIRES GATE G4 APPROVAL]
+- [ ] DO NOT BEGIN until Gate G4 written approval received from Phil
