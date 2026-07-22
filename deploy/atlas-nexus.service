@@ -1,0 +1,24 @@
+[Unit]
+Description=Atlas Nexus Trading Server
+Documentation=https://github.com/SFGrowth/Project-Atlas
+After=network.target mysql.service
+Wants=mysql.service
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/home/ubuntu/atlas-nexus
+EnvironmentFile=/home/ubuntu/atlas-nexus/.env
+ExecStart=/home/ubuntu/atlas-nexus/node_modules/.bin/tsx server/_core/index.ts
+Restart=always
+RestartSec=5
+StandardOutput=append:/var/log/atlas-nexus/server.log
+StandardError=append:/var/log/atlas-nexus/server.log
+SyslogIdentifier=atlas-nexus
+
+# Ensure the process is fully independent of any session
+KillMode=process
+TimeoutStopSec=30
+
+[Install]
+WantedBy=multi-user.target

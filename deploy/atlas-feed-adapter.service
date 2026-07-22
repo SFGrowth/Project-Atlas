@@ -1,0 +1,24 @@
+[Unit]
+Description=Atlas Nexus Databento Feed Adapter
+Documentation=https://github.com/SFGrowth/Project-Atlas
+After=network.target atlas-nexus.service
+Requires=atlas-nexus.service
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/home/ubuntu/atlas-nexus/services/databento-feed
+EnvironmentFile=/home/ubuntu/atlas-nexus/.env
+ExecStart=/usr/bin/python3 feed_adapter.py
+Restart=always
+RestartSec=10
+StandardOutput=append:/var/log/atlas-nexus/feed-adapter.log
+StandardError=append:/var/log/atlas-nexus/feed-adapter.log
+SyslogIdentifier=atlas-feed-adapter
+
+# Ensure the process is fully independent of any session
+KillMode=process
+TimeoutStopSec=30
+
+[Install]
+WantedBy=multi-user.target
