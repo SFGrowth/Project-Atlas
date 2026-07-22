@@ -2587,3 +2587,103 @@ export const atlasConsumerProcessingLedger = mysqlTable("atlas_consumer_processi
 });
 export type AtlasConsumerProcessingLedgerRow = typeof atlasConsumerProcessingLedger.$inferSelect;
 export type InsertAtlasConsumerProcessingLedger = typeof atlasConsumerProcessingLedger.$inferInsert;
+
+// ─── DARWIN G6A: darwin_observations ─────────────────────────────────────────
+// Sprint 123A.6 — RESEARCH ONLY, NO LIVE EXECUTION
+export const darwinObservations = mysqlTable("darwin_observations", {
+  id:                    bigint("id", { mode: "number" }).primaryKey().autoincrement(),
+  observationId:         varchar("observation_id", { length: 64 }).notNull().unique(),
+  barTimestamp:          bigint("bar_timestamp", { mode: "number" }).notNull(),
+  symbol:                varchar("symbol", { length: 20 }).notNull(),
+  open:                  decimal("open", { precision: 12, scale: 4 }).notNull(),
+  high:                  decimal("high", { precision: 12, scale: 4 }).notNull(),
+  low:                   decimal("low", { precision: 12, scale: 4 }).notNull(),
+  close:                 decimal("close", { precision: 12, scale: 4 }).notNull(),
+  volume:                bigint("volume", { mode: "number" }).notNull(),
+  atr14:                 decimal("atr14", { precision: 12, scale: 4 }),
+  ema15:                 decimal("ema15", { precision: 12, scale: 4 }),
+  ema50:                 decimal("ema50", { precision: 12, scale: 4 }),
+  distanceFromEma15Pct:  decimal("distance_from_ema15_pct", { precision: 10, scale: 6 }),
+  ema15CrossCount10:     int("ema15_cross_count_10"),
+  volatilityRegime:      varchar("volatility_regime", { length: 20 }),
+  trendRegime:           varchar("trend_regime", { length: 20 }),
+  sessionType:           varchar("session_type", { length: 10 }),
+  featureVersion:        varchar("feature_version", { length: 10 }).notNull().default("1.0"),
+  codeSha:               varchar("code_sha", { length: 64 }).notNull(),
+  researchOnly:          boolean("research_only").notNull().default(true),
+  processBarCalled:      boolean("process_bar_called").notNull().default(false),
+  postBarAutomationCalled: boolean("post_bar_automation_called").notNull().default(false),
+  createdAt:             timestamp("created_at").defaultNow().notNull(),
+});
+export type DarwinObservation = typeof darwinObservations.$inferSelect;
+export type InsertDarwinObservation = typeof darwinObservations.$inferInsert;
+
+// ─── DARWIN G6A: darwin_outcome_labels ───────────────────────────────────────
+export const darwinOutcomeLabels = mysqlTable("darwin_outcome_labels", {
+  id:                    bigint("id", { mode: "number" }).primaryKey().autoincrement(),
+  observationId:         varchar("observation_id", { length: 64 }).notNull(),
+  horizonMinutes:        int("horizon_minutes").notNull(),
+  horizonCompleteAt:     bigint("horizon_complete_at", { mode: "number" }).notNull(),
+  netPriceChange:        decimal("net_price_change", { precision: 12, scale: 4 }).notNull(),
+  maxFavourableExcursion: decimal("max_favourable_excursion", { precision: 12, scale: 4 }).notNull(),
+  maxAdverseExcursion:   decimal("max_adverse_excursion", { precision: 12, scale: 4 }).notNull(),
+  labelVersion:          varchar("label_version", { length: 10 }).notNull().default("1.0"),
+  researchOnly:          boolean("research_only").notNull().default(true),
+  createdAt:             timestamp("created_at").defaultNow().notNull(),
+});
+export type DarwinOutcomeLabel = typeof darwinOutcomeLabels.$inferSelect;
+export type InsertDarwinOutcomeLabel = typeof darwinOutcomeLabels.$inferInsert;
+
+// ─── DARWIN G6A: darwin_experiment_manifests ─────────────────────────────────
+export const darwinExperimentManifests = mysqlTable("darwin_experiment_manifests", {
+  id:                    bigint("id", { mode: "number" }).primaryKey().autoincrement(),
+  manifestId:            varchar("manifest_id", { length: 64 }).notNull().unique(),
+  experimentId:          varchar("experiment_id", { length: 10 }).notNull(),
+  experimentName:        varchar("experiment_name", { length: 100 }).notNull(),
+  codeSha:               varchar("code_sha", { length: 64 }).notNull(),
+  featureVersion:        varchar("feature_version", { length: 10 }).notNull(),
+  labelVersion:          varchar("label_version", { length: 10 }).notNull(),
+  parameterSetJson:      json("parameter_set_json").notNull(),
+  occurrences:           int("occurrences").notNull().default(0),
+  passedGates:           boolean("passed_gates").notNull().default(false),
+  gateFailuresJson:      json("gate_failures_json"),
+  resultsJson:           json("results_json"),
+  resultsHash:           varchar("results_hash", { length: 64 }),
+  executionTimestamp:    bigint("execution_timestamp", { mode: "number" }).notNull(),
+  status:                varchar("status", { length: 20 }).notNull().default("PENDING"),
+  researchOnly:          boolean("research_only").notNull().default(true),
+  liveExecution:         boolean("live_execution").notNull().default(false),
+  processBarCalled:      boolean("process_bar_called").notNull().default(false),
+  postBarAutomationCalled: boolean("post_bar_automation_called").notNull().default(false),
+  tradersPostSent:       boolean("traders_post_sent").notNull().default(false),
+  tradovateOrderSubmitted: boolean("tradovate_order_submitted").notNull().default(false),
+  createdAt:             timestamp("created_at").defaultNow().notNull(),
+});
+export type DarwinExperimentManifest = typeof darwinExperimentManifests.$inferSelect;
+export type InsertDarwinExperimentManifest = typeof darwinExperimentManifests.$inferInsert;
+
+// ─── DARWIN G6A: darwin_shadow_signals ───────────────────────────────────────
+export const darwinShadowSignals = mysqlTable("darwin_shadow_signals", {
+  id:                    bigint("id", { mode: "number" }).primaryKey().autoincrement(),
+  signalId:              varchar("signal_id", { length: 64 }).notNull().unique(),
+  candidateId:           varchar("candidate_id", { length: 64 }).notNull(),
+  timestamp:             bigint("timestamp", { mode: "number" }).notNull(),
+  symbol:                varchar("symbol", { length: 20 }).notNull(),
+  direction:             varchar("direction", { length: 5 }).notNull(),
+  theoreticalEntry:      decimal("theoretical_entry", { precision: 12, scale: 4 }).notNull(),
+  theoreticalStop:       decimal("theoretical_stop", { precision: 12, scale: 4 }).notNull(),
+  theoreticalTarget:     decimal("theoretical_target", { precision: 12, scale: 4 }).notNull(),
+  confidence:            decimal("confidence", { precision: 5, scale: 4 }).notNull(),
+  reasonCodesJson:       json("reason_codes_json").notNull(),
+  featureSnapshotJson:   json("feature_snapshot_json").notNull(),
+  experimentVersion:     varchar("experiment_version", { length: 10 }).notNull(),
+  codeSha:               varchar("code_sha", { length: 64 }).notNull(),
+  researchOnlyLabel:     varchar("research_only_label", { length: 50 }).notNull().default("RESEARCH ONLY — NO LIVE EXECUTION"),
+  processBarCalled:      boolean("process_bar_called").notNull().default(false),
+  postBarAutomationCalled: boolean("post_bar_automation_called").notNull().default(false),
+  tradersPostSent:       boolean("traders_post_sent").notNull().default(false),
+  tradovateOrderSubmitted: boolean("tradovate_order_submitted").notNull().default(false),
+  createdAt:             timestamp("created_at").defaultNow().notNull(),
+});
+export type DarwinShadowSignal = typeof darwinShadowSignals.$inferSelect;
+export type InsertDarwinShadowSignal = typeof darwinShadowSignals.$inferInsert;
