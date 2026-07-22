@@ -335,7 +335,7 @@ interface DatabentoLiveChartProps {
 
 export default function DatabentoLiveChart({
   symbol = "MNQM5",
-  chartSource = "TRADINGVIEW_PRIMARY_DATABENTO_SHADOW",
+  chartSource: chartSourceProp = "TRADINGVIEW_PRIMARY_DATABENTO_SHADOW",
 }: DatabentoLiveChartProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef     = useRef<IChartApi | null>(null);
@@ -348,6 +348,26 @@ export default function DatabentoLiveChart({
   const [streamStatus, setStreamStatus] = useState<StreamStatus>("DISCONNECTED");
   const [lastBarIso, setLastBarIso] = useState<string | null>(null);
   const [chartState, dispatch] = useReducer(chartReducer, initialChartState);
+
+  // Sprint 123A.5: Dynamic chart source — derived from server authority mode
+  // Fetches /api/market-data/health on mount to determine if DATABENTO_CHART_AUTHORITY is active
+  const [chartSource, setChartSourceState] = useState<ChartSource>(chartSourceProp);
+  useEffect(() => {
+    fetch('/api/market-data/health')
+      .then(r => r.ok ? r.json() : null)
+      .then((data: { orchestrator?: { authorityMode?: string } } | null) => {
+        if (!data) return;
+        const mode = data?.orchestrator?.authorityMode;
+        if (mode === 'DATABENTO_CHART_AUTHORITY') {
+          setChartSourceState('DATABENTO');
+        } else if (mode === 'DATABENTO_SHADOW') {
+          setChartSourceState('TRADINGVIEW_PRIMARY_DATABENTO_SHADOW');
+        } else if (mode === 'TRADINGVIEW_ONLY') {
+          setChartSourceState('TRADINGVIEW');
+        }
+      })
+      .catch(() => { /* health fetch failed — keep prop default */ });
+  }, []);
 
   // SSE reconnect state
   const lastEventIdRef   = useRef<string>("0");

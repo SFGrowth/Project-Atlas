@@ -262,13 +262,15 @@ test.describe("DatabentoLiveChart — 20 Chart Behaviour Proofs", () => {
     expect(body).toHaveProperty("mismatchRate");
   });
 
-  // ── CB-020: Chart-authority indicator absent in shadow mode ──────────────
-  test("CB-020: chart-authority badge is absent in SHADOW mode", async ({
+  // ── CB-020: Chart-authority badge is visible in DATABENTO_CHART_AUTHORITY mode ──
+  // Updated: Sprint 123A.5 — server now runs DATABENTO_CHART_AUTHORITY; badge must be visible
+  test("CB-020: chart-authority badge is visible in DATABENTO_CHART_AUTHORITY mode", async ({
     page,
   }) => {
     const authorityBadge = page.locator(
       "[data-testid='chart-authority-active-badge']"
     );
-    await expect(authorityBadge).not.toBeVisible();
+    // In DATABENTO_CHART_AUTHORITY mode the badge is rendered and visible
+    await expect(authorityBadge).toBeVisible({ timeout: 10_000 });
   });
 });
