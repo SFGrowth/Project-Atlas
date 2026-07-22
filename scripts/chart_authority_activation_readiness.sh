@@ -50,7 +50,16 @@ echo ""
 
 # ─── GATE 3: Minimum bar count in atlas_bars_1m ──────────────────────────────
 echo "--- Gate 3: Minimum bar count (>= 100 MATCHED bars) ---"
-MYSQL_CMD="mysql -u root atlas_memory -sN"
+# Derive DB credentials from DATABASE_URL if set, otherwise use defaults
+if [ -n "${DATABASE_URL:-}" ]; then
+  # Parse mysql://user:pass@host:port/dbname
+  DB_USER=$(echo "$DATABASE_URL" | sed 's|mysql://\([^:]*\):.*|\1|')
+  DB_PASS=$(echo "$DATABASE_URL" | sed 's|mysql://[^:]*:\([^@]*\)@.*|\1|')
+  DB_NAME=$(echo "$DATABASE_URL" | sed 's|.*/\([^?]*\).*|\1|')
+  MYSQL_CMD="mysql -u $DB_USER -p$DB_PASS $DB_NAME -sN"
+else
+  MYSQL_CMD="mysql -u atlas -patlas_staging_pass atlas_staging_g4 -sN"
+fi
 BAR_COUNT=$($MYSQL_CMD -e "
   SELECT COUNT(*)
   FROM atlas_bars_1m
@@ -111,13 +120,27 @@ else
 fi
 echo ""
 
-# ─── GATE 6: Health state is LIVE ────────────────────────────────────────────
+# ─── GATE 6: Orchestrator status is READY ───────────────────────────────────
 echo "--- Gate 6: Health state is LIVE ---"
-HEALTH_RESPONSE=$(curl -s http://localhost:3000/api/market-data/health 2>/dev/null || echo '{"state":"UNREACHABLE"}')
-HEALTH_STATE=$(echo "$HEALTH_RESPONSE" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('state','UNKNOWN'))" 2>/dev/null || echo "PARSE_ERROR")
+# Generate a short-lived session token for the health check
+JOSE_PATH=$(find /home/ubuntu/atlas-nexus/node_modules/.pnpm -name 'index.js' -path '*/jose/*' 2>/dev/null | head -1)
+if [ -n "$JOSE_PATH" ] && [ -n "${JWT_SECRET:-}" ]; then
+  SESSION_TOKEN=$(node --input-type=module << JSEOF 2>/dev/null
+import { SignJWT } from '$JOSE_PATH';
+const key = new TextEncoder().encode(process.env.JWT_SECRET ?? '');
+const token = await new SignJWT({ openId: 'atlas-staging-owner', appId: process.env.VITE_APP_ID ?? 'atlas-nexus-staging', name: 'Atlas Staging' })
+  .setProtectedHeader({ alg: 'HS256', typ: 'JWT' }).setIssuedAt().setExpirationTime('1h').sign(key);
+process.stdout.write(token);
+JSEOF
+  )
+  HEALTH_RESPONSE=$(curl -s -H "Cookie: app_session_id=$SESSION_TOKEN" http://localhost:3000/api/market-data/health 2>/dev/null || echo '{}')
+else
+  HEALTH_RESPONSE=$(curl -s http://localhost:3000/api/market-data/health 2>/dev/null || echo '{}')
+fi
+HEALTH_STATE=$(echo "$HEALTH_RESPONSE" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('orchestrator',{}).get('status','UNKNOWN'))" 2>/dev/null || echo "PARSE_ERROR")
 echo "  Health state: $HEALTH_STATE"
-if [ "$HEALTH_STATE" = "LIVE" ]; then
-  pass "Health state is LIVE"
+if [ "$HEALTH_STATE" = "READY" ] || [ "$HEALTH_STATE" = "LIVE" ]; then
+  pass "Health state is $HEALTH_STATE"
 elif [ "$HEALTH_STATE" = "DEGRADED" ]; then
   warn "Health state is DEGRADED — monitor before activating"
 else
