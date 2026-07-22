@@ -95,29 +95,64 @@ interface HistoryResponse {
   hasMore: boolean;
 }
 
-interface SSEBarConfirmedPayload {
-  type: "bar:confirmed" | "bar5m:confirmed";
-  seq: number;
-  bar: BarRecord;
+// ── Wire-format types (ChartStreamEvent envelope from chart-stream-service) ──
+// The server wraps every SSE event in a ChartStreamEvent envelope.
+// Bar OHLCV lives in event.payload; seq = event.id.
+interface SSEWireOHLCV {
+  open: number;   // pts100
+  high: number;   // pts100
+  low: number;    // pts100
+  close: number;  // pts100
+  volume: number;
+  tradeCount?: number;
+  barCloseTsMs?: number;
 }
 
-interface SSEBarDevelopingPayload {
-  type: "bar:developing";
-  seq: number;
-  bar: DevelopingBar;
+interface SSEWireBarEvent {
+  id: number;          // seq
+  type: string;
+  barOpenTsMs: number;
+  rawSymbol: string;
+  intervalMs: number;
+  revision: number;
+  payload: SSEWireOHLCV;
 }
 
-interface SSEHealthPayload {
+interface SSEWireHealthEvent {
+  id: number;
   type: "health";
-  seq: number;
-  status: string;
-  lastBarTsMs: number;
+  payload: {
+    lastBarTsMs: number | null;
+    state?: string;
+  };
 }
 
-type SSEPayload =
-  | SSEBarConfirmedPayload
-  | SSEBarDevelopingPayload
-  | SSEHealthPayload;
+/** Convert a wire-format bar event to a BarRecord (for confirmed bars). */
+function wireToBarRecord(e: SSEWireBarEvent): BarRecord {
+  return {
+    barOpenTsMs: e.barOpenTsMs,
+    openPts100:  e.payload.open,
+    highPts100:  e.payload.high,
+    lowPts100:   e.payload.low,
+    closePts100: e.payload.close,
+    volume:      e.payload.volume,
+    revision:    e.revision,
+    rawSymbol:   e.rawSymbol,
+    intervalMs:  e.intervalMs,
+  };
+}
+
+/** Convert a wire-format bar event to a DevelopingBar. */
+function wireToDevelopingBar(e: SSEWireBarEvent): DevelopingBar {
+  return {
+    barOpenTsMs: e.barOpenTsMs,
+    openPts100:  e.payload.open,
+    highPts100:  e.payload.high,
+    lowPts100:   e.payload.low,
+    closePts100: e.payload.close,
+    volume:      e.payload.volume,
+  };
+}
 
 // ─── Chart state reducer ──────────────────────────────────────────────────────
 
@@ -236,10 +271,10 @@ const HEARTBEAT_MS         = 30_000;
 const MAX_RECONNECT_DELAY  = 30_000;
 
 const CHART_THEME = {
-  bg:         "oklch(0.10 0.04 220)",
-  grid:       "oklch(0.18 0.06 220 / 0.4)",
-  border:     "oklch(0.22 0.06 220 / 0.5)",
-  text:       "oklch(0.65 0.08 220)",
+  bg:         "hsl(220, 15%, 8%)",
+  grid:       "hsla(220, 20%, 14%, 0.4)",
+  border:     "hsla(220, 20%, 17%, 0.5)",
+  text:       "hsl(220, 12%, 52%)",
   arcCyan:    "#4dd9f0",
   starkGold:  "#f0c040",
   purple:     "#a78bfa",
@@ -309,7 +344,7 @@ export default function DatabentoLiveChart({
   const ema9Ref      = useRef<ISeriesApi<"Line"> | null>(null);
   const ema21Ref     = useRef<ISeriesApi<"Line"> | null>(null);
 
-  const [interval, setInterval] = useState<Interval>("5m");
+  const [interval, setInterval] = useState<Interval>("1m");
   const [streamStatus, setStreamStatus] = useState<StreamStatus>("DISCONNECTED");
   const [lastBarIso, setLastBarIso] = useState<string | null>(null);
   const [chartState, dispatch] = useReducer(chartReducer, initialChartState);
@@ -542,23 +577,25 @@ export default function DatabentoLiveChart({
       lastEventTsRef.current = Date.now();
     });
 
-    es.addEventListener("bar:confirmed", (e: Event) => {
+    // FE-SSE-FIX: Server emits bar:1m-confirmed / bar:5m-confirmed / bar:developing
+    // wrapped in ChartStreamEvent envelope. seq = event.id, OHLCV in event.payload.
+    es.addEventListener("bar:1m-confirmed", (e: Event) => {
       try {
-        const payload = JSON.parse((e as MessageEvent).data) as SSEBarConfirmedPayload;
-        lastEventIdRef.current = String(payload.seq);
+        const wire = JSON.parse((e as MessageEvent).data) as SSEWireBarEvent;
+        lastEventIdRef.current = String(wire.id);
         lastEventTsRef.current = Date.now();
-        dispatch({ type: "CONFIRMED", bar: payload.bar, seq: payload.seq });
+        dispatch({ type: "CONFIRMED", bar: wireToBarRecord(wire), seq: wire.id });
         setStreamStatus("CONNECTED");
       } catch {}
     });
 
-    es.addEventListener("bar5m:confirmed", (e: Event) => {
+    es.addEventListener("bar:5m-confirmed", (e: Event) => {
       try {
-        const payload = JSON.parse((e as MessageEvent).data) as SSEBarConfirmedPayload;
-        lastEventIdRef.current = String(payload.seq);
+        const wire = JSON.parse((e as MessageEvent).data) as SSEWireBarEvent;
+        lastEventIdRef.current = String(wire.id);
         lastEventTsRef.current = Date.now();
         if (interval === "5m") {
-          dispatch({ type: "CONFIRMED", bar: payload.bar, seq: payload.seq });
+          dispatch({ type: "CONFIRMED", bar: wireToBarRecord(wire), seq: wire.id });
           setStreamStatus("CONNECTED");
         }
       } catch {}
@@ -566,20 +603,22 @@ export default function DatabentoLiveChart({
 
     es.addEventListener("bar:developing", (e: Event) => {
       try {
-        const payload = JSON.parse((e as MessageEvent).data) as SSEBarDevelopingPayload;
-        lastEventIdRef.current = String(payload.seq);
+        const wire = JSON.parse((e as MessageEvent).data) as SSEWireBarEvent;
+        lastEventIdRef.current = String(wire.id);
         lastEventTsRef.current = Date.now();
         if (interval === "1m") {
-          dispatch({ type: "DEVELOPING", bar: payload.bar, seq: payload.seq });
+          dispatch({ type: "DEVELOPING", bar: wireToDevelopingBar(wire), seq: wire.id });
         }
       } catch {}
     });
 
     es.addEventListener("health", (e: Event) => {
       try {
-        const payload = JSON.parse((e as MessageEvent).data) as SSEHealthPayload;
+        const wire = JSON.parse((e as MessageEvent).data) as SSEWireHealthEvent;
         lastEventTsRef.current = Date.now();
-        const ageMs = Date.now() - payload.lastBarTsMs;
+        const lastBarTsMs = wire.payload?.lastBarTsMs;
+        if (lastBarTsMs == null) return;
+        const ageMs = Date.now() - lastBarTsMs;
         if (ageMs < LIVE_THRESHOLD_MS)         setStreamStatus("CONNECTED");
         else if (ageMs < DELAYED_THRESHOLD_MS)  setStreamStatus("STALE");
         else                                    setStreamStatus("DEGRADED");
@@ -655,18 +694,19 @@ export default function DatabentoLiveChart({
   // ── Render ────────────────────────────────────────────────────────────────
 
   return (
-    <div className="hud-panel hud-panel-br flex flex-col">
+    <div data-testid="databento-chart-container" className="hud-panel hud-panel-br flex flex-col">
       {/* Header */}
       <div className="hud-header flex items-center justify-between">
         <div className="flex items-center gap-2">
           <span className="hud-header-dot" />
-          {symbol} — {interval === "1m" ? "1-Min" : "5-Min"} Live Chart
+          <span data-testid="chart-title">{symbol}</span> — {interval === "1m" ? "1-Min" : "5-Min"} Live Chart
           <span className="text-[9px] font-mono text-[var(--color-muted-foreground)] ml-1 tracking-wider">
             VWAP · EMA9 · EMA21
           </span>
           {/* FE-012/FE-013: Source indicator */}
           {sourceLabel && (
             <span
+              data-testid="chart-source-badge"
               className="text-[9px] font-mono px-1 py-0.5 rounded border"
               style={{
                 color:       sourceLabel.color,
@@ -677,12 +717,20 @@ export default function DatabentoLiveChart({
               {sourceLabel.text}
             </span>
           )}
+          {/* FE-013: chart-authority-active-badge — only shown when DATABENTO is primary */}
+          {chartSource === "DATABENTO" && (
+            <span data-testid="chart-authority-active-badge" className="text-[9px] font-mono px-1 py-0.5 rounded border" style={{ color: CHART_THEME.authority, borderColor: CHART_THEME.authority }}>
+              AUTHORITY
+            </span>
+          )}
         </div>
 
         <div className="flex items-center gap-2 mr-1">
           {/* FE-007: 1m / 5m interval switch */}
           <div className="flex items-center gap-1 text-[9px] font-mono">
             <button
+              data-testid="interval-btn-1m"
+              aria-pressed={interval === "1m"}
               onClick={() => setInterval("1m")}
               className={`px-1.5 py-0.5 rounded border transition-colors ${
                 interval === "1m"
@@ -693,6 +741,8 @@ export default function DatabentoLiveChart({
               1m
             </button>
             <button
+              data-testid="interval-btn-5m"
+              aria-pressed={interval === "5m"}
               onClick={() => setInterval("5m")}
               className={`px-1.5 py-0.5 rounded border transition-colors ${
                 interval === "5m"
@@ -707,8 +757,8 @@ export default function DatabentoLiveChart({
           {/* Stream status badge */}
           <div className="flex items-center gap-1.5">
             <div className={`w-2 h-2 rounded-full ${streamStatusDot(streamStatus)}`} />
-            <span className={`status-badge ${streamStatusClass(streamStatus)} text-[10px]`}>
-              {streamStatus}
+            <span data-testid="sse-status" className={`status-badge ${streamStatusClass(streamStatus)} text-[10px]`}>
+              {streamStatus === "CONNECTED" ? "LIVE" : streamStatus}
             </span>
           </div>
 
@@ -721,9 +771,9 @@ export default function DatabentoLiveChart({
 
           {/* Legend */}
           <div className="flex items-center gap-2 text-[9px] font-mono ml-2">
-            <span style={{ color: CHART_THEME.arcCyan }}>── VWAP</span>
-            <span style={{ color: CHART_THEME.starkGold }}>-- EMA9</span>
-            <span style={{ color: CHART_THEME.purple }}>-- EMA21</span>
+            <span data-testid="chart-legend-vwap" style={{ color: CHART_THEME.arcCyan }}>── VWAP</span>
+            <span data-testid="chart-legend-ema9" style={{ color: CHART_THEME.starkGold }}>-- EMA9</span>
+            <span data-testid="chart-legend-ema21" style={{ color: CHART_THEME.purple }}>-- EMA21</span>
           </div>
         </div>
       </div>
@@ -735,12 +785,25 @@ export default function DatabentoLiveChart({
         style={{ height: "320px", minHeight: "240px" }}
       />
 
-      {/* Empty state */}
+      {/* Loading state */}
       {!chartState.seeded && (
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+        <div data-testid="chart-status-loading" className="absolute inset-0 flex items-center justify-center pointer-events-none">
           <span className="text-[var(--color-muted-foreground)] text-xs font-mono animate-pulse">
             Loading Databento chart data…
           </span>
+        </div>
+      )}
+
+      {/* Reconnect button — shown when SSE is OFFLINE or RECONNECTING */}
+      {(streamStatus === "OFFLINE" || streamStatus === "RECONNECTING") && (
+        <div className="absolute inset-0 flex items-center justify-center">
+          <button
+            data-testid="chart-reconnect-btn"
+            onClick={() => connectSSE()}
+            className="px-3 py-1.5 text-[10px] font-mono rounded border border-[var(--arc-cyan)] text-[var(--arc-cyan)] hover:bg-[var(--arc-cyan)] hover:text-black transition-colors"
+          >
+            RECONNECT
+          </button>
         </div>
       )}
     </div>

@@ -53,10 +53,10 @@ const LIVE_THRESHOLD_MS   = 6 * 60 * 1000;   // 6 min
 const DELAYED_THRESHOLD_MS = 30 * 60 * 1000; // 30 min
 
 const CHART_THEME = {
-  bg:          "oklch(0.10 0.04 220)",
-  grid:        "oklch(0.18 0.06 220 / 0.4)",
-  border:      "oklch(0.22 0.06 220 / 0.5)",
-  text:        "oklch(0.65 0.08 220)",
+  bg:          "hsl(220, 15%, 8%)",
+  grid:        "hsla(220, 20%, 14%, 0.4)",
+  border:      "hsla(220, 20%, 17%, 0.5)",
+  text:        "hsl(220, 12%, 52%)",
   arcCyan:     "#4dd9f0",
   starkGold:   "#f0c040",
   purple:      "#a78bfa",
