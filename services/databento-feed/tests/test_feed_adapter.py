@@ -41,20 +41,28 @@ def adapter(config):
 # ── AdapterConfig tests ────────────────────────────────────────────────────────
 
 class TestAdapterConfig:
-    def test_api_key_is_accessible(self, config):
-        assert config.api_key == "db-test-fixture-key-not-real"
+    def test_api_key_is_accessible(self, monkeypatch):
+        # Force test fixture values — setdefault fails when real env vars are already set
+        monkeypatch.setenv("DATABENTO_API_KEY", "db-test-fixture-key-not-real")
+        monkeypatch.setenv("BRIDGE_AUTH_TOKEN", "test-bridge-token-not-real")
+        cfg = AdapterConfig()
+        assert cfg.api_key == "db-test-fixture-key-not-real"
 
     def test_api_key_not_in_repr(self, config):
         """SECURITY: API key must not appear in repr or str."""
-        assert "db-test-fixture-key-not-real" not in repr(config)
-        assert "db-test-fixture-key-not-real" not in str(config)
+        assert config.api_key not in repr(config)
+        assert config.api_key not in str(config)
 
-    def test_bridge_token_is_accessible(self, config):
-        assert config.bridge_token == "test-bridge-token-not-real"
+    def test_bridge_token_is_accessible(self, monkeypatch):
+        # Force test fixture values — setdefault fails when real env vars are already set
+        monkeypatch.setenv("DATABENTO_API_KEY", "db-test-fixture-key-not-real")
+        monkeypatch.setenv("BRIDGE_AUTH_TOKEN", "test-bridge-token-not-real")
+        cfg = AdapterConfig()
+        assert cfg.bridge_token == "test-bridge-token-not-real"
 
     def test_bridge_token_not_in_repr(self, config):
         """SECURITY: Bridge token must not appear in repr or str."""
-        assert "test-bridge-token-not-real" not in repr(config)
+        assert config.bridge_token not in repr(config)
 
     def test_missing_api_key_raises(self):
         original = os.environ.pop("DATABENTO_API_KEY", None)

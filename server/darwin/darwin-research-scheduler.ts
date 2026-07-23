@@ -127,15 +127,16 @@ function computeNextRun(jobType: JobType): Date {
   const now = new Date();
   switch (jobType) {
     case 'J1': {
-      // Next 5-minute boundary
+      // Next 5-minute boundary — always in the future
+      // Use floor+1 so that e.g. 09:45:00 → 09:50:00, not 09:45:00 (already past)
       const next = new Date(now);
-      next.setMinutes(Math.ceil(now.getMinutes() / 5) * 5, 0, 0);
+      next.setMinutes((Math.floor(now.getMinutes() / 5) + 1) * 5, 0, 0);
       return next;
     }
     case 'J2': {
-      // Next 15-minute boundary
+      // Next 15-minute boundary — always in the future
       const next = new Date(now);
-      next.setMinutes(Math.ceil(now.getMinutes() / 15) * 15, 0, 0);
+      next.setMinutes((Math.floor(now.getMinutes() / 15) + 1) * 15, 0, 0);
       return next;
     }
     case 'J3': {
@@ -286,6 +287,14 @@ export async function runJob(jobType: JobType): Promise<{
 
 export function getResearchSchedulerStatus(): ResearchSchedulerStatus {
   if (schedulerState.size === 0) initSchedulerState();
+
+  // Refresh stale nextRunAt values (can become stale in long-running processes)
+  const now = Date.now();
+  for (const [jobType, job] of schedulerState.entries()) {
+    if (job.nextRunAt && job.nextRunAt.getTime() < now) {
+      job.nextRunAt = computeNextRun(jobType as JobType);
+    }
+  }
 
   const jobs = Array.from(schedulerState.values());
   const totalJobsRun = jobs.reduce((s, j) => s + j.runCount, 0);

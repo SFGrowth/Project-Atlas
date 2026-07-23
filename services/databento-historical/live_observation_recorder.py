@@ -374,6 +374,20 @@ def insert_observation(conn, features: dict, raw_symbol: str, dataset: str, inst
 # MAIN: Process unrecorded live bars
 # ============================================================
 
+def insert_exclusion(conn, bar_open_ts_ms: int, raw_symbol: str, reason: str, reason_detail: str) -> None:
+    """Insert a darwin_bar_exclusion_log record for a bar that cannot be observed."""
+    cursor = conn.cursor()
+    try:
+        cursor.execute("""
+            INSERT IGNORE INTO darwin_bar_exclusion_log
+              (bar_timestamp, raw_symbol, exclusion_reason, reason_detail)
+            VALUES (%s, %s, %s, %s)
+        """, (bar_open_ts_ms, raw_symbol, reason, reason_detail))
+        conn.commit()
+    finally:
+        cursor.close()
+
+
 def process_unrecorded_bars(lookback_bars: int = 1200) -> dict:
     """
     Process live bars from atlas_bars_1m that don't yet have darwin_observations.
@@ -402,6 +416,8 @@ def process_unrecorded_bars(lookback_bars: int = 1200) -> dict:
         return {"processed": 0, "status": "UP_TO_DATE"}
 
     # Get ALL bars for the full window (we'll use rolling context per bar)
+    # Query the lookback_bars rows ENDING at newest_ts (DESC then reverse)
+    # so that bars near the start of the unrecorded window have sufficient context.
     newest_ts = max(b["bar_open_ts_ms"] for b in unrecorded)
     cursor.execute("""
         SELECT bar_open_ts_ms, open_price_pts100, high_price_pts100,
@@ -409,10 +425,10 @@ def process_unrecorded_bars(lookback_bars: int = 1200) -> dict:
                raw_symbol, dataset, instrument_id
         FROM atlas_bars_1m
         WHERE bar_open_ts_ms <= %s
-        ORDER BY bar_open_ts_ms ASC
+        ORDER BY bar_open_ts_ms DESC
         LIMIT %s
     """, (newest_ts, lookback_bars))
-    history_rows = cursor.fetchall()
+    history_rows = list(reversed(cursor.fetchall()))
     cursor.close()
 
     if len(history_rows) < MIN_BARS_REQUIRED:
@@ -456,6 +472,14 @@ def process_unrecorded_bars(lookback_bars: int = 1200) -> dict:
             # Compute features (no look-ahead)
             features = compute_features_no_lookahead(bar_slice)
             if features is None:
+                # Log to exclusion table so bar accounting is complete
+                insert_exclusion(
+                    conn,
+                    bar["bar_open_ts_ms"],
+                    bar["raw_symbol"],
+                    "INSUFFICIENT_HISTORY",
+                    f"Fewer than {MIN_BARS_REQUIRED} bars in context window at this timestamp",
+                )
                 continue
 
             # Insert observation

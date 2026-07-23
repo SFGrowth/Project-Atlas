@@ -237,15 +237,15 @@ describe('Sprint 123A.4 — Security', () => {
   it('TEST-123A4-SEC-010: assertSprint123A4Invariants throws on DATABENTO_CHART_AUTHORITY without flag', () => {
     // Without the G4 feature flag env var, DATABENTO_CHART_AUTHORITY must be blocked
     const prev = process.env.MARKET_DATA_AUTHORITY;
-    const prevFlag = process.env.DATABENTO_CHART_AUTHORITY_ENABLED;
+    const prevFlag = process.env.ATLAS_GATE_G4_CHART_AUTHORITY_ENABLED;
     process.env.MARKET_DATA_AUTHORITY = 'DATABENTO_CHART_AUTHORITY';
-    delete process.env.DATABENTO_CHART_AUTHORITY_ENABLED;
+    delete process.env.ATLAS_GATE_G4_CHART_AUTHORITY_ENABLED; // correct env var name
     try {
       expect(() => assertSprint123A4Invariants()).toThrow(/Gate G4/i);
     } finally {
       if (prev === undefined) delete process.env.MARKET_DATA_AUTHORITY;
       else process.env.MARKET_DATA_AUTHORITY = prev;
-      if (prevFlag !== undefined) process.env.DATABENTO_CHART_AUTHORITY_ENABLED = prevFlag;
+      if (prevFlag !== undefined) process.env.ATLAS_GATE_G4_CHART_AUTHORITY_ENABLED = prevFlag;
     }
   });
 

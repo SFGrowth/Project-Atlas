@@ -184,6 +184,7 @@ describe('Sprint 123A.4 — assertSprint123A4Invariants', () => {
 
   it('TEST-123A4-003: DATABENTO_CHART_AUTHORITY throws — Gate G4 required', async () => {
     process.env.MARKET_DATA_AUTHORITY = 'DATABENTO_CHART_AUTHORITY';
+    delete process.env.ATLAS_GATE_G4_CHART_AUTHORITY_ENABLED; // must not be set for this test
     vi.resetModules();
     const { assertSprint123A4Invariants } = await import('../config.js');
     expect(() => assertSprint123A4Invariants()).toThrow('Gate G4');
@@ -269,6 +270,7 @@ describe('Sprint 123A.4 — MarketDataRuntimeOrchestrator', () => {
 
   it('TEST-123A4-011: fails closed on DATABENTO_CHART_AUTHORITY — throws on start()', () => {
     process.env.MARKET_DATA_AUTHORITY = 'DATABENTO_CHART_AUTHORITY';
+    delete process.env.ATLAS_GATE_G4_CHART_AUTHORITY_ENABLED; // must not be set for this test
     const deps = makeMockDeps();
     const orch = new MarketDataRuntimeOrchestrator(deps);
     expect(() => orch.start()).toThrow('Gate G4');
@@ -733,6 +735,7 @@ describe('Sprint 123A.4 — Authority boundary', () => {
 
   it('TEST-123A4-042: orchestrator start() throws on DATABENTO_CHART_AUTHORITY', () => {
     process.env.MARKET_DATA_AUTHORITY = 'DATABENTO_CHART_AUTHORITY';
+    delete process.env.ATLAS_GATE_G4_CHART_AUTHORITY_ENABLED; // must not be set for this test
     const deps = makeMockDeps();
     const orch = new MarketDataRuntimeOrchestrator(deps);
     expect(() => orch.start()).toThrow('Gate G4');

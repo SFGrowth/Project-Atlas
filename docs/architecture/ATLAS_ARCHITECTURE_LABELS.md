@@ -1,6 +1,5 @@
 # Atlas Nexus — Architecture Labels
 ## Canonical System Architecture Reference
-
 **Approved by Phil:** Sprint 123A.7 Gate G7 correction  
 **Effective from:** Sprint 123A.7  
 **Status:** AUTHORITATIVE — all code, tests, reports and research must reference these labels
@@ -16,14 +15,33 @@ DARWIN_LIVE_DATA_SOURCE=DATABENTO
 DARWIN_HISTORICAL_DATA_SOURCE=DATABENTO
 STRATEGY_MONITORING_DATA_SOURCE=DATABENTO
 TYPESCRIPT_STRATEGY_ENGINE=TARGET_CANONICAL_IMPLEMENTATION
-PINE_SCRIPT_STATUS=LEGACY_REFERENCE_AND_TEMPORARY_AUTOMATION_FALLBACK
+PINE_SCRIPT_STATUS=LEGACY_REFERENCE_AND_CURRENT_TEMPORARY_AUTOMATION_TRIGGER
+PINE_SCRIPT_MARKET_DATA_ROLE=NONE
+PINE_SCRIPT_CANONICAL_STRATEGY_ROLE=NONE
+PINE_SCRIPT_CURRENT_AUTOMATION_ROLE=ACTIVE_TEMPORARY_TRIGGER
 TRADINGVIEW_MARKET_DATA_ROLE=NONE
-TRADINGVIEW_CURRENT_AUTOMATION_ROLE=TEMPORARY
+TRADINGVIEW_CURRENT_AUTOMATION_ROLE=ACTIVE_TEMPORARY
 ```
 
 ---
 
-## Data Flow (Current State)
+## Current Operational Flow
+
+```
+TradingView / Pine Script atlas_portfolio_v1.pine v1.0.2
+  → current live automation signal (ACTIVE_TEMPORARY_TRIGGER)
+  → TradersPost webhook
+  → Tradovate
+```
+
+Pine Script **currently is** the active temporary strategy and automation signal trigger.
+Pine Script **is not** the canonical MNQ market-data source.
+Pine Script **is not** the canonical future strategy implementation.
+Pine Script **is not** the live broker execution engine.
+
+---
+
+## Databento Data Flow (Current State)
 
 ```
 Databento API ($199/month)
@@ -32,13 +50,6 @@ Databento API ($199/month)
   → Atlas Nexus server (TypeScript, systemd, cloud computer)
   → darwin_observations (DARWIN learning, shadow mode)
   → Live chart (Gate G5, approved, Databento-only visuals)
-```
-
-```
-TradingView (TEMPORARY AUTOMATION FALLBACK ONLY)
-  → Pine Script atlas_portfolio_v1.pine v1.0.2 (LEGACY_REFERENCE)
-  → TradersPost webhook → Tradovate
-  → Active until Atlas-native strategy engine is built, shadow-tested and approved
 ```
 
 ---
@@ -70,9 +81,10 @@ This path has **not yet been activated**. It requires:
 | File | `tradingview/atlas-unified-portfolio/atlas_portfolio_v1.pine` |
 | Version | 1.0.2 |
 | SHA-256 | `d40b6e112f168692202af8fc8dbcc0464b1464c10b8b563c70625e2f0bf5ddfb` |
-| Status | `LEGACY_REFERENCE_AND_TEMPORARY_AUTOMATION_FALLBACK` |
+| Status | `LEGACY_REFERENCE_AND_CURRENT_TEMPORARY_AUTOMATION_TRIGGER` |
 | Market data role | `NONE` — Databento is the canonical MNQ data source |
-| Current automation role | `TEMPORARY` — active TradersPost/Tradovate path until Atlas-native engine approved |
+| Canonical strategy role | `NONE` — TypeScript engine is the target canonical implementation |
+| Current automation role | `ACTIVE_TEMPORARY_TRIGGER` — active TradersPost/Tradovate path until Atlas-native engine approved |
 | Research role | Reference only — do not use as primary fidelity target for Python backtests |
 | Deletion policy | **Do not delete or disable** until Atlas-native strategy engine is separately built, shadow-tested and approved by Phil |
 
@@ -94,21 +106,6 @@ Databento provides **everything** needed for the Atlas system:
 | Indicator computation | Databento OHLCV → ATR, ADX, RSI, VWAP, EMA |
 
 TradingView is **not used** as a market data source.
-
----
-
-## Research Priorities (Correct)
-
-1. **Databento-only operational proof** — all observations, research, monitoring and backtests use Databento-derived Atlas bars
-2. **Autonomous scheduler** — 7 job types, all reading from Databento-fed database
-3. **Strategy monitoring** — rolling metrics from Databento bars
-4. **Portfolio gap research** — pattern discovery on Databento canonical datasets
-5. **TypeScript strategy engine** — future canonical implementation (not yet built)
-
-**Not a research priority:**
-- Pine Script fidelity reconciliation (Pine is legacy reference only)
-- TradingView market data comparison
-- Bar-by-bar Pine vs Python reconciliation
 
 ---
 
