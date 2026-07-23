@@ -799,3 +799,205 @@
   },
   "live_chart_affected": false
 },
+{
+  "sample_num": 11,
+  "timestamp": "2026-07-23T09:57:02Z",
+  "services": {
+    "atlas_nexus": "active",
+    "atlas_feed_adapter": "active",
+    "atlas_darwin_scheduler": "active",
+    "atlas_darwin_monitor": "active",
+    "atlas_darwin_observation_timer": "active"
+  },
+  "memory_mb": {
+    "nexus": 58.9,
+    "scheduler": 57.3,
+    "monitor": 57.7,
+    "scheduler_ceiling_mb": 512,
+    "monitor_ceiling_mb": 256
+  },
+  "db": {
+    "bar_count": 1466,
+    "obs_count": 1405,
+    "job_run_count": 14,
+    "snapshot_count": 5,
+    "last_bar_ts_ms": 1784800560000
+  },
+  "api_response_ms": {
+    "health_endpoint": 22,
+    "health_http_code": "200",
+    "darwin_authority_endpoint": 18,
+    "darwin_http_code": "200"
+  },
+  "system": {
+    "load_avg_1m": 0.05,
+    "memory_used_mb": 1726,
+    "memory_total_mb": 3910,
+    "memory_pct": 44.1,
+    "disk_used": "11G",
+    "disk_avail": "57G"
+  },
+  "live_chart_affected": false
+},
+{
+  "sample_num": 12,
+  "timestamp": "2026-07-23T09:57:27Z",
+  "services": {
+    "atlas_nexus": "active",
+    "atlas_feed_adapter": "active",
+    "atlas_darwin_scheduler": "active",
+    "atlas_darwin_monitor": "active",
+    "atlas_darwin_observation_timer": "active"
+  },
+  "memory_mb": {
+    "nexus": 58.9,
+    "scheduler": 57.3,
+    "monitor": 57.7,
+    "scheduler_ceiling_mb": 512,
+    "monitor_ceiling_mb": 256
+  },
+  "db": {
+    "bar_count": 1466,
+    "obs_count": 1405,
+    "job_run_count": 14,
+    "snapshot_count": 5,
+    "last_bar_ts_ms": 1784800560000
+  },
+  "api_response_ms": {
+    "health_endpoint": 19,
+    "health_http_code": "200",
+    "darwin_authority_endpoint": 16,
+    "darwin_http_code": "200"
+  },
+  "system": {
+    "load_avg_1m": 0.03,
+    "memory_used_mb": 1727,
+    "memory_total_mb": 3910,
+    "memory_pct": 44.1,
+    "disk_used": "11G",
+    "disk_avail": "57G"
+  },
+  "live_chart_affected": false
+},
+{
+  "sample_num": 12,
+  "timestamp": "2026-07-23T09:59:02Z",
+  "services": {
+    "atlas_nexus": "active",
+    "atlas_feed_adapter": "active",
+    "atlas_darwin_scheduler": "active",
+    "atlas_darwin_monitor": "active",
+    "atlas_darwin_observation_timer": "active"
+  },
+  "memory_mb": {
+    "nexus": 58.9,
+    "scheduler": 57.3,
+    "monitor": 57.7,
+    "scheduler_ceiling_mb": 512,
+    "monitor_ceiling_mb": 256
+  },
+  "db": {
+    "bar_count": 1468,
+    "obs_count": 1405,
+    "job_run_count": 14,
+    "snapshot_count": 5,
+    "last_bar_ts_ms": 1784800680000
+  },
+  "api_response_ms": {
+    "health_endpoint": 27,
+    "health_http_code": "200",
+    "darwin_authority_endpoint": 18,
+    "darwin_http_code": "200"
+  },
+  "system": {
+    "load_avg_1m": 0.00,
+    "memory_used_mb": 1728,
+    "memory_total_mb": 3910,
+    "memory_pct": 44.1,
+    "disk_used": "11G",
+    "disk_avail": "57G"
+  },
+  "live_chart_affected": false
+},
+{
+  "sample_num": 13,
+  "timestamp": "2026-07-23T09:59:27Z",
+  "services": {
+    "atlas_nexus": "active",
+    "atlas_feed_adapter": "active",
+    "atlas_darwin_scheduler": "active",
+    "atlas_darwin_monitor": "active",
+    "atlas_darwin_observation_timer": "active"
+  },
+  "memory_mb": {
+    "nexus": 58.9,
+    "scheduler": 57.3,
+    "monitor": 57.7,
+    "scheduler_ceiling_mb": 512,
+    "monitor_ceiling_mb": 256
+  },
+  "db": {
+    "bar_count": 1468,
+    "obs_count": 1405,
+    "job_run_count": 14,
+    "snapshot_count": 5,
+    "last_bar_ts_ms": 1784800680000
+  },
+  "api_response_ms": {
+    "health_endpoint": 23,
+    "health_http_code": "200",
+    "darwin_authority_endpoint": 19,
+    "darwin_http_code": "200"
+  },
+  "system": {
+    "load_avg_1m": 0.00,
+    "memory_used_mb": 1727,
+    "memory_total_mb": 3910,
+    "memory_pct": 44.1,
+    "disk_used": "11G",
+    "disk_avail": "57G"
+  },
+  "live_chart_affected": false
+}
+], "window_end": "2026-07-23T09:59:27Z"}
+{
+  "sample_num": 13,
+  "timestamp": "2026-07-23T10:01:03Z",
+  "services": {
+    "atlas_nexus": "active",
+    "atlas_feed_adapter": "active",
+    "atlas_darwin_scheduler": "active",
+    "atlas_darwin_monitor": "active",
+    "atlas_darwin_observation_timer": "active"
+  },
+  "memory_mb": {
+    "nexus": 58.9,
+    "scheduler": 57.3,
+    "monitor": 57.7,
+    "scheduler_ceiling_mb": 512,
+    "monitor_ceiling_mb": 256
+  },
+  "db": {
+    "bar_count": 1470,
+    "obs_count": 1405,
+    "job_run_count": 14,
+    "snapshot_count": 5,
+    "last_bar_ts_ms": 1784800800000
+  },
+  "api_response_ms": {
+    "health_endpoint": 25,
+    "health_http_code": "200",
+    "darwin_authority_endpoint": 18,
+    "darwin_http_code": "200"
+  },
+  "system": {
+    "load_avg_1m": 0.17,
+    "memory_used_mb": 1730,
+    "memory_total_mb": 3910,
+    "memory_pct": 44.2,
+    "disk_used": "11G",
+    "disk_avail": "57G"
+  },
+  "live_chart_affected": false
+}
+], "window_end": "2026-07-23T10:01:03Z"}
