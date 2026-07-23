@@ -2587,3 +2587,7 @@ export const atlasConsumerProcessingLedger = mysqlTable("atlas_consumer_processi
 });
 export type AtlasConsumerProcessingLedgerRow = typeof atlasConsumerProcessingLedger.$inferSelect;
 export type InsertAtlasConsumerProcessingLedger = typeof atlasConsumerProcessingLedger.$inferInsert;
+
+// ─── DARWIN G6A schema re-export ─────────────────────────────────────────────
+// Sprint 123A.6 — DARWIN Learning Authority shadow tables
+export * from './darwin-g6a-schema.js';

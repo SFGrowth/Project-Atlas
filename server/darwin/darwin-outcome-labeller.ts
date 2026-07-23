@@ -140,6 +140,7 @@ export function computeOutcomeLabel(input: LabelInput): InsertDarwinOutcomeLabel
   const horizonCompleteAt = horizonBar.timestamp;
 
   return {
+    labelId: randomUUID(),
     observationId,
     horizonMinutes,
     netPriceChange: String(netPriceChange),

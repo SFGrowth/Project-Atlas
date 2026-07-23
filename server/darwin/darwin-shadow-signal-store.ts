@@ -88,8 +88,8 @@ export function buildShadowSignal(input: ShadowSignalInput): InsertDarwinShadowS
     theoreticalStop: String(input.theoreticalStop),
     theoreticalTarget: String(input.theoreticalTarget),
     confidence: String(input.confidence),
-    reasonCodesJson: input.reasonCodesJson,
-    featureSnapshotJson: input.featureSnapshotJson,
+    reasonCodes: input.reasonCodesJson,
+    featureSnapshot: input.featureSnapshotJson,
     experimentVersion: input.experimentVersion,
     codeSha: input.codeSha,
     // Authority guards — permanently false

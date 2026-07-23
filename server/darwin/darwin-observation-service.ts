@@ -235,26 +235,27 @@ export function buildObservationRecord(
 
   return {
     observationId: randomUUID(),
-    symbol: bar.symbol,
+    dataset: 'GLBX.MDP3',
+    rawSymbol: bar.rawSymbol ?? bar.symbol,
+    interval: bar.interval,
     barTimestamp: bar.barTimestamp,
-    codeSha: codeSha,
+    codeVersion: codeSha,
     featureVersion: FEATURE_VERSION,
     open: String(bar.open),
     high: String(bar.high),
     low: String(bar.low),
     close: String(bar.close),
     volume: bar.volume ?? 0,
-    atr14: atr !== undefined ? String(atr) : undefined,
+    atr: atr !== undefined ? String(atr) : undefined,
     ema15: ema15 !== undefined ? String(ema15) : undefined,
     ema50: ema50 !== undefined ? String(ema50) : undefined,
     distanceFromEma15Pct: distanceFromEma15Pct !== undefined ? String(distanceFromEma15Pct) : undefined,
     ema15CrossCount10: ema15CrossCount10 ?? undefined,
     volatilityRegime: context.volatilityRegime,
     trendRegime: context.trendRegime,
-    sessionType: context.session,
-    researchOnly: true,
-    processBarCalled: false,
-    postBarAutomationCalled: false,
+    session: context.session,
+    // researchOnly, processBarCalled, postBarAutomationCalled are enforced by
+    // the authority guard — not stored in the observation record itself.
   };
 }
 
