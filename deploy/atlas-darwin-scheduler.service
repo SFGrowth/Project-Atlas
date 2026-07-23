@@ -1,0 +1,31 @@
+[Unit]
+Description=Atlas DARWIN Research Scheduler
+Documentation=https://github.com/SFGrowth/Project-Atlas
+After=network.target mysql.service atlas-nexus.service
+Requires=mysql.service atlas-nexus.service
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/home/ubuntu/atlas-nexus
+EnvironmentFile=/home/ubuntu/atlas-nexus/.env
+# Run the scheduler via tsx (same pattern as atlas-nexus.service)
+ExecStart=/home/ubuntu/atlas-nexus/node_modules/.bin/tsx server/darwin/darwin-research-scheduler-standalone.ts
+Restart=on-failure
+RestartSec=30s
+# Bounded restart: stop after 5 failures in 10 minutes
+StartLimitIntervalSec=600
+StartLimitBurst=5
+StandardOutput=append:/var/log/atlas-nexus/darwin-scheduler.log
+StandardError=append:/var/log/atlas-nexus/darwin-scheduler.log
+# Memory ceiling: 512MB
+MemoryMax=512M
+# CPU quota: 25% of one core (research must not starve the main server)
+CPUQuota=25%
+# Graceful shutdown timeout
+TimeoutStopSec=30s
+KillMode=mixed
+KillSignal=SIGTERM
+
+[Install]
+WantedBy=multi-user.target

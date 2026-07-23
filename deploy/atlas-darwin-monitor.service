@@ -1,0 +1,26 @@
+[Unit]
+Description=Atlas DARWIN Strategy Monitor
+Documentation=https://github.com/SFGrowth/Project-Atlas
+After=network.target mysql.service atlas-nexus.service
+Requires=mysql.service atlas-nexus.service
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/home/ubuntu/atlas-nexus
+EnvironmentFile=/home/ubuntu/atlas-nexus/.env
+ExecStart=/home/ubuntu/atlas-nexus/node_modules/.bin/tsx server/darwin/darwin-strategy-monitor-standalone.ts
+Restart=on-failure
+RestartSec=30s
+StartLimitIntervalSec=600
+StartLimitBurst=5
+StandardOutput=append:/var/log/atlas-nexus/darwin-monitor.log
+StandardError=append:/var/log/atlas-nexus/darwin-monitor.log
+MemoryMax=256M
+CPUQuota=10%
+TimeoutStopSec=30s
+KillMode=mixed
+KillSignal=SIGTERM
+
+[Install]
+WantedBy=multi-user.target

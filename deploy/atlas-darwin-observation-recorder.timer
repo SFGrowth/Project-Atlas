@@ -1,0 +1,16 @@
+[Unit]
+Description=Atlas DARWIN Observation Recorder Timer (every 5 minutes)
+Documentation=https://github.com/SFGrowth/Project-Atlas
+After=atlas-feed-adapter.service
+
+[Timer]
+# Run every 5 minutes, aligned to clock (e.g. :00, :05, :10...)
+OnCalendar=*:0/5
+AccuracySec=30s
+# Run immediately on timer activation if last run was missed
+Persistent=true
+# Maximum random delay to avoid thundering herd
+RandomizedDelaySec=10s
+
+[Install]
+WantedBy=timers.target

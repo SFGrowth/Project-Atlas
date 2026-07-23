@@ -1,0 +1,21 @@
+[Unit]
+Description=Atlas DARWIN Observation Recorder
+Documentation=https://github.com/SFGrowth/Project-Atlas
+After=network.target mysql.service atlas-feed-adapter.service
+Requires=mysql.service
+PartOf=atlas-nexus.service
+
+[Service]
+Type=oneshot
+User=ubuntu
+WorkingDirectory=/home/ubuntu/atlas-nexus
+EnvironmentFile=/home/ubuntu/atlas-nexus/.env
+ExecStart=/usr/bin/python3 /home/ubuntu/atlas-nexus/services/databento-historical/live_observation_recorder.py
+StandardOutput=append:/var/log/atlas-nexus/darwin-observation-recorder.log
+StandardError=append:/var/log/atlas-nexus/darwin-observation-recorder.log
+TimeoutStartSec=120
+# Safety: never run while atlas-nexus is restarting
+ExecStartPre=/bin/bash -c 'systemctl is-active atlas-nexus || exit 0'
+
+[Install]
+WantedBy=multi-user.target
