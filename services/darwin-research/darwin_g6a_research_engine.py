@@ -872,7 +872,7 @@ if __name__ == "__main__":
     parser.add_argument("--csv", help="Path to CSV file with bar data")
     parser.add_argument("--db-host", default="localhost", help="Database host")
     parser.add_argument("--db-user", default="atlas", help="Database user")
-    parser.add_argument("--db-pass", default="atlas_staging_pass", help="Database password")
+    parser.add_argument("--db-pass", default=os.environ.get("DB_PASS", ""), help="Database password (use DB_PASS env var or --db-pass; never hardcode)")
     parser.add_argument("--db-name", default="atlas_staging_g4", help="Database name")
     parser.add_argument("--output-dir", default="/tmp/darwin_g6a_results", help="Output directory")
     parser.add_argument("--code-sha", default="unknown", help="Git commit SHA")

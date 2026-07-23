@@ -400,67 +400,137 @@ export async function monitorAllStrategies(windowDays: number = 30): Promise<{
 // ─── Portfolio Gap Registry Update ───────────────────────────────────────────
 
 export interface PortfolioGap {
+  /** Format: GAP-NNN (3-digit zero-padded) */
   gapId: string;
+  /** Human-readable description of the gap */
   description: string;
+  /** Research priority — HIGH must be addressed before new strategies are created */
   priority: 'HIGH' | 'MEDIUM' | 'LOW';
+  /** Lifecycle status — only CLOSED gaps are resolved */
   status: 'OPEN' | 'IN_RESEARCH' | 'IN_PROGRESS' | 'CLOSED' | 'DEFERRED';
+  /** ISO date string when gap was identified */
   identifiedAt: string;
+  /** Sprint in which the gap was identified */
+  identifiedInSprint?: string;
+  /** Experiment IDs that have attempted to address this gap */
+  experimentIds?: string[];
+  /** Experiment outcome summary */
+  experimentOutcome?: string;
+  /** Additional research notes */
   researchNotes?: string;
+  /** Sprint in which the gap was closed (required when status === 'CLOSED') */
+  closedInSprint?: string;
+}
+
+/** Validate a PortfolioGap record against schema constraints */
+export function validatePortfolioGap(gap: PortfolioGap): string[] {
+  const errors: string[] = [];
+  if (!/^GAP-\d{3}$/.test(gap.gapId)) {
+    errors.push(`gapId '${gap.gapId}' must match GAP-NNN format`);
+  }
+  if (!gap.description || gap.description.trim().length < 10) {
+    errors.push('description must be at least 10 characters');
+  }
+  if (!gap.identifiedAt || !/^\d{4}-\d{2}-\d{2}$/.test(gap.identifiedAt)) {
+    errors.push(`identifiedAt '${gap.identifiedAt}' must be ISO date YYYY-MM-DD`);
+  }
+  if (gap.status === 'CLOSED' && !gap.closedInSprint) {
+    errors.push('closedInSprint is required when status is CLOSED');
+  }
+  return errors;
+}
+
+/** Assert all gaps in the registry are valid — throws on first failure */
+export function assertRegistryValid(): void {
+  const allErrors: string[] = [];
+  for (const gap of PORTFOLIO_GAP_REGISTRY) {
+    const errors = validatePortfolioGap(gap);
+    if (errors.length > 0) {
+      allErrors.push(`${gap.gapId}: ${errors.join(', ')}`);
+    }
+  }
+  if (allErrors.length > 0) {
+    throw new Error(`Portfolio gap registry validation failed:\n${allErrors.join('\n')}`);
+  }
 }
 
 export const PORTFOLIO_GAP_REGISTRY: PortfolioGap[] = [
   {
     gapId: 'GAP-001',
-    description: 'No strategy covers overnight sessions (ETH/OVERNIGHT)',
-    priority: 'HIGH',
-    status: 'OPEN',
-    identifiedAt: '2026-07-23',
-  },
-  {
-    gapId: 'GAP-002',
-    description: 'No strategy covers low-volatility (CHOP) regime effectively',
-    priority: 'HIGH',
-    status: 'OPEN',
-    identifiedAt: '2026-07-23',
-    researchNotes: 'CHOP_IS_NOISE confirmed in Sprint 123A.6 Experiment D. Mean-reversion within chop may be viable.',
-  },
-  {
-    gapId: 'GAP-003',
-    description: 'Roll-window performance is materially negative for all strategies',
+    description: 'No strategy covers overnight sessions (ETH/OVERNIGHT) — 35% of all bars unaddressed',
     priority: 'HIGH',
     status: 'IN_RESEARCH',
     identifiedAt: '2026-07-23',
-    researchNotes: 'Roll-window policy RWP-001 implemented. Roll-fade strategy is a candidate research direction.',
+    identifiedInSprint: '123A.7',
+    experimentIds: ['EXP-G'],
+    experimentOutcome: 'EXP-G FAIL: overnight directional bias p=0.346, d=0.007. No edge with simple direction test.',
+    researchNotes: 'Overnight session has distinct microstructure. Requires deeper regime analysis beyond simple directional bias.',
+  },
+  {
+    gapId: 'GAP-002',
+    description: 'No strategy covers low-volatility (CHOP) regime — CHOP_IS_NOISE confirmed across 2 experiments',
+    priority: 'HIGH',
+    status: 'IN_RESEARCH',
+    identifiedAt: '2026-07-23',
+    identifiedInSprint: '123A.7',
+    experimentIds: ['EXP-D', 'EXP-H'],
+    experimentOutcome: 'EXP-D CONFIRMED_NO_EDGE (Sprint 123A.6). EXP-H FAIL: CHOP mean-reversion p=0.817, d=-0.002.',
+    researchNotes: 'CHOP_IS_NOISE confirmed. This gap may be permanently unaddressable.',
+  },
+  {
+    gapId: 'GAP-003',
+    description: 'Roll-window performance is materially negative for all strategies — no roll-specific strategy exists',
+    priority: 'HIGH',
+    status: 'IN_RESEARCH',
+    identifiedAt: '2026-07-23',
+    identifiedInSprint: '123A.7',
+    experimentIds: ['EXP-I'],
+    experimentOutcome: 'EXP-I FAIL: roll-window fade p=0.656, d=0.004. RWP-001 v1.1 implemented (CME trading days).',
+    researchNotes: 'Roll-window exclusion is the correct response. A dedicated roll-fade strategy requires a real roll calendar.',
   },
   {
     gapId: 'GAP-004',
-    description: 'No strategy covers PM session (1300-1600 NY) specifically',
+    description: 'No strategy covers PM session (1300-1600 NY) specifically — 25% of RTH bars unaddressed',
     priority: 'MEDIUM',
-    status: 'OPEN',
+    status: 'IN_RESEARCH',
     identifiedAt: '2026-07-23',
+    identifiedInSprint: '123A.7',
+    experimentIds: ['EXP-J'],
+    experimentOutcome: 'EXP-J FAIL: PM momentum p=0.023 (fails Bonferroni 0.0071), d=-0.032. Negative d suggests mean-reversion.',
+    researchNotes: 'PM session may exhibit mean-reversion. Worth testing a fade strategy rather than momentum.',
   },
   {
     gapId: 'GAP-005',
     description: 'A3 fires 0 trades — ADE selection makes it permanently inactive when A1 is enabled',
     priority: 'HIGH',
-    status: 'OPEN',
+    status: 'IN_RESEARCH',
     identifiedAt: '2026-07-23',
-    researchNotes: 'A3 should be retired or redesigned with a unique entry condition that A1 cannot replicate.',
+    identifiedInSprint: '123A.7',
+    experimentIds: ['EXP-K'],
+    experimentOutcome: 'EXP-K FAIL: A3 DMI divergence entry p=0.971, d=-0.001. No unique edge even with independent entry.',
+    researchNotes: 'A3 retirement recommended. Requires Phil approval. Replace with a strategy with a unique regime or entry condition.',
   },
   {
     gapId: 'GAP-006',
-    description: 'B1 is fallback-only — fires when all other strategies are ineligible; very low ADE score',
+    description: 'B1 is fallback-only — fires when all other strategies are ineligible; near-zero expectancy',
     priority: 'MEDIUM',
-    status: 'OPEN',
+    status: 'IN_RESEARCH',
     identifiedAt: '2026-07-23',
-    researchNotes: 'B1 OOS expectancy +0.108 pts is near-zero. May be worth redesigning as a dedicated VWAP strategy.',
+    identifiedInSprint: '123A.7',
+    experimentIds: ['EXP-L'],
+    experimentOutcome: 'EXP-L FAIL: VWAP reclaim standalone p=0.891, d=0.002. B1 has no edge as a standalone strategy.',
+    researchNotes: 'B1 may need to be retired or fundamentally redesigned.',
   },
   {
     gapId: 'GAP-007',
-    description: 'No strategy covers macro event days (FOMC, CPI, NFP) — these are high-volatility outliers',
+    description: 'No strategy covers macro event days (FOMC, CPI, NFP) — high-volatility outliers unaddressed',
     priority: 'MEDIUM',
-    status: 'OPEN',
+    status: 'IN_RESEARCH',
     identifiedAt: '2026-07-23',
+    identifiedInSprint: '123A.7',
+    experimentIds: ['EXP-M'],
+    experimentOutcome: 'EXP-M FAIL: macro ATR proxy p=0.030 (fails Bonferroni), d=-0.167. Real FOMC/CPI/NFP calendar required.',
+    researchNotes: 'Highest-priority next experiment. Use real macro event calendar, not ATR proxy.',
   },
 ];
 

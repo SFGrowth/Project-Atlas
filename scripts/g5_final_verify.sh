@@ -48,7 +48,7 @@ echo "db_broker_calls: $DB_BROKER"
 
 echo ""
 echo "--- DB Final Counts ---"
-mysql -u atlas -patlas_staging_pass atlas_staging_g4 -sNe \
+mysql -u atlas -p"${DB_PASS:?DB_PASS not set}" atlas_staging_g4 -sNe \
   "SELECT 'confirmed_1m', COUNT(*) FROM atlas_bars_1m WHERE reconciliation_status='MATCHED'
    UNION ALL SELECT 'confirmed_5m', COUNT(*) FROM atlas_bars_5m
    UNION ALL SELECT 'unresolved', COUNT(*) FROM atlas_bars_1m WHERE reconciliation_status='UNRESOLVED';" 2>/dev/null | grep -v Warning

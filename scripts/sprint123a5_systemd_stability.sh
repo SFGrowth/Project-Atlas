@@ -25,8 +25,8 @@ check_sample() {
   SERVER_PID=$(systemctl show atlas-nexus --property=MainPID --value 2>/dev/null | tr -d '[:space:]')
   MEM_MB=$(ps -o rss= -p "$SERVER_PID" 2>/dev/null | awk '{printf "%.0f",$1/1024}')
   CPU=$(ps -o %cpu= -p "$SERVER_PID" 2>/dev/null | tr -d ' ')
-  BARS_1M=$(mysql -u atlas -patlas_staging_pass atlas_staging_g4 -sNe "SELECT COUNT(*) FROM atlas_bars_1m WHERE symbol='MNQU6' AND reconciliation_status='MATCHED';" 2>/dev/null || echo "N/A")
-  BARS_5M=$(mysql -u atlas -patlas_staging_pass atlas_staging_g4 -sNe "SELECT COUNT(*) FROM atlas_bars_5m WHERE symbol='MNQU6';" 2>/dev/null || echo "N/A")
+  BARS_1M=$(mysql -u atlas -p"${DB_PASS:?DB_PASS not set}" atlas_staging_g4 -sNe "SELECT COUNT(*) FROM atlas_bars_1m WHERE symbol='MNQU6' AND reconciliation_status='MATCHED';" 2>/dev/null || echo "N/A")
+  BARS_5M=$(mysql -u atlas -p"${DB_PASS:?DB_PASS not set}" atlas_staging_g4 -sNe "SELECT COUNT(*) FROM atlas_bars_5m WHERE symbol='MNQU6';" 2>/dev/null || echo "N/A")
   # Use grep -E | wc -l to avoid BRE double-count bug
   SSE_ERRS=$(grep -E "SSE.*error|stream.*error" /var/log/atlas-nexus/server.log 2>/dev/null | wc -l | tr -d ' ')
   RT_EX=$(grep -E "UnhandledPromiseRejection|uncaughtException|FATAL" /var/log/atlas-nexus/server.log 2>/dev/null | wc -l | tr -d ' ')

@@ -62,27 +62,34 @@ RTH_HOURS_UTC = range(13, 21)  # approximate
 # ============================================================
 
 def get_db_connection():
-    """Get MySQL connection using environment variables."""
+    """Get MySQL connection from DATABASE_URL environment variable.
+
+    DATABASE_URL must be set in the environment or .env file.
+    Format: mysql://user:password@host:port/database
+
+    Raises:
+        EnvironmentError: if DATABASE_URL is not set or cannot be parsed.
+        Credentials are never logged or included in exception messages.
+    """
+    import re
     db_url = os.environ.get("DATABASE_URL", "")
     if not db_url:
-        # Fall back to direct credentials
-        return mysql.connector.connect(
-            host="127.0.0.1",
-            port=3306,
-            user="atlas",
-            password="atlas_staging_pass",
-            database="atlas_staging_g4"
+        raise EnvironmentError(
+            "DATABASE_URL environment variable is not set. "
+            "Set it to mysql://user:password@host:port/database "
+            "(see .env.example for format)."
         )
-    # Parse mysql://user:pass@host:port/db
-    import re
     m = re.match(r"mysql://([^:]+):([^@]+)@([^:]+):(\d+)/(.+)", db_url)
-    if m:
-        return mysql.connector.connect(
-            host=m.group(3), port=int(m.group(4)),
-            user=m.group(1), password=m.group(2),
-            database=m.group(5)
+    if not m:
+        raise EnvironmentError(
+            "DATABASE_URL format invalid. "
+            "Expected: mysql://user:password@host:port/database"
         )
-    raise ValueError(f"Cannot parse DATABASE_URL: {db_url[:20]}...")
+    return mysql.connector.connect(
+        host=m.group(3), port=int(m.group(4)),
+        user=m.group(1), password=m.group(2),
+        database=m.group(5)
+    )
 
 
 # ============================================================

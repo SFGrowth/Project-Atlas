@@ -27,6 +27,8 @@ import { ParityService } from "../market-data/parity-service.js";
 import { MarketDataRuntimeOrchestrator } from "../market-data/runtime-orchestrator.js";
 import { createBridgeServer } from "../market-data/bridge-server.js";
 import { createMarketDataRouter } from "../market-data/market-data-router.js";
+// ── Sprint 123A.7 — DARWIN Research Dashboard ────────────────────────────────
+import darwinDashboardRouter from "../darwin/darwin-dashboard-router.js";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -174,6 +176,9 @@ async function startServer() {
     app.use("/api/market-data", marketDataRouter);
     console.log('[MarketData] Routes mounted at /api/market-data');
   }
+  // ── /api/darwin routes (Sprint 123A.7) ────────────────────────────────────
+  app.use("/api/darwin", darwinDashboardRouter);
+  console.log('[DARWIN] Research dashboard routes mounted at /api/darwin');
 
   // Atlas scheduled job endpoints (must be before Vite/static fallthrough)
   registerScheduledJobs(app);

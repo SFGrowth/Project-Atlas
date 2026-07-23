@@ -67,11 +67,11 @@ take_sample() {
     echo "lastConfirmed1mTs: $LAST_1M | lastConfirmed5mTs: $LAST_5M" >> "$LOG"
 
     # DB counts
-    DB_1M=$(mysql -u atlas -patlas_staging_pass atlas_staging_g4 -sNe \
+    DB_1M=$(mysql -u atlas -p"${DB_PASS:?DB_PASS not set}" atlas_staging_g4 -sNe \
         "SELECT COUNT(*) FROM atlas_bars_1m WHERE reconciliation_status='MATCHED';" 2>/dev/null | grep -v Warning | tail -1)
-    DB_5M=$(mysql -u atlas -patlas_staging_pass atlas_staging_g4 -sNe \
+    DB_5M=$(mysql -u atlas -p"${DB_PASS:?DB_PASS not set}" atlas_staging_g4 -sNe \
         "SELECT COUNT(*) FROM atlas_bars_5m;" 2>/dev/null | grep -v Warning | tail -1)
-    DB_UNRESOLVED=$(mysql -u atlas -patlas_staging_pass atlas_staging_g4 -sNe \
+    DB_UNRESOLVED=$(mysql -u atlas -p"${DB_PASS:?DB_PASS not set}" atlas_staging_g4 -sNe \
         "SELECT COUNT(*) FROM atlas_bars_1m WHERE reconciliation_status='UNRESOLVED';" 2>/dev/null | grep -v Warning | tail -1)
     echo "db_confirmed_1m: $DB_1M | db_confirmed_5m: $DB_5M | db_unresolved: $DB_UNRESOLVED" >> "$LOG"
 

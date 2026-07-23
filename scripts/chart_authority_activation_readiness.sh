@@ -58,7 +58,7 @@ if [ -n "${DATABASE_URL:-}" ]; then
   DB_NAME=$(echo "$DATABASE_URL" | sed 's|.*/\([^?]*\).*|\1|')
   MYSQL_CMD="mysql -u $DB_USER -p$DB_PASS $DB_NAME -sN"
 else
-  MYSQL_CMD="mysql -u atlas -patlas_staging_pass atlas_staging_g4 -sN"
+  MYSQL_CMD="mysql -u atlas -p"${DB_PASS:?DB_PASS not set}" atlas_staging_g4 -sN"
 fi
 BAR_COUNT=$($MYSQL_CMD -e "
   SELECT COUNT(*)
