@@ -378,9 +378,9 @@ Live chart (Gate G5 approved), Pine Script file (retained as legacy reference), 
 | G6A baseline SHA | `98fdc58dfb8019fae4692cf6f0f4be08627979a3` |
 | Sprint 123A.7 v1.0 SHA | `b15c6d7636beac6c97f2e4c42e31bf1c1496b625` |
 | Sprint 123A.7 v2.0 SHA | `bdd641f19c020a92c06837085a162ba6844be593` |
-| Sprint 123A.7 v3.0 SHA | *(to be committed — see Phase 10)* |
-| Remote SHA | *(to be verified after push)* |
-| SHA match | *(to be confirmed)* |
+| Sprint 123A.7 v3.0 SHA | `d3917964ab2fc35e1b8a0d680fc2620a2ef69b04` |
+| Remote SHA | `d3917964ab2fc35e1b8a0d680fc2620a2ef69b04` |
+| SHA match | **CONFIRMED — local = remote** |
 | Working tree | CLEAN (pyc files only — gitignored) |
 | Secret scan | **CLEAN** — `HARDCODED_CREDENTIALS=0` |
 
@@ -412,6 +412,6 @@ Live chart (Gate G5 approved), Pine Script file (retained as legacy reference), 
 | **6-hour ops window** | ✓ 13 samples, all services active, all health 200 |
 | **Resource isolation proof** | ✓ 512MB/256MB ceilings, 25%/10% CPU quotas |
 | **5 test fixes applied** | ✓ All pre-existing failures resolved |
-| GitHub SHA match | *(to be confirmed after commit)* |
+| GitHub SHA match | ✓ `d3917964ab2fc35e1b8a0d680fc2620a2ef69b04` — local = remote |
 
 **Awaiting Phil's written approval to close Sprint 123A.7 and begin Sprint 123A.8.**
