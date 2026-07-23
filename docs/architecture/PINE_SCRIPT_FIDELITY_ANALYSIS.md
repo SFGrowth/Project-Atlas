@@ -1,15 +1,19 @@
 # Pine Script Fidelity Analysis — Sprint 123A.7
 
-> **Architecture correction (Sprint 123A.7 Gate G7):**  
-> `PINE_SCRIPT_STATUS=LEGACY_REFERENCE_AND_CURRENT_TEMPORARY_AUTOMATION_TRIGGER`  
+> **Architecture correction (Sprint 123A.7 Gate G7 — fifth withhold):**  
+> `PINE_SCRIPT_STATUS=NON_CANONICAL_LEGACY_REFERENCE`  
 > `TRADINGVIEW_MARKET_DATA_ROLE=NONE`  
+> `TRADINGVIEW_CHART_ROLE=NONE`  
+> `TRADINGVIEW_AUTOMATION_ROLE=NONE`  
 > `DATABENTO_MNQ_DATA_AUTHORITY=CANONICAL`  
+> `TYPESCRIPT_STRATEGY_ENGINE=CANONICAL`  
 >
-> Pine Script is **not** the canonical strategy implementation and **not** a market data source.  
-> Databento is the canonical MNQ data source for all Atlas operations.  
-> Pine Script remains active only as the **temporary TradersPost/Tradovate automation fallback** until the Atlas-native TypeScript strategy engine is built, shadow-tested and approved.  
-> **Do not use Pine Script fidelity as the primary research objective.**  
-> This document is retained as a reference for the temporary automation path only.
+> Gate G5 approved Databento chart authority. Pine Script is **not** the canonical strategy  
+> implementation, **not** a market data source, **not** a chart source, and **not** an active  
+> automation trigger. Databento is the permanent canonical MNQ data source for all Atlas  
+> operations. The TypeScript strategy engine is the canonical strategy source.  
+> **The canonical backtest fidelity target is `TYPESCRIPT_BACKTEST_FIDELITY`, not Pine Script.**  
+> This document is retained as historical reference only. Pine Script fidelity is retired as a Gate criterion.
 
 **Source file:** `tradingview/atlas-unified-portfolio/atlas_portfolio_v1.pine`  
 **Pine Script version:** 6  

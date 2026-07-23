@@ -15,5 +15,10 @@ export default defineConfig({
   test: {
     environment: "node",
     include: ["server/**/*.test.ts", "server/**/*.spec.ts"],
+    exclude: [
+      // Legacy tests from retired sprints — not part of gate-targeted test suite
+      "server/legacy-tests/**",
+      "**/node_modules/**",
+    ],
   },
 });

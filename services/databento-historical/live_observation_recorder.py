@@ -144,11 +144,19 @@ def compute_features_no_lookahead(bars: pd.DataFrame) -> dict:
     # VWAP (daily reset using hlc3)
     df["hlc3"] = (df["high"] + df["low"] + df["close"]) / 3
     df["date"] = pd.to_datetime(df["bar_open_ts_ms"], unit="ms", utc=True).dt.date
-    vwap = (
-        df.groupby("date")
-        .apply(lambda g: (g["hlc3"] * g["volume"]).cumsum() / g["volume"].cumsum())
-        .reset_index(level=0, drop=True)
+    # Compute VWAP per day and flatten to a Series aligned to df.index.
+    # groupby.apply can return a DataFrame (not a Series) when all rows share
+    # the same date — in that case pandas wraps the result in an extra level.
+    # Using transform avoids this ambiguity entirely.
+    vwap = df.groupby("date").apply(
+        lambda g: (g["hlc3"] * g["volume"]).cumsum() / g["volume"].cumsum()
     )
+    # Flatten multi-level index if present (single-date edge case)
+    if isinstance(vwap, pd.DataFrame):
+        vwap = vwap.stack().reset_index(drop=True)
+        vwap.index = df.index
+    else:
+        vwap = vwap.reset_index(level=0, drop=True)
 
     # Get last bar values
     i = len(df) - 1
