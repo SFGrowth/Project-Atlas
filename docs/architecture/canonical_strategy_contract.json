@@ -1,0 +1,199 @@
+{
+  "contract_version": "1.0.0",
+  "sprint": "123A.8",
+  "typescript_module_git_blob_sha": "6549df15ed8cc8e351d82e8dc647bb9c75f0dd69",
+  "typescript_module_sha256": "8d8de7c4dcdcf8ec3cc5f049e1f5315d4f096a212a1c1eb08b73fc1966aa7a39",
+  "generated_at": "2026-07-24T04:34:42.998603+00:00",
+  "data_source": "DATABENTO",
+  "dataset": "GLBX.MDP3",
+  "commission_per_side_usd": 0.62,
+  "commission_rt_usd": 1.24,
+  "tick_size_pts": 0.25,
+  "tick_value_usd": 0.5,
+  "max_risk_usd": 450.0,
+  "adx_threshold": 25.0,
+  "atr_volatile_mult": 1.2,
+  "ade_selection_order": [
+    "A1",
+    "A3",
+    "SB1",
+    "ORB-1",
+    "B1"
+  ],
+  "strategies": {
+    "A1": {
+      "id": "A1",
+      "name": "ADX/DMI Momentum",
+      "version": "1.0.0",
+      "session": "RTH",
+      "regime": "TRENDING",
+      "direction_filter": "DMI_PLUS_OVER_MINUS",
+      "stop_atr_mult": 2.0,
+      "target_rr_mult": 2.0,
+      "commission_rt": 1.24,
+      "ade_score_formula": "adx_value",
+      "ade_exclusive": true,
+      "ade_min_score": 25.0,
+      "is_fallback": false,
+      "data_source": "DATABENTO",
+      "feature_version": "1.0",
+      "approved_sprint": "123A.7"
+    },
+    "A3": {
+      "id": "A3",
+      "name": "ADX/DMI Momentum (Secondary)",
+      "version": "1.0.0",
+      "session": "RTH",
+      "regime": "TRENDING",
+      "direction_filter": "DMI_PLUS_OVER_MINUS",
+      "stop_atr_mult": 2.0,
+      "target_rr_mult": 2.0,
+      "commission_rt": 1.24,
+      "ade_score_formula": "adx_value * 0.95",
+      "ade_exclusive": true,
+      "ade_min_score": 25.0,
+      "is_fallback": false,
+      "data_source": "DATABENTO",
+      "feature_version": "1.0",
+      "approved_sprint": "123A.7"
+    },
+    "B1": {
+      "id": "B1",
+      "name": "VWAP Direction Fallback",
+      "version": "1.0.0",
+      "session": "RTH",
+      "regime": "ANY",
+      "direction_filter": "VWAP_DIRECTION",
+      "stop_atr_mult": 2.0,
+      "target_rr_mult": 1.5,
+      "commission_rt": 1.24,
+      "ade_score_formula": "1.0",
+      "ade_exclusive": false,
+      "ade_min_score": 0.0,
+      "is_fallback": true,
+      "data_source": "DATABENTO",
+      "feature_version": "1.0",
+      "approved_sprint": "123A.7"
+    },
+    "SB1": {
+      "id": "SB1",
+      "name": "AM Mid EMA9 Momentum",
+      "version": "1.0.0",
+      "session": "AM_MID",
+      "regime": "TRENDING",
+      "direction_filter": "EMA9_SLOPE",
+      "stop_atr_mult": 1.5,
+      "target_rr_mult": 2.5,
+      "commission_rt": 1.24,
+      "ade_score_formula": "50.0",
+      "ade_exclusive": true,
+      "ade_min_score": 25.0,
+      "is_fallback": false,
+      "data_source": "DATABENTO",
+      "feature_version": "1.0",
+      "approved_sprint": "123A.7"
+    },
+    "ORB-1": {
+      "id": "ORB-1",
+      "name": "AM Open Volatile Bar",
+      "version": "1.0.0",
+      "session": "AM_OPEN",
+      "regime": "VOLATILE",
+      "direction_filter": "BAR_DIRECTION",
+      "stop_atr_mult": 1.8,
+      "target_rr_mult": 2.0,
+      "commission_rt": 1.24,
+      "ade_score_formula": "45.0",
+      "ade_exclusive": true,
+      "ade_min_score": 0.0,
+      "is_fallback": false,
+      "data_source": "DATABENTO",
+      "feature_version": "1.0",
+      "approved_sprint": "123A.7"
+    }
+  },
+  "split_manifest": {
+    "split_manifest_version": "1.0.0",
+    "sprint": "123A.8",
+    "defined_at": "2026-07-24T00:00:00Z",
+    "note": "Splits defined chronologically before inspecting outcomes. No alteration after definition.",
+    "train": {
+      "start": "2024-01-01",
+      "end": "2025-03-31"
+    },
+    "validation": {
+      "start": "2025-04-01",
+      "end": "2025-09-30"
+    },
+    "oos": {
+      "start": "2025-10-01",
+      "end": "2026-07-20"
+    },
+    "walk_forward_folds": [
+      {
+        "fold": 1,
+        "train_start": "2024-01-01",
+        "train_end": "2024-06-30",
+        "val_start": "2024-07-01",
+        "val_end": "2024-09-30"
+      },
+      {
+        "fold": 2,
+        "train_start": "2024-01-01",
+        "train_end": "2024-09-30",
+        "val_start": "2024-10-01",
+        "val_end": "2024-12-31"
+      },
+      {
+        "fold": 3,
+        "train_start": "2024-01-01",
+        "train_end": "2024-12-31",
+        "val_start": "2025-01-01",
+        "val_end": "2025-03-31"
+      },
+      {
+        "fold": 4,
+        "train_start": "2024-01-01",
+        "train_end": "2025-03-31",
+        "val_start": "2025-04-01",
+        "val_end": "2025-06-30"
+      },
+      {
+        "fold": 5,
+        "train_start": "2024-01-01",
+        "train_end": "2025-06-30",
+        "val_start": "2025-07-01",
+        "val_end": "2025-09-30"
+      }
+    ],
+    "roll_policy": "RWP-001",
+    "primary_results": "ROLL_EXCLUDED",
+    "secondary_results": "ROLL_INCLUSIVE",
+    "quarantined_datasets": [
+      "3m",
+      "60m"
+    ],
+    "approved_datasets": [
+      "1m",
+      "5m",
+      "15m",
+      "30m"
+    ]
+  },
+  "roll_policy": "RWP-001",
+  "roll_window_trading_days": 3,
+  "quarantined_datasets": [
+    "3m",
+    "60m"
+  ],
+  "approved_datasets": [
+    "1m",
+    "5m",
+    "15m",
+    "30m"
+  ],
+  "execution_timing": "NEXT_BAR_CLOSE",
+  "no_pyramiding": true,
+  "single_active_strategy": true,
+  "contract_sha256": "cb5c58947d04d8d41c5164e2563cedbb816c969500cef003c611f2a078f042fd"
+}
