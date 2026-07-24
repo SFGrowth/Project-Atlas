@@ -1236,3 +1236,42 @@
 
 ### Sprint 123A.5 — Chart Authority Activation [NOT STARTED — REQUIRES GATE G4 APPROVAL]
 - [ ] DO NOT BEGIN until Gate G4 written approval received from Phil
+
+## Sprint 123A.8 — Canonical Backtest Regeneration and Strategy Evidence Lock [COMPLETE]
+### Gate G8 — Canonical Backtest Regeneration
+- [x] Create sprint branch `sprint/123a-8-canonical-backtest-regeneration` from G7 final lock SHA `17360ad6f638ddafa791274a455483e3b936fd4b`
+- [x] Download canonical Databento GLBX.MDP3 historical data (902,065 1m bars, 2024-01-01 to 2026-07-20, $0.00 cost)
+- [x] Build 5m canonical feature dataset (180,414 bars, quality gate PASS, SHA-256: c970675391b970956f38d419ef95ff3e116e61ab8874eca7df2ab4334e715623)
+- [x] Verify frozen TypeScript contract (git blob SHA: 6549df15ed8cc8e351d82e8dc647bb9c75f0dd69, all 5 strategies v1.0.0 DATABENTO)
+- [x] Export shared canonical contract (docs/architecture/canonical_strategy_contract.json)
+- [x] Define versioned split manifest v1.0.0 (Train: 2024-01-01 to 2025-03-31 | Val: 2025-04-01 to 2025-09-30 | OOS: 2025-10-01 to 2026-07-20)
+- [x] Implement portfolio-level ADE backtest runner (full execution model: commission $5 RT, next-bar-close, single active strategy, no pyramiding)
+- [x] Apply roll-window policy RWP-001 (3-day window, 10 roll dates, 18,162 bars excluded)
+- [x] Execute canonical backtests (roll-excluded primary, roll-inclusive secondary)
+- [x] Prove deterministic reproducibility (Run 1 SHA = Run 2 SHA = 670c3f7e59d82b3069df1ebcefdb9221a219ad73783618e7b35eca7864072e22)
+- [x] Run cost/slippage sensitivity matrix (20 scenarios)
+- [x] Run walk-forward validation (5 folds, 2 of 5 profitable)
+- [x] Leakage audit: LOOKAHEAD=NONE, TARGET=NONE, OOS_CONTAMINATION=NONE
+- [x] Classify strategies: A1=RESEARCH_FAIL, A3=NO_TRADES, SB1=RESEARCH_FAIL, ORB-1=RESEARCH_FAIL, B1=RESEARCH_CAUTION
+- [x] Create monitoring baselines (all 5 strategies, provisional_status=FINAL)
+- [x] Write 156 G8 tests (G8-01 through G8-35) — all 156 pass
+- [x] Full regression: 35 test files pass, 3 pre-existing DB failures unchanged, 1,066 tests pass
+- [x] COMMIT-1: implementation (9f2466e)
+- [x] COMMIT-2: evidence (a613ab5)
+- [x] Push to GitHub: remote SHA a613ab56f80e04d918ca5cd084ee97d4716cf2d9
+- [x] Write Gate G8 evidence report (docs/architecture/SPRINT_123A8_GATE_G8_EVIDENCE.md)
+- [x] Write Sprint 123A.8 handoff (docs/architecture/SPRINT_123A8_HANDOFF.md)
+- [x] Update todo.md
+
+### Sprint 123A.8 — Key Results
+- OOS portfolio: 859 trades, PF=0.9844, expectancy=-$3.34/trade, max DD=-$18,130, Sharpe=-0.2539
+- B1 is the only strategy with positive OOS PF (1.24) — highest-value next DARWIN experiment
+- DARWIN_DECISION_AUTHORITY: DISABLED | DARWIN_EXECUTION_AUTHORITY: DISABLED
+- No automatic promotions, demotions, retirements, or capital reallocations
+- All strategy statuses, risk parameters, and execution authorities unchanged from G7 baseline
+
+### Sprint 123A.9 — DARWIN Research Cycle [NOT STARTED]
+- [ ] Investigate B1's OOS edge: regime dependence, sub-period stability, transferability
+- [ ] Investigate A1 ADX-trend regime filter alignment with current MNQ volatility regime
+- [ ] Investigate ORB-1 opening range definition and breakout confirmation criteria
+- [ ] DO NOT create new strategies until B1 investigation confirms stable edge
