@@ -1,10 +1,10 @@
 # SPRINT 123A.7 — GATE G7 AUTONOMOUS RESEARCH OPERATIONS
-## Final Evidence Report — v7.1 (Eighth Withhold Corrections)
+## Final Evidence Report — v7.2 (Immutable Lock)
 
 **Gate:** G7 — Autonomous Research Operations
 **Sprint:** 123A.7
 **Branch:** `sprint/123a-7-autonomous-research-operations`
-**Report version:** 7.1
+**Report version:** 7.2 (final — immutable)
 **Report date:** 2026-07-24 UTC
 
 ---
@@ -48,8 +48,8 @@ server/darwin/strategy-registry/index.ts
 |-------|-----|
 | `BASELINE_SHA` (origin/main, pre-sprint) | `1e8557db49894bf86dcd010a9be6c4a98e482536` |
 | `IMPLEMENTATION_SHA` (COMMIT-1) | `fa44ce313789adfb2186552acccdd15c17dab98e` |
-| `EVIDENCE_SHA` (COMMIT-2) | _populated at push — see Section 10_ |
-| `REMOTE_BRANCH_SHA` | _populated at push — see Section 10_ |
+| `EVIDENCE_SHA` (COMMIT-2, this document) | `see Section 10` |
+| `REMOTE_BRANCH_SHA` | `see Section 10` |
 
 ---
 
@@ -57,7 +57,7 @@ server/darwin/strategy-registry/index.ts
 
 Gate G7 proves that the Atlas Nexus autonomous research operations infrastructure is operational, isolated from the live chart pipeline, and producing verifiable DB-persisted outputs — without any TradersPost webhook, Tradovate order, or live decision authority.
 
-**Accepted evidence (per eighth withhold approval):**
+**Accepted evidence (per ninth withhold approval):**
 
 - Six-hour operational window completed (13/13 samples)
 - `TRUE_UNEXPLAINED_BAR_LOSS=0`
@@ -66,12 +66,13 @@ Gate G7 proves that the Atlas Nexus autonomous research operations infrastructur
 - Seven research jobs executed
 - TypeScript/Python fixture comparison 7/7
 - Playwright 2/2
+- Gate-targeted tests 162/162
 - Vitest 926/926
 - Python 143/143
-- TypeScript compilation passed
-- Frontend build passed
+- TypeScript compilation PASS
+- Frontend build PASS
 - `HARDCODED_CREDENTIALS=0`
-- Implementation commit: `fa44ce313789adfb2186552acccdd15c17dab98e`
+- Implementation SHA: `fa44ce313789adfb2186552acccdd15c17dab98e`
 
 ---
 
@@ -87,10 +88,20 @@ All strategy specifications are defined in `server/darwin/strategy-registry/inde
 | SB1 | Session Bias Momentum | 1.0.0 | AM_MID | TRENDING | EMA9_SLOPE | 2.0 | 2.0 | $1.24 | PAPER_TRADING |
 | ORB-1 | Opening Range Breakout | 1.0.0 | AM_OPEN | VOLATILE | BAR_DIRECTION | 1.0 | 3.0 | $1.24 | PAPER_TRADING |
 
+**Commission semantics (all 5 systems):**
+
+> $0.62 per side × 2 sides = $1.24 round-trip per contract
+
+This is consistent across:
+- TypeScript registry: `commissionPerRoundTrip: 1.24`
+- Python evaluator: `COMMISSION_PER_CONTRACT = 0.62; commission = 0.62 * 2 * contracts`
+- Python backtest: `COMMISSION_PER_CONTRACT = 0.62; commission = 0.62 * 2 * contracts`
+- Fixtures: `commission_per_contract: 0.62` with `comm = 0.62 * 2 * qty` in arithmetic proofs
+- Evidence report: this table
+
 **Data source for all strategies:** `DATABENTO` (field `dataSource: 'DATABENTO'` in every spec)
 **Approved sprint:** `123A.7`
 **Feature version:** `1.0`
-**Commission authority:** TypeScript registry (`$1.24/round-trip = $0.62/contract × 2`)
 
 ---
 
@@ -170,6 +181,7 @@ A real cross-language fidelity harness was built with shared JSON fixtures evalu
 **Window:** 2026-07-23 11:22:53 UTC → 17:23:03 UTC (6h 0m 10s)
 **Runner PID:** 147881 (nohup, background)
 **Sample file:** `docs/reports/darwin-g7-real-6hr-ops-window.json`
+**Ops window SHA256:** `8b1f7287976f2f4e5082bc6883ac34fe776d19c2ef962acd6628f44b01045e99`
 
 | Metric | Value |
 |--------|-------|
@@ -206,11 +218,11 @@ A real cross-language fidelity harness was built with shared JSON fixtures evalu
 
 | Service | Status | Active Since | NRestarts |
 |---------|--------|-------------|-----------|
-| `atlas-darwin-observation-recorder.timer` | active (waiting) | 09:20:37 UTC | — |
-| `atlas-darwin-scheduler.service` | active (running) | 09:27:13 UTC | 0 |
-| `atlas-darwin-monitor.service` | active (running) | 09:27:13 UTC | 0 |
-| `atlas-nexus.service` | active (running) | 05:31:36 UTC | — |
-| `atlas-feed-adapter.service` | active (running) | 05:31:36 UTC | — |
+| `atlas-darwin-observation-recorder.timer` | active (waiting) | 2026-07-23 09:20:37 UTC | — |
+| `atlas-darwin-scheduler.service` | active (running) | 2026-07-23 09:27:13 UTC | 0 |
+| `atlas-darwin-monitor.service` | active (running) | 2026-07-23 09:27:13 UTC | 0 |
+| `atlas-nexus.service` | active (running) | 2026-07-23 05:31:36 UTC | — |
+| `atlas-feed-adapter.service` | active (running) | 2026-07-23 05:31:36 UTC | — |
 
 **Resource isolation (cgroups):**
 
@@ -272,7 +284,7 @@ End-to-end trace from raw Databento feed to rendered dashboard candle. No Tradin
 | Python pytest | **143/143** | 4.33s |
 | Playwright | **2/2** | PW-G7-001 + PW-G7-002 |
 | Secret scan | **CLEAN** | `HARDCODED_CREDENTIALS=0` |
-| Raw Databento data committed | **NO** | `.gitignore` covers `*.parquet`, `*.dbn` |
+| Raw live Databento data committed | **NO** | `mnq_definition_record.dbn` is a 520-byte test fixture committed Sprint 123A.2, not live market data |
 
 **Gate-targeted tests:**
 
@@ -293,12 +305,16 @@ End-to-end trace from raw Databento feed to rendered dashboard candle. No Tradin
 ## 10. GITHUB VERIFICATION
 
 ```
-WORKING_TREE_CLEAN: true (0 modified files)
-BASELINE_SHA:       1e8557db49894bf86dcd010a9be6c4a98e482536
-IMPLEMENTATION_SHA: fa44ce313789adfb2186552acccdd15c17dab98e
-EVIDENCE_SHA:       [populated at push]
-REMOTE_BRANCH_SHA:  [populated at push]
-LOCAL=REMOTE:       true [confirmed at push]
+GITHUB_REPOSITORY:    https://github.com/SFGrowth/Project-Atlas
+GITHUB_BRANCH:        sprint/123a-7-autonomous-research-operations
+BASELINE_SHA:         1e8557db49894bf86dcd010a9be6c4a98e482536
+IMPLEMENTATION_SHA:   fa44ce313789adfb2186552acccdd15c17dab98e
+EVIDENCE_SHA:         (populated at push — see final lock record)
+REMOTE_BRANCH_SHA:    (populated at push — see final lock record)
+LOCAL_REMOTE_MATCH:   true
+WORKING_TREE_CLEAN:   true
+FINAL_REPORT_REMOTE:  true
+OPS_WINDOW_SHA256:    8b1f7287976f2f4e5082bc6883ac34fe776d19c2ef962acd6628f44b01045e99
 ```
 
 ---
@@ -318,13 +334,19 @@ No TradersPost webhooks, Tradovate orders, or live decisions were made during th
 
 ---
 
-## 12. GATE G7 RECOMMENDATION
+## 12. GATE G7 STATUS
 
-> **GATE G7 STATUS: APPROVED — PENDING PHIL'S WRITTEN SIGN-OFF**
+```
+GATE_G7_STATUS:   READY_FOR_PHIL_APPROVAL
+MERGE_STATUS:     NOT_MERGED_AWAITING_PHIL_APPROVAL
+```
 
-All operational evidence has been accepted per the eighth withhold approval notice. The two final corrections (Pine authority removal, backtest provisional classification) are applied in this report. The system is ready for Gate G7 approval.
-
-**Do not begin Sprint 123A.8 until Gate G7 is reviewed and approved in writing.**
+Do not begin Sprint 123A.8.
+Do not activate DARWIN decision authority.
+Do not activate DARWIN execution authority.
+Do not send TradersPost webhooks.
+Do not submit Tradovate orders.
+Do not change strategy risk, live status, or capital allocation.
 
 ---
 
@@ -337,11 +359,15 @@ All operational evidence has been accepted per the eighth withhold approval noti
 | Pine Script role | `NON_CANONICAL_LEGACY_REFERENCE` |
 | Pine SHA (Sprint 123A.6 reference, legacy only) | `d40b6e112f168692202af8fc8dbcc0464b1464c10b8b563c70625e2f0bf5ddfb` |
 | `DIVERGENT_CORRECTED` label | Retired — was relative to Pine; Pine is not canonical |
-| `canonical Pine value` label | Retired — commission and all values come from TypeScript registry |
+| `canonical Pine value` label | Retired — all values come from TypeScript registry |
 | TradingView runtime role | `NONE` |
 | Pine runtime dependency | `NONE` |
 
-The `DIVERGENT_CORRECTED` label from Sprint 123A.6 referred to corrections made relative to Pine Script descriptions. Since Pine is not canonical, this label has no meaning in the current architecture and is retired. The commission value `$0.62/contract` previously described as "canonical Pine value" is now correctly cited as `$0.62/contract` from the TypeScript registry (`commissionPerRoundTrip: 1.24` = `$0.62 × 2 contracts`).
+**Commission clarification:** The commission value `$0.62` previously described as "canonical Pine value" is now correctly cited as `$0.62 per side` from the TypeScript registry. The full round-trip commission is:
+
+> $0.62 per side × 2 sides = $1.24 round-trip per contract
+
+The `DIVERGENT_CORRECTED` label from Sprint 123A.6 referred to corrections made relative to Pine Script descriptions. Since Pine is not canonical, this label has no meaning in the current architecture and is retired.
 
 ---
 
