@@ -11,8 +11,8 @@ GITHUB_BRANCH:                  sprint/123a-7-autonomous-research-operations
 BASELINE_SHA:                   1e8557db49894bf86dcd010a9be6c4a98e482536
 IMPLEMENTATION_SHA:             fa44ce313789adfb2186552acccdd15c17dab98e
 EVIDENCE_REPORT_COMMIT_SHA:     379d57f9912e8e4b3b45ac486ef86e95822ab086
-FINAL_LOCK_COMMIT_SHA:          b23d7cf8ec55f8655a123abb12cb31d2106bfd13
-REMOTE_BRANCH_SHA:              b23d7cf8ec55f8655a123abb12cb31d2106bfd13
+FINAL_LOCK_COMMIT_SHA:          871119b5667e130f9630911a998d82a81474ff20
+REMOTE_BRANCH_SHA:              871119b5667e130f9630911a998d82a81474ff20
 LOCAL_REMOTE_MATCH:             true
 WORKING_TREE_CLEAN:             true
 FINAL_REPORT_REMOTE:            true
@@ -44,7 +44,7 @@ All three files are present in the branch at `EVIDENCE_REPORT_COMMIT_SHA`.
 | `BASELINE_SHA` (origin/main, pre-sprint) | `1e8557db49894bf86dcd010a9be6c4a98e482536` |
 | `IMPLEMENTATION_SHA` (COMMIT-1: contracts + fidelity + Playwright) | `fa44ce313789adfb2186552acccdd15c17dab98e` |
 | `EVIDENCE_REPORT_COMMIT_SHA` (final evidence report + PDF) | `379d57f9912e8e4b3b45ac486ef86e95822ab086` |
-| `FINAL_LOCK_COMMIT_SHA` (this document) | `b23d7cf8ec55f8655a123abb12cb31d2106bfd13` |
+| `FINAL_LOCK_COMMIT_SHA` (this document) | `871119b5667e130f9630911a998d82a81474ff20` |
 
 ---
 
