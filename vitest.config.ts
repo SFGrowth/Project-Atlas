@@ -18,6 +18,9 @@ export default defineConfig({
     exclude: [
       // Legacy tests from retired sprints — not part of gate-targeted test suite
       "server/legacy-tests/**",
+      // Playwright tests use @playwright/test runner, not Vitest
+      "**/*playwright*",
+      "**/*.playwright.test.ts",
       "**/node_modules/**",
     ],
   },
