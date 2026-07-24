@@ -1,0 +1,38 @@
+{
+  "test_id": "PW-G7-001",
+  "test_name": "Dashboard loads with Databento data source",
+  "executed_at": "2026-07-24T00:32:37.804Z",
+  "base_url": "http://localhost:3000",
+  "page_title": "Atlas Nexus — JARVIS Pipeline Observability",
+  "screenshot_path": "/home/ubuntu/atlas-nexus/docs/reports/g7-dashboard-screenshot.png",
+  "auth_method": "session_cookie",
+  "cookie_name": "app_session_id",
+  "intercepted_bars_calls": 4,
+  "lineage_proof": {
+    "source": "DATABENTO",
+    "dataset": "GLBX.MDP3",
+    "bar_count": 5,
+    "first_bar": {
+      "source": "DATABENTO",
+      "dataset": "GLBX.MDP3",
+      "canonicalSymbol": "MNQU6",
+      "instrumentId": 42004800,
+      "barOpenTsMs": 1784766900000,
+      "openPts100": 2924000,
+      "closePts100": 2923975,
+      "canonicalBarType": "LIVE_CONFIRMED",
+      "dataQuality": "GOOD"
+    }
+  },
+  "assertions": {
+    "source_is_databento": true,
+    "dataset_is_glbx_mdp3": true,
+    "bar_count_gt_0": true,
+    "canonical_bar_type_live_confirmed": true,
+    "data_quality_good": true,
+    "no_tradingview_data": true,
+    "no_pine_script_data": true,
+    "no_massive_data": true
+  },
+  "all_assertions_pass": true
+}

@@ -1,0 +1,692 @@
+{
+  "cross_language_fidelity": "EXACT",
+  "fixture_version": "1.0.0",
+  "evaluated_at": "2026-07-24T00:17:29.561445+00:00",
+  "python_all_pass": true,
+  "typescript_all_pass": true,
+  "cross_language_match": true,
+  "total_fixtures": 7,
+  "matched": 7,
+  "failed": 0,
+  "comparisons": [
+    {
+      "fixture_id": "FIX-A1-LONG-001",
+      "match": true,
+      "fields": [
+        {
+          "field": "eligible",
+          "python": true,
+          "typescript": true,
+          "tolerance": 0.0,
+          "match": true
+        },
+        {
+          "field": "direction",
+          "python": "LONG",
+          "typescript": "LONG",
+          "tolerance": 0.0,
+          "match": true
+        },
+        {
+          "field": "strategy_id",
+          "python": "A1",
+          "typescript": "A1",
+          "tolerance": 0.0,
+          "match": true
+        },
+        {
+          "field": "quantity",
+          "python": 9,
+          "typescript": 9,
+          "tolerance": 0.0,
+          "match": true
+        },
+        {
+          "field": "target_dist_pts",
+          "python": 50.0,
+          "typescript": 50,
+          "tolerance": 0.0,
+          "match": true
+        },
+        {
+          "field": "stop_dist_pts",
+          "python": 25.0,
+          "typescript": 25,
+          "tolerance": 0.0,
+          "match": true
+        },
+        {
+          "field": "target_price",
+          "python": 21558.75,
+          "typescript": 21558.75,
+          "tolerance": 0.0,
+          "match": true
+        },
+        {
+          "field": "stop_price",
+          "python": 21483.75,
+          "typescript": 21483.75,
+          "tolerance": 0.0,
+          "match": true
+        },
+        {
+          "field": "gross_pnl_pts",
+          "python": 50.0,
+          "typescript": 50,
+          "tolerance": 0.0,
+          "match": true
+        },
+        {
+          "field": "entry_price",
+          "python": 21508.75,
+          "typescript": 21508.75,
+          "tolerance": 0.0,
+          "match": true
+        },
+        {
+          "field": "commission_dollars",
+          "python": 11.16,
+          "typescript": 11.16,
+          "tolerance": 0.01,
+          "match": true
+        },
+        {
+          "field": "net_pnl_dollars",
+          "python": 888.84,
+          "typescript": 888.84,
+          "tolerance": 0.01,
+          "match": true
+        },
+        {
+          "field": "ade_score",
+          "python": 32.4,
+          "typescript": 32.4,
+          "tolerance": 0.001,
+          "match": true
+        }
+      ]
+    },
+    {
+      "fixture_id": "FIX-A1-LONG-002",
+      "match": true,
+      "fields": [
+        {
+          "field": "eligible",
+          "python": true,
+          "typescript": true,
+          "tolerance": 0.0,
+          "match": true
+        },
+        {
+          "field": "direction",
+          "python": "LONG",
+          "typescript": "LONG",
+          "tolerance": 0.0,
+          "match": true
+        },
+        {
+          "field": "strategy_id",
+          "python": "A1",
+          "typescript": "A1",
+          "tolerance": 0.0,
+          "match": true
+        },
+        {
+          "field": "quantity",
+          "python": 14,
+          "typescript": 14,
+          "tolerance": 0.0,
+          "match": true
+        },
+        {
+          "field": "target_dist_pts",
+          "python": 32.0,
+          "typescript": 32,
+          "tolerance": 0.0,
+          "match": true
+        },
+        {
+          "field": "stop_dist_pts",
+          "python": 16.0,
+          "typescript": 16,
+          "tolerance": 0.0,
+          "match": true
+        },
+        {
+          "field": "target_price",
+          "python": 21562.0,
+          "typescript": 21562,
+          "tolerance": 0.0,
+          "match": true
+        },
+        {
+          "field": "stop_price",
+          "python": 21514.0,
+          "typescript": 21514,
+          "tolerance": 0.0,
+          "match": true
+        },
+        {
+          "field": "gross_pnl_pts",
+          "python": 32.0,
+          "typescript": 32,
+          "tolerance": 0.0,
+          "match": true
+        },
+        {
+          "field": "entry_price",
+          "python": 21530.0,
+          "typescript": 21530,
+          "tolerance": 0.0,
+          "match": true
+        },
+        {
+          "field": "commission_dollars",
+          "python": 17.36,
+          "typescript": 17.36,
+          "tolerance": 0.01,
+          "match": true
+        },
+        {
+          "field": "net_pnl_dollars",
+          "python": 878.64,
+          "typescript": 878.64,
+          "tolerance": 0.01,
+          "match": true
+        },
+        {
+          "field": "ade_score",
+          "python": 27.0,
+          "typescript": 27,
+          "tolerance": 0.001,
+          "match": true
+        }
+      ]
+    },
+    {
+      "fixture_id": "FIX-A1-SHORT-001",
+      "match": true,
+      "fields": [
+        {
+          "field": "eligible",
+          "python": true,
+          "typescript": true,
+          "tolerance": 0.0,
+          "match": true
+        },
+        {
+          "field": "direction",
+          "python": "SHORT",
+          "typescript": "SHORT",
+          "tolerance": 0.0,
+          "match": true
+        },
+        {
+          "field": "strategy_id",
+          "python": "SB1",
+          "typescript": "SB1",
+          "tolerance": 0.0,
+          "match": true
+        },
+        {
+          "field": "quantity",
+          "python": 15,
+          "typescript": 15,
+          "tolerance": 0.0,
+          "match": true
+        },
+        {
+          "field": "target_dist_pts",
+          "python": 37.5,
+          "typescript": 37.5,
+          "tolerance": 0.0,
+          "match": true
+        },
+        {
+          "field": "stop_dist_pts",
+          "python": 15.0,
+          "typescript": 15,
+          "tolerance": 0.0,
+          "match": true
+        },
+        {
+          "field": "target_price",
+          "python": 21398.0,
+          "typescript": 21398,
+          "tolerance": 0.0,
+          "match": true
+        },
+        {
+          "field": "stop_price",
+          "python": 21450.5,
+          "typescript": 21450.5,
+          "tolerance": 0.0,
+          "match": true
+        },
+        {
+          "field": "gross_pnl_pts",
+          "python": 37.5,
+          "typescript": 37.5,
+          "tolerance": 0.0,
+          "match": true
+        },
+        {
+          "field": "entry_price",
+          "python": 21435.5,
+          "typescript": 21435.5,
+          "tolerance": 0.0,
+          "match": true
+        },
+        {
+          "field": "commission_dollars",
+          "python": 18.6,
+          "typescript": 18.6,
+          "tolerance": 0.01,
+          "match": true
+        },
+        {
+          "field": "net_pnl_dollars",
+          "python": 1106.4,
+          "typescript": 1106.4,
+          "tolerance": 0.01,
+          "match": true
+        },
+        {
+          "field": "ade_score",
+          "python": 50.0,
+          "typescript": 50,
+          "tolerance": 0.001,
+          "match": true
+        }
+      ]
+    },
+    {
+      "fixture_id": "FIX-B1-LONG-001",
+      "match": true,
+      "fields": [
+        {
+          "field": "eligible",
+          "python": true,
+          "typescript": true,
+          "tolerance": 0.0,
+          "match": true
+        },
+        {
+          "field": "direction",
+          "python": "LONG",
+          "typescript": "LONG",
+          "tolerance": 0.0,
+          "match": true
+        },
+        {
+          "field": "strategy_id",
+          "python": "B1",
+          "typescript": "B1",
+          "tolerance": 0.0,
+          "match": true
+        },
+        {
+          "field": "quantity",
+          "python": 18,
+          "typescript": 18,
+          "tolerance": 0.0,
+          "match": true
+        },
+        {
+          "field": "target_dist_pts",
+          "python": 18.0,
+          "typescript": 18,
+          "tolerance": 0.0,
+          "match": true
+        },
+        {
+          "field": "stop_dist_pts",
+          "python": 12.0,
+          "typescript": 12,
+          "tolerance": 0.0,
+          "match": true
+        },
+        {
+          "field": "target_price",
+          "python": 21563.0,
+          "typescript": 21563,
+          "tolerance": 0.0,
+          "match": true
+        },
+        {
+          "field": "stop_price",
+          "python": 21533.0,
+          "typescript": 21533,
+          "tolerance": 0.0,
+          "match": true
+        },
+        {
+          "field": "gross_pnl_pts",
+          "python": 18.0,
+          "typescript": 18,
+          "tolerance": 0.0,
+          "match": true
+        },
+        {
+          "field": "entry_price",
+          "python": 21545.0,
+          "typescript": 21545,
+          "tolerance": 0.0,
+          "match": true
+        },
+        {
+          "field": "commission_dollars",
+          "python": 22.32,
+          "typescript": 22.32,
+          "tolerance": 0.01,
+          "match": true
+        },
+        {
+          "field": "net_pnl_dollars",
+          "python": 625.68,
+          "typescript": 625.68,
+          "tolerance": 0.01,
+          "match": true
+        },
+        {
+          "field": "ade_score",
+          "python": 1.0,
+          "typescript": 1,
+          "tolerance": 0.001,
+          "match": true
+        }
+      ]
+    },
+    {
+      "fixture_id": "FIX-INELIGIBLE-001",
+      "match": true,
+      "fields": [
+        {
+          "field": "eligible",
+          "python": false,
+          "typescript": false,
+          "tolerance": 0.0,
+          "match": true
+        },
+        {
+          "field": "direction",
+          "python": null,
+          "typescript": null,
+          "tolerance": 0.0,
+          "match": true
+        },
+        {
+          "field": "strategy_id",
+          "python": null,
+          "typescript": null,
+          "tolerance": 0.0,
+          "match": true
+        },
+        {
+          "field": "quantity",
+          "python": 0,
+          "typescript": 0,
+          "tolerance": 0.0,
+          "match": true
+        },
+        {
+          "field": "target_dist_pts",
+          "python": null,
+          "typescript": null,
+          "tolerance": 0.0,
+          "match": true
+        },
+        {
+          "field": "stop_dist_pts",
+          "python": null,
+          "typescript": null,
+          "tolerance": 0.0,
+          "match": true
+        },
+        {
+          "field": "target_price",
+          "python": null,
+          "typescript": null,
+          "tolerance": 0.0,
+          "match": true
+        },
+        {
+          "field": "stop_price",
+          "python": null,
+          "typescript": null,
+          "tolerance": 0.0,
+          "match": true
+        },
+        {
+          "field": "gross_pnl_pts",
+          "python": null,
+          "typescript": null,
+          "tolerance": 0.0,
+          "match": true
+        },
+        {
+          "field": "entry_price",
+          "python": null,
+          "typescript": null,
+          "tolerance": 0.0,
+          "match": true
+        },
+        {
+          "field": "commission_dollars",
+          "python": null,
+          "typescript": null,
+          "tolerance": 0.01,
+          "match": true
+        },
+        {
+          "field": "net_pnl_dollars",
+          "python": null,
+          "typescript": null,
+          "tolerance": 0.01,
+          "match": true
+        },
+        {
+          "field": "ade_score",
+          "python": 0.0,
+          "typescript": 0,
+          "tolerance": 0.001,
+          "match": true
+        }
+      ]
+    },
+    {
+      "fixture_id": "FIX-ORB1-LONG-001",
+      "match": true,
+      "fields": [
+        {
+          "field": "eligible",
+          "python": true,
+          "typescript": true,
+          "tolerance": 0.0,
+          "match": true
+        },
+        {
+          "field": "direction",
+          "python": "LONG",
+          "typescript": "LONG",
+          "tolerance": 0.0,
+          "match": true
+        },
+        {
+          "field": "strategy_id",
+          "python": "ORB-1",
+          "typescript": "ORB-1",
+          "tolerance": 0.0,
+          "match": true
+        },
+        {
+          "field": "quantity",
+          "python": 6,
+          "typescript": 6,
+          "tolerance": 0.0,
+          "match": true
+        },
+        {
+          "field": "target_dist_pts",
+          "python": 64.8,
+          "typescript": 64.8,
+          "tolerance": 0.0,
+          "match": true
+        },
+        {
+          "field": "stop_dist_pts",
+          "python": 32.4,
+          "typescript": 32.4,
+          "tolerance": 0.0,
+          "match": true
+        },
+        {
+          "field": "target_price",
+          "python": 21546.8,
+          "typescript": 21546.8,
+          "tolerance": 0.0,
+          "match": true
+        },
+        {
+          "field": "stop_price",
+          "python": 21449.6,
+          "typescript": 21449.6,
+          "tolerance": 0.0,
+          "match": true
+        },
+        {
+          "field": "gross_pnl_pts",
+          "python": 64.8,
+          "typescript": 64.8,
+          "tolerance": 0.0,
+          "match": true
+        },
+        {
+          "field": "entry_price",
+          "python": 21482.0,
+          "typescript": 21482,
+          "tolerance": 0.0,
+          "match": true
+        },
+        {
+          "field": "commission_dollars",
+          "python": 7.44,
+          "typescript": 7.44,
+          "tolerance": 0.01,
+          "match": true
+        },
+        {
+          "field": "net_pnl_dollars",
+          "python": 770.16,
+          "typescript": 770.16,
+          "tolerance": 0.01,
+          "match": true
+        },
+        {
+          "field": "ade_score",
+          "python": 45.0,
+          "typescript": 45,
+          "tolerance": 0.001,
+          "match": true
+        }
+      ]
+    },
+    {
+      "fixture_id": "FIX-SB1-LONG-001",
+      "match": true,
+      "fields": [
+        {
+          "field": "eligible",
+          "python": true,
+          "typescript": true,
+          "tolerance": 0.0,
+          "match": true
+        },
+        {
+          "field": "direction",
+          "python": "LONG",
+          "typescript": "LONG",
+          "tolerance": 0.0,
+          "match": true
+        },
+        {
+          "field": "strategy_id",
+          "python": "SB1",
+          "typescript": "SB1",
+          "tolerance": 0.0,
+          "match": true
+        },
+        {
+          "field": "quantity",
+          "python": 16,
+          "typescript": 16,
+          "tolerance": 0.0,
+          "match": true
+        },
+        {
+          "field": "target_dist_pts",
+          "python": 33.75,
+          "typescript": 33.75,
+          "tolerance": 0.0,
+          "match": true
+        },
+        {
+          "field": "stop_dist_pts",
+          "python": 13.5,
+          "typescript": 13.5,
+          "tolerance": 0.0,
+          "match": true
+        },
+        {
+          "field": "target_price",
+          "python": 21521.75,
+          "typescript": 21521.75,
+          "tolerance": 0.0,
+          "match": true
+        },
+        {
+          "field": "stop_price",
+          "python": 21474.5,
+          "typescript": 21474.5,
+          "tolerance": 0.0,
+          "match": true
+        },
+        {
+          "field": "gross_pnl_pts",
+          "python": 33.75,
+          "typescript": 33.75,
+          "tolerance": 0.0,
+          "match": true
+        },
+        {
+          "field": "entry_price",
+          "python": 21488.0,
+          "typescript": 21488,
+          "tolerance": 0.0,
+          "match": true
+        },
+        {
+          "field": "commission_dollars",
+          "python": 19.84,
+          "typescript": 19.84,
+          "tolerance": 0.01,
+          "match": true
+        },
+        {
+          "field": "net_pnl_dollars",
+          "python": 1060.16,
+          "typescript": 1060.16,
+          "tolerance": 0.01,
+          "match": true
+        },
+        {
+          "field": "ade_score",
+          "python": 50.0,
+          "typescript": 50,
+          "tolerance": 0.001,
+          "match": true
+        }
+      ]
+    }
+  ]
+}

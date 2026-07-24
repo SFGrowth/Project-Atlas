@@ -1,0 +1,767 @@
+{
+  "evaluator": "python",
+  "fixture_version": "1.0.0",
+  "evaluated_at": "2026-07-24T00:17:28.453244+00:00",
+  "total_fixtures": 7,
+  "all_pass": true,
+  "results": [
+    {
+      "fixture_id": "FIX-A1-LONG-001",
+      "eligible": true,
+      "strategy_id": "A1",
+      "direction": "LONG",
+      "ade_score": 32.4,
+      "entry_price": 21508.75,
+      "quantity": 9,
+      "stop_price": 21483.75,
+      "target_price": 21558.75,
+      "stop_dist_pts": 25.0,
+      "target_dist_pts": 50.0,
+      "gross_pnl_pts": 50.0,
+      "commission_dollars": 11.16,
+      "net_pnl_dollars": 888.84,
+      "evaluator": "python",
+      "evaluated_at": "2026-07-24T00:17:28.453027+00:00"
+    },
+    {
+      "fixture_id": "FIX-A1-SHORT-001",
+      "eligible": true,
+      "strategy_id": "SB1",
+      "direction": "SHORT",
+      "ade_score": 50.0,
+      "entry_price": 21435.5,
+      "quantity": 15,
+      "stop_price": 21450.5,
+      "target_price": 21398.0,
+      "stop_dist_pts": 15.0,
+      "target_dist_pts": 37.5,
+      "gross_pnl_pts": 37.5,
+      "commission_dollars": 18.6,
+      "net_pnl_dollars": 1106.4,
+      "evaluator": "python",
+      "evaluated_at": "2026-07-24T00:17:28.453101+00:00"
+    },
+    {
+      "fixture_id": "FIX-A1-LONG-002",
+      "eligible": true,
+      "strategy_id": "A1",
+      "direction": "LONG",
+      "ade_score": 27.0,
+      "entry_price": 21530.0,
+      "quantity": 14,
+      "stop_price": 21514.0,
+      "target_price": 21562.0,
+      "stop_dist_pts": 16.0,
+      "target_dist_pts": 32.0,
+      "gross_pnl_pts": 32.0,
+      "commission_dollars": 17.36,
+      "net_pnl_dollars": 878.64,
+      "evaluator": "python",
+      "evaluated_at": "2026-07-24T00:17:28.453130+00:00"
+    },
+    {
+      "fixture_id": "FIX-SB1-LONG-001",
+      "eligible": true,
+      "strategy_id": "SB1",
+      "direction": "LONG",
+      "ade_score": 50.0,
+      "entry_price": 21488.0,
+      "quantity": 16,
+      "stop_price": 21474.5,
+      "target_price": 21521.75,
+      "stop_dist_pts": 13.5,
+      "target_dist_pts": 33.75,
+      "gross_pnl_pts": 33.75,
+      "commission_dollars": 19.84,
+      "net_pnl_dollars": 1060.16,
+      "evaluator": "python",
+      "evaluated_at": "2026-07-24T00:17:28.453157+00:00"
+    },
+    {
+      "fixture_id": "FIX-ORB1-LONG-001",
+      "eligible": true,
+      "strategy_id": "ORB-1",
+      "direction": "LONG",
+      "ade_score": 45.0,
+      "entry_price": 21482.0,
+      "quantity": 6,
+      "stop_price": 21449.6,
+      "target_price": 21546.8,
+      "stop_dist_pts": 32.4,
+      "target_dist_pts": 64.8,
+      "gross_pnl_pts": 64.8,
+      "commission_dollars": 7.44,
+      "net_pnl_dollars": 770.16,
+      "evaluator": "python",
+      "evaluated_at": "2026-07-24T00:17:28.453184+00:00"
+    },
+    {
+      "fixture_id": "FIX-B1-LONG-001",
+      "eligible": true,
+      "strategy_id": "B1",
+      "direction": "LONG",
+      "ade_score": 1.0,
+      "entry_price": 21545.0,
+      "quantity": 18,
+      "stop_price": 21533.0,
+      "target_price": 21563.0,
+      "stop_dist_pts": 12.0,
+      "target_dist_pts": 18.0,
+      "gross_pnl_pts": 18.0,
+      "commission_dollars": 22.32,
+      "net_pnl_dollars": 625.68,
+      "evaluator": "python",
+      "evaluated_at": "2026-07-24T00:17:28.453208+00:00"
+    },
+    {
+      "fixture_id": "FIX-INELIGIBLE-001",
+      "eligible": false,
+      "strategy_id": null,
+      "direction": null,
+      "ade_score": 0.0,
+      "entry_price": null,
+      "quantity": 0,
+      "stop_price": null,
+      "target_price": null,
+      "stop_dist_pts": null,
+      "target_dist_pts": null,
+      "gross_pnl_pts": null,
+      "commission_dollars": null,
+      "net_pnl_dollars": null,
+      "evaluator": "python",
+      "evaluated_at": "2026-07-24T00:17:28.453234+00:00"
+    }
+  ],
+  "comparisons": [
+    {
+      "fixture_id": "FIX-A1-LONG-001",
+      "all_pass": true,
+      "fields": [
+        {
+          "field": "eligible",
+          "expected": true,
+          "actual": true,
+          "tolerance": 0.0,
+          "pass": true
+        },
+        {
+          "field": "strategy_id",
+          "expected": "A1",
+          "actual": "A1",
+          "tolerance": 0.0,
+          "pass": true
+        },
+        {
+          "field": "direction",
+          "expected": "LONG",
+          "actual": "LONG",
+          "tolerance": 0.0,
+          "pass": true
+        },
+        {
+          "field": "ade_score",
+          "expected": 32.4,
+          "actual": 32.4,
+          "tolerance": 0.001,
+          "pass": true
+        },
+        {
+          "field": "entry_price",
+          "expected": 21508.75,
+          "actual": 21508.75,
+          "tolerance": 0.0,
+          "pass": true
+        },
+        {
+          "field": "quantity",
+          "expected": 9,
+          "actual": 9,
+          "tolerance": 0.0,
+          "pass": true
+        },
+        {
+          "field": "stop_price",
+          "expected": 21483.75,
+          "actual": 21483.75,
+          "tolerance": 0.0,
+          "pass": true
+        },
+        {
+          "field": "target_price",
+          "expected": 21558.75,
+          "actual": 21558.75,
+          "tolerance": 0.0,
+          "pass": true
+        },
+        {
+          "field": "stop_dist_pts",
+          "expected": 25.0,
+          "actual": 25.0,
+          "tolerance": 0.0,
+          "pass": true
+        },
+        {
+          "field": "target_dist_pts",
+          "expected": 50.0,
+          "actual": 50.0,
+          "tolerance": 0.0,
+          "pass": true
+        },
+        {
+          "field": "commission_dollars",
+          "expected": 11.16,
+          "actual": 11.16,
+          "tolerance": 0.01,
+          "pass": true
+        },
+        {
+          "field": "net_pnl_dollars",
+          "expected": 888.84,
+          "actual": 888.84,
+          "tolerance": 0.01,
+          "pass": true
+        }
+      ]
+    },
+    {
+      "fixture_id": "FIX-A1-SHORT-001",
+      "all_pass": true,
+      "fields": [
+        {
+          "field": "eligible",
+          "expected": true,
+          "actual": true,
+          "tolerance": 0.0,
+          "pass": true
+        },
+        {
+          "field": "strategy_id",
+          "expected": "SB1",
+          "actual": "SB1",
+          "tolerance": 0.0,
+          "pass": true
+        },
+        {
+          "field": "direction",
+          "expected": "SHORT",
+          "actual": "SHORT",
+          "tolerance": 0.0,
+          "pass": true
+        },
+        {
+          "field": "ade_score",
+          "expected": 50.0,
+          "actual": 50.0,
+          "tolerance": 0.001,
+          "pass": true
+        },
+        {
+          "field": "entry_price",
+          "expected": 21435.5,
+          "actual": 21435.5,
+          "tolerance": 0.0,
+          "pass": true
+        },
+        {
+          "field": "quantity",
+          "expected": 15,
+          "actual": 15,
+          "tolerance": 0.0,
+          "pass": true
+        },
+        {
+          "field": "stop_price",
+          "expected": 21450.5,
+          "actual": 21450.5,
+          "tolerance": 0.0,
+          "pass": true
+        },
+        {
+          "field": "target_price",
+          "expected": 21398.0,
+          "actual": 21398.0,
+          "tolerance": 0.0,
+          "pass": true
+        },
+        {
+          "field": "stop_dist_pts",
+          "expected": 15.0,
+          "actual": 15.0,
+          "tolerance": 0.0,
+          "pass": true
+        },
+        {
+          "field": "target_dist_pts",
+          "expected": 37.5,
+          "actual": 37.5,
+          "tolerance": 0.0,
+          "pass": true
+        },
+        {
+          "field": "commission_dollars",
+          "expected": 18.6,
+          "actual": 18.6,
+          "tolerance": 0.01,
+          "pass": true
+        },
+        {
+          "field": "net_pnl_dollars",
+          "expected": 1106.4,
+          "actual": 1106.4,
+          "tolerance": 0.01,
+          "pass": true
+        }
+      ]
+    },
+    {
+      "fixture_id": "FIX-A1-LONG-002",
+      "all_pass": true,
+      "fields": [
+        {
+          "field": "eligible",
+          "expected": true,
+          "actual": true,
+          "tolerance": 0.0,
+          "pass": true
+        },
+        {
+          "field": "strategy_id",
+          "expected": "A1",
+          "actual": "A1",
+          "tolerance": 0.0,
+          "pass": true
+        },
+        {
+          "field": "direction",
+          "expected": "LONG",
+          "actual": "LONG",
+          "tolerance": 0.0,
+          "pass": true
+        },
+        {
+          "field": "ade_score",
+          "expected": 27.0,
+          "actual": 27.0,
+          "tolerance": 0.001,
+          "pass": true
+        },
+        {
+          "field": "entry_price",
+          "expected": 21530.0,
+          "actual": 21530.0,
+          "tolerance": 0.0,
+          "pass": true
+        },
+        {
+          "field": "quantity",
+          "expected": 14,
+          "actual": 14,
+          "tolerance": 0.0,
+          "pass": true
+        },
+        {
+          "field": "stop_price",
+          "expected": 21514.0,
+          "actual": 21514.0,
+          "tolerance": 0.0,
+          "pass": true
+        },
+        {
+          "field": "target_price",
+          "expected": 21562.0,
+          "actual": 21562.0,
+          "tolerance": 0.0,
+          "pass": true
+        },
+        {
+          "field": "stop_dist_pts",
+          "expected": 16.0,
+          "actual": 16.0,
+          "tolerance": 0.0,
+          "pass": true
+        },
+        {
+          "field": "target_dist_pts",
+          "expected": 32.0,
+          "actual": 32.0,
+          "tolerance": 0.0,
+          "pass": true
+        },
+        {
+          "field": "commission_dollars",
+          "expected": 17.36,
+          "actual": 17.36,
+          "tolerance": 0.01,
+          "pass": true
+        },
+        {
+          "field": "net_pnl_dollars",
+          "expected": 878.64,
+          "actual": 878.64,
+          "tolerance": 0.01,
+          "pass": true
+        }
+      ]
+    },
+    {
+      "fixture_id": "FIX-SB1-LONG-001",
+      "all_pass": true,
+      "fields": [
+        {
+          "field": "eligible",
+          "expected": true,
+          "actual": true,
+          "tolerance": 0.0,
+          "pass": true
+        },
+        {
+          "field": "strategy_id",
+          "expected": "SB1",
+          "actual": "SB1",
+          "tolerance": 0.0,
+          "pass": true
+        },
+        {
+          "field": "direction",
+          "expected": "LONG",
+          "actual": "LONG",
+          "tolerance": 0.0,
+          "pass": true
+        },
+        {
+          "field": "ade_score",
+          "expected": 50.0,
+          "actual": 50.0,
+          "tolerance": 0.001,
+          "pass": true
+        },
+        {
+          "field": "entry_price",
+          "expected": 21488.0,
+          "actual": 21488.0,
+          "tolerance": 0.0,
+          "pass": true
+        },
+        {
+          "field": "quantity",
+          "expected": 16,
+          "actual": 16,
+          "tolerance": 0.0,
+          "pass": true
+        },
+        {
+          "field": "stop_price",
+          "expected": 21474.5,
+          "actual": 21474.5,
+          "tolerance": 0.0,
+          "pass": true
+        },
+        {
+          "field": "target_price",
+          "expected": 21521.75,
+          "actual": 21521.75,
+          "tolerance": 0.0,
+          "pass": true
+        },
+        {
+          "field": "stop_dist_pts",
+          "expected": 13.5,
+          "actual": 13.5,
+          "tolerance": 0.0,
+          "pass": true
+        },
+        {
+          "field": "target_dist_pts",
+          "expected": 33.75,
+          "actual": 33.75,
+          "tolerance": 0.0,
+          "pass": true
+        },
+        {
+          "field": "commission_dollars",
+          "expected": 19.84,
+          "actual": 19.84,
+          "tolerance": 0.01,
+          "pass": true
+        },
+        {
+          "field": "net_pnl_dollars",
+          "expected": 1060.16,
+          "actual": 1060.16,
+          "tolerance": 0.01,
+          "pass": true
+        }
+      ]
+    },
+    {
+      "fixture_id": "FIX-ORB1-LONG-001",
+      "all_pass": true,
+      "fields": [
+        {
+          "field": "eligible",
+          "expected": true,
+          "actual": true,
+          "tolerance": 0.0,
+          "pass": true
+        },
+        {
+          "field": "strategy_id",
+          "expected": "ORB-1",
+          "actual": "ORB-1",
+          "tolerance": 0.0,
+          "pass": true
+        },
+        {
+          "field": "direction",
+          "expected": "LONG",
+          "actual": "LONG",
+          "tolerance": 0.0,
+          "pass": true
+        },
+        {
+          "field": "ade_score",
+          "expected": 45.0,
+          "actual": 45.0,
+          "tolerance": 0.001,
+          "pass": true
+        },
+        {
+          "field": "entry_price",
+          "expected": 21482.0,
+          "actual": 21482.0,
+          "tolerance": 0.0,
+          "pass": true
+        },
+        {
+          "field": "quantity",
+          "expected": 6,
+          "actual": 6,
+          "tolerance": 0.0,
+          "pass": true
+        },
+        {
+          "field": "stop_price",
+          "expected": 21449.6,
+          "actual": 21449.6,
+          "tolerance": 0.0,
+          "pass": true
+        },
+        {
+          "field": "target_price",
+          "expected": 21546.8,
+          "actual": 21546.8,
+          "tolerance": 0.0,
+          "pass": true
+        },
+        {
+          "field": "stop_dist_pts",
+          "expected": 32.4,
+          "actual": 32.4,
+          "tolerance": 0.0,
+          "pass": true
+        },
+        {
+          "field": "target_dist_pts",
+          "expected": 64.8,
+          "actual": 64.8,
+          "tolerance": 0.0,
+          "pass": true
+        },
+        {
+          "field": "commission_dollars",
+          "expected": 7.44,
+          "actual": 7.44,
+          "tolerance": 0.01,
+          "pass": true
+        },
+        {
+          "field": "net_pnl_dollars",
+          "expected": 770.16,
+          "actual": 770.16,
+          "tolerance": 0.01,
+          "pass": true
+        }
+      ]
+    },
+    {
+      "fixture_id": "FIX-B1-LONG-001",
+      "all_pass": true,
+      "fields": [
+        {
+          "field": "eligible",
+          "expected": true,
+          "actual": true,
+          "tolerance": 0.0,
+          "pass": true
+        },
+        {
+          "field": "strategy_id",
+          "expected": "B1",
+          "actual": "B1",
+          "tolerance": 0.0,
+          "pass": true
+        },
+        {
+          "field": "direction",
+          "expected": "LONG",
+          "actual": "LONG",
+          "tolerance": 0.0,
+          "pass": true
+        },
+        {
+          "field": "ade_score",
+          "expected": 1.0,
+          "actual": 1.0,
+          "tolerance": 0.001,
+          "pass": true
+        },
+        {
+          "field": "entry_price",
+          "expected": 21545.0,
+          "actual": 21545.0,
+          "tolerance": 0.0,
+          "pass": true
+        },
+        {
+          "field": "quantity",
+          "expected": 18,
+          "actual": 18,
+          "tolerance": 0.0,
+          "pass": true
+        },
+        {
+          "field": "stop_price",
+          "expected": 21533.0,
+          "actual": 21533.0,
+          "tolerance": 0.0,
+          "pass": true
+        },
+        {
+          "field": "target_price",
+          "expected": 21563.0,
+          "actual": 21563.0,
+          "tolerance": 0.0,
+          "pass": true
+        },
+        {
+          "field": "stop_dist_pts",
+          "expected": 12.0,
+          "actual": 12.0,
+          "tolerance": 0.0,
+          "pass": true
+        },
+        {
+          "field": "target_dist_pts",
+          "expected": 18.0,
+          "actual": 18.0,
+          "tolerance": 0.0,
+          "pass": true
+        },
+        {
+          "field": "commission_dollars",
+          "expected": 22.32,
+          "actual": 22.32,
+          "tolerance": 0.01,
+          "pass": true
+        },
+        {
+          "field": "net_pnl_dollars",
+          "expected": 625.68,
+          "actual": 625.68,
+          "tolerance": 0.01,
+          "pass": true
+        }
+      ]
+    },
+    {
+      "fixture_id": "FIX-INELIGIBLE-001",
+      "all_pass": true,
+      "fields": [
+        {
+          "field": "eligible",
+          "expected": false,
+          "actual": false,
+          "tolerance": 0.0,
+          "pass": true
+        },
+        {
+          "field": "strategy_id",
+          "expected": null,
+          "actual": null,
+          "tolerance": 0.0,
+          "pass": true
+        },
+        {
+          "field": "direction",
+          "expected": null,
+          "actual": null,
+          "tolerance": 0.0,
+          "pass": true
+        },
+        {
+          "field": "ade_score",
+          "expected": 0.0,
+          "actual": 0.0,
+          "tolerance": 0.001,
+          "pass": true
+        },
+        {
+          "field": "entry_price",
+          "expected": null,
+          "actual": null,
+          "tolerance": 0.0,
+          "pass": true
+        },
+        {
+          "field": "quantity",
+          "expected": 0,
+          "actual": 0,
+          "tolerance": 0.0,
+          "pass": true
+        },
+        {
+          "field": "stop_price",
+          "expected": null,
+          "actual": null,
+          "tolerance": 0.0,
+          "pass": true
+        },
+        {
+          "field": "target_price",
+          "expected": null,
+          "actual": null,
+          "tolerance": 0.0,
+          "pass": true
+        },
+        {
+          "field": "stop_dist_pts",
+          "expected": null,
+          "actual": null,
+          "tolerance": 0.0,
+          "pass": true
+        },
+        {
+          "field": "target_dist_pts",
+          "expected": null,
+          "actual": null,
+          "tolerance": 0.0,
+          "pass": true
+        },
+        {
+          "field": "commission_dollars",
+          "expected": null,
+          "actual": null,
+          "tolerance": 0.01,
+          "pass": true
+        },
+        {
+          "field": "net_pnl_dollars",
+          "expected": null,
+          "actual": null,
+          "tolerance": 0.01,
+          "pass": true
+        }
+      ]
+    }
+  ]
+}

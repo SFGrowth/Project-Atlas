@@ -1,0 +1,182 @@
+{
+  "config": {
+    "argv": [
+      "/usr/bin/node",
+      "/home/ubuntu/atlas-nexus/node_modules/.pnpm/@playwright+test@1.61.1/node_modules/@playwright/test/cli.js",
+      "test",
+      "server/darwin/strategy-registry/playwright-dashboard-lineage.test.ts",
+      "--config",
+      "playwright.config.ts"
+    ],
+    "configFile": "/home/ubuntu/atlas-nexus/playwright.config.ts",
+    "rootDir": "/home/ubuntu/atlas-nexus/server/darwin/strategy-registry",
+    "failOnFlakyTests": false,
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "/home/ubuntu/atlas-nexus/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "chromium",
+        "name": "chromium",
+        "testDir": "/home/ubuntu/atlas-nexus/server/darwin/strategy-registry",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.test.ts"
+        ],
+        "timeout": 60000
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "list",
+        null
+      ],
+      [
+        "json",
+        {
+          "outputFile": "docs/reports/g7-playwright-results.json"
+        }
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.61.1",
+    "workers": 1,
+    "webServer": null
+  },
+  "suites": [
+    {
+      "title": "playwright-dashboard-lineage.test.ts",
+      "file": "playwright-dashboard-lineage.test.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Atlas Nexus Dashboard — Databento Lineage Proof",
+          "file": "playwright-dashboard-lineage.test.ts",
+          "line": 50,
+          "column": 6,
+          "specs": [
+            {
+              "title": "PW-G7-001: Dashboard loads with Databento data source",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 8785,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "Screenshot saved: /home/ubuntu/atlas-nexus/docs/reports/g7-dashboard-screenshot.png\n"
+                        },
+                        {
+                          "text": "Page title: Atlas Nexus — JARVIS Pipeline Observability\n"
+                        },
+                        {
+                          "text": "Lineage proof written: /home/ubuntu/atlas-nexus/docs/reports/g7-dashboard-lineage-proof.json\n"
+                        },
+                        {
+                          "text": "DATABENTO_LINEAGE_PROOF = CONFIRMED\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-07-24T00:32:29.337Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "7db17f04ec1692fa29c3-33b3a4f36ce5a6d057da",
+              "file": "playwright-dashboard-lineage.test.ts",
+              "line": 67,
+              "column": 3
+            },
+            {
+              "title": "PW-G7-002: Chart API returns DATABENTO bars with correct fields",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 110,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "PW-G7-002 PASS: bar source=DATABENTO, dataset=GLBX.MDP3, open=29240, close=29239.75\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-07-24T00:32:38.500Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "7db17f04ec1692fa29c3-9593effa2384df5a93b5",
+              "file": "playwright-dashboard-lineage.test.ts",
+              "line": 234,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-07-24T00:32:28.393Z",
+    "duration": 10374.972,
+    "expected": 2,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  }
+}
