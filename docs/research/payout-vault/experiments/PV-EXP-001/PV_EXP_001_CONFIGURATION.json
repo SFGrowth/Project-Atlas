@@ -1,0 +1,112 @@
+{
+  "experiment_id": "PV-EXP-001",
+  "experiment_name": "Baseline Frequency Scan",
+  "sprint": "123A.10",
+  "created_utc": "2026-07-25T00:00:00Z",
+  "authority": {
+    "DARWIN_DECISION_AUTHORITY": "DISABLED",
+    "DARWIN_EXECUTION_AUTHORITY": "DISABLED",
+    "DARWIN_PROCESSBAR_CALLS": 0,
+    "DARWIN_POSTBARAUTOMATION_CALLS": 0,
+    "DARWIN_TRADERSPOST_CALLS": 0,
+    "DARWIN_TRADOVATE_CALLS": 0
+  },
+  "parameter_lock_id": "PV-PARAM-LOCK-001",
+  "detector": {
+    "file": "docs/research/payout-vault/payout_vault_detector.py",
+    "sha256": "946b806fb563d4ef37018a05da70fc326e1564ca40c8c206be29b76666b717ec",
+    "version": "1.0.0",
+    "status": "FROZEN"
+  },
+  "specification": {
+    "file": "docs/research/payout-vault/payout_vault_research_spec_v2.json",
+    "sha256": "e40ad744a18cc117976c6fedd58619f90b1d73bd6e9bddd0293ff0be0b4fce22",
+    "version": "2.0.0"
+  },
+  "hypothesis_registry": {
+    "file": "docs/research/payout-vault/hypothesis_registry_v4.json",
+    "sha256": "46489b97d1775fcb48b93b556e49c2c6f40601dfe4cf395599cd6bf25654bc4f",
+    "version": "4"
+  },
+  "dataset": {
+    "instrument": "MNQ",
+    "venue": "GLBX.MDP3",
+    "timeframe_minutes": 5,
+    "file": "/home/ubuntu/atlas-historical/canonical/mnq_5m_features.parquet",
+    "full_dataset_sha256": "c970675391b970956f38d419ef95ff3e116e61ab8874eca7df2ab4334e715623",
+    "full_dataset_bars": 180414,
+    "oos_start": "2025-10-01T00:00:00+00:00",
+    "oos_end": "2026-07-20T23:59:59+00:00",
+    "oos_bars": 56532,
+    "roll_policy": "RWP-001",
+    "session_calendar": "CME",
+    "aggregation_version": "canonical-v1",
+    "continuous_series": true,
+    "approved_data_sources": ["GLBX.MDP3"],
+    "prohibited_data_sources": ["TradingView", "PineScript", "screenshots", "manual_edits", "alternative_vendor"]
+  },
+  "detector_parameters": {
+    "htf_lookback": 20,
+    "ltf_swing_lookback": 3,
+    "csd_window": 3,
+    "sweep_variant": "sweep-wick",
+    "stop_buffer_ticks": 4,
+    "entry_type": 1,
+    "smt_enabled": false,
+    "smt_window_bars": 3,
+    "tick_size": 0.25
+  },
+  "htf_ltf_mapping": {
+    "ltf_timeframe_minutes": 5,
+    "htf_timeframe_minutes": 15,
+    "htf_derivation": "3x_aggregation_of_ltf",
+    "htf_lookback_bars": 20,
+    "ltf_window_bars": 60,
+    "lookahead_policy": "strict_cutoff"
+  },
+  "deduplication": {
+    "policy": "one_unique_causal_setup_sequence_equals_one_qualifying_event",
+    "cooldown_bars_per_direction": 12,
+    "cooldown_minutes": 60,
+    "repeated_csd_from_same_sweep": "first_only",
+    "overlapping_same_direction_within_cooldown": "deduplicated",
+    "long_short_coexistence": true,
+    "multiple_fvg_from_one_displacement": "first_only",
+    "contract_roll_boundary": "excluded",
+    "session_boundary": "independent",
+    "event_id_format": "PV-{YYYYMMDD}-{HHMM}-{DIR}-{SEQ:04d}",
+    "event_id_deterministic": true
+  },
+  "scan": {
+    "runs": 3,
+    "determinism_required": true,
+    "causality_audit": true,
+    "data_quality_audit": true,
+    "rejection_funnel": true,
+    "profitability_analysis": false,
+    "forward_price_fields_retained_for_reproducibility": true,
+    "forward_price_fields_analysed": false
+  },
+  "frequency_classification": {
+    "insufficient_sample_threshold": 30,
+    "low_frequency_threshold_per_week": 2.0,
+    "pre_registered": true
+  },
+  "prohibited_outputs": [
+    "profit_factor",
+    "expectancy",
+    "sharpe_ratio",
+    "sortino_ratio",
+    "capital_curve",
+    "portfolio_contribution",
+    "optimal_parameters",
+    "best_session",
+    "best_direction",
+    "best_timeframe",
+    "best_stop",
+    "best_target",
+    "best_csd_window",
+    "best_fvg_entry",
+    "parameter_ranking"
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "experiment_id": "PV-EXP-001",
+  "instrument": "MNQ",
+  "venue": "GLBX.MDP3",
+  "timeframe_minutes": 5,
+  "file": "/home/ubuntu/atlas-historical/canonical/mnq_5m_features.parquet",
+  "full_dataset_sha256": "c970675391b970956f38d419ef95ff3e116e61ab8874eca7df2ab4334e715623",
+  "oos_start": "2025-10-01 00:00:00+00:00",
+  "oos_end": "2026-07-20 23:59:59+00:00",
+  "roll_policy": "RWP-001",
+  "session_calendar_version": "CME-v1",
+  "aggregation_version": "canonical-v1",
+  "total_bars": 56532,
+  "null_ohlc": 0,
+  "duplicate_timestamps": 0,
+  "out_of_order": 0,
+  "degraded_bars": 0
+}

@@ -1,0 +1,32 @@
+{
+  "experiment_id": "PV-EXP-001",
+  "determinism_match": true,
+  "event_id_stability": true,
+  "cross_validation_mismatches": 0,
+  "runs": [
+    {
+      "run_id": 1,
+      "start_utc": "2026-07-25T13:54:46.455534+00:00",
+      "end_utc": "2026-07-25T13:54:48.092805+00:00",
+      "elapsed_seconds": 1.63,
+      "total_qualifying_events": 117,
+      "event_ledger_sha": "16f26836d869925684efd3e6ddd00daf68e6e8e3ca511e108a014642766aca62"
+    },
+    {
+      "run_id": 2,
+      "start_utc": "2026-07-25T13:54:48.092861+00:00",
+      "end_utc": "2026-07-25T13:54:49.735798+00:00",
+      "elapsed_seconds": 1.64,
+      "total_qualifying_events": 117,
+      "event_ledger_sha": "16f26836d869925684efd3e6ddd00daf68e6e8e3ca511e108a014642766aca62"
+    },
+    {
+      "run_id": 3,
+      "start_utc": "2026-07-25T13:54:49.735849+00:00",
+      "end_utc": "2026-07-25T13:54:51.299121+00:00",
+      "elapsed_seconds": 1.56,
+      "total_qualifying_events": 117,
+      "event_ledger_sha": "16f26836d869925684efd3e6ddd00daf68e6e8e3ca511e108a014642766aca62"
+    }
+  ]
+}

@@ -1,0 +1,126 @@
+{
+  "manifest_id": "PV-EXP-001-MANIFEST-v1",
+  "experiment_id": "PV-EXP-001",
+  "sprint": "123A.10",
+  "generated_utc": "2026-07-25T14:15:00+00:00",
+  "darwin_decision_authority": "DISABLED",
+  "darwin_execution_authority": "DISABLED",
+  "approved_baselines": {
+    "detector_sha256": "946b806fb563d4ef37018a05da70fc326e1564ca40c8c206be29b76666b717ec",
+    "specification_sha256": "e40ad744a18cc117976c6fedd58619f90b1d73bd6e9bddd0293ff0be0b4fce22",
+    "hypothesis_registry_sha256": "46489b97d1775fcb48b93b556e49c2c6f40601dfe4cf395599cd6bf25654bc4f",
+    "dataset_sha256": "c970675391b970956f38d419ef95ff3e116e61ab8874eca7df2ab4334e715623"
+  },
+  "artefacts": [
+    {
+      "id": "A-01",
+      "filename": "PV_EXP_001_EXPERIMENT_CONTRACT.md",
+      "path": "docs/research/payout-vault/experiments/PV-EXP-001/PV_EXP_001_EXPERIMENT_CONTRACT.md",
+      "sha256": "584967d3d1fac27462a4b101319fe327b98c7d6765b579a0706a474058fef1fd",
+      "size_bytes": null,
+      "description": "Experiment contract defining objectives, gates, and acceptance criteria"
+    },
+    {
+      "id": "A-02",
+      "filename": "PV_EXP_001_CONFIGURATION.json",
+      "path": "docs/research/payout-vault/experiments/PV-EXP-001/PV_EXP_001_CONFIGURATION.json",
+      "sha256": "3e6262e39134c41ee1eee10c11022af69702883c485885c4c3af0e69db754536",
+      "size_bytes": null,
+      "description": "Frozen detector configuration parameters (parameter_lock_id: PV-PARAM-LOCK-001)"
+    },
+    {
+      "id": "A-03",
+      "filename": "pv_exp_001_scan.py",
+      "path": "docs/research/payout-vault/experiments/PV-EXP-001/pv_exp_001_scan.py",
+      "sha256": "03dd3682e4c68f8823494230f6c6c111e46c4f029e499a3a90cc8292b4dd487a",
+      "size_bytes": null,
+      "description": "Vectorised frequency scan script — implements 6-gate detector logic"
+    },
+    {
+      "id": "A-04",
+      "filename": "PV_EXP_001_DATASET_MANIFEST.json",
+      "path": "docs/research/payout-vault/experiments/PV-EXP-001/PV_EXP_001_DATASET_MANIFEST.json",
+      "sha256": "2802bff78f475cc8f93aca67d05b4a95df9d6aab8323c4d3fa3a4aced32266fc",
+      "size_bytes": null,
+      "description": "Dataset manifest: MNQ 5m OOS 2025-10-01 to 2026-07-20, 56532 bars"
+    },
+    {
+      "id": "A-05",
+      "filename": "PV_EXP_001_DETERMINISM_RECORD.json",
+      "path": "docs/research/payout-vault/experiments/PV-EXP-001/PV_EXP_001_DETERMINISM_RECORD.json",
+      "sha256": "27ffdbe827ed8669887cef24f93d78d48e2d6c91e19ddd3645c73eda9016bea7",
+      "size_bytes": null,
+      "description": "Three-run determinism record: all runs produced identical event ledger SHA"
+    },
+    {
+      "id": "A-06",
+      "filename": "PV_EXP_001_REJECTION_FUNNEL.json",
+      "path": "docs/research/payout-vault/experiments/PV-EXP-001/PV_EXP_001_REJECTION_FUNNEL.json",
+      "sha256": "8205545b98a636d065d5e8caa780b4b910d853d0976790c9c69ae70c81eb764e",
+      "size_bytes": null,
+      "description": "Rejection funnel: gate-by-gate rejection counts, accounting reconciles=TRUE"
+    },
+    {
+      "id": "A-07",
+      "filename": "PV_EXP_001_EVENT_LEDGER.json",
+      "path": "docs/research/payout-vault/experiments/PV-EXP-001/PV_EXP_001_EVENT_LEDGER.json",
+      "sha256": "72ed661d63aa18b57b0805a7b9cee0f608e63694f92d61a1d7c221f73ff4e4c9",
+      "size_bytes": null,
+      "description": "Event ledger: 117 qualifying setup events with full metadata"
+    },
+    {
+      "id": "A-08",
+      "filename": "PV_EXP_001_WEEKLY_FREQUENCY.csv",
+      "path": "docs/research/payout-vault/experiments/PV-EXP-001/PV_EXP_001_WEEKLY_FREQUENCY.csv",
+      "sha256": "ac95e54c1d064382339e937575f9d15132317d28b40d3ca04bdcb2290d6d4213",
+      "size_bytes": null,
+      "description": "Weekly event count time series (43 complete trading weeks)"
+    },
+    {
+      "id": "A-09",
+      "filename": "PV_EXP_001_MONTHLY_FREQUENCY.csv",
+      "path": "docs/research/payout-vault/experiments/PV-EXP-001/PV_EXP_001_MONTHLY_FREQUENCY.csv",
+      "sha256": "6d08459b5245a3c5ffc2ec4bfcc99e36a98ca4568bb38f35f8653aace133f07f",
+      "size_bytes": null,
+      "description": "Monthly event count time series (10 months)"
+    },
+    {
+      "id": "A-10",
+      "filename": "_scan_results.json",
+      "path": "docs/research/payout-vault/experiments/PV-EXP-001/_scan_results.json",
+      "sha256": "9aeb4c6d122ce9074e05991cd7ae8ffe6180a9d2ea034db959bc510890d68918",
+      "size_bytes": null,
+      "description": "Machine-readable scan results summary including all frequency statistics"
+    },
+    {
+      "id": "A-11",
+      "filename": "PV_EXP_001_RESULTS_REPORT.md",
+      "path": "docs/research/payout-vault/experiments/PV-EXP-001/PV_EXP_001_RESULTS_REPORT.md",
+      "sha256": "3eb7b8dd2eccacc0b65bbee413e77b6deb2ade899d81ae05fbd03a318ede4715",
+      "size_bytes": null,
+      "description": "Human-readable results report with all sections, gate analysis, and next experiment"
+    }
+  ],
+  "scan_results_summary": {
+    "total_qualifying_events": 117,
+    "frequency_classification": "ADEQUATE_FREQUENCY",
+    "statistical_power_status": "ADEQUATE",
+    "mean_setups_per_week": 2.721,
+    "determinism_match": true,
+    "cross_validation_mismatches": 0,
+    "rejection_accounting_reconciles": true,
+    "profitability_tested": false,
+    "pv_exp_002_status": "NOT_STARTED"
+  },
+  "regression_results": {
+    "python_pv_detector_tests": "78/78 PASS",
+    "python_authority_boundary_tests": "27/27 PASS",
+    "python_total": "105/105 PASS",
+    "typescript_vitest_passing": "1066/1082 PASS",
+    "typescript_vitest_failing": "16 FAIL (pre-existing on G9 baseline, not introduced by sprint 123A.10)",
+    "typescript_compilation": "EXIT 0",
+    "frontend_build": "EXIT 0 (47.76s)",
+    "secret_scan": "ghp_ token in server/monitor/sessionReporter.ts is pre-existing (committed in Sprint 104C, present on G9 baseline)"
+  },
+  "manifest_self_sha256": "EXTERNAL_REFERENCE_ONLY"
+}
