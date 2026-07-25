@@ -3,15 +3,16 @@
   "manifest_type": "FINAL_LOCK",
   "sprint": "123A.9",
   "gate": "G9",
-  "generated_at": "2026-07-25T11:35:00Z",
+  "generated_at": "2026-07-25T12:20:00Z",
   "branch": "sprint/123a-9-payout-vault-research-intake",
-  "authoritative_remote_head": "f4ac55a9c58a7b55e47f3e8533c219e887cfbcd9",
+  "authoritative_remote_head": "388d411191604a6424218617bb421a4bb49e080a",
   "g8_baseline_sha": "a8b35b0673a8a59d4fe83fdafb3a4f4b40001aed",
   "FINAL_LOCK_ARTEFACT_COUNT": 16,
   "PLACEHOLDER_SHA256_COUNT": 0,
   "ABBREVIATED_SHA256_COUNT": 0,
+  "ABBREVIATED_COMMIT_SHA_COUNT": 0,
   "ARTEFACT_HASH_COVERAGE": "100_PERCENT",
-  "note_self_hash": "This manifest cannot include its own stable SHA-256 inside itself. Its SHA-256 is recorded in artefact A-16 of docs/reports/SPRINT_123A9_FINAL_COMPLETION_AND_GITHUB_VERIFICATION.md after generation.",
+  "note_self_hash": "This manifest cannot include its own stable SHA-256 inside itself. Its SHA-256 is recorded externally in docs/reports/SPRINT_123A9_FINAL_COMPLETION_AND_GITHUB_VERIFICATION.md after generation.",
   "artefacts": [
     {
       "id": "A-01",
@@ -21,7 +22,7 @@
       "git_blob_sha": "7b2b7ce6ab8444f992a72fe07fb662c9bb9bb667",
       "size_bytes": 12471,
       "committed": true,
-      "containing_commit": "8219bb06",
+      "containing_commit": "8219bb0601983c7ceff738377cf7ad391210e2e9",
       "type": "documentation"
     },
     {
@@ -32,7 +33,7 @@
       "git_blob_sha": "c8404ea2dc209804b910ab09a2ca0531e8eb64e6",
       "size_bytes": 8426,
       "committed": true,
-      "containing_commit": "8219bb06",
+      "containing_commit": "8219bb0601983c7ceff738377cf7ad391210e2e9",
       "type": "documentation"
     },
     {
@@ -43,7 +44,7 @@
       "git_blob_sha": "4cc48a0aa6ca8e2c3aa7cf5ff6e4b5313ae75d52",
       "size_bytes": 10849,
       "committed": true,
-      "containing_commit": "9bd2d7c6",
+      "containing_commit": "8a5f749c2597f741ca65c49db941fcfe267df0f5",
       "type": "documentation"
     },
     {
@@ -54,7 +55,7 @@
       "git_blob_sha": "2828b3081a3e456b3ddc1c924d5efdd2c14dabf0",
       "size_bytes": 16910,
       "committed": true,
-      "containing_commit": "9bd2d7c6",
+      "containing_commit": "8a5f749c2597f741ca65c49db941fcfe267df0f5",
       "type": "documentation"
     },
     {
@@ -65,7 +66,7 @@
       "git_blob_sha": "a9117df12f63c5a79e868c5f589fecd834fb9e14",
       "size_bytes": 6392,
       "committed": true,
-      "containing_commit": "8219bb06",
+      "containing_commit": "8219bb0601983c7ceff738377cf7ad391210e2e9",
       "type": "documentation"
     },
     {
@@ -76,7 +77,7 @@
       "git_blob_sha": "a175a04cef4965be2b9e920a17e0411d715fae60",
       "size_bytes": 40679,
       "committed": true,
-      "containing_commit": "9bd2d7c6",
+      "containing_commit": "8a5f749c2597f741ca65c49db941fcfe267df0f5",
       "type": "data"
     },
     {
@@ -87,7 +88,7 @@
       "git_blob_sha": "80689655a6f5258611ef1ac8210094b9da3bd8d0",
       "size_bytes": 35283,
       "committed": true,
-      "containing_commit": "9bd2d7c6",
+      "containing_commit": "9bd2d7c6ea310b0aaaca19384c26204b371e8c25",
       "type": "specification"
     },
     {
@@ -98,7 +99,7 @@
       "git_blob_sha": "de172590a52abaaf0de02551356fa901c145cef1",
       "size_bytes": 12589,
       "committed": true,
-      "containing_commit": "9bd2d7c6",
+      "containing_commit": "8a5f749c2597f741ca65c49db941fcfe267df0f5",
       "type": "specification"
     },
     {
@@ -109,7 +110,7 @@
       "git_blob_sha": "b233da449a35dd5debe63682df4e66117ebffaf0",
       "size_bytes": 36120,
       "committed": true,
-      "containing_commit": "9bd2d7c6",
+      "containing_commit": "8219bb0601983c7ceff738377cf7ad391210e2e9",
       "type": "implementation"
     },
     {
@@ -120,7 +121,7 @@
       "git_blob_sha": "df410e8556a4022393685ed6c30406bbfe9d3b8e",
       "size_bytes": 58928,
       "committed": true,
-      "containing_commit": "9bd2d7c6",
+      "containing_commit": "8219bb0601983c7ceff738377cf7ad391210e2e9",
       "type": "test"
     },
     {
@@ -131,18 +132,18 @@
       "git_blob_sha": "d60ef6594c9f593d5a218dfe406cb10b6a3c2058",
       "size_bytes": 15702,
       "committed": true,
-      "containing_commit": "ce2a083a",
+      "containing_commit": "ce2a083a78c74c34c2f07418142e0880676ad8e3",
       "type": "test"
     },
     {
       "id": "A-12",
       "path": "docs/research/payout-vault/artefact_hash_manifest.json",
-      "description": "Artefact hash manifest v1 (superseded by v2 and final)",
+      "description": "Artefact hash manifest v1 (superseded by v2 and FINAL)",
       "sha256": "e7df331013f84ab3553cabcf5bab9eff168a84a62c1dcfeee2dd4763e53d82ba",
       "git_blob_sha": "ca48ef91189115ea37898fe42c2867599f43d692",
       "size_bytes": 5127,
       "committed": true,
-      "containing_commit": "9bd2d7c6",
+      "containing_commit": "9bd2d7c6ea310b0aaaca19384c26204b371e8c25",
       "type": "manifest"
     },
     {
@@ -153,7 +154,7 @@
       "git_blob_sha": "3e70f7b8e37a24a2ee5181785501af597bd4f4ba",
       "size_bytes": 12088,
       "committed": true,
-      "containing_commit": "9bd2d7c6",
+      "containing_commit": "9bd2d7c6ea310b0aaaca19384c26204b371e8c25",
       "type": "report"
     },
     {
@@ -164,38 +165,41 @@
       "git_blob_sha": "5ed4e9ca58e09a7517cd8a4748c851bb29d68c40",
       "size_bytes": 5756,
       "committed": true,
-      "containing_commit": "ce2a083a",
+      "containing_commit": "ce2a083a78c74c34c2f07418142e0880676ad8e3",
       "type": "manifest"
     },
     {
       "id": "A-15",
       "path": "docs/research/payout-vault/SPRINT_123A9_GATE_G9_FINAL_V3.md",
-      "description": "G9 evidence report v3 — final, all 18 acceptance criteria PASS, authoritative final commit SHA recorded",
+      "description": "G9 evidence report v3 — final, all 18 acceptance criteria PASS",
       "sha256": "78cb90e3b76f6cf93c811cdde384d7f96277db680d7e1c8ca6f2afcc71251a90",
       "git_blob_sha": "44d4cdff26b3a564ef686e23d82e7583dd099d5c",
       "size_bytes": 14340,
       "committed": true,
-      "containing_commit": "fac21b72",
+      "containing_commit": "ce2a083a78c74c34c2f07418142e0880676ad8e3",
       "type": "report"
     },
     {
       "id": "A-16",
       "path": "docs/reports/SPRINT_123A9_FINAL_COMPLETION_AND_GITHUB_VERIFICATION.md",
       "description": "Final completion and GitHub verification record — authoritative provenance, SHA reconciliation, LOCAL=REMOTE proof",
-      "sha256": "a1698a42ca1aa8108aeaf640cdf9b0dc0242edd45e0becc3b61742d0079ff259",
-      "git_blob_sha": "1b7068a90595ef91cff5b0a394e23ba405c50bf3",
-      "size_bytes": 4696,
+      "sha256": "d481240885f29a569a3bc539903b2a500e77b29365eb4e6d808117822ba5f012",
+      "git_blob_sha": "29f338c4ff5b1235f0107297d147d664b692a944",
+      "size_bytes_note": "Self-referential file — size recorded at time of manifest generation",
       "committed": true,
-      "containing_commit": "ce2a083a",
-      "type": "report"
+      "containing_commit": "f471dd6599d05fee9ee5bfe53d373e1785942f52",
+      "type": "report",
+      "note": "SHA-256 d481240885f29a569a3bc539903b2a500e77b29365eb4e6d808117822ba5f012 is the authoritative hash of the file at commit f471dd6599d05fee9ee5bfe53d373e1785942f52 (git blob 29f338c4ff5b1235f0107297d147d664b692a944). This is the only authoritative hash — no superseded hash retained."
     }
   ],
   "summary": {
     "total_artefacts": 16,
     "artefacts_with_full_sha256": 16,
     "artefacts_with_git_blob_sha": 16,
+    "artefacts_with_full_40char_containing_commit": 16,
     "placeholder_sha256_count": 0,
     "abbreviated_sha256_count": 0,
+    "abbreviated_commit_sha_count": 0,
     "artefact_hash_coverage": "100_PERCENT",
     "test_artefacts": 2,
     "implementation_artefacts": 1,
@@ -207,20 +211,20 @@
   },
   "commit_sequence": {
     "g8_baseline": "a8b35b0673a8a59d4fe83fdafb3a4f4b40001aed",
-    "g9_implementation": "8219bb06",
-    "g9_evidence_v1": "4cf36b86",
-    "g9_evidence_v2": "8a5f749c",
+    "g9_implementation": "8219bb0601983c7ceff738377cf7ad391210e2e9",
+    "g9_evidence_v1": "4cf36b86d09f0c5b4ce5b5bd7dbe95c5bccfcc7b",
+    "g9_evidence_v2": "8a5f749c2597f741ca65c49db941fcfe267df0f5",
     "g9_correction": "9bd2d7c6ea310b0aaaca19384c26204b371e8c25",
-    "g9_final_v3_first_attempt": "5d9671ad404fabbddbc5b838c8a8078e597081eb",
-    "g9_final_v3_amended": "ce2a083a78c74c34c2f07418142e0880676ad8e3",
+    "g9_final_v3_orphaned": "5d9671ad404fabbddbc5b838c8a8078e597081eb",
+    "g9_final_v3_authoritative": "ce2a083a78c74c34c2f07418142e0880676ad8e3",
     "g9_v3_report_updated": "fac21b72d1afc3c695f3e06e091bd49341548f95",
     "g9_todo_locked": "f4ac55a9c58a7b55e47f3e8533c219e887cfbcd9",
-    "g9_provenance_reconciliation": "TO_BE_SET_AFTER_COMMIT"
+    "g9_provenance_reconciliation": "f471dd6599d05fee9ee5bfe53d373e1785942f52",
+    "g9_manifest_correction": "388d411191604a6424218617bb421a4bb49e080a"
   },
   "sha_relationship_explanation": {
-    "5d9671ad404fabbddbc5b838c8a8078e597081eb": "First attempt at the G9 final evidence lock commit. Created the 4 new artefacts (artefact_hash_manifest_v2.json, SPRINT_123A9_GATE_G9_FINAL_V3.md, test_authority_boundaries.py, SPRINT_123A9_FINAL_COMPLETION_AND_GITHUB_VERIFICATION.md) with parent 9bd2d7c6. Was pushed to remote but then superseded by an amended commit.",
-    "ce2a083a78c74c34c2f07418142e0880676ad8e3": "Amended version of 5d9671ad. Same parent (9bd2d7c6), same files, same commit message, same timestamp. The amendment updated the SPRINT_123A9_FINAL_COMPLETION_AND_GITHUB_VERIFICATION.md to include the confirmed LOCAL/REMOTE SHA values. This is the authoritative G9 evidence commit. 5d9671ad is NOT in the final branch history — it was replaced by this amended commit via force-push.",
-    "authoritative_final_head": "f4ac55a9c58a7b55e47f3e8533c219e887cfbcd9",
-    "note": "5d9671ad is an orphaned commit not reachable from the current branch HEAD. ce2a083a IS in the branch history as the G9 evidence commit. The branch history is linear: a8b35b06 → ... → 9bd2d7c6 → ce2a083a → fac21b72 → f4ac55a9."
+    "5d9671ad404fabbddbc5b838c8a8078e597081eb": "Orphaned first attempt at the G9 evidence lock commit. Created with parent 9bd2d7c6, pushed to remote, then force-replaced by the amended commit ce2a083a. NOT reachable from the current branch HEAD. NOT the final commit.",
+    "ce2a083a78c74c34c2f07418142e0880676ad8e3": "Authoritative G9 evidence commit. Amended version of 5d9671ad — same parent (9bd2d7c6), same files, same message, same timestamp. IS in the branch history and reachable from HEAD.",
+    "authoritative_final_head": "388d411191604a6424218617bb421a4bb49e080a"
   }
 }
