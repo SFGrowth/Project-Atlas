@@ -1075,3 +1075,201 @@ class TestDetectorCausality:
                 "CAUSALITY-11 FAIL: Entry Type 1 used bar high (lookahead)"
             assert entry_price != 20014, \
                 "CAUSALITY-11 FAIL: Entry Type 1 used bar close (lookahead)"
+
+
+    # -------------------------------------------------------------------------
+    # CAUSALITY-12 through CAUSALITY-22: Metadata, variant, and pipeline tests
+    # -------------------------------------------------------------------------
+
+    def test_detector_metadata_all_11_primitives_present(self):
+        """
+        CAUSALITY-12: DETECTOR_METADATA must contain all 11 primitives (P-01 to P-11).
+        Each entry must have the required fields: id, name, lookahead_free, deterministic,
+        version, status, concept_ids, rule_ids, ambiguity_ids.
+        """
+        from payout_vault_detector import DETECTOR_METADATA
+        required_ids = [f"P-{i:02d}" for i in range(1, 12)]
+        required_fields = ["id", "name", "lookahead_free", "deterministic", "version",
+                           "status", "concept_ids", "rule_ids", "ambiguity_ids",
+                           "primary_definition", "allowed_alternatives"]
+        for pid in required_ids:
+            assert pid in DETECTOR_METADATA, \
+                f"CAUSALITY-12 FAIL: {pid} missing from DETECTOR_METADATA"
+            for field in required_fields:
+                assert field in DETECTOR_METADATA[pid], \
+                    f"CAUSALITY-12 FAIL: {pid} missing field '{field}' in DETECTOR_METADATA"
+
+    def test_detector_metadata_all_lookahead_free(self):
+        """
+        CAUSALITY-13: All 11 primitives must declare lookahead_free=True in DETECTOR_METADATA.
+        """
+        from payout_vault_detector import DETECTOR_METADATA
+        for pid, meta in DETECTOR_METADATA.items():
+            assert meta["lookahead_free"] is True, \
+                f"CAUSALITY-13 FAIL: {pid} ({meta['name']}) declares lookahead_free=False"
+
+    def test_detector_metadata_all_deterministic(self):
+        """
+        CAUSALITY-14: All 11 primitives must declare deterministic=True in DETECTOR_METADATA.
+        """
+        from payout_vault_detector import DETECTOR_METADATA
+        for pid, meta in DETECTOR_METADATA.items():
+            assert meta["deterministic"] is True, \
+                f"CAUSALITY-14 FAIL: {pid} ({meta['name']}) declares deterministic=False"
+
+    def test_detector_metadata_all_research_prototype_status(self):
+        """
+        CAUSALITY-15: All 11 primitives must declare status=RESEARCH_PROTOTYPE.
+        No primitive may be promoted to LIVE or PAPER status via metadata alone.
+        """
+        from payout_vault_detector import DETECTOR_METADATA
+        for pid, meta in DETECTOR_METADATA.items():
+            assert meta["status"] == "RESEARCH_PROTOTYPE", \
+                f"CAUSALITY-15 FAIL: {pid} has status '{meta['status']}' (must be RESEARCH_PROTOTYPE)"
+
+    def test_p11_authority_field_present_and_disabled(self):
+        """
+        CAUSALITY-16: P-11 (run_payout_vault_setup) must declare both
+        DARWIN_DECISION_AUTHORITY=DISABLED and DARWIN_EXECUTION_AUTHORITY=DISABLED
+        in its metadata authority field.
+        """
+        from payout_vault_detector import DETECTOR_METADATA
+        p11 = DETECTOR_METADATA["P-11"]
+        assert "authority" in p11, \
+            "CAUSALITY-16 FAIL: P-11 missing 'authority' field in DETECTOR_METADATA"
+        assert "DARWIN_DECISION_AUTHORITY=DISABLED" in p11["authority"], \
+            "CAUSALITY-16 FAIL: P-11 authority does not declare DARWIN_DECISION_AUTHORITY=DISABLED"
+        assert "DARWIN_EXECUTION_AUTHORITY=DISABLED" in p11["authority"], \
+            "CAUSALITY-16 FAIL: P-11 authority does not declare DARWIN_EXECUTION_AUTHORITY=DISABLED"
+
+    def test_sweep_close_variant_requires_close_through(self):
+        """
+        CAUSALITY-17: sweep-close variant must NOT trigger on a wick-only penetration.
+        Bar: high=120 (above inducement=115), close=113 (below inducement=115).
+        sweep-wick → triggered; sweep-close → NOT triggered.
+        """
+        ohlc = [
+            (110, 112, 109, 111),   # 0: normal
+            (111, 120, 109, 113),   # 1: wick above 115, close below 115
+        ]
+        bars = make_bars_ohlc(ohlc)
+        result_wick = detect_sweep(bars, inducement_price=115.0, dol_direction="bearish",
+                                   search_from_bar=0, variant="sweep-wick")
+        result_close = detect_sweep(bars, inducement_price=115.0, dol_direction="bearish",
+                                    search_from_bar=0, variant="sweep-close")
+        assert result_wick.swept is True, \
+            "CAUSALITY-17 FAIL: sweep-wick did not trigger on wick penetration"
+        assert result_close.swept is False, \
+            "CAUSALITY-17 FAIL: sweep-close triggered on wick-only penetration (no close-through)"
+
+    def test_csd_window_3_accepts_bar2_rejects_bar4(self):
+        """
+        CAUSALITY-18: CSD with window=3 must accept CSD at bar 2 (within window)
+        but reject CSD that only appears at bar 4 (beyond window).
+        """
+        # CSD at bar 2 (sweep at bar 0, confirmation at bar 2 = 2 bars after sweep)
+        ohlc_bar2 = [
+            (115, 120, 110, 116),  # 0: sweep candle (high=120, low=110, midpoint=115)
+            (116, 117, 115, 116),  # 1: no CSD
+            (116, 117, 108, 113),  # 2: CSD Rule 1 (close=113 < midpoint=115)
+        ]
+        # CSD only at bar 4 (beyond window=3)
+        ohlc_bar4 = [
+            (115, 120, 110, 116),  # 0: sweep candle
+            (116, 117, 115, 116),  # 1: no CSD
+            (116, 117, 115, 116),  # 2: no CSD
+            (116, 117, 115, 116),  # 3: no CSD (bar 3 = last bar in window=3)
+            (116, 117, 108, 113),  # 4: CSD Rule 1 — beyond window=3
+        ]
+        bars_bar2 = make_bars_ohlc(ohlc_bar2)
+        bars_bar4 = make_bars_ohlc(ohlc_bar4)
+        result_bar2 = detect_csd(bars_bar2, sweep_bar_index=0,
+                                  sweep_candle_high=120, sweep_candle_low=110,
+                                  dol_direction="bearish", max_wait_bars=3)
+        result_bar4 = detect_csd(bars_bar4, sweep_bar_index=0,
+                                  sweep_candle_high=120, sweep_candle_low=110,
+                                  dol_direction="bearish", max_wait_bars=3)
+        assert result_bar2.confirmed is True, \
+            "CAUSALITY-18 FAIL: CSD window=3 rejected CSD at bar 2 (should accept)"
+        assert result_bar4.confirmed is False, \
+            "CAUSALITY-18 FAIL: CSD window=3 accepted CSD at bar 4 (should reject)"
+
+    def test_stop_buffer_direction_correct_for_short(self):
+        """
+        CAUSALITY-19: For a bearish (short) trade, the stop must be ABOVE the inducement level.
+        Stop = inducement + buffer. If entry < inducement, risk = stop - entry > 0.
+        """
+        entry = 19990.0
+        inducement = 20000.0  # sweep was above this level
+        result = compute_trade_management(
+            entry_price=entry, inducement_price=inducement,
+            dol_direction="bearish", stop_buffer_ticks=4
+        )
+        assert result.stop_price > inducement, \
+            f"CAUSALITY-19 FAIL: bearish stop {result.stop_price} is not above inducement {inducement}"
+        assert result.stop_price > entry, \
+            f"CAUSALITY-19 FAIL: bearish stop {result.stop_price} is not above entry {entry}"
+        assert result.target_price < entry, \
+            f"CAUSALITY-19 FAIL: bearish target {result.target_price} is not below entry {entry}"
+
+    def test_stop_buffer_direction_correct_for_long(self):
+        """
+        CAUSALITY-20: For a bullish (long) trade, the stop must be BELOW the inducement level.
+        Stop = inducement - buffer. If entry > inducement, risk = entry - stop > 0.
+        """
+        entry = 20010.0
+        inducement = 20000.0  # sweep was below this level
+        result = compute_trade_management(
+            entry_price=entry, inducement_price=inducement,
+            dol_direction="bullish", stop_buffer_ticks=4
+        )
+        assert result.stop_price < inducement, \
+            f"CAUSALITY-20 FAIL: bullish stop {result.stop_price} is not below inducement {inducement}"
+        assert result.stop_price < entry, \
+            f"CAUSALITY-20 FAIL: bullish stop {result.stop_price} is not below entry {entry}"
+        assert result.target_price > entry, \
+            f"CAUSALITY-20 FAIL: bullish target {result.target_price} is not above entry {entry}"
+
+    def test_pipeline_config_keys_accepted(self):
+        """
+        CAUSALITY-21: run_payout_vault_setup must accept all documented config keys
+        without raising an exception. Keys: htf_lookback, ltf_swing_lookback, csd_window,
+        sweep_variant, stop_buffer_ticks, entry_type, smt_enabled, smt_window_bars, tick_size.
+        """
+        bars = self._make_simple_bars(40)
+        config = {
+            "htf_lookback": 8,
+            "ltf_swing_lookback": 2,
+            "csd_window": 3,
+            "sweep_variant": "sweep-wick",
+            "stop_buffer_ticks": 4,
+            "entry_type": 1,
+            "smt_enabled": False,
+            "smt_window_bars": 3,
+            "tick_size": 0.25,
+        }
+        try:
+            from payout_vault_detector import SetupResult as _SetupResult
+            result = run_payout_vault_setup(htf_bars=bars.copy(), ltf_bars=bars.copy(), config=config)
+            assert isinstance(result, _SetupResult), \
+                "CAUSALITY-21 FAIL: run_payout_vault_setup did not return SetupResult"
+        except AssertionError:
+            raise
+        except Exception as e:
+            raise AssertionError(f"CAUSALITY-21 FAIL: run_payout_vault_setup raised exception: {e}")
+
+    def test_pipeline_rejection_reason_always_set_on_failure(self):
+        """
+        CAUSALITY-22: When run_payout_vault_setup returns valid=False, rejection_reason
+        must always be set (not None). This ensures every failure is traceable.
+        """
+        # Use a very short bar series that will fail at Gate 1 (insufficient HTF data)
+        bars = self._make_simple_bars(5)
+        config = {"htf_lookback": 20}  # requires 40+ bars, we only have 5
+        result = run_payout_vault_setup(htf_bars=bars.copy(), ltf_bars=bars.copy(), config=config)
+        assert result.valid is False, \
+            "CAUSALITY-22 FAIL: expected valid=False with insufficient data"
+        assert result.rejection_reason is not None, \
+            "CAUSALITY-22 FAIL: rejection_reason is None when valid=False"
+        assert len(result.rejection_reason) > 0, \
+            "CAUSALITY-22 FAIL: rejection_reason is empty string when valid=False"

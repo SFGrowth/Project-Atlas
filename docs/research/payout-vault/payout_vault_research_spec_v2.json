@@ -1,0 +1,329 @@
+{
+  "spec_version": "2.0.0",
+  "sprint": "123A.9",
+  "gate": "G9",
+  "created_utc": "2026-07-25",
+  "status": "RESEARCH_PROTOTYPE",
+  "authority": {
+    "DARWIN_DECISION_AUTHORITY": "DISABLED",
+    "DARWIN_EXECUTION_AUTHORITY": "DISABLED",
+    "strategy_status_changes": 0,
+    "capital_reallocations": 0,
+    "new_strategies_created": 0
+  },
+  "source_archive": {
+    "filename": "PayoutVault.zip",
+    "sha256": "9cba5a246a0d922692b33889148227fc8ad3302b524b1a5a2398321617d1e27c",
+    "total_files": 58,
+    "lesson_files": 34,
+    "image_files": 23,
+    "tier": "Tier 1 (free/shared)",
+    "tier2_note": "Tier 2 (THE VAULT) content distributed separately via Telegram — not present in this archive"
+  },
+  "artefact_manifest": {
+    "payout_vault_detector.py": {
+      "sha256": "946b806fb563d4ef37018a05da70fc326e1564ca40c8c206be29b76666b717ec",
+      "lines": 1016,
+      "primitives": 11,
+      "version": "1.0.0",
+      "status": "RESEARCH_PROTOTYPE"
+    },
+    "test_payout_vault_detector.py": {
+      "sha256": "59b3bd92876ea2464edbdb009048e418c3f22c32b2f6672168ded3645caf5302",
+      "lines": 1275,
+      "test_count": 78,
+      "causality_tests": 22,
+      "all_pass": true
+    },
+    "ambiguity_register_v3.md": {
+      "sha256": "88d9b380572b561d5a8b0e69630d5315f8634ea5568e45711241e8a242e1a641",
+      "lines": 219,
+      "ambiguity_count": 10,
+      "taxonomy_classes": ["SOURCE_EXPLICIT", "PRIMARY_PRE_REGISTERED_DEFINITION", "ALTERNATIVE_PRE_REGISTERED_DEFINITION", "UNRESOLVED"],
+      "free_parameters": 7,
+      "parameter_budget_policy": "All 7 free parameters pre-registered before OOS examination. No post-hoc tuning permitted."
+    },
+    "source_claim_traceability_v2.md": {
+      "sha256": "257ebab725768cc053c5e8d0f18f294e45f741a8fc35cf191be550da75dbafcb",
+      "lines": 235,
+      "total_claims": 44,
+      "coverage": "100%",
+      "dispositions": {
+        "MACHINE_TESTABLE": 18,
+        "PARTIALLY_TESTABLE": 8,
+        "SUBJECTIVE": 3,
+        "STRUCTURAL": 5,
+        "CONTRADICTORY": 2,
+        "INSUFFICIENT_INFORMATION": 3,
+        "SOURCE_EXPLICIT": 3,
+        "UNRESOLVED": 2
+      }
+    },
+    "payout_vault_visual_examples.json": {
+      "sha256": "3fffcc6bd51e2e4c93f69d85cbb4c682e0f2afc168aa5d90c853c8aa5f6187fc",
+      "lines": 698,
+      "image_count": 23,
+      "fields_per_record": 26,
+      "mean_detector_agreement": 0.73,
+      "agreement_range": [0.50, 1.00]
+    },
+    "hypothesis_registry_v3.json": {
+      "sha256": "917131f688320ff61802e278b67633d8df7a34e2873718398445e71f1fe23464",
+      "lines": 530,
+      "hypothesis_count": 14,
+      "experiment_count": 15,
+      "breakeven_win_rate": 0.26,
+      "commission_per_rt": 7.50,
+      "all_nulls_economically_valid": true,
+      "all_hypotheses_pre_registered": true
+    }
+  },
+  "primitives": [
+    {
+      "id": "P-01",
+      "name": "detect_dol",
+      "version": "1.0.0",
+      "status": "RESEARCH_PROTOTYPE",
+      "concept_ids": ["CD-01"],
+      "rule_ids": ["R-02", "R-05"],
+      "ambiguity_ids": ["AMB-03"],
+      "primary_definition": "AMB-03=scalar: DOL is the most recent swing extreme (high or low) on the HTF lookback window",
+      "allowed_alternatives": ["AMB-03=zone: DOL is a price zone around the swing extreme"],
+      "parameters": {
+        "lookback": {"type": "int", "default": 20, "min": 5, "max": 50, "pre_registered": true}
+      },
+      "lookahead_free": true,
+      "deterministic": true,
+      "roll_window_aware": false
+    },
+    {
+      "id": "P-02",
+      "name": "detect_msu",
+      "version": "1.0.0",
+      "status": "RESEARCH_PROTOTYPE",
+      "concept_ids": ["CD-03"],
+      "rule_ids": ["R-11"],
+      "ambiguity_ids": [],
+      "primary_definition": "Pivot-based swing detection: MSU is bullish if last two swing highs are HH+HL, bearish if LH+LL",
+      "allowed_alternatives": ["fractal-based", "zigzag"],
+      "parameters": {
+        "swing_lookback": {"type": "int", "default": 3, "min": 1, "max": 5, "pre_registered": true}
+      },
+      "lookahead_free": true,
+      "deterministic": true,
+      "roll_window_aware": false
+    },
+    {
+      "id": "P-03",
+      "name": "detect_inducement",
+      "version": "1.0.0",
+      "status": "RESEARCH_PROTOTYPE",
+      "concept_ids": ["CD-06"],
+      "rule_ids": ["R-07", "R-08", "R-09"],
+      "ambiguity_ids": [],
+      "primary_definition": "Most recent swing extreme in the MSU direction — the level that will be swept",
+      "allowed_alternatives": [],
+      "parameters": {},
+      "lookahead_free": true,
+      "deterministic": true,
+      "roll_window_aware": false
+    },
+    {
+      "id": "P-04",
+      "name": "detect_sweep",
+      "version": "1.0.0",
+      "status": "RESEARCH_PROTOTYPE",
+      "concept_ids": ["CD-06"],
+      "rule_ids": ["R-10"],
+      "ambiguity_ids": ["AMB-04"],
+      "primary_definition": "AMB-04=sweep-wick: sweep confirmed when bar wick penetrates inducement level",
+      "allowed_alternatives": ["AMB-04=sweep-close: sweep confirmed only when bar close penetrates inducement level"],
+      "parameters": {
+        "variant": {"type": "str", "default": "sweep-wick", "options": ["sweep-wick", "sweep-close"], "pre_registered": true}
+      },
+      "lookahead_free": true,
+      "deterministic": true,
+      "roll_window_aware": false
+    },
+    {
+      "id": "P-05",
+      "name": "detect_csd",
+      "version": "1.0.0",
+      "status": "RESEARCH_PROTOTYPE",
+      "concept_ids": ["CD-07"],
+      "rule_ids": ["R-12", "R-13", "R-14", "R-15", "R-16", "R-17", "R-18"],
+      "ambiguity_ids": ["AMB-01", "AMB-05", "AMB-09"],
+      "primary_definition": "AMB-01=csd-window-3: CSD must be confirmed within 3 bars after sweep. AMB-09=full_range: midpoint uses full candle range (high-low)/2",
+      "allowed_alternatives": [
+        "AMB-01=csd-window-1: CSD must be confirmed within 1 bar",
+        "AMB-01=csd-window-5: CSD must be confirmed within 5 bars",
+        "AMB-09=body_midpoint: midpoint uses (open+close)/2"
+      ],
+      "parameters": {
+        "max_wait_bars": {"type": "int", "default": 3, "min": 1, "max": 5, "pre_registered": true}
+      },
+      "lookahead_free": true,
+      "deterministic": true,
+      "roll_window_aware": false
+    },
+    {
+      "id": "P-06",
+      "name": "detect_fvg",
+      "version": "1.0.0",
+      "status": "RESEARCH_PROTOTYPE",
+      "concept_ids": ["CD-09d"],
+      "rule_ids": [],
+      "ambiguity_ids": ["AMB-10"],
+      "primary_definition": "Three-candle gap: low[N] > high[N-2] (bullish) or high[N] < low[N-2] (bearish). Entry at midpoint (AMB-10=midpoint).",
+      "allowed_alternatives": [
+        "AMB-10=proximal: entry at proximal edge of FVG",
+        "AMB-10=distal: entry at distal edge of FVG"
+      ],
+      "parameters": {},
+      "lookahead_free": true,
+      "deterministic": true,
+      "roll_window_aware": false
+    },
+    {
+      "id": "P-07",
+      "name": "detect_smt",
+      "version": "1.0.0",
+      "status": "RESEARCH_PROTOTYPE",
+      "concept_ids": ["CD-08"],
+      "rule_ids": ["R-25", "R-26", "R-27"],
+      "ambiguity_ids": ["AMB-08"],
+      "primary_definition": "AMB-08=NQ correlated instrument: SMT confirmed when primary (MNQ) sweeps inducement but correlated instrument does not",
+      "allowed_alternatives": [
+        "AMB-08=ES: use ES as correlated instrument",
+        "AMB-08=YM: use YM as correlated instrument"
+      ],
+      "parameters": {
+        "smt_window_bars": {"type": "int", "default": 3, "min": 1, "max": 10, "pre_registered": true}
+      },
+      "lookahead_free": true,
+      "deterministic": true,
+      "roll_window_aware": false
+    },
+    {
+      "id": "P-08",
+      "name": "entry_type_1",
+      "version": "1.0.0",
+      "status": "RESEARCH_PROTOTYPE",
+      "concept_ids": ["CD-11"],
+      "rule_ids": ["R-19"],
+      "ambiguity_ids": [],
+      "primary_definition": "Market order at open of bar N+1 after CSD confirmation at bar N",
+      "allowed_alternatives": [],
+      "parameters": {},
+      "lookahead_free": true,
+      "deterministic": true,
+      "roll_window_aware": false
+    },
+    {
+      "id": "P-09",
+      "name": "entry_type_2",
+      "version": "1.0.0",
+      "status": "RESEARCH_PROTOTYPE",
+      "concept_ids": ["CD-12"],
+      "rule_ids": ["R-20"],
+      "ambiguity_ids": ["AMB-10"],
+      "primary_definition": "Limit order at FVG midpoint (AMB-10=midpoint). Triggers if price retraces into FVG within max_wait_bars.",
+      "allowed_alternatives": [
+        "AMB-10=proximal: limit at proximal FVG edge",
+        "AMB-10=distal: limit at distal FVG edge"
+      ],
+      "parameters": {
+        "max_wait_bars": {"type": "int", "default": 20, "min": 5, "max": 50, "pre_registered": true}
+      },
+      "lookahead_free": true,
+      "deterministic": true,
+      "roll_window_aware": false
+    },
+    {
+      "id": "P-10",
+      "name": "compute_trade_management",
+      "version": "1.0.0",
+      "status": "RESEARCH_PROTOTYPE",
+      "concept_ids": ["CD-10"],
+      "rule_ids": ["R-21", "R-22", "R-23", "R-24"],
+      "ambiguity_ids": ["AMB-07"],
+      "primary_definition": "Stop = swept inducement level ± (4 ticks × tick_size). Target = entry ± 3 × |entry - stop| (3R).",
+      "allowed_alternatives": [
+        "AMB-07=stop-1tick: stop buffer = 1 tick"
+      ],
+      "parameters": {
+        "stop_buffer_ticks": {"type": "int", "default": 4, "min": 1, "max": 10, "pre_registered": true},
+        "tick_size": {"type": "float", "default": 0.25, "note": "MNQ tick size"}
+      },
+      "lookahead_free": true,
+      "deterministic": true,
+      "roll_window_aware": false
+    },
+    {
+      "id": "P-11",
+      "name": "run_payout_vault_setup",
+      "version": "1.0.0",
+      "status": "RESEARCH_PROTOTYPE",
+      "concept_ids": ["CD-14"],
+      "rule_ids": ["R-01", "R-02", "R-03", "R-04", "R-05", "R-06", "R-07", "R-08", "R-09",
+                   "R-10", "R-11", "R-12", "R-13", "R-14", "R-15", "R-16", "R-17", "R-18",
+                   "R-19", "R-20", "R-21", "R-22", "R-23", "R-24"],
+      "ambiguity_ids": ["AMB-01", "AMB-03", "AMB-04", "AMB-05", "AMB-06", "AMB-07", "AMB-08",
+                        "AMB-09", "AMB-10", "AMB-11"],
+      "primary_definition": "Sequential gate orchestrator: DOL → MSU → alignment → inducement → sweep → CSD → (FVG) → (SMT) → entry → trade management",
+      "allowed_alternatives": ["see individual primitives"],
+      "parameters": {
+        "htf_lookback": {"type": "int", "default": 20},
+        "ltf_swing_lookback": {"type": "int", "default": 3},
+        "csd_window": {"type": "int", "default": 3},
+        "sweep_variant": {"type": "str", "default": "sweep-wick"},
+        "stop_buffer_ticks": {"type": "int", "default": 4},
+        "entry_type": {"type": "int", "default": 1},
+        "smt_enabled": {"type": "bool", "default": false},
+        "smt_window_bars": {"type": "int", "default": 3},
+        "tick_size": {"type": "float", "default": 0.25}
+      },
+      "lookahead_free": true,
+      "deterministic": true,
+      "roll_window_aware": false,
+      "authority": {
+        "DARWIN_DECISION_AUTHORITY": "DISABLED",
+        "DARWIN_EXECUTION_AUTHORITY": "DISABLED"
+      }
+    }
+  ],
+  "hypotheses": {
+    "count": 14,
+    "registry_file": "hypothesis_registry_v3.json",
+    "registry_sha256": "917131f688320ff61802e278b67633d8df7a34e2873718398445e71f1fe23464",
+    "breakeven_win_rate": 0.26,
+    "commission_per_rt_usd": 7.50,
+    "slippage_per_rt_ticks": 1,
+    "primary_metric": "expectancy_per_trade_usd",
+    "all_nulls_economically_valid": true,
+    "all_pre_registered": true
+  },
+  "experiments": {
+    "count": 15,
+    "id_range": "PV-EXP-001 to PV-EXP-015",
+    "mandatory_gate": "PV-EXP-001: if < 2 setups/week on OOS dataset → halt all research",
+    "oos_period": "2025-10-01 to 2026-07-20",
+    "oos_bars": 180414,
+    "dataset_sha256": "c970675391b970956f38d419ef95ff3e116e61ab8874eca7df2ab4334e715623"
+  },
+  "test_suite": {
+    "file": "test_payout_vault_detector.py",
+    "sha256": "59b3bd92876ea2464edbdb009048e418c3f22c32b2f6672168ded3645caf5302",
+    "total_tests": 78,
+    "causality_tests": 22,
+    "all_pass": true,
+    "runtime_seconds": 2.29
+  },
+  "licensing": {
+    "source": "Payout Vault — Tier 1 course (free/shared distribution)",
+    "author": "Unknown (course creator not identified in archive)",
+    "distribution": "Shared by user for research purposes",
+    "usage": "Internal research and strategy development only. Not for redistribution.",
+    "tier2_note": "Tier 2 content not present in this archive. If obtained, must be added to a separate sprint with its own source manifest."
+  }
+}
