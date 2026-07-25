@@ -1,0 +1,144 @@
+{
+  "manifest_version": "2.0.0",
+  "sprint": "123A.9",
+  "gate": "G9",
+  "generated_at": "2026-07-25T11:20:00Z",
+  "branch": "sprint/123a-9-payout-vault-research-intake",
+  "ARTEFACT_HASH_COVERAGE": "100%",
+  "PLACEHOLDER_SHA256_COUNT": 0,
+  "ABBREVIATED_SHA256_COUNT": 0,
+  "artefacts": [
+    {
+      "id": "A-01",
+      "filename": "concept_dictionary.md",
+      "description": "14 formally defined SMC concepts (CD-01 to CD-14)",
+      "sha256": "966a3eced42435abe2f3a9fe20c6e1ee8bedb169bf8a739d59704857856646ed",
+      "git_blob_sha": "7b2b7ce6ab8444f992a72fe07fb662c9bb9bb667",
+      "size_bytes": 12471,
+      "type": "documentation"
+    },
+    {
+      "id": "A-02",
+      "filename": "rule_inventory.md",
+      "description": "30 extracted rules (R-01 to R-30) with source traceability",
+      "sha256": "b46fed52b8b3447fef5007f6a14128349c624eac05f335a84acae1e3fec669e7",
+      "git_blob_sha": "c8404ea2dc209804b910ab09a2ca0531e8eb64e6",
+      "size_bytes": 8426,
+      "type": "documentation"
+    },
+    {
+      "id": "A-03",
+      "filename": "ambiguity_register_v3.md",
+      "description": "10 ambiguities (AMB-01 to AMB-10) with corrected taxonomy and parameter budget",
+      "sha256": "5e264b0029c0fe5a46cdcfd358aaf74eb778f5c3edbed0ee7a0cc397d0601854",
+      "git_blob_sha": "4cc48a0aa6ca8e2c3aa7cf5ff6e4b5313ae75d52",
+      "size_bytes": 10849,
+      "type": "documentation"
+    },
+    {
+      "id": "A-04",
+      "filename": "source_claim_traceability_v2.md",
+      "description": "44 claims, 100% disposition coverage, all 8 dispositions including CONTRADICTORY and INSUFFICIENT_INFORMATION",
+      "sha256": "257ebab725768cc053c5e8d0f18f294e45f741a8fc35cf191be550da75dbafcb",
+      "git_blob_sha": "2828b3081a3e456b3ddc1c924d5efdd2c14dabf0",
+      "size_bytes": 16910,
+      "type": "documentation"
+    },
+    {
+      "id": "A-05",
+      "filename": "traceability_matrix.md",
+      "description": "Bidirectional rule-to-lesson mapping",
+      "sha256": "f03d835918f5c58eb14e8f821cdc36fef5bf6771d2aff79718129496e022045b",
+      "git_blob_sha": "a9117df12f63c5a79e868c5f589fecd834fb9e14",
+      "size_bytes": 6392,
+      "type": "documentation"
+    },
+    {
+      "id": "A-06",
+      "filename": "payout_vault_visual_examples.json",
+      "description": "23 chart images, 26 fields per record, TP/FP/FN/NOT_MEASURABLE breakdown",
+      "sha256": "877c3389cb2f0772f050a41e5e7150fdeecba3e0e3af842108c5785bc979205b",
+      "git_blob_sha": "a175a04cef4965be2b9e920a17e0411d715fae60",
+      "size_bytes": 40679,
+      "type": "data"
+    },
+    {
+      "id": "A-07",
+      "filename": "hypothesis_registry_v4.json",
+      "description": "18 hypotheses (PV-H01 to PV-H18), all 14 required fields, NET_EXPECTANCY null, 17 experiments PV-EXP-001 to PV-EXP-017",
+      "sha256": "46489b97d1775fcb48b93b556e49c2c6f40601dfe4cf395599cd6bf25654bc4f",
+      "git_blob_sha": "80689655a6f5258611ef1ac8210094b9da3bd8d0",
+      "size_bytes": 35283,
+      "type": "specification"
+    },
+    {
+      "id": "A-08",
+      "filename": "payout_vault_research_spec_v2.json",
+      "description": "Machine-readable research specification v2.0.0 with real SHA-256 (no placeholders), 11 primitives",
+      "sha256": "e40ad744a18cc117976c6fedd58619f90b1d73bd6e9bddd0293ff0be0b4fce22",
+      "git_blob_sha": "de172590a52abaaf0de02551356fa901c145cef1",
+      "size_bytes": 12589,
+      "type": "specification"
+    },
+    {
+      "id": "A-09",
+      "filename": "payout_vault_detector.py",
+      "description": "Detector prototype v1.0.0, 11 primitives (P-01 to P-11), DETECTOR_METADATA, RESEARCH_PROTOTYPE status",
+      "sha256": "946b806fb563d4ef37018a05da70fc326e1564ca40c8c206be29b76666b717ec",
+      "git_blob_sha": "b233da449a35dd5debe63682df4e66117ebffaf0",
+      "size_bytes": 36120,
+      "type": "implementation"
+    },
+    {
+      "id": "A-10",
+      "filename": "test_payout_vault_detector.py",
+      "description": "78 detector tests: unit, integration, and causality (CAUSALITY-01 to CAUSALITY-22)",
+      "sha256": "59b3bd92876ea2464edbdb009048e418c3f22c32b2f6672168ded3645caf5302",
+      "git_blob_sha": "df410e8556a4022393685ed6c30406bbfe9d3b8e",
+      "size_bytes": 58928,
+      "type": "test"
+    },
+    {
+      "id": "A-11",
+      "filename": "test_authority_boundaries.py",
+      "description": "27 authority zero-call boundary tests: imports, source-code scan, runtime, counters",
+      "sha256": "8d38a7dcfb4a4cb237b46b50f19b956c1738c802a07320494dc837a18c80516b",
+      "git_blob_sha": "d60ef6594c9f593d5a218dfe406cb10b6a3c2058",
+      "size_bytes": 15702,
+      "type": "test"
+    },
+    {
+      "id": "A-12",
+      "filename": "artefact_hash_manifest.json",
+      "description": "Artefact hash manifest v1 (superseded by v2)",
+      "sha256": "e7df331013f84ab3553cabcf5bab9eff168a84a62c1dcfeee2dd4763e53d82ba",
+      "git_blob_sha": "ca48ef91189115ea37898fe42c2867599f43d692",
+      "size_bytes": 5127,
+      "type": "manifest"
+    },
+    {
+      "id": "A-13",
+      "filename": "SPRINT_123A9_GATE_G9_FINAL_V2.md",
+      "description": "G9 evidence report v2 (superseded by v3 in this commit)",
+      "sha256": "101d4a2adfb7fe921de33622c62007d65a4793fc803a8598faf1dfe02dbbd586",
+      "git_blob_sha": "3e70f7b8e37a24a2ee5181785501af597bd4f4ba",
+      "size_bytes": 12088,
+      "type": "report"
+    }
+  ],
+  "summary": {
+    "total_artefacts": 13,
+    "artefacts_with_full_sha256": 13,
+    "artefacts_with_git_blob_sha": 13,
+    "placeholder_sha256_count": 0,
+    "abbreviated_sha256_count": 0,
+    "artefact_hash_coverage": "100%",
+    "test_artefacts": 2,
+    "implementation_artefacts": 1,
+    "specification_artefacts": 2,
+    "documentation_artefacts": 5,
+    "data_artefacts": 1,
+    "manifest_artefacts": 1,
+    "report_artefacts": 1
+  }
+}
