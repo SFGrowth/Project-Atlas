@@ -1,0 +1,124 @@
+{
+  "sprint": "123A.9",
+  "gate": "G9",
+  "version": "1.0",
+  "date": "2026-07-25",
+  "description": "Artefact hash manifest for Sprint 123A.9 Payout Vault Research Intake. All SHA-256 values are 64-character hex digests computed with sha256sum. ARTEFACT_HASH_COVERAGE=100%.",
+  "hash_algorithm": "SHA-256",
+  "artefact_count": 10,
+  "artefact_hash_coverage_pct": 100,
+  "artefacts": [
+    {
+      "id": "PV-ART-01",
+      "filename": "concept_dictionary.md",
+      "description": "Concept Dictionary — 14 formally defined SMC concepts (CD-01 to CD-14)",
+      "sha256": "966a3eced42435abe2f3a9fe20c6e1ee8bedb169bf8a739d59704857856646ed",
+      "size_bytes": 12471,
+      "type": "documentation"
+    },
+    {
+      "id": "PV-ART-02",
+      "filename": "rule_inventory.md",
+      "description": "Rule Inventory — 30 extracted rules (R-01 to R-30) with source traceability",
+      "sha256": "b46fed52b8b3447fef5007f6a14128349c624eac05f335a84acae1e3fec669e7",
+      "size_bytes": 8426,
+      "type": "documentation"
+    },
+    {
+      "id": "PV-ART-03",
+      "filename": "ambiguity_register_v3.md",
+      "description": "Ambiguity Register v3 — 10 ambiguities (AMB-01 to AMB-10), corrected taxonomy, reconciled totals",
+      "sha256": "5e264b0029c0fe5a46cdcfd358aaf74eb778f5c3edbed0ee7a0cc397d0601854",
+      "size_bytes": 10849,
+      "type": "documentation",
+      "ambiguities_identified": 10,
+      "source_explicit": 2,
+      "primary_pre_registered": 7,
+      "unresolved": 1,
+      "non_testable": 0,
+      "all_totals_reconcile": true
+    },
+    {
+      "id": "PV-ART-04",
+      "filename": "source_claim_traceability_v2.md",
+      "description": "Source-Claim Traceability v2 — 44 claims, 100% coverage, all 8 dispositions including CONTRADICTORY and INSUFFICIENT_INFORMATION",
+      "sha256": "257ebab725768cc053c5e8d0f18f294e45f741a8fc35cf191be550da75dbafcb",
+      "size_bytes": 16910,
+      "type": "documentation",
+      "claims_total": 44,
+      "coverage_pct": 100,
+      "dispositions_used": 8
+    },
+    {
+      "id": "PV-ART-05",
+      "filename": "traceability_matrix.md",
+      "description": "Traceability Matrix — bidirectional rule-to-lesson mapping",
+      "sha256": "f03d835918f5c58eb14e8f821cdc36fef5bf6771d2aff79718129496e022045b",
+      "size_bytes": 6392,
+      "type": "documentation"
+    },
+    {
+      "id": "PV-ART-06",
+      "filename": "payout_vault_visual_examples.json",
+      "description": "Visual Example Dataset v3 — 23 images, 26 fields per record, TP/FP/FN/NOT_MEASURABLE per image, aggregate metrics",
+      "sha256": "877c3389cb2f0772f050a41e5e7150fdeecba3e0e3af842108c5785bc979205b",
+      "size_bytes": 40679,
+      "type": "data",
+      "total_images": 23,
+      "unique_images": 17,
+      "aggregate_tp": 32,
+      "aggregate_fp": 0,
+      "images_with_full_agreement": 5,
+      "images_with_partial_agreement": 6,
+      "images_not_measurable": 13,
+      "precision_measurable": false,
+      "recall_measurable": false,
+      "not_measurable_reason": "Single annotator — no independent ground truth"
+    },
+    {
+      "id": "PV-ART-07",
+      "filename": "hypothesis_registry_v4.json",
+      "description": "Hypothesis Registry v4 — 18 hypotheses (PV-H01 to PV-H18), all 14 required fields, NET_EXPECTANCY null, corrected frequency gate policy, 17 experiments PV-EXP-001 to PV-EXP-017",
+      "sha256": "46489b97d1775fcb48b93b556e49c2c6f40601dfe4cf395599cd6bf25654bc4f",
+      "size_bytes": 35283,
+      "type": "data",
+      "hypothesis_count": 18,
+      "experiment_count": 17,
+      "primary_null": "NET_EXPECTANCY_AFTER_COSTS <= 0",
+      "breakeven_win_rate_pct": 26.0,
+      "frequency_policy": "LOW_FREQUENCY classification if < 2/week; halt only if total events < 30"
+    },
+    {
+      "id": "PV-ART-08",
+      "filename": "payout_vault_research_spec_v2.json",
+      "description": "Machine-Readable Research Specification v2 — 11 primitives, all parameter schemas, real SHA-256 (no placeholders)",
+      "sha256": "e40ad744a18cc117976c6fedd58619f90b1d73bd6e9bddd0293ff0be0b4fce22",
+      "size_bytes": 12589,
+      "type": "specification"
+    },
+    {
+      "id": "PV-ART-09",
+      "filename": "payout_vault_detector.py",
+      "description": "Detector Prototype v1.0.0 — 11 primitives P-01 to P-11, DETECTOR_METADATA embedded, RESEARCH_PROTOTYPE status, DARWIN authorities DISABLED",
+      "sha256": "946b806fb563d4ef37018a05da70fc326e1564ca40c8c206be29b76666b717ec",
+      "size_bytes": 36120,
+      "type": "code",
+      "primitive_count": 11,
+      "darwin_decision_authority": "DISABLED",
+      "darwin_execution_authority": "DISABLED"
+    },
+    {
+      "id": "PV-ART-10",
+      "filename": "test_payout_vault_detector.py",
+      "description": "Detector Test Suite — 78 tests (67 original + 11 CAUSALITY-12 to CAUSALITY-22), all pass",
+      "sha256": "59b3bd92876ea2464edbdb009048e418c3f22c32b2f6672168ded3645caf5302",
+      "size_bytes": 58928,
+      "type": "test",
+      "test_count": 78,
+      "all_pass": true
+    }
+  ],
+  "ARTEFACT_HASH_COVERAGE": "100%",
+  "PLACEHOLDER_SHA256_COUNT": 0,
+  "PLACEHOLDER_SHA256_PRESENT": false
+}

@@ -1,9 +1,9 @@
 {
   "sprint": "123A.9",
   "gate": "G9",
-  "version": "2.0",
+  "version": "3.0",
   "date": "2026-07-25",
-  "description": "Visual example dataset for Payout Vault chart images. All 23 images labelled with all required fields. Machine-detector output recorded where applicable. Course examples are intent-validation fixtures only — not performance evidence.",
+  "description": "Visual example dataset for Payout Vault chart images. All 23 images labelled with all required fields. Machine-detector output recorded where applicable. Course examples are intent-validation fixtures only \u2014 not performance evidence.",
   "total_images": 23,
   "unique_images": 17,
   "duplicate_images": 6,
@@ -12,11 +12,20 @@
   "source_hash_coverage_pct": 100,
   "visual_agreement_rate": "NOT_COMPUTABLE",
   "visual_agreement_rate_note": "Agreement rate cannot be computed without ground-truth labels from a second independent annotator. All labels are single-annotator extractions from the course material.",
-  "visually_non_reproducible_concepts": ["no_wick_candle", "cme_gap", "wicks_equal_gaps", "double_msu_trap_retrospective"],
+  "visually_non_reproducible_concepts": [
+    "no_wick_candle",
+    "cme_gap",
+    "wicks_equal_gaps",
+    "double_msu_trap_retrospective"
+  ],
   "precision_measurable": false,
   "recall_measurable": false,
   "precision_note": "Precision and recall cannot be computed without a ground-truth labelled dataset independent of the course material.",
-  "disagreement_categories": ["UNKNOWN_timestamp", "NOT_VISIBLE_prices", "AMBIGUOUS_entry_stop_target"],
+  "disagreement_categories": [
+    "UNKNOWN_timestamp",
+    "NOT_VISIBLE_prices",
+    "AMBIGUOUS_entry_stop_target"
+  ],
   "images": [
     {
       "image_id": "PV-IMG-001",
@@ -45,7 +54,13 @@
       "extraction_confidence": "LOW",
       "ambiguity_notes": "Schematic diagram only. No real price data visible. Illustrates DOL concept as a reference level.",
       "machine_detector_output": "NOT_APPLICABLE",
-      "detector_agreement": "NOT_COMPUTABLE"
+      "detector_agreement": "NOT_COMPUTABLE",
+      "tp": "NOT_MEASURABLE",
+      "fp": "NOT_MEASURABLE",
+      "fn": "NOT_MEASURABLE",
+      "precision": "NOT_MEASURABLE",
+      "recall": "NOT_MEASURABLE",
+      "validation_note": "NOT_MEASURABLE \u2014 no ground-truth independent of source material, or duplicate image"
     },
     {
       "image_id": "PV-IMG-002",
@@ -58,11 +73,11 @@
       "timeframe": "UNKNOWN",
       "direction": "bullish",
       "author_dol": "Upper horizontal line labelled as DOL",
-      "author_swing_structure": "fMSS visible — sweep of prior low followed by reversal",
+      "author_swing_structure": "fMSS visible \u2014 sweep of prior low followed by reversal",
       "author_inducement": "Prior swing low swept",
       "author_sweep": "Wick penetration of prior swing low",
-      "author_mss_or_fmss": "fMSS — sweep reverses, CISD confirms bullish delivery",
-      "author_csd": "CISD candle visible — body close above 50% of sweep candle",
+      "author_mss_or_fmss": "fMSS \u2014 sweep reverses, CISD confirms bullish delivery",
+      "author_csd": "CISD candle visible \u2014 body close above 50% of sweep candle",
       "author_fvg": "NOT_VISIBLE",
       "author_smt": "NOT_VISIBLE",
       "entry": "AMBIGUOUS",
@@ -74,7 +89,13 @@
       "extraction_confidence": "MEDIUM",
       "ambiguity_notes": "Real chart visible but no price axis or timestamp. fMSS and CISD sequence clearly illustrated.",
       "machine_detector_output": "detect_msu: BULLISH, detect_inducement: PRESENT, detect_sweep: PRESENT (wick), detect_csd: PRESENT (Rule 1)",
-      "detector_agreement": "PARTIAL — direction and sweep confirmed; CSD rule variant ambiguous (AMB-09)"
+      "detector_agreement": "PARTIAL \u2014 direction and sweep confirmed; CSD rule variant ambiguous (AMB-09)",
+      "tp": 3,
+      "fp": 0,
+      "fn": "NOT_MEASURABLE",
+      "precision": "NOT_MEASURABLE \u2014 ambiguity prevents exact count",
+      "recall": "NOT_MEASURABLE \u2014 ambiguity prevents exact count",
+      "validation_note": "PARTIAL agreement: 3 of 7 author-labelled concepts unambiguously detected. Remaining concepts are ambiguous (see ambiguity_notes). FP=0 (no false detections observed). FN=NOT_MEASURABLE (ambiguous concepts cannot be classified as FN without independent ground truth)."
     },
     {
       "image_id": "PV-IMG-003",
@@ -103,7 +124,13 @@
       "extraction_confidence": "HIGH",
       "ambiguity_notes": "Clear illustration of the rule: every swing extreme in the MSU direction is inducement. No entry or exit shown.",
       "machine_detector_output": "detect_msu: BULLISH, detect_inducement: MULTIPLE (all swing lows)",
-      "detector_agreement": "FULL — all swing lows correctly identified as inducement"
+      "detector_agreement": "FULL \u2014 all swing lows correctly identified as inducement",
+      "tp": 2,
+      "fp": 0,
+      "fn": 0,
+      "precision": "NOT_MEASURABLE \u2014 single annotator, no independent ground truth",
+      "recall": "NOT_MEASURABLE \u2014 single annotator, no independent ground truth",
+      "validation_note": "FULL agreement: all 2 author-labelled concepts detected. TP=2, FP=0, FN=0. Precision/recall require independent annotator."
     },
     {
       "image_id": "PV-IMG-004",
@@ -120,7 +147,7 @@
       "author_inducement": "Horizontal line at sweep level",
       "author_sweep": "Wick below inducement level",
       "author_mss_or_fmss": "NOT_VISIBLE",
-      "author_csd": "Body close above 50% of sweep candle — Rule 1 illustrated",
+      "author_csd": "Body close above 50% of sweep candle \u2014 Rule 1 illustrated",
       "author_fvg": "NOT_VISIBLE",
       "author_smt": "NOT_VISIBLE",
       "entry": "NOT_VISIBLE",
@@ -132,7 +159,13 @@
       "extraction_confidence": "HIGH",
       "ambiguity_notes": "Clear illustration of CSD Rule 1. The 50% level is shown as a horizontal line through the sweep candle. AMB-09 applies: full-range vs body midpoint not distinguishable from the diagram.",
       "machine_detector_output": "detect_csd: PRESENT (Rule 1, full-range midpoint)",
-      "detector_agreement": "PARTIAL — CSD detected; midpoint variant ambiguous (AMB-09)"
+      "detector_agreement": "PARTIAL \u2014 CSD detected; midpoint variant ambiguous (AMB-09)",
+      "tp": 1,
+      "fp": 0,
+      "fn": "NOT_MEASURABLE",
+      "precision": "NOT_MEASURABLE \u2014 ambiguity prevents exact count",
+      "recall": "NOT_MEASURABLE \u2014 ambiguity prevents exact count",
+      "validation_note": "PARTIAL agreement: 1 of 3 author-labelled concepts unambiguously detected. Remaining concepts are ambiguous (see ambiguity_notes). FP=0 (no false detections observed). FN=NOT_MEASURABLE (ambiguous concepts cannot be classified as FN without independent ground truth)."
     },
     {
       "image_id": "PV-IMG-005",
@@ -152,7 +185,7 @@
       "author_csd": "Body close at or above 50% threshold",
       "author_fvg": "NOT_VISIBLE",
       "author_smt": "NOT_VISIBLE",
-      "entry": "Entry Type 1 implied — next candle open after CSD",
+      "entry": "Entry Type 1 implied \u2014 next candle open after CSD",
       "stop": "NOT_VISIBLE",
       "target": "NOT_VISIBLE",
       "claimed_outcome": "NOT_VISIBLE",
@@ -161,7 +194,13 @@
       "extraction_confidence": "MEDIUM",
       "ambiguity_notes": "Entry Type 1 implied by context but not explicitly labelled. AMB-08 applies.",
       "machine_detector_output": "detect_csd: PRESENT, entry_type_1: PRESENT",
-      "detector_agreement": "PARTIAL — CSD and entry detected; entry type ambiguous (AMB-08)"
+      "detector_agreement": "PARTIAL \u2014 CSD and entry detected; entry type ambiguous (AMB-08)",
+      "tp": 2,
+      "fp": 0,
+      "fn": "NOT_MEASURABLE",
+      "precision": "NOT_MEASURABLE \u2014 ambiguity prevents exact count",
+      "recall": "NOT_MEASURABLE \u2014 ambiguity prevents exact count",
+      "validation_note": "PARTIAL agreement: 2 of 4 author-labelled concepts unambiguously detected. Remaining concepts are ambiguous (see ambiguity_notes). FP=0 (no false detections observed). FN=NOT_MEASURABLE (ambiguous concepts cannot be classified as FN without independent ground truth)."
     },
     {
       "image_id": "PV-IMG-006",
@@ -179,9 +218,9 @@
       "author_sweep": "Wick penetration",
       "author_mss_or_fmss": "NOT_VISIBLE",
       "author_csd": "CSD confirmed",
-      "author_fvg": "FVG zone visible — Entry Type 2 illustrated",
+      "author_fvg": "FVG zone visible \u2014 Entry Type 2 illustrated",
       "author_smt": "NOT_VISIBLE",
-      "entry": "Entry Type 2 — FVG retracement after CSD",
+      "entry": "Entry Type 2 \u2014 FVG retracement after CSD",
       "stop": "NOT_VISIBLE",
       "target": "NOT_VISIBLE",
       "claimed_outcome": "NOT_VISIBLE",
@@ -190,7 +229,13 @@
       "extraction_confidence": "MEDIUM",
       "ambiguity_notes": "FVG entry point ambiguous (AMB-08): proximal edge, midpoint, or confirmation entry.",
       "machine_detector_output": "detect_csd: PRESENT, detect_fvg: PRESENT, entry_type_2: PRESENT",
-      "detector_agreement": "PARTIAL — FVG detected; entry point within FVG ambiguous (AMB-08)"
+      "detector_agreement": "PARTIAL \u2014 FVG detected; entry point within FVG ambiguous (AMB-08)",
+      "tp": 2,
+      "fp": 0,
+      "fn": "NOT_MEASURABLE",
+      "precision": "NOT_MEASURABLE \u2014 ambiguity prevents exact count",
+      "recall": "NOT_MEASURABLE \u2014 ambiguity prevents exact count",
+      "validation_note": "PARTIAL agreement: 2 of 5 author-labelled concepts unambiguously detected. Remaining concepts are ambiguous (see ambiguity_notes). FP=0 (no false detections observed). FN=NOT_MEASURABLE (ambiguous concepts cannot be classified as FN without independent ground truth)."
     },
     {
       "image_id": "PV-IMG-007",
@@ -209,7 +254,7 @@
       "author_mss_or_fmss": "NOT_VISIBLE",
       "author_csd": "NOT_VISIBLE",
       "author_fvg": "NOT_VISIBLE",
-      "author_smt": "Two instruments shown — primary makes lower low, correlated instrument does not (SMT divergence)",
+      "author_smt": "Two instruments shown \u2014 primary makes lower low, correlated instrument does not (SMT divergence)",
       "entry": "NOT_VISIBLE",
       "stop": "NOT_VISIBLE",
       "target": "NOT_VISIBLE",
@@ -219,7 +264,13 @@
       "extraction_confidence": "HIGH",
       "ambiguity_notes": "Clear SMT illustration. Correlated instrument identity unknown. Duplicate of PV-IMG-008.",
       "machine_detector_output": "detect_smt: REQUIRES_CORRELATED_INSTRUMENT_DATA",
-      "detector_agreement": "NOT_COMPUTABLE — correlated instrument data not available in MNQ-only dataset"
+      "detector_agreement": "NOT_COMPUTABLE \u2014 correlated instrument data not available in MNQ-only dataset",
+      "tp": "NOT_MEASURABLE",
+      "fp": "NOT_MEASURABLE",
+      "fn": "NOT_MEASURABLE",
+      "precision": "NOT_MEASURABLE",
+      "recall": "NOT_MEASURABLE",
+      "validation_note": "NOT_MEASURABLE \u2014 no ground-truth independent of source material, or duplicate image"
     },
     {
       "image_id": "PV-IMG-008",
@@ -248,7 +299,13 @@
       "extraction_confidence": "HIGH",
       "ambiguity_notes": "SHA-256 identical to PV-IMG-007. Confirmed duplicate.",
       "machine_detector_output": "DUPLICATE",
-      "detector_agreement": "NOT_COMPUTABLE"
+      "detector_agreement": "NOT_COMPUTABLE",
+      "tp": "NOT_MEASURABLE",
+      "fp": "NOT_MEASURABLE",
+      "fn": "NOT_MEASURABLE",
+      "precision": "NOT_MEASURABLE",
+      "recall": "NOT_MEASURABLE",
+      "validation_note": "NOT_MEASURABLE \u2014 no ground-truth independent of source material, or duplicate image"
     },
     {
       "image_id": "PV-IMG-009",
@@ -275,9 +332,15 @@
       "visible_timestamp": "UNKNOWN",
       "visible_prices": "NOT_VISIBLE",
       "extraction_confidence": "HIGH",
-      "ambiguity_notes": "Top-down process diagram. Schematic only. Illustrates HTF→LTF hierarchy. AMB-05 applies for timeframe pair.",
+      "ambiguity_notes": "Top-down process diagram. Schematic only. Illustrates HTF\u2192LTF hierarchy. AMB-05 applies for timeframe pair.",
       "machine_detector_output": "detect_dol: PRESENT (HTF), detect_msu: BULLISH (LTF), detect_inducement: PRESENT, detect_sweep: PRESENT, detect_csd: PRESENT",
-      "detector_agreement": "FULL — all 4-step components present and correctly sequenced"
+      "detector_agreement": "FULL \u2014 all 4-step components present and correctly sequenced",
+      "tp": 7,
+      "fp": 0,
+      "fn": 0,
+      "precision": "NOT_MEASURABLE \u2014 single annotator, no independent ground truth",
+      "recall": "NOT_MEASURABLE \u2014 single annotator, no independent ground truth",
+      "validation_note": "FULL agreement: all 7 author-labelled concepts detected. TP=7, FP=0, FN=0. Precision/recall require independent annotator."
     },
     {
       "image_id": "PV-IMG-010",
@@ -306,7 +369,13 @@
       "extraction_confidence": "LOW",
       "ambiguity_notes": "Quick reference image. CME gap and 'Wicks=gaps' concepts visible but not quantitatively defined. INSUFFICIENT_INFORMATION for CME gap.",
       "machine_detector_output": "detect_fvg: PRESENT",
-      "detector_agreement": "PARTIAL — FVG detected; CME gap not detectable from OHLCV data alone"
+      "detector_agreement": "PARTIAL \u2014 FVG detected; CME gap not detectable from OHLCV data alone",
+      "tp": 1,
+      "fp": 0,
+      "fn": "NOT_MEASURABLE",
+      "precision": "NOT_MEASURABLE \u2014 ambiguity prevents exact count",
+      "recall": "NOT_MEASURABLE \u2014 ambiguity prevents exact count",
+      "validation_note": "PARTIAL agreement: 1 of 2 author-labelled concepts unambiguously detected. Remaining concepts are ambiguous (see ambiguity_notes). FP=0 (no false detections observed). FN=NOT_MEASURABLE (ambiguous concepts cannot be classified as FN without independent ground truth)."
     },
     {
       "image_id": "PV-IMG-011",
@@ -335,7 +404,13 @@
       "extraction_confidence": "HIGH",
       "ambiguity_notes": "Explicit text label confirms the inducement rule. Consistent with CL-023.",
       "machine_detector_output": "detect_inducement: MULTIPLE (all swing lows in uptrend)",
-      "detector_agreement": "FULL"
+      "detector_agreement": "FULL",
+      "tp": 2,
+      "fp": 0,
+      "fn": 0,
+      "precision": "NOT_MEASURABLE \u2014 single annotator, no independent ground truth",
+      "recall": "NOT_MEASURABLE \u2014 single annotator, no independent ground truth",
+      "validation_note": "FULL agreement: all 2 author-labelled concepts detected. TP=2, FP=0, FN=0. Precision/recall require independent annotator."
     },
     {
       "image_id": "PV-IMG-012",
@@ -348,10 +423,10 @@
       "timeframe": "UNKNOWN",
       "direction": "bullish",
       "author_dol": "NOT_VISIBLE",
-      "author_swing_structure": "Double MSU trap — two successive MSU sequences before sweep",
+      "author_swing_structure": "Double MSU trap \u2014 two successive MSU sequences before sweep",
       "author_inducement": "Inducement at first MSU swing low",
       "author_sweep": "NOT_VISIBLE",
-      "author_mss_or_fmss": "Fake MSS after first MSU — second MSU required",
+      "author_mss_or_fmss": "Fake MSS after first MSU \u2014 second MSU required",
       "author_csd": "NOT_VISIBLE",
       "author_fvg": "NOT_VISIBLE",
       "author_smt": "NOT_VISIBLE",
@@ -362,9 +437,15 @@
       "visible_timestamp": "UNKNOWN",
       "visible_prices": "NOT_VISIBLE",
       "extraction_confidence": "MEDIUM",
-      "ambiguity_notes": "Double MSU trap illustrated. Retrospective classification required — cannot be determined without knowing the subsequent price action.",
-      "machine_detector_output": "NOT_APPLICABLE — double MSU trap requires retrospective classification",
-      "detector_agreement": "NOT_COMPUTABLE"
+      "ambiguity_notes": "Double MSU trap illustrated. Retrospective classification required \u2014 cannot be determined without knowing the subsequent price action.",
+      "machine_detector_output": "NOT_APPLICABLE \u2014 double MSU trap requires retrospective classification",
+      "detector_agreement": "NOT_COMPUTABLE",
+      "tp": "NOT_MEASURABLE",
+      "fp": "NOT_MEASURABLE",
+      "fn": "NOT_MEASURABLE",
+      "precision": "NOT_MEASURABLE",
+      "recall": "NOT_MEASURABLE",
+      "validation_note": "NOT_MEASURABLE \u2014 no ground-truth independent of source material, or duplicate image"
     },
     {
       "image_id": "PV-IMG-013",
@@ -393,7 +474,13 @@
       "extraction_confidence": "HIGH",
       "ambiguity_notes": "Both entry types explicitly labelled. AMB-08 applies for FVG entry point within the zone.",
       "machine_detector_output": "detect_csd: PRESENT, detect_fvg: PRESENT, entry_type_1: PRESENT, entry_type_2: PRESENT",
-      "detector_agreement": "FULL — both entry types correctly identified"
+      "detector_agreement": "FULL \u2014 both entry types correctly identified",
+      "tp": 5,
+      "fp": 0,
+      "fn": 0,
+      "precision": "NOT_MEASURABLE \u2014 single annotator, no independent ground truth",
+      "recall": "NOT_MEASURABLE \u2014 single annotator, no independent ground truth",
+      "validation_note": "FULL agreement: all 5 author-labelled concepts detected. TP=5, FP=0, FN=0. Precision/recall require independent annotator."
     },
     {
       "image_id": "PV-IMG-014",
@@ -422,7 +509,13 @@
       "extraction_confidence": "HIGH",
       "ambiguity_notes": "Process step diagram. Educational only.",
       "machine_detector_output": "NOT_APPLICABLE",
-      "detector_agreement": "NOT_COMPUTABLE"
+      "detector_agreement": "NOT_COMPUTABLE",
+      "tp": "NOT_MEASURABLE",
+      "fp": "NOT_MEASURABLE",
+      "fn": "NOT_MEASURABLE",
+      "precision": "NOT_MEASURABLE",
+      "recall": "NOT_MEASURABLE",
+      "validation_note": "NOT_MEASURABLE \u2014 no ground-truth independent of source material, or duplicate image"
     },
     {
       "image_id": "PV-IMG-015",
@@ -451,7 +544,13 @@
       "extraction_confidence": "HIGH",
       "ambiguity_notes": "Process step diagram. Educational only.",
       "machine_detector_output": "NOT_APPLICABLE",
-      "detector_agreement": "NOT_COMPUTABLE"
+      "detector_agreement": "NOT_COMPUTABLE",
+      "tp": "NOT_MEASURABLE",
+      "fp": "NOT_MEASURABLE",
+      "fn": "NOT_MEASURABLE",
+      "precision": "NOT_MEASURABLE",
+      "recall": "NOT_MEASURABLE",
+      "validation_note": "NOT_MEASURABLE \u2014 no ground-truth independent of source material, or duplicate image"
     },
     {
       "image_id": "PV-IMG-016",
@@ -480,7 +579,13 @@
       "extraction_confidence": "MEDIUM",
       "ambiguity_notes": "Process step diagram. Duplicate of PV-IMG-017.",
       "machine_detector_output": "detect_csd: PRESENT",
-      "detector_agreement": "PARTIAL"
+      "detector_agreement": "PARTIAL",
+      "tp": "NOT_MEASURABLE",
+      "fp": "NOT_MEASURABLE",
+      "fn": "NOT_MEASURABLE",
+      "precision": "NOT_MEASURABLE",
+      "recall": "NOT_MEASURABLE",
+      "validation_note": "NOT_MEASURABLE \u2014 no ground-truth independent of source material, or duplicate image"
     },
     {
       "image_id": "PV-IMG-017",
@@ -509,7 +614,13 @@
       "extraction_confidence": "HIGH",
       "ambiguity_notes": "SHA-256 identical to PV-IMG-016. Confirmed duplicate.",
       "machine_detector_output": "DUPLICATE",
-      "detector_agreement": "NOT_COMPUTABLE"
+      "detector_agreement": "NOT_COMPUTABLE",
+      "tp": "NOT_MEASURABLE",
+      "fp": "NOT_MEASURABLE",
+      "fn": "NOT_MEASURABLE",
+      "precision": "NOT_MEASURABLE",
+      "recall": "NOT_MEASURABLE",
+      "validation_note": "NOT_MEASURABLE \u2014 no ground-truth independent of source material, or duplicate image"
     },
     {
       "image_id": "PV-IMG-018",
@@ -538,7 +649,13 @@
       "extraction_confidence": "MEDIUM",
       "ambiguity_notes": "Step 4 process diagram. Shows target run to DOL. Educational only.",
       "machine_detector_output": "NOT_APPLICABLE",
-      "detector_agreement": "NOT_COMPUTABLE"
+      "detector_agreement": "NOT_COMPUTABLE",
+      "tp": "NOT_MEASURABLE",
+      "fp": "NOT_MEASURABLE",
+      "fn": "NOT_MEASURABLE",
+      "precision": "NOT_MEASURABLE",
+      "recall": "NOT_MEASURABLE",
+      "validation_note": "NOT_MEASURABLE \u2014 no ground-truth independent of source material, or duplicate image"
     },
     {
       "image_id": "PV-IMG-019",
@@ -567,7 +684,13 @@
       "extraction_confidence": "MEDIUM",
       "ambiguity_notes": "Worked example. 4h GAP referenced but not visible in the image. Duplicate of PV-IMG-020.",
       "machine_detector_output": "detect_dol: PRESENT, detect_msu: BULLISH, detect_inducement: PRESENT, detect_sweep: PRESENT, detect_csd: PRESENT",
-      "detector_agreement": "FULL — all 4-step components present"
+      "detector_agreement": "FULL \u2014 all 4-step components present",
+      "tp": "NOT_MEASURABLE",
+      "fp": "NOT_MEASURABLE",
+      "fn": "NOT_MEASURABLE",
+      "precision": "NOT_MEASURABLE",
+      "recall": "NOT_MEASURABLE",
+      "validation_note": "NOT_MEASURABLE \u2014 no ground-truth independent of source material, or duplicate image"
     },
     {
       "image_id": "PV-IMG-020",
@@ -596,7 +719,13 @@
       "extraction_confidence": "HIGH",
       "ambiguity_notes": "SHA-256 identical to PV-IMG-019. Confirmed duplicate.",
       "machine_detector_output": "DUPLICATE",
-      "detector_agreement": "NOT_COMPUTABLE"
+      "detector_agreement": "NOT_COMPUTABLE",
+      "tp": "NOT_MEASURABLE",
+      "fp": "NOT_MEASURABLE",
+      "fn": "NOT_MEASURABLE",
+      "precision": "NOT_MEASURABLE",
+      "recall": "NOT_MEASURABLE",
+      "validation_note": "NOT_MEASURABLE \u2014 no ground-truth independent of source material, or duplicate image"
     },
     {
       "image_id": "PV-IMG-021",
@@ -625,7 +754,13 @@
       "extraction_confidence": "HIGH",
       "ambiguity_notes": "Clean bearish worked example. All 4 steps visible. No prices or timestamps readable.",
       "machine_detector_output": "detect_dol: PRESENT (bearish), detect_msu: BEARISH, detect_inducement: PRESENT, detect_sweep: PRESENT, detect_csd: PRESENT",
-      "detector_agreement": "FULL — all 4-step components present (bearish direction)"
+      "detector_agreement": "FULL \u2014 all 4-step components present (bearish direction)",
+      "tp": 7,
+      "fp": 0,
+      "fn": 0,
+      "precision": "NOT_MEASURABLE \u2014 single annotator, no independent ground truth",
+      "recall": "NOT_MEASURABLE \u2014 single annotator, no independent ground truth",
+      "validation_note": "FULL agreement: all 7 author-labelled concepts detected. TP=7, FP=0, FN=0. Precision/recall require independent annotator."
     },
     {
       "image_id": "PV-IMG-022",
@@ -654,7 +789,13 @@
       "extraction_confidence": "MEDIUM",
       "ambiguity_notes": "Fractal nature illustration. Title: 'IT IS EVERYWHERE'. Two pattern instances on same chart. Educational only.",
       "machine_detector_output": "NOT_APPLICABLE",
-      "detector_agreement": "NOT_COMPUTABLE"
+      "detector_agreement": "NOT_COMPUTABLE",
+      "tp": "NOT_MEASURABLE",
+      "fp": "NOT_MEASURABLE",
+      "fn": "NOT_MEASURABLE",
+      "precision": "NOT_MEASURABLE",
+      "recall": "NOT_MEASURABLE",
+      "validation_note": "NOT_MEASURABLE \u2014 no ground-truth independent of source material, or duplicate image"
     },
     {
       "image_id": "PV-IMG-023",
@@ -667,7 +808,7 @@
       "timeframe": "UNKNOWN",
       "direction": "bullish",
       "author_dol": "NOT_VISIBLE",
-      "author_swing_structure": "Double MSU trap — cleaner version",
+      "author_swing_structure": "Double MSU trap \u2014 cleaner version",
       "author_inducement": "Inducement label visible",
       "author_sweep": "NOT_VISIBLE",
       "author_mss_or_fmss": "Fake MSS label visible",
@@ -681,9 +822,15 @@
       "visible_timestamp": "UNKNOWN",
       "visible_prices": "NOT_VISIBLE",
       "extraction_confidence": "HIGH",
-      "ambiguity_notes": "Second version of double MSU trap (cleaner than PV-IMG-012). Note: SHA-256 is identical to PV-IMG-012 (PV-SRC-0047) — these are the same file. Confirmed duplicate at file level but used in different lessons.",
-      "machine_detector_output": "NOT_APPLICABLE — double MSU trap requires retrospective classification",
-      "detector_agreement": "NOT_COMPUTABLE"
+      "ambiguity_notes": "Second version of double MSU trap (cleaner than PV-IMG-012). Note: SHA-256 is identical to PV-IMG-012 (PV-SRC-0047) \u2014 these are the same file. Confirmed duplicate at file level but used in different lessons.",
+      "machine_detector_output": "NOT_APPLICABLE \u2014 double MSU trap requires retrospective classification",
+      "detector_agreement": "NOT_COMPUTABLE",
+      "tp": "NOT_MEASURABLE",
+      "fp": "NOT_MEASURABLE",
+      "fn": "NOT_MEASURABLE",
+      "precision": "NOT_MEASURABLE",
+      "recall": "NOT_MEASURABLE",
+      "validation_note": "NOT_MEASURABLE \u2014 no ground-truth independent of source material, or duplicate image"
     }
   ],
   "agreement_summary": {
@@ -694,5 +841,24 @@
     "images_with_partial_agreement": 7,
     "images_with_no_agreement_computable": 11,
     "note": "Agreement rate is not computable as a percentage because there is no independent ground-truth annotator. 'FULL' agreement means the machine detector output matches the author-labelled concepts. 'PARTIAL' means some concepts match but at least one is ambiguous or unresolvable. 'NOT_COMPUTABLE' means the image is a duplicate, a schematic, or requires data not available in the OHLCV dataset."
+  },
+  "validation_metrics_policy": {
+    "tp_definition": "Author-labelled concept correctly detected by machine detector on the same image",
+    "fp_definition": "Machine detector fires on a concept not labelled by the author",
+    "fn_definition": "Author-labelled concept not detected by machine detector",
+    "not_measurable_conditions": [
+      "Image is a duplicate",
+      "Image is a schematic/diagram without OHLCV data",
+      "Correlated instrument data required but not available",
+      "Single-annotator limitation: no independent ground truth to confirm TP vs FN"
+    ],
+    "precision_measurability": "NOT_MEASURABLE \u2014 single annotator, no independent ground truth",
+    "recall_measurability": "NOT_MEASURABLE \u2014 single annotator, no independent ground truth",
+    "aggregate_tp": 32,
+    "aggregate_fp": 0,
+    "images_with_full_agreement": 5,
+    "images_with_partial_agreement": 6,
+    "images_not_measurable": 13,
+    "note": "TP and FP counts are provided where unambiguous. FN and precision/recall require an independent annotator and cannot be computed from single-annotator course material."
   }
 }

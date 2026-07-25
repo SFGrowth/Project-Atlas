@@ -32,7 +32,7 @@ To control overfitting risk, the following limits apply to the Payout Vault rese
 1. CSD confirmation window (AMB-01)
 2. HTF/LTF timeframe pair (AMB-05)
 3. Sweep definition (AMB-04)
-4. CSD midpoint rule (AMB-13)
+4. CSD midpoint rule (AMB-09)
 5. Pivot lookback width (AMB-06)
 6. Stop buffer (AMB-07)
 7. FVG entry point (AMB-08)
@@ -210,10 +210,12 @@ To control overfitting risk, the following limits apply to the Payout Vault rese
 | AMB-09 | CSD midpoint | PRIMARY_PRE_REGISTERED_DEFINITION | Full-range midpoint |
 | AMB-10 | No-wick candle | UNRESOLVED | Deferred to Tier 2 |
 
-**Total ambiguities:** 10
-**SOURCE_EXPLICIT:** 2
-**PRIMARY_PRE_REGISTERED_DEFINITION:** 7
-**UNRESOLVED:** 1
-**ALTERNATIVE_PRE_REGISTERED_DEFINITION entries:** 17 (across 7 parameters)
+**AMBIGUITIES_IDENTIFIED:** 10 (AMB-01 through AMB-10)
+**SOURCE_EXPLICIT_AMBIGUITIES:** 2 (AMB-02, AMB-03)
+**PRIMARY_PRE_REGISTERED_DEFINITIONS:** 7 (AMB-01, AMB-04, AMB-05, AMB-06, AMB-07, AMB-08, AMB-09)
+**ALTERNATIVE_PRE_REGISTERED_DEFINITIONS:** 17 entries across 7 parameters (AMB-01: 2, AMB-04: 1, AMB-05: 2, AMB-06: 2, AMB-07: 2, AMB-08: 2, AMB-09: 1)
+**UNRESOLVED_AMBIGUITIES:** 1 (AMB-10)
+**NON_TESTABLE_AMBIGUITIES:** 0
+**ALL_AMBIGUITY_TOTALS_RECONCILE:** TRUE (2 + 7 + 1 + 0 = 10)
 **Free parameters (primary definitions):** 7
 **Parameter budget remaining:** 0 (budget exhausted — no new free parameters without removing an existing one)
