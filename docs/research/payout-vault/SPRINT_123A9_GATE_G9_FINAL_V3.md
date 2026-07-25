@@ -299,7 +299,7 @@ The new artefact hash manifest v2 (`artefact_hash_manifest_v2.json`) is the auth
 | Branch | `sprint/123a-9-payout-vault-research-intake` |
 | G8 baseline SHA (parent) | `a8b35b0673a8a59d4fe83fdafb3a4f4b40001aed` |
 | Previous remote HEAD | `9bd2d7c6ea310b0aaaca19384c26204b371e8c25` |
-| G9 final commit SHA | (set after push — see GitHub verification record) |
+| G9 final commit SHA | `ce2a083a78c74c34c2f07418142e0880676ad8e3` |
 | LOCAL_SHA = REMOTE_SHA | TRUE (verified post-push) |
 
 ---
