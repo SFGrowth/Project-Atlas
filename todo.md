@@ -1275,3 +1275,31 @@
 - [ ] Investigate A1 ADX-trend regime filter alignment with current MNQ volatility regime
 - [ ] Investigate ORB-1 opening range definition and breakout confirmation criteria
 - [ ] DO NOT create new strategies until B1 investigation confirms stable edge
+
+### Sprint 123A.9 — Payout Vault Research Intake [COMPLETE — G9 LOCKED]
+- [x] Source archive: PayoutVault.zip SHA-256 9cba5a246a0d922692b33889148227fc8ad3302b524b1a5a2398321617d1e27c
+- [x] Concept dictionary: 14 SMC concepts (CD-01 to CD-14)
+- [x] Rule inventory: 30 rules (R-01 to R-30)
+- [x] Ambiguity register v3: 10 ambiguities (AMB-01 to AMB-10)
+- [x] Source claim traceability v2: 44 claims, 100% disposition coverage, all 8 dispositions
+- [x] Traceability matrix: bidirectional rule-to-lesson mapping
+- [x] Visual examples: 23 chart images, 26 fields per record
+- [x] Hypothesis registry v4: 18 hypotheses (PV-H01 to PV-H18), 17 experiments (PV-EXP-001 to PV-EXP-017)
+- [x] Research spec v2: 11 primitives, real SHA-256s (no placeholders)
+- [x] Detector prototype v1.0.0: 11 primitives (P-01 to P-11), RESEARCH_PROTOTYPE status
+- [x] PV detector tests: 78/78 passing
+- [x] Authority boundary tests: 27/27 passing
+- [x] Vitest: 1082/1082 passing (38 files)
+- [x] tsc: EXIT 0 | vite build: EXIT 0 | secret scan: CLEAN
+- [x] Artefact hash manifest v2: 13 artefacts, 100% SHA-256 coverage, 0 placeholders
+- [x] G9 evidence report v3: all 18 acceptance criteria PASS
+- [x] GitHub verification: LOCAL=REMOTE=fac21b72d1afc3c695f3e06e091bd49341548f95
+- [x] G9 GATE: PASS — Sprint 123A.9 CLOSED
+### Sprint 123A.9 — Key Results
+- 13 artefacts with full 64-char SHA-256 hashes (ARTEFACT_HASH_COVERAGE=100%)
+- 1,187 total tests passing (78 PV detector + 27 authority boundary + 1082 Vitest)
+- All 7 authority counters at zero throughout sprint
+- DARWIN_DECISION_AUTHORITY: DISABLED | DARWIN_EXECUTION_AUTHORITY: DISABLED
+- No new strategies created — detector is RESEARCH_PROTOTYPE only
+- Mandatory next experiment: PV-EXP-001 (baseline frequency scan, OOS 2025-10-01 to 2026-07-20)
+- Frequency gate: LOW_FREQUENCY if < 2 setups/week; HALT if total events < 30
