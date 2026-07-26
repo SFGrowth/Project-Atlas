@@ -104,9 +104,9 @@
     "profitability_tested": false,
     "pv_exp_002_status": "NOT_STARTED"
   },
-  "ledger_sha": "4231522d882f75619e4b002d3d409865f7840d65f01d1a42e370a1ab7afa7f0c",
+  "ledger_sha": "c325a93c36d3e1543eabf5841f1ff972058057acaa5becbc7eb7d006ccda7d4b",
   "funnel_sha": "d51ba53ec4b3debbd288ccf65db2f9a96a3a11791a50e51fb8cbfdb08a18fa63",
-  "det_record_sha": "cc1764d52309b5fd0298cd0ec1e24c457e543aa6b45a2112c309809a94e5a690",
+  "det_record_sha": "c997861f3749f9c9af4b7ee0eefaad9ab1365665db18b4562cd76d9735e1f763",
   "weekly_sha": "40a42c7ca31baafe4ae1e81943f10fd88d49d81c437a6a9fffe9dd16b56693da",
   "monthly_sha": "3dc1ca5f977dc7631cf195f1897682074670a6c535ee3403a2ea7943a2fd3065",
   "manifest_sha": "2802bff78f475cc8f93aca67d05b4a95df9d6aab8323c4d3fa3a4aced32266fc"

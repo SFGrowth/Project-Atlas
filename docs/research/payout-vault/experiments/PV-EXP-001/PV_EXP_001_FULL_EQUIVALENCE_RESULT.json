@@ -13,6 +13,6 @@
   "part2_detector_also_rejects": 199,
   "false_negatives": [],
   "equivalence_result": "PASS",
-  "elapsed_seconds": 41.9,
-  "completed_at": "2026-07-26T00:30:06Z"
+  "elapsed_seconds": 237.4,
+  "completed_at": "2026-07-26T01:22:49Z"
 }

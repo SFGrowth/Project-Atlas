@@ -6,25 +6,25 @@
   "runs": [
     {
       "run_id": 1,
-      "start_utc": "2026-07-26T00:29:05.636590+00:00",
-      "end_utc": "2026-07-26T00:29:07.321660+00:00",
-      "elapsed_seconds": 1.68,
+      "start_utc": "2026-07-26T01:19:38.187306+00:00",
+      "end_utc": "2026-07-26T01:19:50.937304+00:00",
+      "elapsed_seconds": 12.75,
       "total_qualifying_events": 62,
       "event_ledger_sha": "8d1040daa9b1aeacd0a7b40508b3638741164274967830459e02e9b450fede5d"
     },
     {
       "run_id": 2,
-      "start_utc": "2026-07-26T00:29:07.321728+00:00",
-      "end_utc": "2026-07-26T00:29:09.143180+00:00",
-      "elapsed_seconds": 1.82,
+      "start_utc": "2026-07-26T01:19:50.937373+00:00",
+      "end_utc": "2026-07-26T01:20:03.218508+00:00",
+      "elapsed_seconds": 12.28,
       "total_qualifying_events": 62,
       "event_ledger_sha": "8d1040daa9b1aeacd0a7b40508b3638741164274967830459e02e9b450fede5d"
     },
     {
       "run_id": 3,
-      "start_utc": "2026-07-26T00:29:09.143305+00:00",
-      "end_utc": "2026-07-26T00:29:10.903128+00:00",
-      "elapsed_seconds": 1.76,
+      "start_utc": "2026-07-26T01:20:03.218577+00:00",
+      "end_utc": "2026-07-26T01:20:17.486078+00:00",
+      "elapsed_seconds": 14.26,
       "total_qualifying_events": 62,
       "event_ledger_sha": "8d1040daa9b1aeacd0a7b40508b3638741164274967830459e02e9b450fede5d"
     }
