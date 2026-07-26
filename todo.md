@@ -1303,3 +1303,26 @@
 - No new strategies created — detector is RESEARCH_PROTOTYPE only
 - Mandatory next experiment: PV-EXP-001 (baseline frequency scan, OOS 2025-10-01 to 2026-07-20)
 - Frequency gate: LOW_FREQUENCY if < 2 setups/week; HALT if total events < 30
+
+### Sprint 123A.10 — Payout Vault Frequency Scan [COMPLETE — G10 LOCKED]
+- [x] PV-EXP-001 baseline frequency scan: OOS 2025-10-01 to 2026-07-20, 56,532 bars
+- [x] Scanner algorithmic corrections (3 applied):
+  - [x] DOL: replaced global precomputed htf_is_sh/htf_is_sl with local per-bar window (future-data-leakage fix)
+  - [x] MSU Gate 2: pivot_end = i-lb+1 (matches detect_msu range(lb,n-lb))
+  - [x] Inducement Gate 4: window end = i-lb (matches detect_msu last swing bound)
+- [x] Cross-validation: CROSS_VALIDATION_MISMATCHES=0 (200 random samples)
+- [x] Determinism: 3x runs, all identical SHA (72e759d3...)
+- [x] Bidirectional equivalence proof: FP_VALID=0, FN=0, FIELD_LEVEL_MISMATCHES=0, EQUIVALENCE_PROVEN=TRUE
+- [x] TOTAL_QUALIFYING_EVENTS: 172 | SETUPS_PER_WEEK: 4.0 | FREQUENCY_GATE: PASS
+- [x] Artefact manifest: 14 artefacts, 100% SHA coverage
+- [x] Regression: 105/105 pytest | 1082/1082 vitest | TSC EXIT 0 | BUILD EXIT 0 | SECRET CLEAN
+- [x] GitHub: LOCAL_REMOTE_MATCH=TRUE | SHA: 271827093338b0f38b87d914d60a8bc6724404ea
+- [x] G10 GATE: PASS — Sprint 123A.10 CLOSED
+
+### Sprint 123A.10 — Key Results
+- TOTAL_QUALIFYING_EVENTS: 172 (corrected from 117 — 3 future-data-leakage bugs fixed)
+- SETUPS_PER_WEEK: 4.0 (corrected from 2.721)
+- FULL_GATE_EQUIVALENCE: TRUE (corrected from FALSE)
+- Mandatory next experiment: PV-EXP-002 (profitability analysis on 172 events)
+- DARWIN_DECISION_AUTHORITY: DISABLED | DARWIN_EXECUTION_AUTHORITY: DISABLED
+- No new strategies created — detector remains RESEARCH_PROTOTYPE
