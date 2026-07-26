@@ -1,0 +1,80 @@
+{
+  "experiment_id": "PV-EXP-001",
+  "sprint": "123A.10",
+  "harness_type": "SAMPLED",
+  "sample_step": 18,
+  "sample_size": 3136,
+  "eligible_bars": 56432,
+  "scanner_events_in_sample": 22,
+  "detector_events_in_sample": 16,
+  "total_mismatches": 6,
+  "mismatch_rate_pct": 0.1913,
+  "false_positives": 6,
+  "false_negatives": 0,
+  "direction_mismatches": 0,
+  "full_gate_equivalence": false,
+  "extrapolated_detector_events_full_oos": 287,
+  "elapsed_seconds": 703.6,
+  "mismatch_sample": [
+    {
+      "bar_index": 15400,
+      "cutoff_ts": "2025-12-18 14:50:00+00:00",
+      "scanner_qualifying": true,
+      "detector_qualifying": false,
+      "scanner_direction": "bullish",
+      "detector_direction": null,
+      "scanner_rejection": null,
+      "detector_rejection": "ENTRY_FAIL"
+    },
+    {
+      "bar_index": 20512,
+      "cutoff_ts": "2026-01-16 07:35:00+00:00",
+      "scanner_qualifying": true,
+      "detector_qualifying": false,
+      "scanner_direction": "bullish",
+      "detector_direction": null,
+      "scanner_rejection": null,
+      "detector_rejection": "ENTRY_FAIL"
+    },
+    {
+      "bar_index": 27262,
+      "cutoff_ts": "2026-02-20 03:05:00+00:00",
+      "scanner_qualifying": true,
+      "detector_qualifying": false,
+      "scanner_direction": "bearish",
+      "detector_direction": null,
+      "scanner_rejection": null,
+      "detector_rejection": "ENTRY_FAIL"
+    },
+    {
+      "bar_index": 31816,
+      "cutoff_ts": "2026-03-16 13:35:00+00:00",
+      "scanner_qualifying": true,
+      "detector_qualifying": false,
+      "scanner_direction": "bullish",
+      "detector_direction": null,
+      "scanner_rejection": null,
+      "detector_rejection": "ENTRY_FAIL"
+    },
+    {
+      "bar_index": 35308,
+      "cutoff_ts": "2026-04-02 05:35:00+00:00",
+      "scanner_qualifying": true,
+      "detector_qualifying": false,
+      "scanner_direction": "bearish",
+      "detector_direction": null,
+      "scanner_rejection": null,
+      "detector_rejection": "ENTRY_FAIL"
+    },
+    {
+      "bar_index": 55252,
+      "cutoff_ts": "2026-07-14 08:20:00+00:00",
+      "scanner_qualifying": true,
+      "detector_qualifying": false,
+      "scanner_direction": "bearish",
+      "detector_direction": null,
+      "scanner_rejection": null,
+      "detector_rejection": "ENTRY_FAIL"
+    }
+  ]
+}
