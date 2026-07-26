@@ -1,9 +1,9 @@
 {
-  "manifest_id": "PV-EXP-001-MANIFEST-V2",
+  "manifest_id": "PV-EXP-001-MANIFEST-V3",
   "experiment_id": "PV-EXP-001",
   "sprint": "123A.10",
   "gate": "G10",
-  "generated_utc": "2026-07-26T00:45:00+00:00",
+  "generated_utc": "2026-07-26T04:45:00+00:00",
   "darwin_decision_authority": "DISABLED",
   "darwin_execution_authority": "DISABLED",
   "g9_baseline_sha": "469fcdd270cd44d54888194e466a5fe61af444b4",
@@ -14,7 +14,7 @@
     "hypothesis_registry_sha256": "46489b97d1775fcb48b93b556e49c2c6f40601dfe4cf395599cd6bf25654bc4f",
     "dataset_sha256": "c970675391b970956f38d419ef95ff3e116e61ab8874eca7df2ab4334e715623",
     "detector_hash_match": true,
-    "note": "Detector SHA verified before and after sprint \u2014 unchanged"
+    "note": "Detector SHA verified before and after sprint \u2014 unchanged. Optimised scan adapter (v2) wraps detector without modifying it."
   },
   "artefacts": [
     {
@@ -36,13 +36,7 @@
       "filename": "pv_exp_001_scan.py",
       "path": "docs/research/payout-vault/experiments/PV-EXP-001/pv_exp_001_scan.py",
       "sha256": "691e0dc47f495b5b120a2ec0d2885f22b97ad3729fc908bc25394078f436e2f5",
-      "description": "Vectorised frequency scan script \u2014 corrected to match approved detector exactly",
-      "corrections_applied": [
-        "MSU pivot rule: changed to >= / <= with 3-bar lookback (matching detect_msu swing_lookback=3)",
-        "MSU direction: structural HH+HL / LH+LL confirmation required (not recency-based)",
-        "CSD rule: midpoint (50% of sweep range) OR prior body close (matching detect_csd R-15)",
-        "Evaluation semantics: csd_bar_idx < i required so entry bar is visible to detector"
-      ]
+      "description": "Vectorised frequency scan script \u2014 corrected to match approved detector exactly"
     },
     {
       "id": "A-04",
@@ -77,7 +71,7 @@
       "filename": "PV_EXP_001_EVENT_LEDGER.json",
       "path": "docs/research/payout-vault/experiments/PV-EXP-001/PV_EXP_001_EVENT_LEDGER.json",
       "sha256": "4231522d882f75619e4b002d3d409865f7840d65f01d1a42e370a1ab7afa7f0c",
-      "description": "Event ledger: 62 qualifying setup events (corrected from 117 \u2014 scanner now matches detector exactly)"
+      "description": "Scanner event ledger: 62 qualifying setup events (corrected from 117 \u2014 scanner now matches detector exactly)"
     },
     {
       "id": "A-09",
@@ -105,7 +99,7 @@
       "filename": "PV_EXP_001_FULL_EQUIVALENCE_RESULT.json",
       "path": "docs/research/payout-vault/experiments/PV-EXP-001/PV_EXP_001_FULL_EQUIVALENCE_RESULT.json",
       "sha256": "0370051b7eb0f79904e5e09ef8ceed23b5d3426b716f3a5e0334f64cb7bac826",
-      "description": "Full equivalence result: PASS \u2014 62/62 FP=0 FN=0 ERRORS=0"
+      "description": "Full equivalence result: PASS \u2014 62/62 FP=0 FN=0 ERRORS=0 (scanner-first, sampled FN check)"
     },
     {
       "id": "A-13",
@@ -127,6 +121,41 @@
       "path": "docs/research/payout-vault/experiments/PV-EXP-001/PV_EXP_001_RESULTS_REPORT.md",
       "sha256": "3eb7b8dd2eccacc0b65bbee413e77b6deb2ade899d81ae05fbd03a318ede4715",
       "description": "Results report: updated with corrected event count (62), frequency (1.442/week), LOW_FREQUENCY, equivalence PASS"
+    },
+    {
+      "id": "A-16",
+      "filename": "PV_EXP_001_EXACT_REJECTION_FUNNEL.json",
+      "path": "docs/research/payout-vault/experiments/PV-EXP-001/PV_EXP_001_EXACT_REJECTION_FUNNEL.json",
+      "sha256": "62d005325cf81212706c0728d23d4e30aaec7c0b03bc9aec9efb61610c2e6a5e",
+      "description": "Exact rejection funnel: mirrors scanner gate logic exactly. 56411 candidates, 62 qualifying, RECONCILES=TRUE"
+    },
+    {
+      "id": "A-17",
+      "filename": "PV_EXP_001_OPTIMISATION_EQUIVALENCE.json",
+      "path": "docs/research/payout-vault/experiments/PV-EXP-001/PV_EXP_001_OPTIMISATION_EQUIVALENCE.json",
+      "sha256": "b58b4dff6edd6060d0d380d45a68b8c7129f47e4de934e7443db54db852dc0ba",
+      "description": "Adapter equivalence proof: 1075 cutoffs tested (62 qualifying + 1000 random + 15 boundary). OPTIMISATION_EQUIVALENCE_MISMATCHES=0. EQUIVALENCE_PASS=TRUE."
+    },
+    {
+      "id": "A-18",
+      "filename": "pv_exp_001_detector_first_scan_v2.py",
+      "path": "docs/research/payout-vault/experiments/PV-EXP-001/pv_exp_001_detector_first_scan_v2.py",
+      "sha256": "111178d8e68f7b6759700c4123210317269580528ecf99cc57ef4c8434c832d5",
+      "description": "Optimised detector-first scan: adapter-only numpy pre-conversion (OHLCV columns only). Detector SHA unchanged. Equivalence proven before scan start."
+    },
+    {
+      "id": "A-19",
+      "filename": "DETECTOR_FULL_EVENT_LEDGER.json",
+      "path": "docs/research/payout-vault/experiments/PV-EXP-001/DETECTOR_FULL_EVENT_LEDGER.json",
+      "sha256": "PENDING \u2014 scan in progress, estimated completion 09:30 UTC 2026-07-26",
+      "description": "Detector-first full event ledger: all qualifying events found by running approved detector across all 56354 eligible cutoffs. Required for FN=0 proof."
+    },
+    {
+      "id": "A-20",
+      "filename": "PV_EXP_001_BIDIRECTIONAL_EQUIVALENCE.json",
+      "path": "docs/research/payout-vault/experiments/PV-EXP-001/PV_EXP_001_BIDIRECTIONAL_EQUIVALENCE.json",
+      "sha256": "PENDING \u2014 requires scan completion",
+      "description": "Bidirectional equivalence proof: scanner event set == detector event set. FP=0, FN=0 proven from both directions."
     }
   ],
   "scan_results_summary": {
@@ -150,12 +179,31 @@
   "regression_results": {
     "python_pv_detector_tests": "78/78 PASS",
     "python_authority_boundary_tests": "27/27 PASS",
-    "python_total": "105/105 PASS",
+    "python_databento_feed_tests": "143/143 PASS",
+    "python_bridge_records_dbn_fixtures": "38/38 PASS",
+    "python_feed_adapter_health_states": "30/30 PASS",
+    "python_total": "316/316 PASS",
     "typescript_vitest_passing": "1082/1082 PASS (38 files)",
     "typescript_vitest_failing": "0",
-    "typescript_compilation": "EXIT 0",
-    "frontend_build": "EXIT 0 (51.21s)",
-    "secret_scan": "CLEAN (0 hits \u2014 revoked token removed from source and dist)"
+    "typescript_vitest_note": "MySQL test socket symlink required: sudo ln -sf /var/run/mysqld/mysqld.sock /tmp/mysql_test.sock",
+    "typescript_compilation": "EXIT 0 (0 errors)",
+    "frontend_build": "EXIT 0 (2m 39s)",
+    "secret_scan": "CLEAN (0 hardcoded API keys \u2014 revoked token removed from source and dist)",
+    "auth_bypass_scan": "CLEAN (2 grep matches are JSDoc block comments, not code)"
+  },
+  "detector_first_scan_status": {
+    "scan_started_utc": "2026-07-26T04:21:01Z",
+    "scan_script": "pv_exp_001_detector_first_scan_v2.py",
+    "detector_sha_verified": "946b806fb563d4ef37018a05da70fc326e1564ca40c8c206be29b76666b717ec",
+    "dataset_sha_verified": "c970675391b970956f38d419ef95ff3e116e61ab8874eca7df2ab4334e715623",
+    "total_eligible_cutoffs": 56354,
+    "workers": 1,
+    "cpu_sleep_s": 0.005,
+    "checkpoint_interval": 1000,
+    "equivalence_validated_before_scan": true,
+    "optimisation_equivalence_mismatches": 0,
+    "scan_status": "IN_PROGRESS",
+    "estimated_completion_utc": "2026-07-26T09:30:00Z"
   },
   "manifest_self_sha256": "EXTERNAL_REFERENCE_ONLY"
 }
