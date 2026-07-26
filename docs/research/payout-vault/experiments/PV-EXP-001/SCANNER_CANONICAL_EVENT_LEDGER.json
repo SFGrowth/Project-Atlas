@@ -1,4 +1,5 @@
 {
+  "cooldown_policy": "post_hoc_per_direction_12_bars",
   "dataset_sha": "c970675391b970956f38d419ef95ff3e116e61ab8874eca7df2ab4334e715623",
   "detector_sha": "946b806fb563d4ef37018a05da70fc326e1564ca40c8c206be29b76666b717ec",
   "events": [
@@ -5852,7 +5853,8 @@
     }
   ],
   "experiment_id": "PV-EXP-001",
-  "generated_utc": "2026-07-26T09:33:29.903083+00:00",
+  "generated_utc": "2026-07-26T09:40:05.042442+00:00",
+  "source": "pv_exp_001_scan.py (corrected DOL+MSU+inducement)",
   "specification_sha": "e40ad744a18cc117976c6fedd58619f90b1d73bd6e9bddd0293ff0be0b4fce22",
   "sprint": "123A.10",
   "total_qualifying_events": 172

@@ -10,6 +10,17 @@ but runs in seconds rather than hours.
 Cross-validation: the vectorised scanner is verified against 200 random
 per-bar detector calls to confirm identical gate outcomes.
 
+DOL COMPUTATION (Gate 1):
+  Aligned to detect_dol() in payout_vault_detector.py (lines 297-371).
+  Uses a LOCAL per-bar window: htf_full.iloc[htf_start:htf_idx] where
+  htf_start = max(0, htf_idx - HTF_LOOKBACK * 3).
+  Swings computed on bars[2 .. n-3] with strict > / < and 2 bars each side.
+  This is IDENTICAL to the detector's local slice computation — no global
+  precomputed array, no future-data leakage.
+
+SCANNER_SHA_BEFORE: 691e0dc47f495b5b120a2ec0d2885f22b97ad3729fc908bc25394078f436e2f5
+DOL_FIX_APPLIED: TRUE (local per-bar window, 2-bar lookback, matches detect_dol)
+
 AUTHORITY: DARWIN_DECISION_AUTHORITY=DISABLED, DARWIN_EXECUTION_AUTHORITY=DISABLED
 Research output only. No orders, no signals, no live integration.
 No profitability analysis.
@@ -81,29 +92,79 @@ def build_htf_full(oos: pd.DataFrame) -> pd.DataFrame:
     return htf.reset_index()
 
 # ---------------------------------------------------------------------------
-# Vectorised swing detection on the full HTF series
-# A 5-bar pivot: bar[i] is a swing high if it is strictly greater than
-# bars[i-1], [i-2], [i+1], [i+2]. Same logic as detect_dol.
+# Local DOL computation — MUST match detect_dol() exactly.
+#
+# detect_dol() in payout_vault_detector.py (lines 297-371):
+#   bars = htf_bars.tail(lookback * 3).reset_index(drop=True)
+#   n = len(bars)
+#   for i in range(2, n - 2):
+#     if bars[i].high > bars[i-1].high and bars[i].high > bars[i-2].high and
+#        bars[i].high > bars[i+1].high and bars[i].high > bars[i+2].high:
+#       swing_highs.append(...)
+#     if bars[i].low < bars[i-1].low and bars[i].low < bars[i-2].low and
+#        bars[i].low < bars[i+1].low and bars[i].low < bars[i+2].low:
+#       swing_lows.append(...)
+#   last_high = swing_highs[-1]; last_low = swing_lows[-1]
+#   if last_high.bar_index > last_low.bar_index: bearish, dol = last_low
+#   else: bullish, dol = last_high
+#
+# Key properties:
+#   - Slice: last (lookback * 3) bars of the HTF series up to (not including) htf_idx
+#   - Pivot: strict > for highs, strict < for lows, 2 bars each side
+#   - Range: bars[2 .. n-3] inclusive (i.e. range(2, n-2))
+#   - Returns None if no swing highs OR no swing lows found
 # ---------------------------------------------------------------------------
-def compute_htf_swings(htf: pd.DataFrame) -> tuple[np.ndarray, np.ndarray]:
-    """Return boolean arrays is_swing_high, is_swing_low over the HTF series."""
-    h = htf["high"].values
-    l = htf["low"].values
+def compute_local_dol(htf_high: np.ndarray, htf_low: np.ndarray,
+                      htf_idx: int, lookback: int = HTF_LOOKBACK):
+    """
+    Compute DOL for a single LTF bar evaluation point.
+
+    Args:
+        htf_high: full HTF high array
+        htf_low:  full HTF low array
+        htf_idx:  exclusive end index into htf arrays (bars 0..htf_idx-1 visible)
+        lookback: HTF_LOOKBACK (default 20)
+
+    Returns:
+        (dol_direction, dol_price) or (None, None) if insufficient data.
+    """
+    # Minimum data check: detect_dol returns None if len(htf_bars) < lookback * 2
+    if htf_idx < lookback * 2:
+        return None, None
+
+    # Local slice: last (lookback * 3) bars, same as htf_bars.tail(lookback * 3)
+    slice_start = max(0, htf_idx - lookback * 3)
+    h = htf_high[slice_start:htf_idx]
+    l = htf_low[slice_start:htf_idx]
     n = len(h)
-    is_sh = np.zeros(n, dtype=bool)
-    is_sl = np.zeros(n, dtype=bool)
-    if n < 5:
-        return is_sh, is_sl
-    # Vectorised: compare each bar to its 4 neighbours
-    is_sh[2:n-2] = (
-        (h[2:n-2] > h[1:n-3]) & (h[2:n-2] > h[0:n-4]) &
-        (h[2:n-2] > h[3:n-1]) & (h[2:n-2] > h[4:n])
-    )
-    is_sl[2:n-2] = (
-        (l[2:n-2] < l[1:n-3]) & (l[2:n-2] < l[0:n-4]) &
-        (l[2:n-2] < l[3:n-1]) & (l[2:n-2] < l[4:n])
-    )
-    return is_sh, is_sl
+
+    # Pivot detection: range(2, n-2) with strict > / <, 2 bars each side
+    # Matches: for i in range(2, n - 2): in detect_dol
+    last_sh_local = -1
+    last_sl_local = -1
+    last_sh_price = 0.0
+    last_sl_price = 0.0
+
+    for i in range(2, n - 2):
+        if (h[i] > h[i-1] and h[i] > h[i-2] and
+                h[i] > h[i+1] and h[i] > h[i+2]):
+            last_sh_local = i
+            last_sh_price = h[i]
+        if (l[i] < l[i-1] and l[i] < l[i-2] and
+                l[i] < l[i+1] and l[i] < l[i+2]):
+            last_sl_local = i
+            last_sl_price = l[i]
+
+    if last_sh_local == -1 or last_sl_local == -1:
+        return None, None
+
+    # Direction: most recent swing determines structure
+    if last_sh_local > last_sl_local:
+        # Most recent swing was a high → bearish structure → DOL = last swing low
+        return "bearish", last_sl_price
+    else:
+        # Most recent swing was a low → bullish structure → DOL = last swing high
+        return "bullish", last_sh_price
 
 # ---------------------------------------------------------------------------
 # Vectorised LTF swing detection — MUST match detect_msu exactly:
@@ -137,55 +198,63 @@ def compute_ltf_swings(oos: pd.DataFrame) -> tuple[np.ndarray, np.ndarray]:
     return is_sh, is_sl
 
 # ---------------------------------------------------------------------------
-# Cross-validation: compare vectorised results against the Python detector
-# for N random bars and assert agreement on gate outcomes.
+# Cross-validation: compare local DOL computation against the Python detector
+# for N random bars and assert agreement on DOL direction, price, and gate outcome.
 # ---------------------------------------------------------------------------
-def cross_validate(oos, htf_full, htf_is_sh, htf_is_sl, ltf_is_sh, ltf_is_sl,
+def cross_validate(oos, htf_full, ltf_is_sh, ltf_is_sl,
                    n_samples=200, seed=42):
     sys.path.insert(0, str(DETECTOR_PATH.parent))
-    from payout_vault_detector import run_payout_vault_setup, detect_dol, detect_msu
+    from payout_vault_detector import run_payout_vault_setup, detect_dol
 
     htf_times_ns = htf_full["bar_time"].values.astype("int64")
+    htf_high_arr = htf_full["high"].values
+    htf_low_arr  = htf_full["low"].values
     rng = np.random.default_rng(seed)
     min_bars = HTF_LOOKBACK * 3 + LTF_WINDOW
     indices = rng.choice(range(min_bars, len(oos) - 1), size=n_samples, replace=False)
     indices.sort()
 
     mismatches = 0
+    direction_mismatches = 0
+    price_mismatches = 0
     for i in indices:
-        cutoff = oos["bar_time"].iloc[i]
-        cutoff_ns = np.int64(cutoff.value)
-        htf_end = int(np.searchsorted(htf_times_ns, cutoff_ns, side="right"))
-        htf_start = max(0, htf_end - HTF_LOOKBACK * 3)
-        htf_w = htf_full.iloc[htf_start:htf_end].copy().reset_index(drop=True)
-        ltf_w = oos.iloc[max(0, i - LTF_WINDOW + 1):i + 1].copy().reset_index(drop=True)
+        cutoff_ns = np.int64(oos["bar_time"].iloc[i].value)
+        htf_idx = int(np.searchsorted(htf_times_ns, cutoff_ns, side="right"))
 
-        if len(htf_w) < HTF_LOOKBACK * 2 or len(ltf_w) < 10:
-            continue
+        # Scanner local DOL
+        vec_dir, vec_price = compute_local_dol(htf_high_arr, htf_low_arr, htf_idx)
+        vec_dol_ok = (vec_dir is not None)
 
-        # Python detector result
-        py_result = run_payout_vault_setup(htf_bars=htf_w, ltf_bars=ltf_w, config=CONFIG)
+        # Python detector DOL — pass the same slice the detector would use
+        htf_slice_start = max(0, htf_idx - HTF_LOOKBACK * 3)
+        htf_w = htf_full.iloc[htf_slice_start:htf_idx].copy().reset_index(drop=True)
+        if len(htf_w) < HTF_LOOKBACK * 2:
+            py_dol = None
+        else:
+            py_dol = detect_dol(htf_w, lookback=HTF_LOOKBACK)
 
-        # Vectorised: DOL check using pre-computed HTF swings up to htf_end
-        htf_sh_idx = np.where(htf_is_sh[:htf_end])[0]
-        htf_sl_idx = np.where(htf_is_sl[:htf_end])[0]
-        vec_dol_ok = (len(htf_sh_idx) >= 1 and len(htf_sl_idx) >= 1)
-
-        py_dol_ok = (py_result.dol is not None)
+        py_dol_ok = (py_dol is not None)
 
         if py_dol_ok != vec_dol_ok:
             mismatches += 1
+        elif py_dol_ok and vec_dol_ok:
+            if py_dol.dol_direction != vec_dir:
+                mismatches += 1
+                direction_mismatches += 1
+            elif abs(py_dol.dol_price - vec_price) > 1e-9:
+                mismatches += 1
+                price_mismatches += 1
 
-    print(f"  Cross-validation: {n_samples} samples, {mismatches} DOL-gate mismatches")
-    if mismatches > n_samples * 0.05:  # allow up to 5% discrepancy due to window edge effects
-        print(f"  WARNING: mismatch rate {mismatches/n_samples:.1%} > 5% — investigate")
+    print(f"  Cross-validation: {n_samples} samples, {mismatches} DOL mismatches "
+          f"(direction={direction_mismatches}, price={price_mismatches})")
+    if mismatches > 0:
+        print(f"  ERROR: {mismatches} mismatches — DOL computation does not match detector")
     return mismatches
 
 # ---------------------------------------------------------------------------
 # Main vectorised scan
 # ---------------------------------------------------------------------------
 def run_vectorised_scan(oos: pd.DataFrame, htf_full: pd.DataFrame, run_id: int,
-                        htf_is_sh: np.ndarray, htf_is_sl: np.ndarray,
                         ltf_is_sh: np.ndarray, ltf_is_sl: np.ndarray) -> dict:
     print(f"\n--- RUN {run_id} ---", flush=True)
     t0 = time.time()
@@ -203,8 +272,9 @@ def run_vectorised_scan(oos: pd.DataFrame, htf_full: pd.DataFrame, run_id: int,
     htf_low   = htf_full["low"].values
 
     # For each LTF bar, find the corresponding HTF bar index (O(n log m))
-    # htf_bar_for_ltf[i] = index of the last HTF bar whose bar_time <= oos bar_time[i]
-    htf_bar_for_ltf = np.searchsorted(htf_times_ns, oos_times_ns, side="right") - 1
+    # htf_bar_for_ltf[i] = number of HTF bars with bar_time <= oos bar_time[i]
+    # (exclusive end index into htf arrays)
+    htf_bar_for_ltf = np.searchsorted(htf_times_ns, oos_times_ns, side="right")
 
     events: list[dict] = []
     rej: dict[str, int] = {}
@@ -217,51 +287,32 @@ def run_vectorised_scan(oos: pd.DataFrame, htf_full: pd.DataFrame, run_id: int,
     total_candidates = 0
 
     for i in range(min_bars, n - 1):
-        # ---- Gate 1: DOL — find last HTF swing high and swing low ----
-        htf_idx = htf_bar_for_ltf[i]
-        if htf_idx < HTF_LOOKBACK * 2:
+        # ---- Gate 1: DOL — local per-bar window matching detect_dol exactly ----
+        # htf_idx is the exclusive end: htf_full[0..htf_idx-1] are visible at bar i
+        htf_idx = int(htf_bar_for_ltf[i])
+
+        dol_direction, dol_price = compute_local_dol(htf_high, htf_low, htf_idx)
+
+        if dol_direction is None:
             rej["GATE1_FAIL"] = rej.get("GATE1_FAIL", 0) + 1
             total_rej += 1
             total_candidates += 1
             continue
-
-        # Find last swing high and last swing low in HTF up to htf_idx (exclusive of last 2 bars for pivot)
-        htf_window_end = htf_idx - 1  # exclude last 2 bars (pivot needs i+2)
-        if htf_window_end < 4:
-            rej["GATE1_FAIL"] = rej.get("GATE1_FAIL", 0) + 1
-            total_rej += 1
-            total_candidates += 1
-            continue
-
-        sh_indices = np.where(htf_is_sh[:htf_window_end])[0]
-        sl_indices = np.where(htf_is_sl[:htf_window_end])[0]
-
-        if len(sh_indices) == 0 or len(sl_indices) == 0:
-            rej["GATE1_FAIL"] = rej.get("GATE1_FAIL", 0) + 1
-            total_rej += 1
-            total_candidates += 1
-            continue
-
-        last_sh_idx = sh_indices[-1]
-        last_sl_idx = sl_indices[-1]
-
-        # DOL direction: if last swing high is more recent → bearish; else bullish
-        if last_sh_idx > last_sl_idx:
-            dol_direction = "bearish"
-            dol_price = htf_low[last_sl_idx]
-        else:
-            dol_direction = "bullish"
-            dol_price = htf_high[last_sh_idx]
 
         total_candidates += 1
 
         # ---- Gate 2: MSU — structural confirmation matching detect_msu exactly ----
         # Detector requires >= 2 swing highs AND >= 2 swing lows in the LTF window.
         # Direction: HH+HL = bullish, LH+LL = bearish, else neutral (GATE2_FAIL).
-        # Window: [ltf_start, i-1] exclusive of last 3 bars (pivot needs i+3).
+        # Window: [ltf_start, i-1] exclusive of last 3 bars (pivot needs lb=3 bars after)
         ltf_start = max(0, i - LTF_WINDOW + 1)
-        # Exclude last 3 bars from pivot detection (pivot needs lb=3 bars after)
-        ltf_pivot_end = max(ltf_start, i - 3)  # bars [ltf_start, ltf_pivot_end)
+        # Gate 2 pivot window: matches detect_msu's range(lb, n-lb) exactly.
+        # For a 60-bar slice ending at bar i, range(3, 57) includes local index 56
+        # = absolute index ltf_start + 56 = i - 3 = i - lb.
+        # So the window is [ltf_start, i-lb+1) = [ltf_start, i-2) inclusive of i-3.
+        # (Old code used ltf_pivot_end = i-3 which excluded i-3 from the slice.)
+        LTF_LB = 3  # swing_lookback for LTF
+        ltf_pivot_end = max(ltf_start, i - LTF_LB + 1)  # inclusive of i-lb = i-3
         ltf_sh_in_window = np.where(ltf_is_sh[ltf_start:ltf_pivot_end])[0]
         ltf_sl_in_window = np.where(ltf_is_sl[ltf_start:ltf_pivot_end])[0]
 
@@ -297,10 +348,16 @@ def run_vectorised_scan(oos: pd.DataFrame, htf_full: pd.DataFrame, run_id: int,
             total_rej += 1
             continue
 
-        # For Gate 4 (inducement), we still need the most recent swing extreme
-        # Use the last confirmed swing in the full window (including recent bars)
-        ltf_sh_full = np.where(ltf_is_sh[ltf_start:i - 1])[0]
-        ltf_sl_full = np.where(ltf_is_sl[ltf_start:i - 1])[0]
+        # For Gate 4 (inducement), use the same boundary as detect_msu:
+        # detect_msu uses range(lb, n-lb) where lb=3, so the last valid swing
+        # in the 60-bar local slice is at local index n-lb-1 = 56, which is
+        # absolute index ltf_start + 56 = i - 3 = i - lb.
+        # Using ltf_is_sh[ltf_start:i-lb] matches this boundary exactly.
+        # (Old code used ltf_is_sh[ltf_start:i-1] which leaked future data
+        # by including swings at i-2 and i-1 that need bars i, i+1, i+2.)
+        LTF_LB = 3  # swing_lookback for LTF (must match CONFIG["ltf_swing_lookback"])
+        ltf_sh_full = np.where(ltf_is_sh[ltf_start:i - LTF_LB])[0]
+        ltf_sl_full = np.where(ltf_is_sl[ltf_start:i - LTF_LB])[0]
 
         # ---- Gate 3: MSU must align with DOL ----
         if msu_direction != dol_direction:
@@ -436,9 +493,11 @@ def run_vectorised_scan(oos: pd.DataFrame, htf_full: pd.DataFrame, run_id: int,
                 if oos_high[csd_bar_idx] < oos_low[csd_bar_idx - 2]:
                     fvg_status = "PRESENT"
 
+        # HTF context bar: the last HTF bar visible at evaluation point
+        htf_ctx_idx = min(htf_idx - 1, htf_n - 1) if htf_idx > 0 else 0
         events.append({
             "event_id": eid,
-            "detector_version": "1.0.0-vectorised",
+            "detector_version": "1.0.0-vectorised-dol-fix",
             "detector_sha": APPROVED_DETECTOR_SHA,
             "specification_version": "2.0.0",
             "specification_sha": APPROVED_SPEC_SHA,
@@ -450,7 +509,7 @@ def run_vectorised_scan(oos: pd.DataFrame, htf_full: pd.DataFrame, run_id: int,
             "information_cutoff_timestamp": str(cutoff),
             "setup_confirmation_timestamp": str(oos["bar_time"].iloc[csd_bar_idx]),
             "proposed_entry_timestamp": str(oos["bar_time"].iloc[entry_bar_idx]),
-            "htf_context_timestamp": str(htf_full["bar_time"].iloc[min(htf_idx, htf_n - 1)]),
+            "htf_context_timestamp": str(htf_full["bar_time"].iloc[htf_ctx_idx]),
             "dol_level": float(dol_price),
             "msu_state": msu_direction,
             "inducement_level": float(inducement_price),
@@ -553,6 +612,7 @@ def compute_freq(events, oos):
 def main():
     print("PV-EXP-001 — Baseline Frequency Scan (Vectorised) | Sprint 123A.10")
     print("DARWIN_DECISION_AUTHORITY=DISABLED | DARWIN_EXECUTION_AUTHORITY=DISABLED")
+    print("DOL_FIX: local per-bar window computation (matches detect_dol exactly)")
 
     det_sha_before = sha256_file(DETECTOR_PATH)
     assert det_sha_before == APPROVED_DETECTOR_SHA
@@ -569,18 +629,20 @@ def main():
     htf_full = build_htf_full(oos)
     print(f"HTF bars: {len(htf_full)}", flush=True)
 
-    print("Pre-computing swing arrays...", flush=True)
-    htf_is_sh, htf_is_sl = compute_htf_swings(htf_full)
+    print("Pre-computing LTF swing arrays...", flush=True)
     ltf_is_sh, ltf_is_sl = compute_ltf_swings(oos)
-    print(f"HTF swing highs: {htf_is_sh.sum()} | HTF swing lows: {htf_is_sl.sum()}", flush=True)
     print(f"LTF swing highs: {ltf_is_sh.sum()} | LTF swing lows: {ltf_is_sl.sum()}", flush=True)
+    print("HTF DOL: computed locally per-bar (no global precomputed array)", flush=True)
 
     print("\nRunning cross-validation (200 samples)...", flush=True)
-    mismatches = cross_validate(oos, htf_full, htf_is_sh, htf_is_sl, ltf_is_sh, ltf_is_sl, n_samples=200)
+    mismatches = cross_validate(oos, htf_full, ltf_is_sh, ltf_is_sl, n_samples=200)
+    if mismatches > 0:
+        raise SystemExit(f"STOP: CROSS_VALIDATION_FAILED — {mismatches} DOL mismatches vs detector")
+    print(f"  CROSS_VALIDATION_MISMATCHES: {mismatches} — PASS", flush=True)
 
     runs = []
     for rid in range(1, 4):
-        runs.append(run_vectorised_scan(oos, htf_full, rid, htf_is_sh, htf_is_sl, ltf_is_sh, ltf_is_sl))
+        runs.append(run_vectorised_scan(oos, htf_full, rid, ltf_is_sh, ltf_is_sl))
 
     lshas  = [r["event_ledger_sha"] for r in runs]
     ecounts= [r["total_qualifying_events"] for r in runs]
@@ -665,6 +727,7 @@ def main():
         ("DETECTOR_SHA256_BEFORE", det_sha_before),
         ("DETECTOR_SHA256_AFTER", det_sha_after),
         ("DETECTOR_HASH_MATCH", "TRUE"),
+        ("DOL_FIX_APPLIED", "TRUE"),
         ("RESEARCH_SPECIFICATION_SHA", APPROVED_SPEC_SHA),
         ("HYPOTHESIS_REGISTRY_SHA", APPROVED_HYPO_SHA),
         ("DATASET_SHA", APPROVED_DATASET_SHA),
@@ -711,7 +774,8 @@ def main():
 
     results = {
         "detector_sha_before": det_sha_before, "detector_sha_after": det_sha_after,
-        "detector_hash_match": True, "dataset_sha": APPROVED_DATASET_SHA,
+        "detector_hash_match": True, "dol_fix_applied": True,
+        "dataset_sha": APPROVED_DATASET_SHA,
         "dataset_manifest_sha": manifest_sha,
         "dataset_stats": {"total_bars": len(oos), "null_ohlc": 0, "duplicate_timestamps": 0, "out_of_order": 0},
         "run_ledger_shas": lshas, "run_event_counts": ecounts,

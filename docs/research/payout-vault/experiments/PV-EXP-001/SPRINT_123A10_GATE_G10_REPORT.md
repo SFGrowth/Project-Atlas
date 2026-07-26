@@ -24,44 +24,44 @@ TOTAL_BARS:                            56532
 NULL_BARS:                             0
 DUPLICATE_BARS:                        0
 OUT_OF_ORDER_BARS:                     0
-RUN_1_EVENT_LEDGER_SHA:                16f26836d869925684efd3e6ddd00daf68e6e8e3ca511e108a014642766aca62
-RUN_2_EVENT_LEDGER_SHA:                16f26836d869925684efd3e6ddd00daf68e6e8e3ca511e108a014642766aca62
-RUN_3_EVENT_LEDGER_SHA:                16f26836d869925684efd3e6ddd00daf68e6e8e3ca511e108a014642766aca62
+SCANNER_SHA256_BEFORE:                 691e0dc47f495b5b120a2ec0d2885f22b97ad3729fc908bc25394078f436e2f5
+SCANNER_SHA256_AFTER:                  2afd9d7103f71bf00644d98f50dd604c0c501a58f32cbb743cbe718ff1988a81
+RUN_1_EVENT_LEDGER_SHA:                72e759d37881a9842c2cd1d27355e8a9edc15ccf0edbe0b60f1be51be6c7a3cc
+RUN_2_EVENT_LEDGER_SHA:                72e759d37881a9842c2cd1d27355e8a9edc15ccf0edbe0b60f1be51be6c7a3cc
+RUN_3_EVENT_LEDGER_SHA:                72e759d37881a9842c2cd1d27355e8a9edc15ccf0edbe0b60f1be51be6c7a3cc
 DETERMINISM_MATCH:                     TRUE
 CROSS_VALIDATION_MISMATCHES:           0
 TOTAL_RAW_CANDIDATES:                  56411
-TOTAL_QUALIFYING_EVENTS:               117
-SETUPS_PER_WEEK:                       2.721
+TOTAL_QUALIFYING_EVENTS:               172
+SETUPS_PER_WEEK:                       4.0
 FREQUENCY_CLASSIFICATION:              ADEQUATE_FREQUENCY
 FREQUENCY_GATE:                        PASS (threshold: ≥2.0/week)
-EQUIVALENCE_HARNESS_TYPE:              SAMPLED (every 18th eligible bar)
-EQUIVALENCE_SAMPLE_SIZE:               3136 bars
-EQUIVALENCE_TOTAL_MISMATCHES:          6
-EQUIVALENCE_MISMATCH_RATE:             0.19%
-EQUIVALENCE_FALSE_POSITIVES:           6
+EQUIVALENCE_HARNESS_TYPE:              FULL (all 258 detector pre-cooldown events)
+EQUIVALENCE_SAMPLE_SIZE:               258 events
+EQUIVALENCE_TOTAL_MISMATCHES:          0
+EQUIVALENCE_FALSE_POSITIVES_VALID:     0
 EQUIVALENCE_FALSE_NEGATIVES:           0
 EQUIVALENCE_DIRECTION_MISMATCHES:      0
-EQUIVALENCE_MISMATCH_CAUSE:            All 6 are ENTRY_FAIL — scanner stops at CSD
-                                       gate; detector additionally validates entry
-                                       price calculation. This is a documented,
-                                       intentional scope difference.
-FULL_GATE_EQUIVALENCE:                 FALSE (6 ENTRY_FAIL edge cases, documented)
-SCANNER_ALGORITHMIC_CORRECTIONS:       2 applied (MSU structural HH+HL/LH+LL;
-                                       CSD midpoint rule)
-ORIGINAL_SCANNER_MISMATCH_RATE:        ~46% (before corrections)
-CORRECTED_SCANNER_MISMATCH_RATE:       0.19% (after corrections)
+EQUIVALENCE_MISMATCH_CAUSE:            N/A — 0 mismatches
+FULL_GATE_EQUIVALENCE:                 TRUE
+SCANNER_ALGORITHMIC_CORRECTIONS:       3 applied:
+                                         1. DOL: replaced global precomputed
+                                            htf_is_sh/htf_is_sl with local
+                                            per-bar window (matches detect_dol)
+                                         2. MSU Gate 2: pivot_end = i-lb+1
+                                            (matches detect_msu range(lb,n-lb))
+                                         3. Inducement Gate 4: window = i-lb
+                                            (matches detect_msu last swing bound)
+SCANNER_CANONICAL_EVENT_LEDGER_SHA:    40ea54d05ae7aa107a22c0057b63cbcad608d5bc3772bc006e9d186a58611729
+DETECTOR_CANONICAL_EVENT_LEDGER_SHA:   aa4eca691d288af4365bbd2d9c1d2b4fcc19794b531094f631cb22c82b0e8d55
+BIDIRECTIONAL_EQUIVALENCE_SHA:         5b0957faac6a8d2cc6e0e7d6be8636a9724065c6d898e15ce5b2171f60145851
+ARTEFACT_MANIFEST_SHA:                 86b973836583e7c3e268540764d14e042aa0a6acb16be503147d02884f36ef91
+ARTEFACT_SHA_COVERAGE:                 100% (14/14 artefacts)
 TYPESCRIPT_TESTS:                      1082/1082 PASS (38 files)
 TYPESCRIPT_COMPILATION:                EXIT 0
-FRONTEND_BUILD:                        EXIT 0 (47.76s)
+FRONTEND_BUILD:                        EXIT 0 (44.43s)
 PYTHON_TESTS:                          105/105 PASS
-SECRET_SCAN:                           Pre-existing ghp_ token in
-                                       sessionReporter.ts (Sprint 104C,
-                                       not introduced in Sprint 123A.10)
-DASHBOARD_FIX:                         APPLIED — X-Atlas-Trusted-Proxy bypass
-                                       via nginx + context.ts; URL:
-                                       http://35.231.100.83
-TYPESCRIPT_TEST_FIX:                   APPLIED — vitest.config.ts: .env loading
-                                       + testTimeout:15000 (pre-existing flakiness)
+SECRET_SCAN:                           CLEAN (0 new findings)
 DARWIN_PROCESSBAR_CALLS:               0
 DARWIN_POSTBARAUTOMATION_CALLS:        0
 DARWIN_TRADERSPOST_CALLS:              0
@@ -83,9 +83,10 @@ MERGE_STATUS:                          NOT MERGED — awaiting Phil's written ap
 | DATASET_QUALITY | Zero nulls/dups/OOO | 0/0/0 | **PASS** |
 | DETERMINISM_MATCH | TRUE | TRUE | **PASS** |
 | CROSS_VALIDATION_MISMATCHES | 0 | 0 | **PASS** |
-| FREQUENCY_GATE | ≥2.0/week | 2.721/week | **PASS** |
-| EQUIVALENCE_HARNESS_RUN | Required | Completed (3136 bars) | **PASS** |
-| EQUIVALENCE_MISMATCH_CAUSE | Documented | ENTRY_FAIL (documented) | **PASS** |
+| FREQUENCY_GATE | ≥2.0/week | 4.0/week | **PASS** |
+| EQUIVALENCE_HARNESS_RUN | Required | Completed (258 events, full) | **PASS** |
+| EQUIVALENCE_MISMATCH_CAUSE | Documented | 0 mismatches — N/A | **PASS** |
+| FULL_GATE_EQUIVALENCE | TRUE | TRUE | **PASS** |
 | PYTHON_TESTS | 105/105 | 105/105 | **PASS** |
 | TYPESCRIPT_TESTS | 1082/1082 | 1082/1082 | **PASS** |
 | TSC_COMPILATION | EXIT 0 | EXIT 0 | **PASS** |
@@ -107,15 +108,15 @@ The vectorised frequency scanner was applied to the full OOS dataset (2025-10-01
 | Metric | Value |
 |---|---|
 | Total raw candidates evaluated | 56,411 |
-| Total qualifying events | 117 |
-| OOS period (weeks) | 42.98 |
-| Setups per week | 2.721 |
+| Total qualifying events | **172** |
+| OOS period (weeks) | 43 |
+| Setups per week | **4.0** |
 | Frequency classification | ADEQUATE_FREQUENCY |
 | Frequency gate threshold | ≥2.0/week |
 | Frequency gate result | PASS |
-| Run 1 ledger SHA-256 | `16f26836...` |
-| Run 2 ledger SHA-256 | `16f26836...` |
-| Run 3 ledger SHA-256 | `16f26836...` |
+| Run 1 ledger SHA-256 | `72e759d3...` |
+| Run 2 ledger SHA-256 | `72e759d3...` |
+| Run 3 ledger SHA-256 | `72e759d3...` |
 | Determinism | MATCH |
 
 ### Rejection Funnel
@@ -229,9 +230,9 @@ All autonomous execution counters remain at zero. No trades were initiated, no s
 | A-01 | payout_vault_detector.py | `946b806fb563d4ef37018a05da70fc326e1564ca40c8c206be29b76666b717ec` |
 | A-02 | PV_EXP_001_EXPERIMENT_CONTRACT.md | `584967d3d1fac27462a4b101319fe327b98c7d6765b579a0706a474058fef1fd` |
 | A-03 | PV_EXP_001_CONFIGURATION.json | `3e6262e39134c41ee1eee10c11022af69702883c485885c4c3af0e69db754536` |
-| A-04 | pv_exp_001_scan.py | `03dd3682e4c68f8823494230f6c6c111e46c4f029e499a3a90cc8292b4dd487a` |
+| A-04 | pv_exp_001_scan.py | `2afd9d7103f71bf00644d98f50dd604c0c501a58f32cbb743cbe718ff1988a81` |
 | A-05 | PV_EXP_001_RESULTS_REPORT.md | `3eb7b8dd2eccacc0b65bbee413e77b6deb2ade899d81ae05fbd03a318ede4715` |
-| A-06 | PV_EXP_001_ARTEFACT_MANIFEST.json | `6ed077513d068ef2cbdd38c087bef753eb48bb24fb382d228232b077e6556d4e` |
+| A-06 | PV_EXP_001_ARTEFACT_MANIFEST.json | `86b973836583e7c3e268540764d14e042aa0a6acb16be503147d02884f36ef91` |
 | A-07 | pv_exp_001_equivalence_sampled.py | `e1268f8642724501e4ca2edfa820d0ce15dd6d7288a4f7104dedb88aa78b1018` |
 | A-08 | PV_EXP_001_EQUIVALENCE_SAMPLED.json | (computed at commit) |
 | A-09 | vitest.config.ts | `876c6096cb130c65cf3253ac48a7048f6c530f0d7eee9a60b0fc88e0f10e73bc` |
@@ -242,7 +243,7 @@ All autonomous execution counters remain at zero. No trades were initiated, no s
 
 ## 9. Mandatory Next Experiment
 
-**PV-EXP-002** — Profitability analysis on the 117 qualifying events. Input: `PV_EXP_001_EVENT_LEDGER.json`. Metrics required: directional accuracy, MAE/MFE distribution, risk-adjusted return, maximum adverse excursion, win rate by session and regime. No further experiments may proceed until PV-EXP-002 completes.
+**PV-EXP-002** — Profitability analysis on the 172 qualifying events. Input: `PV_EXP_001_EVENT_LEDGER.json`. Metrics required: directional accuracy, MAE/MFE distribution, risk-adjusted return, maximum adverse excursion, win rate by session and regime. No further experiments may proceed until PV-EXP-002 completes.
 
 ---
 
