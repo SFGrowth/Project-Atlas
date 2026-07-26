@@ -1,15 +1,15 @@
 {
   "experiment_id": "PV-EXP-001",
   "total_raw_candidates": 56411,
-  "total_qualifying_events": 117,
-  "total_rejected_candidates": 56294,
+  "total_qualifying_events": 62,
+  "total_rejected_candidates": 56349,
   "rejection_accounting_reconciles": true,
   "rejection_counts": {
-    "GATE3_FAIL": 27475,
-    "GATE5_FAIL": 26044,
-    "GATE6_FAIL": 1635,
-    "DEDUP_COOLDOWN": 32,
-    "GATE2_FAIL": 1108
+    "GATE3_FAIL": 19058,
+    "GATE2_FAIL": 23430,
+    "GATE5_FAIL": 12859,
+    "GATE6_FAIL": 950,
+    "DEDUP_COOLDOWN": 52
   },
-  "duplicate_events_removed": 32
+  "duplicate_events_removed": 52
 }

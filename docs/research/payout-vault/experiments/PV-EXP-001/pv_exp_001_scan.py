@@ -106,7 +106,15 @@ def compute_htf_swings(htf: pd.DataFrame) -> tuple[np.ndarray, np.ndarray]:
     return is_sh, is_sl
 
 # ---------------------------------------------------------------------------
-# Vectorised LTF swing detection (same 5-bar pivot, same logic as detect_msu)
+# Vectorised LTF swing detection — MUST match detect_msu exactly:
+# swing_lookback=3, uses >= for highs and <= for lows (non-strict),
+# 3 bars on each side = 7-bar pivot window.
+# Detector code (lines 391-406 of payout_vault_detector.py):
+#   for i in range(lb, n - lb):  # lb=3
+#     if all(h[i] >= h[i-j] for j in 1..lb) and all(h[i] >= h[i+j] for j in 1..lb):
+#       swing_highs.append(...)
+#     if all(l[i] <= l[i-j] for j in 1..lb) and all(l[i] <= l[i+j] for j in 1..lb):
+#       swing_lows.append(...)
 # ---------------------------------------------------------------------------
 def compute_ltf_swings(oos: pd.DataFrame) -> tuple[np.ndarray, np.ndarray]:
     h = oos["high"].values
@@ -114,15 +122,17 @@ def compute_ltf_swings(oos: pd.DataFrame) -> tuple[np.ndarray, np.ndarray]:
     n = len(h)
     is_sh = np.zeros(n, dtype=bool)
     is_sl = np.zeros(n, dtype=bool)
-    if n < 5:
+    if n < 7:  # need at least 3 bars each side
         return is_sh, is_sl
-    is_sh[2:n-2] = (
-        (h[2:n-2] > h[1:n-3]) & (h[2:n-2] > h[0:n-4]) &
-        (h[2:n-2] > h[3:n-1]) & (h[2:n-2] > h[4:n])
+    # Non-strict >= for swing highs (matches detector's >= comparison, lb=3)
+    is_sh[3:n-3] = (
+        (h[3:n-3] >= h[2:n-4]) & (h[3:n-3] >= h[1:n-5]) & (h[3:n-3] >= h[0:n-6]) &
+        (h[3:n-3] >= h[4:n-2]) & (h[3:n-3] >= h[5:n-1]) & (h[3:n-3] >= h[6:n])
     )
-    is_sl[2:n-2] = (
-        (l[2:n-2] < l[1:n-3]) & (l[2:n-2] < l[0:n-4]) &
-        (l[2:n-2] < l[3:n-1]) & (l[2:n-2] < l[4:n])
+    # Non-strict <= for swing lows (matches detector's <= comparison, lb=3)
+    is_sl[3:n-3] = (
+        (l[3:n-3] <= l[2:n-4]) & (l[3:n-3] <= l[1:n-5]) & (l[3:n-3] <= l[0:n-6]) &
+        (l[3:n-3] <= l[4:n-2]) & (l[3:n-3] <= l[5:n-1]) & (l[3:n-3] <= l[6:n])
     )
     return is_sh, is_sl
 
@@ -245,27 +255,52 @@ def run_vectorised_scan(oos: pd.DataFrame, htf_full: pd.DataFrame, run_id: int,
 
         total_candidates += 1
 
-        # ---- Gate 2: MSU — find last LTF swing high and swing low ----
+        # ---- Gate 2: MSU — structural confirmation matching detect_msu exactly ----
+        # Detector requires >= 2 swing highs AND >= 2 swing lows in the LTF window.
+        # Direction: HH+HL = bullish, LH+LL = bearish, else neutral (GATE2_FAIL).
+        # Window: [ltf_start, i-1] exclusive of last 3 bars (pivot needs i+3).
         ltf_start = max(0, i - LTF_WINDOW + 1)
-        ltf_sh_in_window = np.where(ltf_is_sh[ltf_start:i - 1])[0]
-        ltf_sl_in_window = np.where(ltf_is_sl[ltf_start:i - 1])[0]
+        # Exclude last 3 bars from pivot detection (pivot needs lb=3 bars after)
+        ltf_pivot_end = max(ltf_start, i - 3)  # bars [ltf_start, ltf_pivot_end)
+        ltf_sh_in_window = np.where(ltf_is_sh[ltf_start:ltf_pivot_end])[0]
+        ltf_sl_in_window = np.where(ltf_is_sl[ltf_start:ltf_pivot_end])[0]
 
-        if len(ltf_sh_in_window) == 0 or len(ltf_sl_in_window) == 0:
+        # Need at least 2 swing highs AND 2 swing lows for structural confirmation
+        if len(ltf_sh_in_window) < 2 or len(ltf_sl_in_window) < 2:
             rej["GATE2_FAIL"] = rej.get("GATE2_FAIL", 0) + 1
             total_rej += 1
             continue
 
-        last_ltf_sh = ltf_sh_in_window[-1]
-        last_ltf_sl = ltf_sl_in_window[-1]
+        # Last two swing highs and lows (local indices within window)
+        last_ltf_sh  = ltf_sh_in_window[-1]
+        prev_ltf_sh  = ltf_sh_in_window[-2]
+        last_ltf_sl  = ltf_sl_in_window[-1]
+        prev_ltf_sl  = ltf_sl_in_window[-2]
 
-        if last_ltf_sh > last_ltf_sl:
-            msu_direction = "bearish"
-        elif last_ltf_sl > last_ltf_sh:
+        # Absolute indices for price lookup
+        last_sh_abs = ltf_start + last_ltf_sh
+        prev_sh_abs = ltf_start + prev_ltf_sh
+        last_sl_abs = ltf_start + last_ltf_sl
+        prev_sl_abs = ltf_start + prev_ltf_sl
+
+        making_hh = oos_high[last_sh_abs] > oos_high[prev_sh_abs]
+        making_hl = oos_low[last_sl_abs]  > oos_low[prev_sl_abs]
+        making_lh = oos_high[last_sh_abs] < oos_high[prev_sh_abs]
+        making_ll = oos_low[last_sl_abs]  < oos_low[prev_sl_abs]
+
+        if making_hh and making_hl:
             msu_direction = "bullish"
+        elif making_lh and making_ll:
+            msu_direction = "bearish"
         else:
             rej["GATE2_FAIL"] = rej.get("GATE2_FAIL", 0) + 1
             total_rej += 1
             continue
+
+        # For Gate 4 (inducement), we still need the most recent swing extreme
+        # Use the last confirmed swing in the full window (including recent bars)
+        ltf_sh_full = np.where(ltf_is_sh[ltf_start:i - 1])[0]
+        ltf_sl_full = np.where(ltf_is_sl[ltf_start:i - 1])[0]
 
         # ---- Gate 3: MSU must align with DOL ----
         if msu_direction != dol_direction:
@@ -274,22 +309,23 @@ def run_vectorised_scan(oos: pd.DataFrame, htf_full: pd.DataFrame, run_id: int,
             continue
 
         # ---- Gate 4: Inducement — most recent swing extreme in MSU direction ----
+        # Use ltf_sh_full / ltf_sl_full which includes recent bars (not pivot-truncated)
         if dol_direction == "bullish":
             # Inducement = most recent LTF swing low (below which price will sweep)
-            if len(ltf_sl_in_window) == 0:
+            if len(ltf_sl_full) == 0:
                 rej["GATE4_FAIL"] = rej.get("GATE4_FAIL", 0) + 1
                 total_rej += 1
                 continue
-            ind_local_idx = ltf_sl_in_window[-1]
+            ind_local_idx = ltf_sl_full[-1]
             ind_abs_idx   = ltf_start + ind_local_idx
             inducement_price = oos_low[ind_abs_idx]
         else:
             # Bearish: inducement = most recent LTF swing high
-            if len(ltf_sh_in_window) == 0:
+            if len(ltf_sh_full) == 0:
                 rej["GATE4_FAIL"] = rej.get("GATE4_FAIL", 0) + 1
                 total_rej += 1
                 continue
-            ind_local_idx = ltf_sh_in_window[-1]
+            ind_local_idx = ltf_sh_full[-1]
             ind_abs_idx   = ltf_start + ind_local_idx
             inducement_price = oos_high[ind_abs_idx]
 
@@ -318,37 +354,52 @@ def run_vectorised_scan(oos: pd.DataFrame, htf_full: pd.DataFrame, run_id: int,
             total_rej += 1
             continue
 
-        # ---- Gate 6: CSD — directional displacement candle within csd_window bars after sweep ----
-        # CSD rule 1: a candle whose body engulfs the sweep candle's range in the opposite direction
-        # CSD rule 2: a candle that closes beyond the sweep candle's open in the opposite direction
-        # Simplified: look for a candle within 3 bars of sweep that closes in the DOL direction
+        # ---- Gate 6: CSD — matches detect_csd exactly (CD-07, R-12–R-18, AMB-01, AMB-05) ----
+        # Rule 1: close strictly > 50% of sweep candle range (bullish) or < 50% (bearish)
+        # Rule 2: close > entire prior candle body (bullish) or < entire prior candle body (bearish)
+        # Either rule is sufficient. Body close only — wick excluded.
         csd_found = False
         csd_bar_idx = None
         csd_window = CONFIG["csd_window"]
         sweep_high = oos_high[sweep_bar_idx]
         sweep_low  = oos_low[sweep_bar_idx]
+        sweep_range = sweep_high - sweep_low
+
+        if sweep_range == 0:
+            rej["GATE6_FAIL"] = rej.get("GATE6_FAIL", 0) + 1
+            total_rej += 1
+            continue
+
+        sweep_midpoint = sweep_low + 0.5 * sweep_range
 
         for j in range(sweep_bar_idx + 1, min(sweep_bar_idx + csd_window + 1, i + 1)):
+            close_j = oos_close[j]
+            # Prior candle body bounds
+            prior_body_high = max(oos_open[j-1], oos_close[j-1]) if j > 0 else None
+            prior_body_low  = min(oos_open[j-1], oos_close[j-1]) if j > 0 else None
+
             if dol_direction == "bullish":
-                # CSD: close above sweep candle high (displacement back up)
-                if oos_close[j] > sweep_high:
-                    csd_found = True
-                    csd_bar_idx = j
-                    break
+                rule1 = close_j > sweep_midpoint
+                rule2 = (prior_body_high is not None) and (close_j > prior_body_high)
             else:
-                # CSD: close below sweep candle low (displacement back down)
-                if oos_close[j] < sweep_low:
-                    csd_found = True
-                    csd_bar_idx = j
-                    break
+                rule1 = close_j < sweep_midpoint
+                rule2 = (prior_body_low is not None) and (close_j < prior_body_low)
+
+            if rule1 or rule2:
+                csd_found = True
+                csd_bar_idx = j
+                break
 
         if not csd_found or csd_bar_idx is None:
             rej["GATE6_FAIL"] = rej.get("GATE6_FAIL", 0) + 1
             total_rej += 1
             continue
 
-        # CSD bar must be at or before bar i (the current evaluation bar)
-        if csd_bar_idx > i:
+        # CSD bar must be strictly before bar i so that the entry bar (csd+1)
+        # is already visible to the detector when called with ltf_bars ending at i.
+        # This matches the detector's evaluation semantics: it can only see bars
+        # up to and including bar i, so entry bar (csd+1) must be <= i.
+        if csd_bar_idx >= i:
             rej["GATE6_FAIL"] = rej.get("GATE6_FAIL", 0) + 1
             total_rej += 1
             continue

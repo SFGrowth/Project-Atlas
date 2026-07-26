@@ -1,0 +1,18 @@
+{
+  "harness": "PV-EXP-001-FULL-EQUIVALENCE",
+  "sprint": "123A.10",
+  "detector_sha": "946b806fb563d4ef37018a05da70fc326e1564ca40c8c206be29b76666b717ec",
+  "scanner_sha": "691e0dc47f495b5b120a2ec0d2885f22b97ad3729fc908bc25394078f436e2f5",
+  "dataset_sha": "c970675391b970956f38d419ef95ff3e116e61ab8874eca7df2ab4334e715623",
+  "oos_bars": 56257,
+  "scanner_events": 62,
+  "part1_detector_agrees": 62,
+  "part1_errors": 0,
+  "false_positives": [],
+  "part2_rejected_sampled": 199,
+  "part2_detector_also_rejects": 199,
+  "false_negatives": [],
+  "equivalence_result": "PASS",
+  "elapsed_seconds": 41.9,
+  "completed_at": "2026-07-26T00:30:06Z"
+}

@@ -37,7 +37,12 @@ const RTH_BARS_EXPECTED = 78;
 
 // GitHub repo path
 const REPO_PATH = "/home/ubuntu/Project-Atlas";
-const GIT_REMOTE = "https://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@github.com/SFGrowth/Project-Atlas.git";
+// SECURITY: GitHub token loaded from environment variable, never hardcoded.
+// Set ATLAS_GITHUB_TOKEN in .env (not tracked in git) to enable session report commits.
+const _ATLAS_GITHUB_TOKEN = process.env.ATLAS_GITHUB_TOKEN ?? "";
+const GIT_REMOTE = _ATLAS_GITHUB_TOKEN
+  ? `https://x-access-token:${_ATLAS_GITHUB_TOKEN}@github.com/SFGrowth/Project-Atlas.git`
+  : "https://github.com/SFGrowth/Project-Atlas.git";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
