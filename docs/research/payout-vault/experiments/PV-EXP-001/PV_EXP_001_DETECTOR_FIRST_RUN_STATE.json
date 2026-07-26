@@ -1,0 +1,28 @@
+{
+  "total_eligible_cutoffs": 56354,
+  "completed_cutoffs": 56354,
+  "remaining_cutoffs": 0,
+  "completed_chunks": 1,
+  "failed_chunks": 0,
+  "missing_cutoffs": 0,
+  "duplicate_cutoffs": 0,
+  "worker_count": 1,
+  "chunk_boundaries": [
+    [
+      177,
+      56530
+    ]
+  ],
+  "last_checkpoint": "2026-07-26T07:22:29.321576+00:00",
+  "restart_count": 0,
+  "final_exit_code": 0,
+  "completion_status": "COMPLETE",
+  "DETECTOR_FIRST_SCAN_COMPLETION": "100_PERCENT",
+  "FAILED_CHUNKS": 0,
+  "MISSING_CUTOFFS": 0,
+  "DUPLICATE_CUTOFFS": 0,
+  "benchmark_mean_ms": 186.3,
+  "benchmark_p95_ms": 224.26,
+  "scan_start_utc": "2026-07-26T04:21:01.359341+00:00",
+  "scan_end_utc": "2026-07-26T07:22:29.147276+00:00"
+}
