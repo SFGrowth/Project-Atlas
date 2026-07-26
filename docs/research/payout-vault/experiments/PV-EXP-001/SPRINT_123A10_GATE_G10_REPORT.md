@@ -249,4 +249,7 @@ All autonomous execution counters remain at zero. No trades were initiated, no s
 
 ## 10. Git Provenance
 
-The final commit SHA and LOCAL=REMOTE confirmation will be recorded in the completion record after the push is verified. The branch will not be merged until Phil's written approval is received.
+FINAL_COMMIT_SHA: 92ba25d94e7a33914b2c177741051c7edd2acc9f
+LOCAL_REMOTE_MATCH: TRUE
+PUSH_TIMESTAMP: 2026-07-26T09:50:32Z
+MERGE_STATUS: NOT MERGED — awaiting Phil's written approval
