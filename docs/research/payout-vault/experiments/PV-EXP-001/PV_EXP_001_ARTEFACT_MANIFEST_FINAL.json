@@ -1,0 +1,187 @@
+{
+  "manifest_id": "PV_EXP_001_ARTEFACT_MANIFEST_FINAL",
+  "experiment_id": "PV-EXP-001",
+  "sprint": "123A.10",
+  "generated_utc": "2026-07-27T07:35:25.776503+00:00",
+  "current_head_commit": "801d988087b81d0360fdb6034fba1be0f498617c",
+  "total_artefacts": 16,
+  "missing_artefacts": 0,
+  "artefacts": [
+    {
+      "name": "payout_vault_detector.py",
+      "role": "APPROVED_DETECTOR",
+      "status": "frozen",
+      "absolute_path": "/home/ubuntu/atlas-nexus/docs/research/payout-vault/payout_vault_detector.py",
+      "relative_path": "docs/research/payout-vault/payout_vault_detector.py",
+      "byte_size": 36120,
+      "sha256_64char": "946b806fb563d4ef37018a05da70fc326e1564ca40c8c206be29b76666b717ec",
+      "git_blob_sha1": "b233da449a35dd5debe63682df4e66117ebffaf0",
+      "last_commit_sha": "8a5f749c2597f741ca65c49db941fcfe267df0f5"
+    },
+    {
+      "name": "payout_vault_research_spec_v2.json",
+      "role": "RESEARCH_SPECIFICATION",
+      "status": "frozen",
+      "absolute_path": "/home/ubuntu/atlas-nexus/docs/research/payout-vault/payout_vault_research_spec_v2.json",
+      "relative_path": "docs/research/payout-vault/payout_vault_research_spec_v2.json",
+      "byte_size": 12589,
+      "sha256_64char": "e40ad744a18cc117976c6fedd58619f90b1d73bd6e9bddd0293ff0be0b4fce22",
+      "git_blob_sha1": "de172590a52abaaf0de02551356fa901c145cef1",
+      "last_commit_sha": "8a5f749c2597f741ca65c49db941fcfe267df0f5"
+    },
+    {
+      "name": "hypothesis_registry_v4.json",
+      "role": "HYPOTHESIS_REGISTRY",
+      "status": "frozen",
+      "absolute_path": "/home/ubuntu/atlas-nexus/docs/research/payout-vault/hypothesis_registry_v4.json",
+      "relative_path": "docs/research/payout-vault/hypothesis_registry_v4.json",
+      "byte_size": 35283,
+      "sha256_64char": "46489b97d1775fcb48b93b556e49c2c6f40601dfe4cf395599cd6bf25654bc4f",
+      "git_blob_sha1": "80689655a6f5258611ef1ac8210094b9da3bd8d0",
+      "last_commit_sha": "9bd2d7c6ea310b0aaaca19384c26204b371e8c25"
+    },
+    {
+      "name": "mnq_5m_features.parquet",
+      "role": "OOS_DATASET",
+      "status": "frozen",
+      "absolute_path": "/home/ubuntu/atlas-historical/canonical/mnq_5m_features.parquet",
+      "relative_path": "/home/ubuntu/atlas-historical/canonical/mnq_5m_features.parquet",
+      "byte_size": 34370285,
+      "sha256_64char": "c970675391b970956f38d419ef95ff3e116e61ab8874eca7df2ab4334e715623",
+      "git_blob_sha1": "568e7fb578d6f40684e83fb3816704fdef1ae13c",
+      "last_commit_sha": "N/A_EXTERNAL_FILE"
+    },
+    {
+      "name": "pv_exp_001_scan.py",
+      "role": "SCANNER",
+      "status": "canonical",
+      "absolute_path": "/home/ubuntu/atlas-nexus/docs/research/payout-vault/experiments/PV-EXP-001/pv_exp_001_scan.py",
+      "relative_path": "docs/research/payout-vault/experiments/PV-EXP-001/pv_exp_001_scan.py",
+      "byte_size": 37783,
+      "sha256_64char": "f803dc9fbc7e0949015411a4d49cd764c65571f7ec8e73398bc8db23a4e72f96",
+      "git_blob_sha1": "21deeb3ecfb7b1d4d489ab99e1e41876bea21319",
+      "last_commit_sha": "92ba25d94e7a33914b2c177741051c7edd2acc9f"
+    },
+    {
+      "name": "pv_exp_001_detector_first_scan_v2.py",
+      "role": "DETECTOR_FIRST_SCAN",
+      "status": "canonical",
+      "absolute_path": "/home/ubuntu/atlas-nexus/docs/research/payout-vault/experiments/PV-EXP-001/pv_exp_001_detector_first_scan_v2.py",
+      "relative_path": "docs/research/payout-vault/experiments/PV-EXP-001/pv_exp_001_detector_first_scan_v2.py",
+      "byte_size": 37022,
+      "sha256_64char": "e8475d1beaa600f27163d8c14c618d2f9fe6a149120824140a6afdd43a6f6b3f",
+      "git_blob_sha1": "f575b6231ab757d7326de31da118dc11325d2604",
+      "last_commit_sha": "801d988087b81d0360fdb6034fba1be0f498617c"
+    },
+    {
+      "name": "produce_detector_canonical_ledger.py",
+      "role": "DETECTOR_LEDGER_PRODUCER",
+      "status": "canonical",
+      "absolute_path": "/home/ubuntu/atlas-nexus/docs/research/payout-vault/experiments/PV-EXP-001/produce_detector_canonical_ledger.py",
+      "relative_path": "docs/research/payout-vault/experiments/PV-EXP-001/produce_detector_canonical_ledger.py",
+      "byte_size": 11889,
+      "sha256_64char": "3c8bbea626a2c09df23db38950719dd2fda9babbc39bc235c676430e08ad6fc2",
+      "git_blob_sha1": "48c181e20faa4761947e045627040c0396e341a7",
+      "last_commit_sha": "UNCOMMITTED"
+    },
+    {
+      "name": "pv_exp_001_full_field_equivalence.py",
+      "role": "EQUIVALENCE_PROOF_SCRIPT",
+      "status": "canonical",
+      "absolute_path": "/home/ubuntu/atlas-nexus/docs/research/payout-vault/experiments/PV-EXP-001/pv_exp_001_full_field_equivalence.py",
+      "relative_path": "docs/research/payout-vault/experiments/PV-EXP-001/pv_exp_001_full_field_equivalence.py",
+      "byte_size": 13474,
+      "sha256_64char": "c3f36e7138d29476c43ca7bd31d797eb89a12c193ba285a546732212f733c6af",
+      "git_blob_sha1": "c8060a382f1b6e47e492609c5f2b19369cbece02",
+      "last_commit_sha": "UNCOMMITTED"
+    },
+    {
+      "name": "SCANNER_CANONICAL_EVENT_LEDGER.json",
+      "role": "SCANNER_CANONICAL_LEDGER",
+      "status": "canonical",
+      "absolute_path": "/home/ubuntu/atlas-nexus/docs/research/payout-vault/experiments/PV-EXP-001/SCANNER_CANONICAL_EVENT_LEDGER.json",
+      "relative_path": "docs/research/payout-vault/experiments/PV-EXP-001/SCANNER_CANONICAL_EVENT_LEDGER.json",
+      "byte_size": 257215,
+      "sha256_64char": "43aa07a21ea220157b1bdaeeb0f6fc12a1bab2aadc0d84cf8498b0eab25f8352",
+      "git_blob_sha1": "3d32a19bc1c83825d2578d497bfdcc5c6974f873",
+      "last_commit_sha": "801d988087b81d0360fdb6034fba1be0f498617c"
+    },
+    {
+      "name": "DETECTOR_CANONICAL_EVENT_LEDGER.json",
+      "role": "DETECTOR_CANONICAL_LEDGER",
+      "status": "canonical",
+      "absolute_path": "/home/ubuntu/atlas-nexus/docs/research/payout-vault/experiments/PV-EXP-001/DETECTOR_CANONICAL_EVENT_LEDGER.json",
+      "relative_path": "docs/research/payout-vault/experiments/PV-EXP-001/DETECTOR_CANONICAL_EVENT_LEDGER.json",
+      "byte_size": 234728,
+      "sha256_64char": "77350fa6a6540b7302c7ec9a3bd4e19ab5b74eed2cfa6feb2f0fa2ffaf5bd3c7",
+      "git_blob_sha1": "633018ae5d38e6f47eaacb47754e990ab981d420",
+      "last_commit_sha": "801d988087b81d0360fdb6034fba1be0f498617c"
+    },
+    {
+      "name": "PV_EXP_001_BIDIRECTIONAL_EQUIVALENCE.json",
+      "role": "EQUIVALENCE_PROOF",
+      "status": "canonical",
+      "absolute_path": "/home/ubuntu/atlas-nexus/docs/research/payout-vault/experiments/PV-EXP-001/PV_EXP_001_BIDIRECTIONAL_EQUIVALENCE.json",
+      "relative_path": "docs/research/payout-vault/experiments/PV-EXP-001/PV_EXP_001_BIDIRECTIONAL_EQUIVALENCE.json",
+      "byte_size": 36784,
+      "sha256_64char": "a00c802d4e3951494cbfde1fb0c3700dd4952a299e9b435a8e5d322379d5b6b4",
+      "git_blob_sha1": "5cbca0bb16e8b34f73940a803a49560c02b748e6",
+      "last_commit_sha": "801d988087b81d0360fdb6034fba1be0f498617c"
+    },
+    {
+      "name": "PV_EXP_001_EVENT_LEDGER.json",
+      "role": "EVENT_LEDGER",
+      "status": "canonical",
+      "absolute_path": "/home/ubuntu/atlas-nexus/docs/research/payout-vault/experiments/PV-EXP-001/PV_EXP_001_EVENT_LEDGER.json",
+      "relative_path": "docs/research/payout-vault/experiments/PV-EXP-001/PV_EXP_001_EVENT_LEDGER.json",
+      "byte_size": 257215,
+      "sha256_64char": "43aa07a21ea220157b1bdaeeb0f6fc12a1bab2aadc0d84cf8498b0eab25f8352",
+      "git_blob_sha1": "3d32a19bc1c83825d2578d497bfdcc5c6974f873",
+      "last_commit_sha": "92ba25d94e7a33914b2c177741051c7edd2acc9f"
+    },
+    {
+      "name": "PV_EXP_001_WEEKLY_FREQUENCY.csv",
+      "role": "WEEKLY_FREQUENCY",
+      "status": "canonical",
+      "absolute_path": "/home/ubuntu/atlas-nexus/docs/research/payout-vault/experiments/PV-EXP-001/PV_EXP_001_WEEKLY_FREQUENCY.csv",
+      "relative_path": "docs/research/payout-vault/experiments/PV-EXP-001/PV_EXP_001_WEEKLY_FREQUENCY.csv",
+      "byte_size": 1002,
+      "sha256_64char": "649654450e0f2dd9069dbc586ba96bfed7369b9d975d25b199f54120e338f9fd",
+      "git_blob_sha1": "97fc1fd219db1903b148625dc9222394ca72b76e",
+      "last_commit_sha": "92ba25d94e7a33914b2c177741051c7edd2acc9f"
+    },
+    {
+      "name": "PV_EXP_001_MONTHLY_FREQUENCY.csv",
+      "role": "MONTHLY_FREQUENCY",
+      "status": "canonical",
+      "absolute_path": "/home/ubuntu/atlas-nexus/docs/research/payout-vault/experiments/PV-EXP-001/PV_EXP_001_MONTHLY_FREQUENCY.csv",
+      "relative_path": "docs/research/payout-vault/experiments/PV-EXP-001/PV_EXP_001_MONTHLY_FREQUENCY.csv",
+      "byte_size": 128,
+      "sha256_64char": "1173bdf568e0d0a15e8278a8782b9238d7254034f6a61e0138dcf1e6ad700a32",
+      "git_blob_sha1": "56159b6b3e2d472be2058af671df64905576bdcc",
+      "last_commit_sha": "92ba25d94e7a33914b2c177741051c7edd2acc9f"
+    },
+    {
+      "name": "_scan_results.json",
+      "role": "SCAN_RESULTS",
+      "status": "canonical",
+      "absolute_path": "/home/ubuntu/atlas-nexus/docs/research/payout-vault/experiments/PV-EXP-001/_scan_results.json",
+      "relative_path": "docs/research/payout-vault/experiments/PV-EXP-001/_scan_results.json",
+      "byte_size": 3279,
+      "sha256_64char": "0f4a687cfb9b855c7b22bacc16438912e6661563e44195c2069f0a24824c09f7",
+      "git_blob_sha1": "7391163f680e1971c93fa484eed37698652f818c",
+      "last_commit_sha": "92ba25d94e7a33914b2c177741051c7edd2acc9f"
+    },
+    {
+      "name": "SPRINT_123A10_GATE_G10_REPORT.md",
+      "role": "G10_REPORT",
+      "status": "canonical",
+      "absolute_path": "/home/ubuntu/atlas-nexus/docs/research/payout-vault/experiments/PV-EXP-001/SPRINT_123A10_GATE_G10_REPORT.md",
+      "relative_path": "docs/research/payout-vault/experiments/PV-EXP-001/SPRINT_123A10_GATE_G10_REPORT.md",
+      "byte_size": 13862,
+      "sha256_64char": "7a16f7f04fd2338e8e24f684a3c43d1fbd61574a08c8a0542d5b320c010f4963",
+      "git_blob_sha1": "91a84cfdf407b783d667b9dfa3b06c17294f7787",
+      "last_commit_sha": "801d988087b81d0360fdb6034fba1be0f498617c"
+    }
+  ]
+}

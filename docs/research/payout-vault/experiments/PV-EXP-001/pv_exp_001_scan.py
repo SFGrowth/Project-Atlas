@@ -126,11 +126,11 @@ def compute_local_dol(htf_high: np.ndarray, htf_low: np.ndarray,
         lookback: HTF_LOOKBACK (default 20)
 
     Returns:
-        (dol_direction, dol_price) or (None, None) if insufficient data.
+        (dol_direction, dol_price, source_bar_abs_idx) or (None, None, None) if insufficient data.
     """
     # Minimum data check: detect_dol returns None if len(htf_bars) < lookback * 2
     if htf_idx < lookback * 2:
-        return None, None
+        return None, None, None
 
     # Local slice: last (lookback * 3) bars, same as htf_bars.tail(lookback * 3)
     slice_start = max(0, htf_idx - lookback * 3)
@@ -156,15 +156,17 @@ def compute_local_dol(htf_high: np.ndarray, htf_low: np.ndarray,
             last_sl_price = l[i]
 
     if last_sh_local == -1 or last_sl_local == -1:
-        return None, None
+        return None, None, None
 
     # Direction: most recent swing determines structure
     if last_sh_local > last_sl_local:
         # Most recent swing was a high → bearish structure → DOL = last swing low
-        return "bearish", last_sl_price
+        source_abs = slice_start + last_sl_local
+        return "bearish", last_sl_price, source_abs
     else:
         # Most recent swing was a low → bullish structure → DOL = last swing high
-        return "bullish", last_sh_price
+        source_abs = slice_start + last_sh_local
+        return "bullish", last_sh_price, source_abs
 
 # ---------------------------------------------------------------------------
 # Vectorised LTF swing detection — MUST match detect_msu exactly:
@@ -222,7 +224,7 @@ def cross_validate(oos, htf_full, ltf_is_sh, ltf_is_sl,
         htf_idx = int(np.searchsorted(htf_times_ns, cutoff_ns, side="right"))
 
         # Scanner local DOL
-        vec_dir, vec_price = compute_local_dol(htf_high_arr, htf_low_arr, htf_idx)
+        vec_dir, vec_price, _vec_src = compute_local_dol(htf_high_arr, htf_low_arr, htf_idx)
         vec_dol_ok = (vec_dir is not None)
 
         # Python detector DOL — pass the same slice the detector would use
@@ -291,7 +293,7 @@ def run_vectorised_scan(oos: pd.DataFrame, htf_full: pd.DataFrame, run_id: int,
         # htf_idx is the exclusive end: htf_full[0..htf_idx-1] are visible at bar i
         htf_idx = int(htf_bar_for_ltf[i])
 
-        dol_direction, dol_price = compute_local_dol(htf_high, htf_low, htf_idx)
+        dol_direction, dol_price, dol_source_abs = compute_local_dol(htf_high, htf_low, htf_idx)
 
         if dol_direction is None:
             rej["GATE1_FAIL"] = rej.get("GATE1_FAIL", 0) + 1
@@ -417,6 +419,7 @@ def run_vectorised_scan(oos: pd.DataFrame, htf_full: pd.DataFrame, run_id: int,
         # Either rule is sufficient. Body close only — wick excluded.
         csd_found = False
         csd_bar_idx = None
+        csd_rule_triggered = None
         csd_window = CONFIG["csd_window"]
         sweep_high = oos_high[sweep_bar_idx]
         sweep_low  = oos_low[sweep_bar_idx]
@@ -445,6 +448,7 @@ def run_vectorised_scan(oos: pd.DataFrame, htf_full: pd.DataFrame, run_id: int,
             if rule1 or rule2:
                 csd_found = True
                 csd_bar_idx = j
+                csd_rule_triggered = "rule2" if rule2 else "rule1"
                 break
 
         if not csd_found or csd_bar_idx is None:
@@ -510,13 +514,14 @@ def run_vectorised_scan(oos: pd.DataFrame, htf_full: pd.DataFrame, run_id: int,
             "setup_confirmation_timestamp": str(oos["bar_time"].iloc[csd_bar_idx]),
             "proposed_entry_timestamp": str(oos["bar_time"].iloc[entry_bar_idx]),
             "htf_context_timestamp": str(htf_full["bar_time"].iloc[htf_ctx_idx]),
+            "dol_source_timestamp": str(htf_full["bar_time"].iloc[dol_source_abs]) if dol_source_abs is not None else None,
             "dol_level": float(dol_price),
             "msu_state": msu_direction,
             "inducement_level": float(inducement_price),
             "sweep_timestamp": str(oos["bar_time"].iloc[sweep_bar_idx]),
             "sweep_level": float(oos_low[sweep_bar_idx] if dol_direction == "bullish" else oos_high[sweep_bar_idx]),
             "csd_timestamp": str(oos["bar_time"].iloc[csd_bar_idx]),
-            "csd_rule_used": "rule1",
+            "csd_rule_used": csd_rule_triggered,
             "fvg_status": fvg_status,
             "smt_status": "UNCHECKED",
             "session": str(oos["session"].iloc[i]),

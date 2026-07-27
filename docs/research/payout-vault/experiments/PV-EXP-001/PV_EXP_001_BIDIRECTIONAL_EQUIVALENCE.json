@@ -1,22 +1,1576 @@
 {
-  "experiment_id": "PV-EXP-001",
+  "source": "PV_EXP_001_BIDIRECTIONAL_EQUIVALENCE_v3",
   "sprint": "123A.10",
-  "generated_utc": "2026-07-27T04:09:40.015840+00:00",
-  "detector_sha": "946b806fb563d4ef37018a05da70fc326e1564ca40c8c206be29b76666b717ec",
-  "dataset_sha": "c970675391b970956f38d419ef95ff3e116e61ab8874eca7df2ab4334e715623",
-  "cooldown_policy": "post_hoc_per_direction_12_bars",
+  "generated_utc": "2026-07-27T07:32:41.222101+00:00",
+  "scanner_ledger_sha256": "43aa07a21ea220157b1bdaeeb0f6fc12a1bab2aadc0d84cf8498b0eab25f8352",
+  "detector_ledger_sha256": "77350fa6a6540b7302c7ec9a3bd4e19ab5b74eed2cfa6feb2f0fa2ffaf5bd3c7",
   "scanner_event_count": 172,
   "detector_event_count": 172,
-  "false_positives_raw": 0,
-  "false_positives_valid_scanner_errors": 0,
-  "false_positives_det_first_warmup_omissions": 0,
+  "intersection_event_count": 172,
+  "scanner_only_event_count": 0,
+  "detector_only_event_count": 0,
+  "false_positives": 0,
   "false_negatives": 0,
   "field_level_mismatches": 0,
-  "matched_events": 172,
+  "events_with_field_mismatches": 0,
+  "bidirectional_event_set_match": true,
   "equivalence_proven": true,
-  "fp_bar_indices": [],
-  "fn_bar_indices": [],
-  "fp_note": "Bar 166 omitted by det-first scan due to HTF_MIN_BARS=60 warmup filter; detector confirms bar 166 valid (HTF_LOOKBACK*2=40 minimum sufficient)",
-  "scanner_canonical_ledger_sha": "a877442465985f388c75ff271fc9125f40edf13a1b8970838223488688b6a2d6",
-  "detector_canonical_ledger_sha": "bea25ae168f32abbf3b5b67bf488ee3e1ad2c8abc796a6085941e93beccb8387"
+  "scanner_only_bar_indices": [],
+  "detector_only_bar_indices": [],
+  "field_mismatch_details": [],
+  "matched_event_summary": [
+    {
+      "bar_index": 166,
+      "direction": "bullish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 318,
+      "direction": "bearish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 514,
+      "direction": "bullish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 1438,
+      "direction": "bullish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 1688,
+      "direction": "bearish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 1816,
+      "direction": "bullish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 2042,
+      "direction": "bullish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 2284,
+      "direction": "bullish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 2852,
+      "direction": "bullish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 3153,
+      "direction": "bullish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 3717,
+      "direction": "bearish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 3844,
+      "direction": "bullish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 4304,
+      "direction": "bullish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 4397,
+      "direction": "bearish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 4693,
+      "direction": "bullish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 4743,
+      "direction": "bullish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 4856,
+      "direction": "bullish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 6787,
+      "direction": "bearish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 6864,
+      "direction": "bullish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 7228,
+      "direction": "bullish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 7255,
+      "direction": "bearish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 7442,
+      "direction": "bullish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 7799,
+      "direction": "bearish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 8244,
+      "direction": "bearish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 9721,
+      "direction": "bearish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 9752,
+      "direction": "bearish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 10034,
+      "direction": "bullish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 10575,
+      "direction": "bullish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 10730,
+      "direction": "bullish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 10790,
+      "direction": "bearish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 10880,
+      "direction": "bullish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 11210,
+      "direction": "bullish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 11468,
+      "direction": "bearish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 11812,
+      "direction": "bullish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 11887,
+      "direction": "bullish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 12078,
+      "direction": "bullish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 12620,
+      "direction": "bullish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 12979,
+      "direction": "bearish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 12990,
+      "direction": "bullish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 13077,
+      "direction": "bullish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 13191,
+      "direction": "bullish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 13556,
+      "direction": "bearish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 14572,
+      "direction": "bullish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 15224,
+      "direction": "bearish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 15382,
+      "direction": "bearish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 15401,
+      "direction": "bullish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 15488,
+      "direction": "bearish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 15952,
+      "direction": "bullish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 15991,
+      "direction": "bearish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 16344,
+      "direction": "bearish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 16538,
+      "direction": "bearish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 17122,
+      "direction": "bullish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 17299,
+      "direction": "bullish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 17420,
+      "direction": "bullish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 18190,
+      "direction": "bullish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 18578,
+      "direction": "bearish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 18905,
+      "direction": "bullish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 19284,
+      "direction": "bearish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 19698,
+      "direction": "bullish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 19970,
+      "direction": "bullish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 20084,
+      "direction": "bearish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 20291,
+      "direction": "bullish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 20322,
+      "direction": "bullish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 20365,
+      "direction": "bearish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 20513,
+      "direction": "bullish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 20669,
+      "direction": "bullish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 20764,
+      "direction": "bearish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 20779,
+      "direction": "bullish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 21256,
+      "direction": "bearish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 21280,
+      "direction": "bullish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 21614,
+      "direction": "bullish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 22562,
+      "direction": "bearish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 22757,
+      "direction": "bearish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 23324,
+      "direction": "bearish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 24032,
+      "direction": "bearish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 24416,
+      "direction": "bearish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 24447,
+      "direction": "bullish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 24531,
+      "direction": "bullish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 24548,
+      "direction": "bullish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 25717,
+      "direction": "bullish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 25918,
+      "direction": "bullish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 26072,
+      "direction": "bearish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 26315,
+      "direction": "bullish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 26851,
+      "direction": "bearish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 26878,
+      "direction": "bullish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 27263,
+      "direction": "bearish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 27680,
+      "direction": "bullish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 27768,
+      "direction": "bullish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 29114,
+      "direction": "bearish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 29173,
+      "direction": "bearish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 30227,
+      "direction": "bearish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 30950,
+      "direction": "bearish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 30980,
+      "direction": "bullish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 31817,
+      "direction": "bullish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 31908,
+      "direction": "bullish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 32581,
+      "direction": "bearish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 32860,
+      "direction": "bullish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 34105,
+      "direction": "bearish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 35252,
+      "direction": "bearish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 35309,
+      "direction": "bearish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 35407,
+      "direction": "bullish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 35652,
+      "direction": "bullish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 35666,
+      "direction": "bullish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 35939,
+      "direction": "bearish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 35981,
+      "direction": "bearish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 36342,
+      "direction": "bearish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 37539,
+      "direction": "bullish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 37621,
+      "direction": "bullish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 37727,
+      "direction": "bullish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 38108,
+      "direction": "bullish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 38627,
+      "direction": "bullish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 38798,
+      "direction": "bullish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 38832,
+      "direction": "bearish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 39212,
+      "direction": "bullish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 40612,
+      "direction": "bullish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 40770,
+      "direction": "bullish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 40897,
+      "direction": "bullish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 40910,
+      "direction": "bullish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 41380,
+      "direction": "bearish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 41402,
+      "direction": "bullish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 41593,
+      "direction": "bullish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 42212,
+      "direction": "bullish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 43046,
+      "direction": "bullish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 43580,
+      "direction": "bullish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 43669,
+      "direction": "bullish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 44036,
+      "direction": "bullish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 44180,
+      "direction": "bullish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 44387,
+      "direction": "bullish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 44552,
+      "direction": "bullish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 45086,
+      "direction": "bullish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 45505,
+      "direction": "bullish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 45842,
+      "direction": "bearish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 46025,
+      "direction": "bullish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 46099,
+      "direction": "bullish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 46165,
+      "direction": "bearish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 46523,
+      "direction": "bullish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 46736,
+      "direction": "bearish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 47132,
+      "direction": "bearish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 47683,
+      "direction": "bullish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 48818,
+      "direction": "bearish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 48977,
+      "direction": "bearish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 49653,
+      "direction": "bullish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 49679,
+      "direction": "bearish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 49730,
+      "direction": "bullish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 50446,
+      "direction": "bullish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 50668,
+      "direction": "bullish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 51431,
+      "direction": "bearish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 51854,
+      "direction": "bearish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 52302,
+      "direction": "bullish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 52313,
+      "direction": "bearish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 52543,
+      "direction": "bearish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 52602,
+      "direction": "bullish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 53023,
+      "direction": "bullish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 53271,
+      "direction": "bullish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 53376,
+      "direction": "bullish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 53408,
+      "direction": "bearish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 53587,
+      "direction": "bullish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 53617,
+      "direction": "bearish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 53778,
+      "direction": "bearish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 53936,
+      "direction": "bearish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 54490,
+      "direction": "bearish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 54940,
+      "direction": "bearish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 55010,
+      "direction": "bearish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 55052,
+      "direction": "bearish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 55153,
+      "direction": "bearish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 55253,
+      "direction": "bearish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 55431,
+      "direction": "bullish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 55515,
+      "direction": "bearish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 55680,
+      "direction": "bearish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 55708,
+      "direction": "bearish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 55754,
+      "direction": "bearish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    },
+    {
+      "bar_index": 55773,
+      "direction": "bullish",
+      "dol_level_match": true,
+      "msu_match": true,
+      "sweep_match": true,
+      "csd_rule_match": true,
+      "mismatch_count": 0
+    }
+  ],
+  "comparison_policy": {
+    "price_tolerance_ticks": 0.5,
+    "timestamp_precision": "minute",
+    "entry_price_note": "scanner=_fwd_open (actual fill bar), detector=entry_type1_price (FVG midpoint); compared separately"
+  }
 }
