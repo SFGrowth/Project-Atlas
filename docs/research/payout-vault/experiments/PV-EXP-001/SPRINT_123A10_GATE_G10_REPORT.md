@@ -279,7 +279,7 @@ No further experiments may proceed until PV-EXP-002 completes.
 ## 12. Git Provenance
 | Field | Value |
 |---|---|
-| `FINAL_COMMIT_SHA` | `b6af52dd408f030d702ad687af0c8a0b080a35ba` |
+| `FINAL_COMMIT_SHA` | `99dc7431980d605beac04cc7127b8915f1722bb9` |
 | `LOCAL_REMOTE_MATCH` | TRUE |
 | `WORKING_TREE_CLEAN` | TRUE |
 | `MERGE_STATUS` | NOT MERGED — awaiting Phil's written approval |
