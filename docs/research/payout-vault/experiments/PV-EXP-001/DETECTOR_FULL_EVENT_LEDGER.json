@@ -8,8 +8,8 @@
   "detector_event_count": 170,
   "duplicates_removed_by_cooldown": 90,
   "ledger_sha256": "6e07b9cb9c92dcc3303daede8d34068b289adc3aa4f85376264e38dff4f77e48",
-  "scan_start_utc": "2026-07-26T10:27:52.699964+00:00",
-  "scan_end_utc": "2026-07-26T13:12:27.938083+00:00",
+  "scan_start_utc": "2026-07-27T09:13:25.185560+00:00",
+  "scan_end_utc": "2026-07-27T11:41:06.728508+00:00",
   "events": [
     {
       "bar_index": 166,

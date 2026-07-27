@@ -1,160 +1,139 @@
 # PV-EXP-001 Eligibility Boundary Report
-Sprint 123A.10 Gate G10 — Eligibility Boundary Correction
+
+**Sprint:** 123A.10  
+**Gate:** G10  
+**Generated:** 2026-07-27T08:05:26Z  
+**Detector SHA-256:** `946b806fb563d4ef37018a05da70fc326e1564ca40c8c206be29b76666b717ec`
 
 ---
 
-## 1. Detector Minimum Legal Requirements
+## 1. Approved Detector Minimum Requirements
 
-The minimum legal bar requirements are derived directly from the approved detector
-source (`payout_vault_detector.py`, SHA `946b806fb563d4ef37018a05da70fc326e1564ca40c8c206be29b76666b717ec`).
+The approved detector (`payout_vault_detector.py`) imposes the following minimum history requirements, derived directly from its source code:
 
-### HTF Minimum
+### 1.1 HTF Minimum (Gate 1 — detect_dol)
 
-`detect_dol` (line 317):
 ```python
+# Line 317 in payout_vault_detector.py
 if len(htf_bars) < lookback * 2:
     return None
 ```
 
-With `htf_lookback=20` (from `PV_EXP_001_CONFIGURATION.json`):
+With the default `lookback=20` (from `PV_EXP_001_CONFIGURATION.json`):
 
-```
-DETECTOR_MINIMUM_HTF_BARS = 20 * 2 = 40
-```
+| Field | Value | Source |
+|---|---|---|
+| `HTF_LOOKBACK` | 20 | `cfg["htf_lookback"]` |
+| `DETECTOR_MINIMUM_HTF_BARS` | **40** | `lookback * 2 = 20 * 2` |
 
-### LTF Minimum
+The detector returns `None` (Gate 1 fail) if fewer than 40 HTF bars are available. No other HTF minimum exists in the approved detector.
 
-`detect_msu` (line 395):
+### 1.2 LTF Minimum (Gate 2 — detect_msu)
+
 ```python
+# Lines 390-395 in payout_vault_detector.py
+lb = swing_lookback  # = 3
 for i in range(lb, n - lb):
+    # swing detection...
+if not swing_highs or not swing_lows:
+    return MSUResult(msu_direction="neutral")
 ```
 
-With `ltf_swing_lookback=3`:
+With `swing_lookback=3`:
 
-```
-DETECTOR_MINIMUM_LTF_BARS = 3 * 2 + 1 = 7
-```
+| Field | Value | Source |
+|---|---|---|
+| `LTF_SWING_LOOKBACK` | 3 | `cfg["ltf_swing_lookback"]` |
+| `DETECTOR_MINIMUM_LTF_BARS_FOR_ANY_SWING` | 7 | `2 * lb + 1 = 7` |
+| `DETECTOR_MINIMUM_LTF_BARS_FOR_MSU_DIRECTION` | 13 | `4 * lb + 1 = 13` (2 swings each) |
 
-The wrapper always passes a fixed `LTF_LOOKBACK=60` bar window. The eligibility
-condition `i >= LTF_LOOKBACK` ensures the window is always full. This is correct
-and is not changed.
+The detector does **not** hard-fail on insufficient LTF bars — it returns `msu_direction="neutral"` (Gate 2 fail) if fewer than 2 swing highs and 2 swing lows are found. The practical minimum for a non-neutral MSU is approximately 13 LTF bars.
+
+The detector-first enumerator uses a fixed LTF window of **60 bars** — this is a window size, not a minimum requirement. It ensures sufficient history for all downstream gates (inducement, sweep, CSD, entry).
+
+### 1.3 Pivot Confirmation Requirements
+
+- HTF swings: `high[i] >= high[i-1..i-20] AND high[i] >= high[i+1..i+20]` (20 bars each side)
+- LTF swings: `high[i] >= high[i-1..i-3] AND high[i] >= high[i+1..i+3]` (3 bars each side)
+
+### 1.4 Entry Bar Visibility
+
+The entry bar must be within the LTF window. Since the LTF window is 60 bars and the CSD window is 3 bars, the entry bar is always visible within the window.
 
 ---
 
-## 2. Old Boundary (Wrapper-Invented)
+## 2. Previous Enumerator Error
 
-The previous detector-first enumeration wrapper (`pv_exp_001_detector_first_scan_v2.py`)
-used:
+The detector-first scan v2 used:
 
 ```python
-HTF_MIN_BARS = HTF_LOOKBACK * 3  # 60
+HTF_MIN_BARS = HTF_LOOKBACK * 3  # = 20 * 3 = 60
 ```
 
-This value (`60`) is **not derived from the approved detector**. The detector only
-requires `lookback * 2 = 40` HTF bars. The wrapper invented an additional `* 3`
-multiplier that has no basis in the detector implementation or the experiment
-configuration (`PV_EXP_001_CONFIGURATION.json`).
+This constant was **invented by the wrapper** and has no basis in the approved detector. The approved detector only requires `HTF_LOOKBACK * 2 = 40` HTF bars.
 
-```
-OLD_HTF_MIN_BARS:             60  (wrapper-invented)
-OLD_FIRST_ELIGIBLE_BAR_IDX:   177
-OLD_FIRST_ELIGIBLE_BAR_TIME:  2025-10-01T14:45:00.000000000
-OLD_ELIGIBLE_CUTOFFS:         56354
-```
+| Boundary | Value | Basis |
+|---|---|---|
+| Old `HTF_MIN_BARS` | 60 | Wrapper-invented — no basis in approved detector |
+| Correct `HTF_MIN_BARS` | **40** | From `detect_dol`: `len(htf_bars) < lookback * 2` |
 
 ---
 
-## 3. Corrected Boundary (From Approved Detector)
+## 3. Bar 166 Analysis
 
-```
-DETECTOR_MINIMUM_HTF_BARS:    40  (detect_dol: len(htf_bars) < lookback * 2)
-DETECTOR_MINIMUM_LTF_BARS:    7   (detect_msu: range(lb, n-lb), lb=3)
-NEW_HTF_MIN_BARS:             40
-```
+| Field | Value |
+|---|---|
+| `bar_time` | `2025-10-01 13:50:00+00:00` |
+| `htf_idx` | 55 |
+| `ltf_idx` | 166 |
+| HTF check (`htf_idx >= 40`) | 55 >= 40 = **True** |
+| LTF check (`ltf_idx >= 60`) | 166 >= 60 = **True** |
+| **LEGAL with corrected boundary** | **True** |
+| Excluded by old boundary (`htf_idx >= 60`) | True |
+| Direct detector evaluation (`valid`) | **True** |
+| Direct detector direction | bullish |
 
-```
-FIRST_LEGAL_CUTOFF_BAR_IDX:   117
-FIRST_LEGAL_CUTOFF_TIME:      2025-10-01T09:45:00.000000000
-LAST_LEGAL_CUTOFF_BAR_IDX:    56530
-LAST_LEGAL_CUTOFF_TIME:       2026-07-20T23:50:00.000000000
-SCANNER_ELIGIBLE_CUTOFFS:     56414
-DETECTOR_ELIGIBLE_CUTOFFS:    56414
-ELIGIBILITY_SET_MISMATCHES:   0
-```
+**Bar 166 is a legal cutoff** with the corrected boundary (`HTF_MIN_BARS=40`). The approved detector confirms it as a valid qualifying event when called directly. It was excluded by the old boundary because `htf_idx=55 < 60`.
 
 ---
 
-## 4. Bar 166 Legality
+## 4. Cutoffs Affected by Old Boundary
 
-```
-BAR_166_INDEX:                166
-BAR_166_TIME:                 2025-10-01T13:50:00.000000000
-BAR_166_HTF_INDEX:            56
-BAR_166_HTF_WINDOW_SIZE:      56 bars (all HTF bars up to cutoff)
-BAR_166_DETECTOR_MIN_HTF:     40
-BAR_166_LEGAL:                TRUE
-```
+The old boundary excluded **60 bars** (bars 120–179) that are legal under the corrected boundary.
 
-Bar 166 has HTF index `56`, which is `≥ 40` (the detector's minimum).
-Bar 166 is **LEGAL** under the corrected boundary.
-
-`detect_dol` called directly on bar 166's HTF window returns:
-`VALID — direction=bullish`
-
-`run_payout_vault_setup` called directly on bar 166 returns:
-`valid=True, rejection_reason=None`
-
-Bar 166 was omitted by the old boundary because `56 < 60`.
-This was a **wrapper error** — the detector itself accepts bar 166 as legal.
+All 60 added bars have `htf_idx` in the range [40, 59] — all >= 40 (legal) but < 60 (excluded by old boundary).
 
 ---
 
-## 5. Bars Affected by Boundary Correction
-
-```
-BARS_ADDED_BY_CORRECTION:     60
-BARS_REMOVED_BY_CORRECTION:   0
-```
-
-The 60 added bars span from bar 117 to bar 176.
-These are early OOS bars where the HTF index is between 40 and 59 (inclusive).
-
-Added bars where `detect_dol` returns None (would be rejected at Gate 1): **0**
-
-All 60 added bars are legal under the detector's actual minimum.
-
----
-
-## 6. Verification
-
-```
-DIRECT_DETECTOR_FIRST_LEGAL_CUTOFF = 2025-10-01T09:45:00.000000000
-SCANNER_FIRST_LEGAL_CUTOFF         = 2025-10-01T09:45:00.000000000
-SCANNER_ELIGIBLE_CUTOFFS           = 56414
-DETECTOR_ELIGIBLE_CUTOFFS          = 56414
-ELIGIBILITY_SET_MISMATCHES         = 0
-```
-
----
-
-## 7. Required Change to Wrapper
-
-In `pv_exp_001_detector_first_scan_v2.py`, change:
+## 5. Corrected Boundary Formula
 
 ```python
-HTF_MIN_BARS = HTF_LOOKBACK * 3   # 60 HTF bars  ← WRONG
+# Corrected detector-first enumerator eligibility check
+HTF_MIN_BARS = HTF_LOOKBACK * 2  # = 40 (from approved detector detect_dol)
+LTF_WINDOW_SIZE = 60             # fixed window size (not a minimum)
+
+eligible = (htf_idx >= HTF_MIN_BARS) and (ltf_idx >= LTF_WINDOW_SIZE)
 ```
-
-to:
-
-```python
-HTF_MIN_BARS = HTF_LOOKBACK * 2   # 40 HTF bars  ← detector minimum
-```
-
-No other changes to the wrapper are required. The detector itself (`payout_vault_detector.py`)
-must not be modified.
 
 ---
 
-*Generated by pv_exp_001_eligibility_boundary_analysis.py*
-*DARWIN_DECISION_AUTHORITY: DISABLED | DARWIN_EXECUTION_AUTHORITY: DISABLED*
+## 6. Eligibility Set Summary
+
+| Metric | Value |
+|---|---|
+| `DETECTOR_MINIMUM_HTF_BARS` | **40** |
+| `DETECTOR_MINIMUM_LTF_BARS` | **60** (fixed window, not a hard minimum) |
+| `FIRST_LEGAL_CUTOFF` | `2025-10-01 10:00:00+00:00` (bar 120) |
+| `LAST_LEGAL_CUTOFF` | `2026-07-20 23:55:00+00:00` (bar 56531) |
+| `SCANNER_ELIGIBLE_CUTOFFS` | **56412** |
+| `DETECTOR_ELIGIBLE_CUTOFFS` | **56412** |
+| `ELIGIBILITY_SET_MISMATCHES` | **0** |
+| `BAR_166_STATUS` | **LEGAL — confirmed valid by approved detector** |
+| Old eligible cutoffs (HTF_MIN=60) | 56352 |
+| Bars added by correction | 60 |
+
+**ELIGIBILITY_SET_MISMATCHES = 0** — scanner and detector eligible cutoff sets are identical.
+
+---
+
+*Generated by pv_exp_001_eligibility_boundary_v2.py | Sprint 123A.10 | Gate G10*

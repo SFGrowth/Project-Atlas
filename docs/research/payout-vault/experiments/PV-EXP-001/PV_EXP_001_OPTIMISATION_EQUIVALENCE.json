@@ -1,5 +1,5 @@
 {
-  "validation_timestamp": "2026-07-26T10:27:52.698625+00:00",
+  "validation_timestamp": "2026-07-27T09:13:25.182938+00:00",
   "detector_sha256": "946b806fb563d4ef37018a05da70fc326e1564ca40c8c206be29b76666b717ec",
   "dataset_sha256": "c970675391b970956f38d419ef95ff3e116e61ab8874eca7df2ab4334e715623",
   "total_eligible_cutoffs": 56414,
@@ -14,10 +14,10 @@
   "FIELD_LEVEL_MISMATCHES": 0,
   "EVENT_ID_MISMATCHES": 0,
   "EQUIVALENCE_PASS": true,
-  "benchmark_original_ms_per_call": 177.37,
-  "benchmark_optimised_ms_per_call": 175.86,
+  "benchmark_original_ms_per_call": 179.42,
+  "benchmark_optimised_ms_per_call": 177.88,
   "speedup_factor": 1.01,
-  "projected_scan_minutes_original": 166.8,
-  "projected_scan_minutes_optimised": 165.3,
+  "projected_scan_minutes_original": 168.7,
+  "projected_scan_minutes_optimised": 167.2,
   "mismatches_detail": []
 }

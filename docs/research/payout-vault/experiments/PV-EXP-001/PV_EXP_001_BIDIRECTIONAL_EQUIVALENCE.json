@@ -1,9 +1,9 @@
 {
   "source": "PV_EXP_001_BIDIRECTIONAL_EQUIVALENCE_v3",
   "sprint": "123A.10",
-  "generated_utc": "2026-07-27T07:32:41.222101+00:00",
+  "generated_utc": "2026-07-27T22:30:49.525882+00:00",
   "scanner_ledger_sha256": "43aa07a21ea220157b1bdaeeb0f6fc12a1bab2aadc0d84cf8498b0eab25f8352",
-  "detector_ledger_sha256": "77350fa6a6540b7302c7ec9a3bd4e19ab5b74eed2cfa6feb2f0fa2ffaf5bd3c7",
+  "detector_ledger_sha256": "9240cbb16f5cd2933ad198448853e7f8a0281cf5eac4106bbc526930f8634bb3",
   "scanner_event_count": 172,
   "detector_event_count": 172,
   "intersection_event_count": 172,

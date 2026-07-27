@@ -13,7 +13,7 @@
       56530
     ]
   ],
-  "last_checkpoint": "2026-07-26T13:12:28.108561+00:00",
+  "last_checkpoint": "2026-07-27T11:41:06.917363+00:00",
   "restart_count": 0,
   "final_exit_code": 0,
   "completion_status": "COMPLETE",
@@ -21,8 +21,8 @@
   "FAILED_CHUNKS": 0,
   "MISSING_CUTOFFS": 0,
   "DUPLICATE_CUTOFFS": 0,
-  "benchmark_mean_ms": 168.21,
-  "benchmark_p95_ms": 215.61,
-  "scan_start_utc": "2026-07-26T10:27:52.699964+00:00",
-  "scan_end_utc": "2026-07-26T13:12:27.938083+00:00"
+  "benchmark_mean_ms": 171.95,
+  "benchmark_p95_ms": 217.58,
+  "scan_start_utc": "2026-07-27T09:13:25.185560+00:00",
+  "scan_end_utc": "2026-07-27T11:41:06.728508+00:00"
 }

@@ -49,13 +49,13 @@ def main():
             "name": "DETECTOR_CANONICAL_EVENT_LEDGER.json",
             "role": "DETECTOR_CANONICAL_EVENT_LEDGER",
             "status": "CANONICAL",
-            "description": "171 qualifying events from detector-first scan (post-hoc cooldown)",
+            "description": "172 qualifying events from detector-first scan (post-hoc per-direction cooldown)",
         },
         {
             "name": "DETECTOR_FULL_EVENT_LEDGER.json",
             "role": "DETECTOR_FULL_EVENT_LEDGER",
             "status": "SUPERSEDED",
-            "description": "171 events from detector-first scan v2 (inline cooldown) — superseded by DETECTOR_CANONICAL_EVENT_LEDGER",
+            "description": "170 events from detector-first scan v2 (inline non-directional cooldown) — superseded by DETECTOR_CANONICAL_EVENT_LEDGER",
         },
         # Equivalence proof
         {

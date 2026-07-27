@@ -1,7 +1,7 @@
 {
   "experiment_id": "PV-EXP-001",
   "sprint": "123A.10",
-  "generated_utc": "2026-07-27T04:11:08.622127+00:00",
+  "generated_utc": "2026-07-27T22:37:41.512125+00:00",
   "total_artefacts": 14,
   "canonical_artefacts": 13,
   "sha_coverage_pct": 100.0,
@@ -25,39 +25,39 @@
       "role": "CANONICAL_SCANNER",
       "status": "CANONICAL",
       "description": "Corrected frequency scanner \u2014 DOL/MSU/inducement boundaries match detector exactly",
-      "sha256": "2afd9d7103f71bf00644d98f50dd604c0c501a58f32cbb743cbe718ff1988a81",
-      "size_bytes": 37361
+      "sha256": "f803dc9fbc7e0949015411a4d49cd764c65571f7ec8e73398bc8db23a4e72f96",
+      "size_bytes": 37783
     },
     {
       "name": "PV_EXP_001_EVENT_LEDGER.json",
       "role": "SCANNER_EVENT_LEDGER",
       "status": "CANONICAL",
       "description": "172 qualifying events (inline per-direction 12-bar cooldown)",
-      "sha256": "23015d83ab0d32ad0c610c6e5172fca318bfeccd9c8536a3218f7b541c47d8a4",
-      "size_bytes": 247067
+      "sha256": "43aa07a21ea220157b1bdaeeb0f6fc12a1bab2aadc0d84cf8498b0eab25f8352",
+      "size_bytes": 257215
     },
     {
       "name": "SCANNER_CANONICAL_EVENT_LEDGER.json",
       "role": "SCANNER_CANONICAL_EVENT_LEDGER",
       "status": "CANONICAL",
       "description": "172 qualifying events (post-hoc per-direction 12-bar cooldown)",
-      "sha256": "a877442465985f388c75ff271fc9125f40edf13a1b8970838223488688b6a2d6",
-      "size_bytes": 247187
+      "sha256": "43aa07a21ea220157b1bdaeeb0f6fc12a1bab2aadc0d84cf8498b0eab25f8352",
+      "size_bytes": 257215
     },
     {
       "name": "DETECTOR_CANONICAL_EVENT_LEDGER.json",
       "role": "DETECTOR_CANONICAL_EVENT_LEDGER",
       "status": "CANONICAL",
-      "description": "171 qualifying events from detector-first scan (post-hoc cooldown)",
-      "sha256": "bea25ae168f32abbf3b5b67bf488ee3e1ad2c8abc796a6085941e93beccb8387",
-      "size_bytes": 126960
+      "description": "172 qualifying events from detector-first scan (post-hoc per-direction cooldown)",
+      "sha256": "9240cbb16f5cd2933ad198448853e7f8a0281cf5eac4106bbc526930f8634bb3",
+      "size_bytes": 234728
     },
     {
       "name": "DETECTOR_FULL_EVENT_LEDGER.json",
       "role": "DETECTOR_FULL_EVENT_LEDGER",
       "status": "SUPERSEDED",
-      "description": "171 events from detector-first scan v2 (inline cooldown) \u2014 superseded by DETECTOR_CANONICAL_EVENT_LEDGER",
-      "sha256": "73d0d98df1d1bf4be2aa05de20f5da0e50722cb13babf72c733261e3b8244671",
+      "description": "170 events from detector-first scan v2 (inline non-directional cooldown) \u2014 superseded by DETECTOR_CANONICAL_EVENT_LEDGER",
+      "sha256": "8c40c50aaf9aaf08449fdc690cbd47744c17fa676046e9b375674914528a288b",
       "size_bytes": 130748
     },
     {
@@ -65,8 +65,8 @@
       "role": "EQUIVALENCE_PROOF",
       "status": "CANONICAL",
       "description": "FP_VALID=0, FN=0, FIELD_LEVEL_MISMATCHES=0 \u2014 equivalence proven",
-      "sha256": "e3c1f9642e662c931c4ec61323a4f0c092017e88bb653d7959b2de5266f0327a",
-      "size_bytes": 1046
+      "sha256": "3a27c1388b1ab3d3df1e8dca7057660da98c719f7d7a0eda26ed71d99d0ab0ff",
+      "size_bytes": 36784
     },
     {
       "name": "PV_EXP_001_REJECTION_FUNNEL.json",
@@ -81,7 +81,7 @@
       "role": "DETERMINISM_RECORD",
       "status": "CANONICAL",
       "description": "3x determinism proof \u2014 all runs identical SHA",
-      "sha256": "3e53fce4d2454d4ca7ff2b0f48369bb4b2214bf79d09a36b9cdae73b09b450d7",
+      "sha256": "3dfaecdda22146f28c834a71900043460cc244cca2e3c1703b40e751751210ed",
       "size_bytes": 1052
     },
     {
@@ -121,7 +121,7 @@
       "role": "SCAN_RESULTS_SUMMARY",
       "status": "CANONICAL",
       "description": "Full scan results summary including all SHAs and frequency stats",
-      "sha256": "b6285440df44ff9f8ebf6d81647fcbdb32a76b8be5629561866ad9c147df9f3d",
+      "sha256": "0f4a687cfb9b855c7b22bacc16438912e6661563e44195c2069f0a24824c09f7",
       "size_bytes": 3279
     },
     {

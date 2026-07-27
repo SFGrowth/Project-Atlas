@@ -1,7 +1,7 @@
 {
   "source": "DETECTOR_CANONICAL_LEDGER_v3",
   "sprint": "123A.10",
-  "generated_utc": "2026-07-27T07:27:58.066632+00:00",
+  "generated_utc": "2026-07-27T22:30:36.349530+00:00",
   "detector_sha256": "946b806fb563d4ef37018a05da70fc326e1564ca40c8c206be29b76666b717ec",
   "dataset_sha256": "c970675391b970956f38d419ef95ff3e116e61ab8874eca7df2ab4334e715623",
   "oos_start": "2025-10-01 00:00:00+00:00",
