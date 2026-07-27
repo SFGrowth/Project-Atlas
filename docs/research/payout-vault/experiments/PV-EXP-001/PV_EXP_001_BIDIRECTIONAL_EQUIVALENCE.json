@@ -1,24 +1,22 @@
 {
   "experiment_id": "PV-EXP-001",
   "sprint": "123A.10",
-  "generated_utc": "2026-07-26T09:40:05.067096+00:00",
+  "generated_utc": "2026-07-27T04:09:40.015840+00:00",
   "detector_sha": "946b806fb563d4ef37018a05da70fc326e1564ca40c8c206be29b76666b717ec",
   "dataset_sha": "c970675391b970956f38d419ef95ff3e116e61ab8874eca7df2ab4334e715623",
   "cooldown_policy": "post_hoc_per_direction_12_bars",
   "scanner_event_count": 172,
-  "detector_event_count": 171,
-  "false_positives_raw": 1,
+  "detector_event_count": 172,
+  "false_positives_raw": 0,
   "false_positives_valid_scanner_errors": 0,
-  "false_positives_det_first_warmup_omissions": 1,
+  "false_positives_det_first_warmup_omissions": 0,
   "false_negatives": 0,
   "field_level_mismatches": 0,
-  "matched_events": 171,
+  "matched_events": 172,
   "equivalence_proven": true,
-  "fp_bar_indices": [
-    166
-  ],
+  "fp_bar_indices": [],
   "fn_bar_indices": [],
   "fp_note": "Bar 166 omitted by det-first scan due to HTF_MIN_BARS=60 warmup filter; detector confirms bar 166 valid (HTF_LOOKBACK*2=40 minimum sufficient)",
-  "scanner_canonical_ledger_sha": "40ea54d05ae7aa107a22c0057b63cbcad608d5bc3772bc006e9d186a58611729",
-  "detector_canonical_ledger_sha": "aa4eca691d288af4365bbd2d9c1d2b4fcc19794b531094f631cb22c82b0e8d55"
+  "scanner_canonical_ledger_sha": "a877442465985f388c75ff271fc9125f40edf13a1b8970838223488688b6a2d6",
+  "detector_canonical_ledger_sha": "bea25ae168f32abbf3b5b67bf488ee3e1ad2c8abc796a6085941e93beccb8387"
 }

@@ -2,17 +2,18 @@
   "source": "DETECTOR_FIRST_SCAN_v2_OPTIMISED",
   "detector_sha256": "946b806fb563d4ef37018a05da70fc326e1564ca40c8c206be29b76666b717ec",
   "dataset_sha256": "c970675391b970956f38d419ef95ff3e116e61ab8874eca7df2ab4334e715623",
-  "total_eligible_candidates": 56354,
-  "total_qualifying_events": 169,
-  "total_rejections": 56185,
+  "total_eligible_candidates": 56414,
+  "total_qualifying_events": 170,
+  "total_rejections": 56244,
   "rejection_counts": {
-    "GATE2_FAIL: LTF MSU is neutral": 23426,
-    "GATE5_FAIL: inducement not swept": 13647,
-    "GATE3_FAIL: MSU direction (bullish) does not align with DOL direction (bearish)": 9087,
-    "GATE6_FAIL: CSD not confirmed within 3 bars": 873,
+    "GATE3_FAIL: MSU direction (bullish) does not align with DOL direction (bearish)": 9097,
+    "GATE2_FAIL: LTF MSU is neutral": 23445,
+    "GATE5_FAIL: inducement not swept": 13622,
+    "GATE3_FAIL: MSU direction (bearish) does not align with DOL direction (bullish)": 8851,
+    "GATE6_FAIL: CSD not confirmed within 3 bars": 867,
     "ENTRY_FAIL: no next bar for Entry Type 1": 227,
-    "GATE3_FAIL: MSU direction (bearish) does not align with DOL direction (bullish)": 8836,
-    "COOLDOWN_DUPLICATE": 89
+    "GATE1_FAIL: insufficient HTF data for DOL detection": 45,
+    "COOLDOWN_DUPLICATE": 90
   },
   "APPROXIMATE_REJECTION_COUNTS": 0
 }

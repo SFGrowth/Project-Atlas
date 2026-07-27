@@ -4,6 +4,26 @@
   "detector_sha": "946b806fb563d4ef37018a05da70fc326e1564ca40c8c206be29b76666b717ec",
   "events": [
     {
+      "bar_index": 166,
+      "csd_rule": null,
+      "csd_timestamp": "None",
+      "dataset_sha256": "c970675391b970956f38d419ef95ff3e116e61ab8874eca7df2ab4334e715623",
+      "detector_sha256": "946b806fb563d4ef37018a05da70fc326e1564ca40c8c206be29b76666b717ec",
+      "dol_direction": "bullish",
+      "dol_level": 0.0,
+      "dol_timestamp": "None",
+      "entry_price": 24815.75,
+      "entry_timestamp": "2025-10-01T13:35:00.000000000",
+      "inducement_level": null,
+      "inducement_timestamp": null,
+      "information_cutoff": "2025-10-01T13:50:00.000000000",
+      "msu_direction": null,
+      "msu_timestamp": "None",
+      "rejection_reason": null,
+      "sweep_level": 0.0,
+      "sweep_timestamp": "None"
+    },
+    {
       "bar_index": 318,
       "csd_rule": null,
       "csd_timestamp": "None",
@@ -3425,9 +3445,9 @@
     }
   ],
   "experiment_id": "PV-EXP-001",
-  "generated_utc": "2026-07-26T09:40:05.060958+00:00",
-  "pre_cooldown_event_count": 258,
+  "generated_utc": "2026-07-27T04:09:40.008004+00:00",
+  "pre_cooldown_event_count": 260,
   "source": "pv_exp_001_detector_first_scan_v2.py",
   "sprint": "123A.10",
-  "total_qualifying_events": 171
+  "total_qualifying_events": 172
 }

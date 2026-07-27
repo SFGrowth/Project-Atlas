@@ -1,7 +1,7 @@
 {
   "experiment_id": "PV-EXP-001",
   "sprint": "123A.10",
-  "generated_utc": "2026-07-26T09:47:18.733824+00:00",
+  "generated_utc": "2026-07-27T04:11:08.622127+00:00",
   "total_artefacts": 14,
   "canonical_artefacts": 13,
   "sha_coverage_pct": 100.0,
@@ -41,7 +41,7 @@
       "role": "SCANNER_CANONICAL_EVENT_LEDGER",
       "status": "CANONICAL",
       "description": "172 qualifying events (post-hoc per-direction 12-bar cooldown)",
-      "sha256": "40ea54d05ae7aa107a22c0057b63cbcad608d5bc3772bc006e9d186a58611729",
+      "sha256": "a877442465985f388c75ff271fc9125f40edf13a1b8970838223488688b6a2d6",
       "size_bytes": 247187
     },
     {
@@ -49,24 +49,24 @@
       "role": "DETECTOR_CANONICAL_EVENT_LEDGER",
       "status": "CANONICAL",
       "description": "171 qualifying events from detector-first scan (post-hoc cooldown)",
-      "sha256": "aa4eca691d288af4365bbd2d9c1d2b4fcc19794b531094f631cb22c82b0e8d55",
-      "size_bytes": 126226
+      "sha256": "bea25ae168f32abbf3b5b67bf488ee3e1ad2c8abc796a6085941e93beccb8387",
+      "size_bytes": 126960
     },
     {
       "name": "DETECTOR_FULL_EVENT_LEDGER.json",
       "role": "DETECTOR_FULL_EVENT_LEDGER",
       "status": "SUPERSEDED",
       "description": "171 events from detector-first scan v2 (inline cooldown) \u2014 superseded by DETECTOR_CANONICAL_EVENT_LEDGER",
-      "sha256": "f879bba69762a61d89e9e24dc434238b137440b36ea8f75e5ee61359597ad054",
-      "size_bytes": 126608
+      "sha256": "73d0d98df1d1bf4be2aa05de20f5da0e50722cb13babf72c733261e3b8244671",
+      "size_bytes": 130748
     },
     {
       "name": "PV_EXP_001_BIDIRECTIONAL_EQUIVALENCE.json",
       "role": "EQUIVALENCE_PROOF",
       "status": "CANONICAL",
       "description": "FP_VALID=0, FN=0, FIELD_LEVEL_MISMATCHES=0 \u2014 equivalence proven",
-      "sha256": "5b0957faac6a8d2cc6e0e7d6be8636a9724065c6d898e15ce5b2171f60145851",
-      "size_bytes": 1057
+      "sha256": "e3c1f9642e662c931c4ec61323a4f0c092017e88bb653d7959b2de5266f0327a",
+      "size_bytes": 1046
     },
     {
       "name": "PV_EXP_001_REJECTION_FUNNEL.json",

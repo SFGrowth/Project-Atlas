@@ -59,7 +59,7 @@ OOS_END      = pd.Timestamp("2026-07-20 23:59:59", tz="UTC")
 HTF_RESAMPLE = "15min"
 HTF_LOOKBACK = 20
 LTF_LOOKBACK = 60
-HTF_MIN_BARS = HTF_LOOKBACK * 3   # 60 HTF bars
+HTF_MIN_BARS = HTF_LOOKBACK * 2   # 40 HTF bars — detector minimum (detect_dol: len(htf_bars) < lookback * 2)
 COOLDOWN_BARS = 12
 N_WORKERS    = 1   # start with 1; set to 2 only if sidecar remains responsive
 CHECKPOINT_INTERVAL = 1000  # write checkpoint every N bars

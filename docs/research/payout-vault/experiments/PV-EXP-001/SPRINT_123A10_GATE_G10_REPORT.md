@@ -36,8 +36,8 @@ TOTAL_QUALIFYING_EVENTS:               172
 SETUPS_PER_WEEK:                       4.0
 FREQUENCY_CLASSIFICATION:              ADEQUATE_FREQUENCY
 FREQUENCY_GATE:                        PASS (threshold: ≥2.0/week)
-EQUIVALENCE_HARNESS_TYPE:              FULL (all 258 detector pre-cooldown events)
-EQUIVALENCE_SAMPLE_SIZE:               258 events
+EQUIVALENCE_HARNESS_TYPE:              FULL (all 260 detector pre-cooldown events)
+EQUIVALENCE_SAMPLE_SIZE:               260 events
 EQUIVALENCE_TOTAL_MISMATCHES:          0
 EQUIVALENCE_FALSE_POSITIVES_VALID:     0
 EQUIVALENCE_FALSE_NEGATIVES:           0
@@ -52,10 +52,17 @@ SCANNER_ALGORITHMIC_CORRECTIONS:       3 applied:
                                             (matches detect_msu range(lb,n-lb))
                                          3. Inducement Gate 4: window = i-lb
                                             (matches detect_msu last swing bound)
-SCANNER_CANONICAL_EVENT_LEDGER_SHA:    40ea54d05ae7aa107a22c0057b63cbcad608d5bc3772bc006e9d186a58611729
-DETECTOR_CANONICAL_EVENT_LEDGER_SHA:   aa4eca691d288af4365bbd2d9c1d2b4fcc19794b531094f631cb22c82b0e8d55
-BIDIRECTIONAL_EQUIVALENCE_SHA:         5b0957faac6a8d2cc6e0e7d6be8636a9724065c6d898e15ce5b2171f60145851
-ARTEFACT_MANIFEST_SHA:                 86b973836583e7c3e268540764d14e042aa0a6acb16be503147d02884f36ef91
+SCANNER_CANONICAL_EVENT_LEDGER_SHA:    a877442465985f388c75ff271fc9125f40edf13a1b8970838223488688b6a2d6
+DETECTOR_CANONICAL_EVENT_LEDGER_SHA:   bea25ae168f32abbf3b5b67bf488ee3e1ad2c8abc796a6085941e93beccb8387
+BIDIRECTIONAL_EQUIVALENCE_SHA:         e3c1f9642e662c931c4ec61323a4f0c092017e88bb653d7959b2de5266f0327a
+DETECTOR_FULL_SCAN_EVENT_LEDGER_SHA:   73d0d98df1d1bf4be2aa05de20f5da0e50722cb13babf72c733261e3b8244671
+DETECTOR_FIRST_SCAN_v2_SHA:            e8475d1beaa600f27163d8c14c618d2f9fe6a149120824140a6afdd43a6f6b3f
+HTF_MIN_BARS_BEFORE:                   60 (HTF_LOOKBACK*3 — wrapper-invented)
+HTF_MIN_BARS_AFTER:                    40 (HTF_LOOKBACK*2 — from approved detector)
+ELIGIBILITY_BOUNDARY_CORRECTION:      APPLIED — 60 additional bars now eligible
+DETECTOR_FIRST_SCAN_INLINE_EVENTS:     170 (non-directional cooldown)
+CANONICAL_EVENTS_BOTH_SOURCES:        172 (post-hoc per-direction cooldown)
+ARTEFACT_MANIFEST_SHA:                 30f782102e14a7c454eb0c6ecbae085046d928c5d1e78e42aa383971edeaa2fd
 ARTEFACT_SHA_COVERAGE:                 100% (14/14 artefacts)
 TYPESCRIPT_TESTS:                      1082/1082 PASS (38 files)
 TYPESCRIPT_COMPILATION:                EXIT 0

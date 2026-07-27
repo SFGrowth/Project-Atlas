@@ -5853,7 +5853,7 @@
     }
   ],
   "experiment_id": "PV-EXP-001",
-  "generated_utc": "2026-07-26T09:40:05.042442+00:00",
+  "generated_utc": "2026-07-27T04:09:39.979418+00:00",
   "source": "pv_exp_001_scan.py (corrected DOL+MSU+inducement)",
   "specification_sha": "e40ad744a18cc117976c6fedd58619f90b1d73bd6e9bddd0293ff0be0b4fce22",
   "sprint": "123A.10",
