@@ -15,7 +15,7 @@ GITHUB_BRANCH:                         sprint/123a-10-payout-vault-frequency-sca
 G9_BASELINE_SHA:                       469fcdd270cd44d54888194e466a5fe61af444b4
 IMPLEMENTATION_SHA:                    f54c48cd5573b3a44532bbbebfcf5d296ac46ca8
 SECURITY_LOCK_SHA:                     70d1dece699a9ad3e0df83a575f0fe04c89f0225
-FINAL_EVIDENCE_SHA:                    PENDING_COMMIT
+FINAL_EVIDENCE_SHA:                    d8f130a56c5b17a06fe8b09d949cd69c75f37ee4
 REMOTE_BRANCH_SHA:                     PENDING_PUSH
 LOCAL_REMOTE_MATCH:                    PENDING
 WORKING_TREE_CLEAN:                    PENDING
@@ -160,7 +160,7 @@ All 29 Drizzle migration files were applied to `atlas_test_123a3` (93 tables). `
 | G9 Baseline | `469fcdd270cd44d54888194e466a5fe61af444b4` |
 | Implementation | `f54c48cd5573b3a44532bbbebfcf5d296ac46ca8` |
 | Security Lock | `70d1dece699a9ad3e0df83a575f0fe04c89f0225` |
-| Final Evidence | `PENDING_COMMIT` |
+| Final Evidence | `d8f130a56c5b17a06fe8b09d949cd69c75f37ee4` |
 | Merge Status | NOT MERGED — awaiting Phil's written approval |
 
 ---
