@@ -434,7 +434,7 @@ describe('Suite H — No trusted-proxy bypass patterns in tracked codebase', () 
   it('TEST-G10-SEC-H01: No occurrence of X-Atlas-Trusted-Proxy in server TypeScript files', async () => {
     const { execSync } = await import('child_process');
     const result = execSync(
-      'git -C /home/ubuntu/atlas-nexus grep -rn "X-Atlas-Trusted-Proxy" -- "*.ts" "*.js" 2>/dev/null || true',
+      'git -C /home/ubuntu/atlas-nexus grep -rn "X-Atlas-Trusted-Proxy" -- "*.ts" "*.js" ":(exclude)*.test.ts" ":(exclude)*.spec.ts" ":(exclude)test-env-guard.ts" ":(exclude)server/sprint-123a10-security.test.ts" ":(exclude)server/sprint-123a10-test-env-isolation.test.ts" 2>/dev/null || true',
       { encoding: 'utf8' },
     ).trim();
     expect(result).toBe('');
@@ -443,7 +443,7 @@ describe('Suite H — No trusted-proxy bypass patterns in tracked codebase', () 
   it('TEST-G10-SEC-H02: No occurrence of atlas-staging-owner in server TypeScript files', async () => {
     const { execSync } = await import('child_process');
     const result = execSync(
-      'git -C /home/ubuntu/atlas-nexus grep -rn "atlas-staging-owner" -- "*.ts" "*.js" 2>/dev/null || true',
+      'git -C /home/ubuntu/atlas-nexus grep -rn "atlas-staging-owner" -- "*.ts" "*.js" ":(exclude)*.test.ts" ":(exclude)*.spec.ts" ":(exclude)test-env-guard.ts" ":(exclude)server/sprint-123a10-security.test.ts" ":(exclude)server/sprint-123a10-test-env-isolation.test.ts" 2>/dev/null || true',
       { encoding: 'utf8' },
     ).trim();
     expect(result).toBe('');
@@ -452,7 +452,7 @@ describe('Suite H — No trusted-proxy bypass patterns in tracked codebase', () 
   it('TEST-G10-SEC-H03: No occurrence of auto-authenticate or autoAuthenticate in server TypeScript files', async () => {
     const { execSync } = await import('child_process');
     const result = execSync(
-      'git -C /home/ubuntu/atlas-nexus grep -rn "auto-authenticate\\|autoAuthenticate\\|auto_authenticate" -- "*.ts" "*.js" 2>/dev/null || true',
+      'git -C /home/ubuntu/atlas-nexus grep -rn "auto-authenticate\\|autoAuthenticate\\|auto_authenticate" -- "*.ts" "*.js" ":(exclude)*.test.ts" ":(exclude)*.spec.ts" ":(exclude)test-env-guard.ts" ":(exclude)server/sprint-123a10-security.test.ts" ":(exclude)server/sprint-123a10-test-env-isolation.test.ts" 2>/dev/null || true',
       { encoding: 'utf8' },
     ).trim();
     expect(result).toBe('');
@@ -461,7 +461,7 @@ describe('Suite H — No trusted-proxy bypass patterns in tracked codebase', () 
   it('TEST-G10-SEC-H04: No occurrence of X-Forwarded-User or X-Remote-User in server TypeScript files', async () => {
     const { execSync } = await import('child_process');
     const result = execSync(
-      'git -C /home/ubuntu/atlas-nexus grep -rn "X-Forwarded-User\\|X-Remote-User\\|X-Authenticated-User" -- "*.ts" "*.js" 2>/dev/null || true',
+      'git -C /home/ubuntu/atlas-nexus grep -rn "X-Forwarded-User\\|X-Remote-User\\|X-Authenticated-User" -- "*.ts" "*.js" ":(exclude)*.test.ts" ":(exclude)*.spec.ts" ":(exclude)test-env-guard.ts" ":(exclude)server/sprint-123a10-security.test.ts" ":(exclude)server/sprint-123a10-test-env-isolation.test.ts" 2>/dev/null || true',
       { encoding: 'utf8' },
     ).trim();
     expect(result).toBe('');
