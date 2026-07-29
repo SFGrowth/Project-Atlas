@@ -1,0 +1,100 @@
+{
+  "experiment_id": "PV-EXP-002",
+  "generated_utc": "2026-07-29T07:10:55.675479+00:00",
+  "total_filled": 152,
+  "monthly_total_check": 152,
+  "monthly_sum_equals_filled": true,
+  "min_timestamp": "2025-10-01T13:50:00+00:00",
+  "max_timestamp": "2026-07-16T05:45:00+00:00",
+  "all_timestamps_in_oos_window": true,
+  "monthly_breakdown": {
+    "2025-10": {
+      "count": 16,
+      "wins": 6,
+      "net_pnl_usd": 198.66,
+      "win_rate": 0.375
+    },
+    "2025-11": {
+      "count": 15,
+      "wins": 2,
+      "net_pnl_usd": -748.6,
+      "win_rate": 0.1333
+    },
+    "2025-12": {
+      "count": 17,
+      "wins": 4,
+      "net_pnl_usd": -434.58,
+      "win_rate": 0.2353
+    },
+    "2026-01": {
+      "count": 18,
+      "wins": 4,
+      "net_pnl_usd": -30.32,
+      "win_rate": 0.2222
+    },
+    "2026-02": {
+      "count": 12,
+      "wins": 3,
+      "net_pnl_usd": -97.38,
+      "win_rate": 0.25
+    },
+    "2026-03": {
+      "count": 8,
+      "wins": 4,
+      "net_pnl_usd": 829.08,
+      "win_rate": 0.5
+    },
+    "2026-04": {
+      "count": 19,
+      "wins": 9,
+      "net_pnl_usd": 1241.94,
+      "win_rate": 0.4737
+    },
+    "2026-05": {
+      "count": 16,
+      "wins": 4,
+      "net_pnl_usd": -520.34,
+      "win_rate": 0.25
+    },
+    "2026-06": {
+      "count": 15,
+      "wins": 5,
+      "net_pnl_usd": 1053.4,
+      "win_rate": 0.3333
+    },
+    "2026-07": {
+      "count": 16,
+      "wins": 6,
+      "net_pnl_usd": 380.66,
+      "win_rate": 0.375
+    }
+  },
+  "quarterly_breakdown": {
+    "2025-Q4": {
+      "count": 48,
+      "wins": 12,
+      "net_pnl_usd": -984.52,
+      "win_rate": 0.25
+    },
+    "2026-Q1": {
+      "count": 38,
+      "wins": 11,
+      "net_pnl_usd": 701.38,
+      "win_rate": 0.2895
+    },
+    "2026-Q2": {
+      "count": 50,
+      "wins": 18,
+      "net_pnl_usd": 1775.0,
+      "win_rate": 0.36
+    },
+    "2026-Q3": {
+      "count": 16,
+      "wins": 6,
+      "net_pnl_usd": 380.66,
+      "win_rate": 0.375
+    }
+  },
+  "quarters_positive": 3,
+  "quarters_total": 4
+}

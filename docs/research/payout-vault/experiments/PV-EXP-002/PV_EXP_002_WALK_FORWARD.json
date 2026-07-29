@@ -1,0 +1,254 @@
+{
+  "experiment_id": "PV-EXP-002",
+  "generated_utc": "2026-07-29T07:10:55.675479+00:00",
+  "window_size": 20,
+  "step_size": 5,
+  "total_windows": 27,
+  "positive_windows": 13,
+  "positive_window_rate": 0.4815,
+  "windows": [
+    {
+      "window_start": "2025-10-01T13:50:00+00:00",
+      "window_end": "2025-11-06T07:35:00+00:00",
+      "count": 20,
+      "win_rate": 0.3,
+      "total_pnl_usd": -118.8,
+      "mean_pnl_usd": -5.94,
+      "positive_window": false
+    },
+    {
+      "window_start": "2025-10-09T13:20:00+00:00",
+      "window_end": "2025-11-19T08:40:00+00:00",
+      "count": 20,
+      "win_rate": 0.25,
+      "total_pnl_usd": -437.3,
+      "mean_pnl_usd": -21.87,
+      "positive_window": false
+    },
+    {
+      "window_start": "2025-10-20T10:45:00+00:00",
+      "window_end": "2025-11-26T15:10:00+00:00",
+      "count": 20,
+      "win_rate": 0.2,
+      "total_pnl_usd": -644.8,
+      "mean_pnl_usd": -32.24,
+      "positive_window": false
+    },
+    {
+      "window_start": "2025-10-24T13:40:00+00:00",
+      "window_end": "2025-12-05T20:05:00+00:00",
+      "count": 20,
+      "win_rate": 0.25,
+      "total_pnl_usd": -335.3,
+      "mean_pnl_usd": -16.77,
+      "positive_window": false
+    },
+    {
+      "window_start": "2025-11-07T00:10:00+00:00",
+      "window_end": "2025-12-18T13:20:00+00:00",
+      "count": 20,
+      "win_rate": 0.2,
+      "total_pnl_usd": -450.3,
+      "mean_pnl_usd": -22.52,
+      "positive_window": false
+    },
+    {
+      "window_start": "2025-11-24T08:15:00+00:00",
+      "window_end": "2025-12-24T17:40:00+00:00",
+      "count": 20,
+      "win_rate": 0.25,
+      "total_pnl_usd": -431.8,
+      "mean_pnl_usd": -21.59,
+      "positive_window": false
+    },
+    {
+      "window_start": "2025-11-27T13:40:00+00:00",
+      "window_end": "2026-01-07T07:25:00+00:00",
+      "count": 20,
+      "win_rate": 0.3,
+      "total_pnl_usd": -427.8,
+      "mean_pnl_usd": -21.39,
+      "positive_window": false
+    },
+    {
+      "window_start": "2025-12-05T21:00:00+00:00",
+      "window_end": "2026-01-15T12:10:00+00:00",
+      "count": 20,
+      "win_rate": 0.2,
+      "total_pnl_usd": -750.8,
+      "mean_pnl_usd": -37.54,
+      "positive_window": false
+    },
+    {
+      "window_start": "2025-12-18T14:55:00+00:00",
+      "window_end": "2026-01-19T06:50:00+00:00",
+      "count": 20,
+      "win_rate": 0.2,
+      "total_pnl_usd": -761.3,
+      "mean_pnl_usd": -38.06,
+      "positive_window": false
+    },
+    {
+      "window_start": "2025-12-30T01:05:00+00:00",
+      "window_end": "2026-01-28T14:40:00+00:00",
+      "count": 20,
+      "win_rate": 0.2,
+      "total_pnl_usd": -509.3,
+      "mean_pnl_usd": -25.46,
+      "positive_window": false
+    },
+    {
+      "window_start": "2026-01-08T11:40:00+00:00",
+      "window_end": "2026-02-06T02:55:00+00:00",
+      "count": 20,
+      "win_rate": 0.25,
+      "total_pnl_usd": 407.7,
+      "mean_pnl_usd": 20.38,
+      "positive_window": true
+    },
+    {
+      "window_start": "2026-01-15T14:45:00+00:00",
+      "window_end": "2026-02-18T17:05:00+00:00",
+      "count": 20,
+      "win_rate": 0.2,
+      "total_pnl_usd": 71.2,
+      "mean_pnl_usd": 3.56,
+      "positive_window": true
+    },
+    {
+      "window_start": "2026-01-21T04:35:00+00:00",
+      "window_end": "2026-03-03T01:20:00+00:00",
+      "count": 20,
+      "win_rate": 0.25,
+      "total_pnl_usd": 198.7,
+      "mean_pnl_usd": 9.93,
+      "positive_window": true
+    },
+    {
+      "window_start": "2026-01-30T15:55:00+00:00",
+      "window_end": "2026-03-20T08:35:00+00:00",
+      "count": 20,
+      "win_rate": 0.35,
+      "total_pnl_usd": 452.7,
+      "mean_pnl_usd": 22.63,
+      "positive_window": true
+    },
+    {
+      "window_start": "2026-02-12T08:20:00+00:00",
+      "window_end": "2026-04-03T12:25:00+00:00",
+      "count": 20,
+      "win_rate": 0.4,
+      "total_pnl_usd": 1102.2,
+      "mean_pnl_usd": 55.11,
+      "positive_window": true
+    },
+    {
+      "window_start": "2026-02-20T03:10:00+00:00",
+      "window_end": "2026-04-14T23:05:00+00:00",
+      "count": 20,
+      "win_rate": 0.55,
+      "total_pnl_usd": 1910.2,
+      "mean_pnl_usd": 95.51,
+      "positive_window": true
+    },
+    {
+      "window_start": "2026-03-06T20:10:00+00:00",
+      "window_end": "2026-04-21T08:00:00+00:00",
+      "count": 20,
+      "win_rate": 0.5,
+      "total_pnl_usd": 1529.7,
+      "mean_pnl_usd": 76.48,
+      "positive_window": true
+    },
+    {
+      "window_start": "2026-03-26T20:20:00+00:00",
+      "window_end": "2026-04-30T20:10:00+00:00",
+      "count": 20,
+      "win_rate": 0.5,
+      "total_pnl_usd": 1891.7,
+      "mean_pnl_usd": 94.59,
+      "positive_window": true
+    },
+    {
+      "window_start": "2026-04-06T19:55:00+00:00",
+      "window_end": "2026-05-12T14:10:00+00:00",
+      "count": 20,
+      "win_rate": 0.35,
+      "total_pnl_usd": 260.2,
+      "mean_pnl_usd": 13.01,
+      "positive_window": true
+    },
+    {
+      "window_start": "2026-04-15T07:55:00+00:00",
+      "window_end": "2026-05-19T10:55:00+00:00",
+      "count": 20,
+      "win_rate": 0.2,
+      "total_pnl_usd": -466.8,
+      "mean_pnl_usd": -23.34,
+      "positive_window": false
+    },
+    {
+      "window_start": "2026-04-22T16:40:00+00:00",
+      "window_end": "2026-05-28T02:05:00+00:00",
+      "count": 20,
+      "win_rate": 0.3,
+      "total_pnl_usd": -67.3,
+      "mean_pnl_usd": -3.37,
+      "positive_window": false
+    },
+    {
+      "window_start": "2026-05-04T13:20:00+00:00",
+      "window_end": "2026-06-10T16:10:00+00:00",
+      "count": 20,
+      "win_rate": 0.25,
+      "total_pnl_usd": -158.8,
+      "mean_pnl_usd": -7.94,
+      "positive_window": false
+    },
+    {
+      "window_start": "2026-05-14T12:40:00+00:00",
+      "window_end": "2026-06-18T13:50:00+00:00",
+      "count": 20,
+      "win_rate": 0.25,
+      "total_pnl_usd": -153.3,
+      "mean_pnl_usd": -7.67,
+      "positive_window": false
+    },
+    {
+      "window_start": "2026-05-20T01:40:00+00:00",
+      "window_end": "2026-06-30T08:35:00+00:00",
+      "count": 20,
+      "win_rate": 0.35,
+      "total_pnl_usd": 444.7,
+      "mean_pnl_usd": 22.23,
+      "positive_window": true
+    },
+    {
+      "window_start": "2026-05-29T08:55:00+00:00",
+      "window_end": "2026-07-03T11:40:00+00:00",
+      "count": 20,
+      "win_rate": 0.35,
+      "total_pnl_usd": 1094.7,
+      "mean_pnl_usd": 54.73,
+      "positive_window": true
+    },
+    {
+      "window_start": "2026-06-11T06:25:00+00:00",
+      "window_end": "2026-07-13T05:20:00+00:00",
+      "count": 20,
+      "win_rate": 0.4,
+      "total_pnl_usd": 1096.7,
+      "mean_pnl_usd": 54.84,
+      "positive_window": true
+    },
+    {
+      "window_start": "2026-06-24T07:55:00+00:00",
+      "window_end": "2026-07-15T07:15:00+00:00",
+      "count": 20,
+      "win_rate": 0.45,
+      "total_pnl_usd": 1405.2,
+      "mean_pnl_usd": 70.26,
+      "positive_window": true
+    }
+  ]
+}

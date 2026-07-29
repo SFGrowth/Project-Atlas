@@ -1,0 +1,44 @@
+{
+  "experiment_id": "PV-EXP-002",
+  "generated_utc": "2026-07-29T07:10:55.675479+00:00",
+  "entry_model": "A",
+  "stop_model": "S1",
+  "target_r": 2.0,
+  "results": [
+    {
+      "slippage_ticks": 0,
+      "filled_events": 151,
+      "total_net_pnl_usd": 1958.26,
+      "mean_expectancy_usd": 12.97,
+      "is_profitable": true
+    },
+    {
+      "slippage_ticks": 1,
+      "filled_events": 152,
+      "total_net_pnl_usd": 1882.52,
+      "mean_expectancy_usd": 12.38,
+      "is_profitable": true
+    },
+    {
+      "slippage_ticks": 2,
+      "filled_events": 152,
+      "total_net_pnl_usd": 1872.52,
+      "mean_expectancy_usd": 12.32,
+      "is_profitable": true
+    },
+    {
+      "slippage_ticks": 3,
+      "filled_events": 152,
+      "total_net_pnl_usd": 1552.02,
+      "mean_expectancy_usd": 10.21,
+      "is_profitable": true
+    },
+    {
+      "slippage_ticks": 4,
+      "filled_events": 152,
+      "total_net_pnl_usd": 1537.52,
+      "mean_expectancy_usd": 10.12,
+      "is_profitable": true
+    }
+  ]
+}

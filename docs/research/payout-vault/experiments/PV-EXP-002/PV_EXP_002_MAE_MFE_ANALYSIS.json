@@ -1,0 +1,43 @@
+{
+  "experiment_id": "PV-EXP-002",
+  "generated_utc": "2026-07-29T07:10:55.675479+00:00",
+  "filled_events": 152,
+  "mean_mfe_r": 1.6289,
+  "median_mfe_r": 1.1847,
+  "mean_mae_r": 1.7922,
+  "median_mae_r": 1.1343,
+  "mfe_r_milestones": {
+    "reach_0_25R": 128,
+    "reach_0_5R": 103,
+    "reach_0_75R": 91,
+    "reach_1_0R": 86,
+    "reach_1_5R": 63,
+    "reach_2_0R": 52,
+    "reach_3_0R": 11
+  },
+  "mae_r_milestones": {
+    "mae_exceed_0_25R": 135,
+    "mae_exceed_0_5R": 129,
+    "mae_exceed_0_75R": 116,
+    "mae_exceed_1_0R": 103,
+    "mae_exceed_1_5R": 32,
+    "mae_exceed_2_0R": 12,
+    "mae_exceed_3_0R": 8
+  },
+  "mfe_monotone_invariant": true,
+  "mae_monotone_invariant": true,
+  "target_winners_mfe_ge_2r": true,
+  "target_winner_count": 44,
+  "mfe_r_percentiles": {
+    "p25": 0.3904,
+    "p50": 1.1847,
+    "p75": 2.0659,
+    "p90": 2.775
+  },
+  "mae_r_percentiles": {
+    "p25": 0.7755,
+    "p50": 1.1343,
+    "p75": 1.4288,
+    "p90": 1.9203
+  }
+}

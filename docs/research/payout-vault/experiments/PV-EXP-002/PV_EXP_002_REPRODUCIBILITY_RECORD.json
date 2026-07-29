@@ -1,0 +1,50 @@
+{
+  "experiment_id": "PV-EXP-002",
+  "generated_utc": "2026-07-29T07:14:47.524949+00:00",
+  "reproducibility_check": "PASS",
+  "content_hash_a": "2f51cef8f5aef4177e879e2ee0311b9235b5c6112d4605400a66e610de671bd2",
+  "content_hash_b": "2f51cef8f5aef4177e879e2ee0311b9235b5c6112d4605400a66e610de671bd2",
+  "hashes_match": true,
+  "note": "File SHAs differ between runs due to generated_utc timestamps. Numerical results are deterministic.",
+  "numerical_summary_a": {
+    "total_events": 172,
+    "filled_events": 152,
+    "unfilled_events": 20,
+    "winners": 47,
+    "losers": 105,
+    "flats": 0,
+    "accounting_invariant": true,
+    "exit_reasons": {
+      "TARGET": 44,
+      "STOP": 103,
+      "UNFILLED": 20,
+      "SESSION_CLOSE_PROFIT": 3,
+      "SESSION_CLOSE_LOSS": 2
+    },
+    "total_net_pnl_usd": 1872.52,
+    "mean_expectancy_usd": 12.319211,
+    "win_rate": 0.309211,
+    "profit_factor": 1.270431,
+    "mean_mfe_r": 1.628923,
+    "mean_mae_r": 1.79217,
+    "mfe_reach_025r": 128,
+    "mfe_reach_100r": 86,
+    "mfe_reach_200r": 52,
+    "mfe_monotone": true,
+    "mae_monotone": true,
+    "entry_price_spot_check": [
+      24778.5,
+      25050.25,
+      25105.5,
+      25089.25,
+      25321.0
+    ],
+    "exit_reason_spot_check": [
+      "TARGET",
+      "STOP",
+      "STOP",
+      "STOP",
+      "STOP"
+    ]
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "experiment_id": "PV-EXP-002",
+  "generated_utc": "2026-07-29T07:10:55.675479+00:00",
+  "total_filled": 152,
+  "bullish": {
+    "label": "bullish",
+    "count": 91,
+    "winners": 29,
+    "losers": 62,
+    "win_rate": 0.3187,
+    "total_net_pnl_usd": 652.66,
+    "mean_expectancy_usd": 7.17,
+    "profit_factor": 1.161
+  },
+  "bearish": {
+    "label": "bearish",
+    "count": 61,
+    "winners": 18,
+    "losers": 43,
+    "win_rate": 0.2951,
+    "total_net_pnl_usd": 1219.86,
+    "mean_expectancy_usd": 20.0,
+    "profit_factor": 1.4249
+  },
+  "directional_reconciliation_pass": true,
+  "reconciliation_check": "91+61=152"
+}

@@ -1,0 +1,35 @@
+{
+  "experiment_id": "PV-EXP-002",
+  "generated_utc": "2026-07-29T07:10:55.675479+00:00",
+  "primary_config": "A/S1/2R/2t",
+  "filled_events": 152,
+  "win_rate": 0.3092,
+  "win_rate_wilson_95ci": [
+    0.2412,
+    0.3866
+  ],
+  "mean_expectancy_usd": 12.32,
+  "expectancy_bootstrap_95ci": [
+    -12.52,
+    39.31
+  ],
+  "expectancy_block_bootstrap_95ci": [
+    -13.37,
+    42.79
+  ],
+  "permutation_p_value_two_tailed": 0.3446,
+  "permutation_significant_at_005": false,
+  "bootstrap_seed": 42,
+  "bootstrap_iterations": 10000,
+  "block_bootstrap_block_length": 10,
+  "permutation_iterations": 10000,
+  "bh_significant_configs": 217,
+  "classification": "RESEARCH_FAIL",
+  "pass_criteria_met": {
+    "expectancy_positive": true,
+    "ci_lower_gt_minus10": false,
+    "profit_factor_gt_1": true,
+    "at_least_one_quarter_positive": true,
+    "bh_at_least_one_significant": true
+  }
+}

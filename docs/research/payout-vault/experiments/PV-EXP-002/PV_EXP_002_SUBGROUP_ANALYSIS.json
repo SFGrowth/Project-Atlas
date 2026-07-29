@@ -1,0 +1,95 @@
+{
+  "experiment_id": "PV-EXP-002",
+  "generated_utc": "2026-07-29T07:10:55.675479+00:00",
+  "total_filled": 152,
+  "subgroups": {
+    "ETH_OVERNIGHT": {
+      "label": "ETH_OVERNIGHT",
+      "count": 82,
+      "winners": 25,
+      "losers": 57,
+      "win_rate": 0.3049,
+      "total_net_pnl_usd": 303.32,
+      "mean_expectancy_usd": 3.7,
+      "profit_factor": 1.0845,
+      "sample_size_warning": false
+    },
+    "RTH": {
+      "label": "RTH",
+      "count": 42,
+      "winners": 11,
+      "losers": 31,
+      "win_rate": 0.2619,
+      "total_net_pnl_usd": 1190.92,
+      "mean_expectancy_usd": 28.36,
+      "profit_factor": 1.5073,
+      "sample_size_warning": false
+    },
+    "ETH_EVENING": {
+      "label": "ETH_EVENING",
+      "count": 28,
+      "winners": 11,
+      "losers": 17,
+      "win_rate": 0.3929,
+      "total_net_pnl_usd": 378.28,
+      "mean_expectancy_usd": 13.51,
+      "profit_factor": 1.3825,
+      "sample_size_warning": false
+    },
+    "weekday_Wednesday": {
+      "label": "weekday_Wednesday",
+      "count": 29,
+      "winners": 10,
+      "losers": 19,
+      "win_rate": 0.3448,
+      "total_net_pnl_usd": 546.04,
+      "mean_expectancy_usd": 18.83,
+      "profit_factor": 1.4742,
+      "sample_size_warning": false
+    },
+    "weekday_Thursday": {
+      "label": "weekday_Thursday",
+      "count": 38,
+      "winners": 11,
+      "losers": 27,
+      "win_rate": 0.2895,
+      "total_net_pnl_usd": 1239.88,
+      "mean_expectancy_usd": 32.63,
+      "profit_factor": 1.7579,
+      "sample_size_warning": false
+    },
+    "weekday_Friday": {
+      "label": "weekday_Friday",
+      "count": 23,
+      "winners": 8,
+      "losers": 15,
+      "win_rate": 0.3478,
+      "total_net_pnl_usd": 584.98,
+      "mean_expectancy_usd": 25.43,
+      "profit_factor": 1.6027,
+      "sample_size_warning": false
+    },
+    "weekday_Monday": {
+      "label": "weekday_Monday",
+      "count": 34,
+      "winners": 8,
+      "losers": 26,
+      "win_rate": 0.2353,
+      "total_net_pnl_usd": -1052.16,
+      "mean_expectancy_usd": -30.95,
+      "profit_factor": 0.3712,
+      "sample_size_warning": false
+    },
+    "weekday_Tuesday": {
+      "label": "weekday_Tuesday",
+      "count": 28,
+      "winners": 10,
+      "losers": 18,
+      "win_rate": 0.3571,
+      "total_net_pnl_usd": 553.78,
+      "mean_expectancy_usd": 19.78,
+      "profit_factor": 1.371,
+      "sample_size_warning": false
+    }
+  }
+}

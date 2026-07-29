@@ -1,0 +1,47 @@
+{
+  "experiment_id": "PV-EXP-002",
+  "generated_utc": "2026-07-29T07:10:55.675479+00:00",
+  "classification": "RESEARCH_FAIL",
+  "entry_model": "A",
+  "stop_model": "S1",
+  "target_r": 2.0,
+  "slippage_ticks": 2,
+  "total_events": 172,
+  "filled_events": 152,
+  "unfilled_events": 20,
+  "fill_rate": 0.8837,
+  "winners": 47,
+  "losers": 105,
+  "flats": 0,
+  "win_rate": 0.3092,
+  "win_rate_wilson_95ci": [
+    0.2412,
+    0.3866
+  ],
+  "total_net_pnl_usd": 1872.52,
+  "mean_expectancy_usd": 12.32,
+  "expectancy_bootstrap_95ci": [
+    -12.52,
+    39.31
+  ],
+  "expectancy_block_bootstrap_95ci": [
+    -13.37,
+    42.79
+  ],
+  "profit_factor": 1.2704,
+  "max_drawdown_usd": 1584.26,
+  "gross_wins_usd": 8796.72,
+  "gross_losses_usd": 6924.2,
+  "permutation_p_value_two_tailed": 0.3446,
+  "permutation_significant_at_005": false,
+  "exit_reasons": {
+    "TARGET": 44,
+    "STOP": 103,
+    "UNFILLED": 20,
+    "SESSION_CLOSE_PROFIT": 3,
+    "SESSION_CLOSE_LOSS": 2
+  },
+  "accounting_invariant_pass": true,
+  "temporal_integrity_pass": true,
+  "bar_mapping_audit_pass": true
+}
