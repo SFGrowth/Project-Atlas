@@ -1,0 +1,111 @@
+{
+  "experiment_id": "PV-EXP-004",
+  "sprint": "123A.13",
+  "status": "PRE_REGISTERED",
+  "pre_registration_date_utc": "2026-07-30",
+  "branch": "sprint/123a-13-pv-exp-004-reversed-direction-matrix",
+  "parent_experiment": "PV-EXP-003",
+  "parent_ledger": "PV_EXP_002_OUTCOME_LEDGER.json",
+  "canonical_baseline": "PV_EXP_003_CANONICAL_BASELINE_PNL_LEDGER.json",
+  "experiment_type": "RETROSPECTIVE_TARGET_MATRIX_WITH_INTERNAL_TEMPORAL_VALIDATION",
+  "hypothesis": "Reversing each canonical Payout Vault trade direction while preserving entry timing and initial risk distance produces positive expectancy.",
+  "instrument": "MNQ",
+  "oos_window": {
+    "start_utc": "2025-10-01T00:00:00+00:00",
+    "end_utc": "2026-07-20T23:59:59+00:00"
+  },
+  "locked_inputs": {
+    "input_events": 172,
+    "filled_baseline_events": 152,
+    "winners": 47,
+    "losers": 105,
+    "note": "SHAs populated at engine run time"
+  },
+  "configurations": {
+    "ORIG_R1":  {"direction": "original", "stop_multiple": 1.0, "target_multiple": 1.0},
+    "ORIG_R15": {"direction": "original", "stop_multiple": 1.0, "target_multiple": 1.5},
+    "ORIG_R2":  {"direction": "original", "stop_multiple": 1.0, "target_multiple": 2.0},
+    "ORIG_R25": {"direction": "original", "stop_multiple": 1.0, "target_multiple": 2.5},
+    "REV_R1":   {"direction": "reversed", "stop_multiple": 1.0, "target_multiple": 1.0},
+    "REV_R15":  {"direction": "reversed", "stop_multiple": 1.0, "target_multiple": 1.5},
+    "REV_R2":   {"direction": "reversed", "stop_multiple": 1.0, "target_multiple": 2.0},
+    "REV_R25":  {"direction": "reversed", "stop_multiple": 1.0, "target_multiple": 2.5}
+  },
+  "execution": {
+    "tick_size": 0.25,
+    "tick_value": 0.50,
+    "slippage_ticks": 2,
+    "commission_rt_usd": 1.24,
+    "entry_convention": "next_bar_after_signal",
+    "same_bar_rule": "STOP_FIRST",
+    "gap_through_rule": "fill_at_bar_open",
+    "target_fill_rule": "price_must_trade_through_target",
+    "session_close_handling": "exit_at_session_close_price",
+    "end_of_data_handling": "exit_at_last_bar_close"
+  },
+  "risk_distance": {
+    "formula": "ABS(original_entry_price - original_stop_price)",
+    "note": "Do not use original target distance to define risk"
+  },
+  "rejection_criteria": [
+    "missing_entry_price",
+    "missing_original_stop_price",
+    "zero_or_negative_risk_distance",
+    "invalid_tick_alignment",
+    "insufficient_bars_after_entry"
+  ],
+  "terminal_outcomes": [
+    "TARGET",
+    "STOP",
+    "SESSION_CLOSE_PROFIT",
+    "SESSION_CLOSE_LOSS",
+    "SESSION_CLOSE_FLAT",
+    "END_OF_DATA_PROFIT",
+    "END_OF_DATA_LOSS",
+    "END_OF_DATA_FLAT",
+    "UNFILLED"
+  ],
+  "statistical_validation": {
+    "bootstrap_iterations": 10000,
+    "bootstrap_ci": 0.95,
+    "permutation_test": "vs_matching_original_direction_control",
+    "multiple_comparison_method": "Holm-Bonferroni",
+    "multiple_comparison_n": 4,
+    "alpha": 0.05,
+    "supported_gates": {
+      "net_expectancy_gt_0": true,
+      "profit_factor_gt_1_10": true,
+      "bootstrap_95ci_lower_gt_0": true,
+      "holm_bonferroni_adjusted_p_lt_0_05": true,
+      "not_dependent_on_one_month_or_session": true,
+      "max_drawdown_acceptable": true
+    }
+  },
+  "walk_forward": {
+    "method": "chronological_60_40",
+    "training_pct": 0.60,
+    "validation_pct": 0.40,
+    "frozen_before_analysis": true,
+    "parameter_changed_after_validation": false
+  },
+  "causality": {
+    "future_bar_uses": 0,
+    "lookahead_violations": 0,
+    "entry_before_signal": 0,
+    "exit_before_entry": 0,
+    "duplicate_trade_ids": 0,
+    "unexplained_event_loss": 0
+  },
+  "authority_boundaries": {
+    "darwin_decision_authority": "DISABLED",
+    "darwin_execution_authority": "DISABLED",
+    "live_trades_initiated": 0,
+    "strategy_status_changes": 0,
+    "capital_reallocations": 0,
+    "darwin_processbar_calls": 0,
+    "darwin_postbarautomation_calls": 0,
+    "darwin_traderspost_calls": 0,
+    "darwin_tradovate_calls": 0
+  },
+  "note": "This experiment is separate from the Monday-exclusion prospective validation plan (PV-EXP-003/PV_EXP_004_PROSPECTIVE_VALIDATION_PLAN.md). Do not overwrite that plan."
+}
