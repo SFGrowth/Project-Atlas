@@ -1,0 +1,130 @@
+{
+  "experiment_id": "PV-EXP-002",
+  "sprint": "123A.11",
+  "status": "PRE_REGISTERED",
+  "pre_registration_date_utc": "2026-07-29",
+  "g10_baseline_sha": "18bffe1fe86b89c838dd2faa8fb21c25ef2eec14",
+
+  "instrument": {
+    "symbol": "MNQ",
+    "exchange": "CME",
+    "tick_size_points": 0.25,
+    "tick_value_usd": 0.50,
+    "contract_multiplier": 2.0
+  },
+
+  "primary_configuration": {
+    "entry_model": "A",
+    "entry_rule": "OPEN_OF_BAR_PLUS_1",
+    "entry_bar_offset": 1,
+    "stop_model": "S1",
+    "stop_field": "sweep_level",
+    "stop_ticks": null,
+    "target_model": "T3",
+    "target_r_multiple": 2.0,
+    "target_ticks": null,
+    "standard_slippage_ticks": 2,
+    "commission_per_contract_per_side_usd": 0.62,
+    "commission_round_turn_usd": 1.24
+  },
+
+  "fill_conventions": {
+    "entry_slippage_direction": "adverse",
+    "entry_slippage_ticks": 2,
+    "stop_fill_price": "stop_level",
+    "stop_additional_slippage": 0,
+    "target_fill_price": "target_level",
+    "target_additional_slippage": 0,
+    "session_close_fill_price": "close_of_session_close_bar",
+    "session_close_slippage": 0,
+    "end_of_data_fill_price": "close_of_last_bar",
+    "end_of_data_slippage": 0,
+    "same_bar_ambiguity_rule": "STOP_FIRST",
+    "same_bar_rationale": "Conservative — stop assumed hit before target on same bar"
+  },
+
+  "session_definition": {
+    "rth_start_utc": "14:30",
+    "rth_end_utc": "21:00",
+    "session_close_time_utc": "21:00",
+    "timezone": "UTC"
+  },
+
+  "terminal_outcomes": [
+    "TARGET",
+    "STOP",
+    "SESSION_CLOSE_PROFIT",
+    "SESSION_CLOSE_LOSS",
+    "SESSION_CLOSE_FLAT",
+    "END_OF_DATA_PROFIT",
+    "END_OF_DATA_LOSS",
+    "END_OF_DATA_FLAT",
+    "UNFILLED"
+  ],
+
+  "mae_mfe": {
+    "long_mfe_formula": "max(high_after_entry - entry_price_after_slippage) / tick_size",
+    "long_mae_formula": "max(entry_price_after_slippage - low_after_entry) / tick_size",
+    "short_mfe_formula": "max(entry_price_after_slippage - low_after_entry) / tick_size",
+    "short_mae_formula": "max(high_after_entry - entry_price_after_slippage) / tick_size",
+    "r_denominator": "initial_risk_ticks",
+    "measurement_window": "entry_bar_inclusive_to_exit_bar_inclusive"
+  },
+
+  "robustness_matrix": {
+    "entry_models": ["A", "B", "EMA"],
+    "stop_models": ["fixed_10t", "fixed_15t", "fixed_20t", "atr_1.0", "atr_1.5", "atr_2.0", "structure_s1"],
+    "target_models": ["1R", "1.5R", "2R", "3R"],
+    "slippage_ticks": [0, 1, 2, 3, 4],
+    "expected_configuration_count": 420,
+    "matrix_formula": "3 * 7 * 4 * 5 = 420"
+  },
+
+  "statistical_validation": {
+    "bootstrap_iterations": 10000,
+    "bootstrap_seed": 42,
+    "bootstrap_unit": "individual_trades",
+    "block_bootstrap_block_length": 10,
+    "permutation_iterations": 10000,
+    "permutation_seed": 42,
+    "confidence_level": 0.95,
+    "multiple_comparison_method": "benjamini_hochberg",
+    "significance_threshold": 0.05
+  },
+
+  "pass_fail_criteria": {
+    "research_pass_requires": [
+      "net_expectancy_standard_cost > 0",
+      "ci_95_lower > -10",
+      "profit_factor > 1.0",
+      "max_drawdown < 0.5 * gross_profit",
+      "at_least_one_quarter_positive",
+      "at_least_one_config_survives_bh_correction"
+    ],
+    "research_fail_if": [
+      "primary_net_expectancy <= 0",
+      "no_config_positive_at_standard_cost_after_bh",
+      "all_quarters_negative"
+    ]
+  },
+
+  "locked_input_hashes": {
+    "detector_canonical_event_ledger_sha256": "9240cbb16f5cd2933ad198448853e7f8a0281cf5eac4106bbc526930f8634bb3",
+    "scanner_canonical_event_ledger_sha256": "43aa07a21ea220157b1bdaeeb0f6fc12a1bab2aadc0d84cf8498b0eab25f8352",
+    "dataset_sha256": "c970675391b970956f38d419ef95ff3e116e61ab8874eca7df2ab4334e715623",
+    "detector_sha256": "946b806fb563d4ef37018a05da70fc326e1564ca40c8c206be29b76666b717ec",
+    "pv_exp_001_configuration_sha256": "3e6262e39134c41ee1eee10c11022af69702883c485885c4c3af0e69db754536"
+  },
+
+  "authority_boundaries": {
+    "darwin_processbar_calls": 0,
+    "darwin_postbarautomation_calls": 0,
+    "darwin_traderspost_calls": 0,
+    "darwin_tradovate_calls": 0,
+    "live_trades_initiated": 0,
+    "strategy_status_changes": 0,
+    "capital_reallocations": 0,
+    "darwin_decision_authority": "DISABLED",
+    "darwin_execution_authority": "DISABLED"
+  }
+}
