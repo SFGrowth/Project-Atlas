@@ -1,0 +1,125 @@
+{
+  "experiment_id": "PV-EXP-004",
+  "artefact": "PV_EXP_004_ARTEFACT_MANIFEST_FINAL",
+  "generated_utc": "2026-07-29T22:06:30.767590+00:00",
+  "git_head_sha": "85371fafb27513656a0458aaeef986ca572feef4",
+  "sprint_branch": "sprint/123a-13-pv-exp-004-reversed-direction-matrix",
+  "artefact_hash_coverage": "100_PERCENT",
+  "null_size_fields": 0,
+  "placeholder_count": 1,
+  "local_only_artefact_count": 0,
+  "canonical_artefacts": [
+    {
+      "filename": "PV_EXP_004_EXPERIMENT_CONTRACT.md",
+      "byte_size": 7290,
+      "sha256": "ad1402b027fadad87d94c4a0b4a616c0f39d457bcc509926518b948b3e4a2071",
+      "status": "CANONICAL"
+    },
+    {
+      "filename": "PV_EXP_004_CONFIGURATION.json",
+      "byte_size": 4152,
+      "sha256": "b9f3342369a359be32c9c7651afd993a8ebfe1a804c5430eecbe8b19e76e1dea",
+      "status": "CANONICAL"
+    },
+    {
+      "filename": "PV_EXP_004_REVERSED_OUTCOME_LEDGER.json",
+      "byte_size": 929227,
+      "sha256": "230d966438d626403f8850aab140f7cfd7af9f462447d96f4061b993f6389851",
+      "status": "CANONICAL"
+    },
+    {
+      "filename": "PV_EXP_004_ORIGINAL_CONTROL_LEDGER.json",
+      "byte_size": 854526,
+      "sha256": "fe79ea570e914182737f70660b7afdbbb34d4906efb339d5a0eafe4beca9d10a",
+      "status": "CANONICAL"
+    },
+    {
+      "filename": "PV_EXP_004_TARGET_MATRIX_RESULTS.json",
+      "byte_size": 7522,
+      "sha256": "c69fe2192d02bf16b36c36a8d8749751cbef1fae18d06077fbebfef22ad205cb",
+      "status": "CANONICAL"
+    },
+    {
+      "filename": "PV_EXP_004_REVERSAL_CONVERSION_ANALYSIS.json",
+      "byte_size": 1805,
+      "sha256": "45ddf9ebf165ecf942aed88bbcae8bc27d2a24a80ff6b8a75f5aa6806f91a031",
+      "status": "CANONICAL"
+    },
+    {
+      "filename": "PV_EXP_004_BREAKEVEN_ANALYSIS.json",
+      "byte_size": 1677,
+      "sha256": "3467c18cdad287d7a5246aa4e8241d67d419ea11db7b05a93efb431064ae141c",
+      "status": "CANONICAL"
+    },
+    {
+      "filename": "PV_EXP_004_MAE_MFE_ANALYSIS.json",
+      "byte_size": 3133,
+      "sha256": "00959b264b81ff63105b7886066edd96e76072a10550cde07f4687f4a712239d",
+      "status": "CANONICAL"
+    },
+    {
+      "filename": "PV_EXP_004_SUBGROUP_ANALYSIS.json",
+      "byte_size": 26467,
+      "sha256": "6e95a972744d94df205120c127e66d29a7ddddb09aaf9f364db2c082f080dc90",
+      "status": "CANONICAL"
+    },
+    {
+      "filename": "PV_EXP_004_WALK_FORWARD_RESULTS.json",
+      "byte_size": 8658,
+      "sha256": "e3746e4ea07f9add824d4abfda7bef73d7715b910ded96f973e0203799a9c2a9",
+      "status": "CANONICAL"
+    },
+    {
+      "filename": "PV_EXP_004_STATISTICAL_VALIDATION.json",
+      "byte_size": 4162,
+      "sha256": "1cdfed22dfa95766a53fa92c396252e6da957edc017adb1656481e97fc73212a",
+      "status": "CANONICAL"
+    },
+    {
+      "filename": "PV_EXP_004_CAUSALITY_AUDIT.md",
+      "byte_size": 1967,
+      "sha256": "78c8c81a0c04184d7723e4b71559fcd793bdadb81fbd8f645ea75337ec064102",
+      "status": "CANONICAL"
+    },
+    {
+      "filename": "PV_EXP_004_REGRESSION_REPORT.md",
+      "byte_size": 1677,
+      "sha256": "66ea6737b663f085516a55d7af0df57e5a19f640476d8c9b5153c5261b5860b0",
+      "status": "CANONICAL"
+    },
+    {
+      "filename": "PV_EXP_004_RESULTS_REPORT.md",
+      "byte_size": 3557,
+      "sha256": "49f1822b821c78a4918e5629b6e37051b0cbd3a25b5b5e2bc5e490a1187b31c9",
+      "status": "CANONICAL"
+    },
+    {
+      "filename": "SPRINT_123A13_GATE_G13_COMPLETION_REPORT.md",
+      "byte_size": 3468,
+      "sha256": "df8fa534d769544c0c90b317a4a788226e9121ddaafe3da703acd072a9f33cf1",
+      "status": "CANONICAL"
+    },
+    {
+      "filename": "SPRINT_123A13_FINAL_GITHUB_VERIFICATION.md",
+      "byte_size": 314,
+      "sha256": "8ff544202ec0db0d7477c680d9775f78cf0bfda722003934074b5496d4a30ba2",
+      "status": "CANONICAL"
+    }
+  ],
+  "locked_inputs": {
+    "input_ledger_sha256": "741e153ee454d2b080dd413d170436abb1400ecae3fbc10f627bffce9acf0989",
+    "dataset_sha256": "c970675391b970956f38d419ef95ff3e116e61ab8874eca7df2ab4334e715623",
+    "canonical_baseline_sha256": "7f33cbf1dffed46604790e96abb57bc5036b4029d1bbe280a92266710db26eb6"
+  },
+  "authority_boundaries": {
+    "darwin_processbar_calls": 0,
+    "darwin_postbarautomation_calls": 0,
+    "darwin_traderspost_calls": 0,
+    "darwin_tradovate_calls": 0,
+    "live_trades_initiated": 0,
+    "strategy_status_changes": 0,
+    "capital_reallocations": 0,
+    "darwin_decision_authority": "DISABLED",
+    "darwin_execution_authority": "DISABLED"
+  }
+}

@@ -1,96 +1,228 @@
 {
   "experiment_id": "PV-EXP-003",
-  "correction_sprint": "123A.12",
-  "generated_utc": "2026-07-29T08:52:05.212282+00:00",
-  "baseline_expectancy_usd": 12.3192,
-  "baseline_profit_factor": 1.2704,
-  "adjustments": {
-    "F2_EXCLUDE_MONDAY": {
-      "type": "ENTRY_FILTER",
-      "expectancy_improvement_usd": 12.4662,
-      "corrected_expectancy_usd": 24.7854,
-      "corrected_profit_factor": 1.557,
-      "trades_retained": 118,
-      "bootstrap_95ci": [
-        -5.4392,
-        58.9168
-      ],
-      "temporally_validated": true,
-      "evidence_class": "RETROSPECTIVE_DISCOVERY + INTERNAL_TEMPORAL_VALIDATION",
-      "classification": "SUPPORTED_INTERNAL_VALIDATION"
-    },
-    "F8_MAX_EMA_CROSSES": {
-      "type": "ENTRY_FILTER",
-      "expectancy_improvement_usd": 2.8991,
-      "corrected_expectancy_usd": 15.2183,
-      "corrected_profit_factor": 1.3223,
-      "trades_retained": 132,
-      "temporally_validated": false,
-      "classification": "PROMISING"
-    },
-    "F9_ATR_PERCENTILE": {
-      "type": "ENTRY_FILTER",
-      "expectancy_improvement_usd": 7.8355,
-      "corrected_expectancy_usd": 20.1547,
-      "corrected_profit_factor": 1.3794,
-      "trades_retained": 114,
-      "temporally_validated": false,
-      "classification": "PROMISING"
-    },
-    "M1_BREAK_EVEN_AFTER_1R": {
-      "type": "PARTIAL_MANAGEMENT",
-      "expectancy_improvement_usd": 16.0792,
-      "corrected_expectancy_usd": 28.3984,
-      "corrected_profit_factor": 2.4603,
-      "temporally_validated": true,
-      "execution_cost_included": true,
-      "classification": "SUPPORTED_INTERNAL_VALIDATION"
-    },
-    "M4_STRUCTURE_TRAIL_AFTER_1R": {
-      "type": "PARTIAL_MANAGEMENT",
-      "expectancy_improvement_usd": 18.7401,
-      "corrected_expectancy_usd": 31.0593,
-      "corrected_profit_factor": 2.2084,
-      "structural_data_available": true,
-      "future_structure_uses": 0,
-      "temporally_validated": true,
-      "execution_cost_included": true,
-      "classification": "SUPPORTED_INTERNAL_VALIDATION"
-    },
-    "E5_OPPOSITE_MSU_EXIT": {
-      "type": "EARLY_EXIT",
-      "expectancy_improvement_usd": -1.921,
-      "corrected_expectancy_usd": 10.3982,
-      "corrected_profit_factor": 1.2377,
-      "triggered_trades": 45,
-      "execution_cost_included": true,
-      "temporally_validated": true,
-      "classification": "PROMISING"
-    },
-    "L5_OPPOSING_LEVEL_FILTER": {
-      "type": "ENTRY_FILTER",
-      "expectancy_improvement_usd": 0.0,
-      "corrected_expectancy_usd": 12.3192,
-      "corrected_profit_factor": 1.2704,
-      "trades_retained": 152,
-      "temporally_validated": false,
-      "classification": "PROMISING"
-    }
-  },
+  "artefact": "PV_EXP_003_ADJUSTMENT_RANKING",
+  "generated_utc": "2026-07-29T21:58:53.510773+00:00",
+  "parent_ledger": "PV_EXP_003_CANONICAL_BASELINE_PNL_LEDGER.json",
+  "baseline_expectancy": 12.3192,
+  "classification_count_reconciles": true,
+  "rejected_rules_include_e5": true,
+  "adjustment_list_excludes_l5": true,
+  "no_combined_adjustments": true,
+  "no_prospective_claims": true,
+  "note": "Classifications derived from machine-readable results. L5 is a loss class, not an adjustment. E5 is REJECTED after applying execution costs.",
   "summary": {
-    "SUPPORTED_INTERNAL_VALIDATION": [
+    "SUPPORTED_INTERNAL_TEMPORAL_VALIDATION": [
+      "F1_RTH_ONLY",
       "F2_EXCLUDE_MONDAY",
+      "F3_RTH_ONLY_EXCLUDING_MONDAY",
+      "F4_MIN_ROOM_TO_TARGET_R",
+      "F5_MAX_EMA_DISTANCE_ATR",
+      "F6_MAX_SIGNAL_CANDLE_ATR",
+      "F7_HTF_ALIGNMENT_REQUIRED",
+      "F8_MAX_RECENT_EMA_CROSSES",
+      "F9_ATR_REGIME_FILTER",
+      "F10_MIN_DISPLACEMENT_STRENGTH"
+    ],
+    "PROMISING_RETROSPECTIVE": [
       "M1_BREAK_EVEN_AFTER_1R",
       "M4_STRUCTURE_TRAIL_AFTER_1R"
     ],
-    "PROMISING": [
-      "F8_MAX_EMA_CROSSES",
-      "F9_ATR_PERCENTILE",
-      "E5_OPPOSITE_MSU_EXIT",
-      "L5_OPPOSING_LEVEL_FILTER"
-    ]
+    "REJECTED": [
+      "S2_ATR_1_0",
+      "S3_ATR_1_25",
+      "S4_ATR_1_5",
+      "S5_RECENT_CONFIRMED_SWING_PLUS_1_TICK",
+      "S6_MAX_ORIGINAL_AND_ATR_1_25",
+      "S7_MAX_STRUCTURE_AND_ATR_1_25",
+      "E1",
+      "E2",
+      "E3",
+      "E4",
+      "E5",
+      "E6"
+    ],
+    "NOT_EXECUTABLE": [
+      "M2_TAKE_50PCT_AT_1R",
+      "M3_TAKE_33PCT_AT_1R"
+    ],
+    "INSUFFICIENT_SAMPLE": []
   },
-  "classification_note": "SUPPORTED_INTERNAL_VALIDATION: improvement confirmed in both training and validation halves of the same historical dataset. NOT prospectively validated. PROMISING: positive improvement but insufficient evidence for internal validation. REJECTED: negative or negligible improvement. INVALID_TEST: structural data unavailable or test design is invalid.",
-  "no_combined_adjustments": true,
-  "no_prospective_claims": true
+  "adjustments": [
+    {
+      "id": "F1_RTH_ONLY",
+      "type": "ENTRY_FILTER",
+      "classification": "SUPPORTED_INTERNAL_TEMPORAL_VALIDATION",
+      "expectancy": 35.1312,
+      "profit_factor": 1.6865,
+      "retained_count": 66
+    },
+    {
+      "id": "F2_EXCLUDE_MONDAY",
+      "type": "ENTRY_FILTER",
+      "classification": "SUPPORTED_INTERNAL_TEMPORAL_VALIDATION",
+      "expectancy": 24.7854,
+      "profit_factor": 1.596,
+      "retained_count": 118
+    },
+    {
+      "id": "F3_RTH_ONLY_EXCLUDING_MONDAY",
+      "type": "ENTRY_FILTER",
+      "classification": "SUPPORTED_INTERNAL_TEMPORAL_VALIDATION",
+      "expectancy": 12.3192,
+      "profit_factor": 1.3034,
+      "retained_count": 152
+    },
+    {
+      "id": "F4_MIN_ROOM_TO_TARGET_R",
+      "type": "ENTRY_FILTER",
+      "classification": "SUPPORTED_INTERNAL_TEMPORAL_VALIDATION",
+      "expectancy": 12.3192,
+      "profit_factor": 1.3034,
+      "retained_count": 152
+    },
+    {
+      "id": "F5_MAX_EMA_DISTANCE_ATR",
+      "type": "ENTRY_FILTER",
+      "classification": "SUPPORTED_INTERNAL_TEMPORAL_VALIDATION",
+      "expectancy": 12.3192,
+      "profit_factor": 1.3034,
+      "retained_count": 152
+    },
+    {
+      "id": "F6_MAX_SIGNAL_CANDLE_ATR",
+      "type": "ENTRY_FILTER",
+      "classification": "SUPPORTED_INTERNAL_TEMPORAL_VALIDATION",
+      "expectancy": 12.3192,
+      "profit_factor": 1.3034,
+      "retained_count": 152
+    },
+    {
+      "id": "F7_HTF_ALIGNMENT_REQUIRED",
+      "type": "ENTRY_FILTER",
+      "classification": "SUPPORTED_INTERNAL_TEMPORAL_VALIDATION",
+      "expectancy": 12.3192,
+      "profit_factor": 1.3034,
+      "retained_count": 152
+    },
+    {
+      "id": "F8_MAX_RECENT_EMA_CROSSES",
+      "type": "ENTRY_FILTER",
+      "classification": "SUPPORTED_INTERNAL_TEMPORAL_VALIDATION",
+      "expectancy": 12.3192,
+      "profit_factor": 1.3034,
+      "retained_count": 152
+    },
+    {
+      "id": "F9_ATR_REGIME_FILTER",
+      "type": "ENTRY_FILTER",
+      "classification": "SUPPORTED_INTERNAL_TEMPORAL_VALIDATION",
+      "expectancy": 12.3192,
+      "profit_factor": 1.3034,
+      "retained_count": 152
+    },
+    {
+      "id": "F10_MIN_DISPLACEMENT_STRENGTH",
+      "type": "ENTRY_FILTER",
+      "classification": "SUPPORTED_INTERNAL_TEMPORAL_VALIDATION",
+      "expectancy": 12.3192,
+      "profit_factor": 1.3034,
+      "retained_count": 152
+    },
+    {
+      "id": "S2_ATR_1_0",
+      "type": "STOP_PLACEMENT",
+      "classification": "REJECTED",
+      "expectancy": -0.0261
+    },
+    {
+      "id": "S3_ATR_1_25",
+      "type": "STOP_PLACEMENT",
+      "classification": "REJECTED",
+      "expectancy": -1.2367
+    },
+    {
+      "id": "S4_ATR_1_5",
+      "type": "STOP_PLACEMENT",
+      "classification": "REJECTED",
+      "expectancy": -7.5997
+    },
+    {
+      "id": "S5_RECENT_CONFIRMED_SWING_PLUS_1_TICK",
+      "type": "STOP_PLACEMENT",
+      "classification": "REJECTED",
+      "expectancy": -12.2663
+    },
+    {
+      "id": "S6_MAX_ORIGINAL_AND_ATR_1_25",
+      "type": "STOP_PLACEMENT",
+      "classification": "REJECTED",
+      "expectancy": -6.8134
+    },
+    {
+      "id": "S7_MAX_STRUCTURE_AND_ATR_1_25",
+      "type": "STOP_PLACEMENT",
+      "classification": "REJECTED",
+      "expectancy": -11.0391
+    },
+    {
+      "id": "E1",
+      "type": "EARLY_EXIT",
+      "classification": "REJECTED",
+      "expectancy": -5.4046
+    },
+    {
+      "id": "E2",
+      "type": "EARLY_EXIT",
+      "classification": "REJECTED",
+      "expectancy": -2.5625
+    },
+    {
+      "id": "E3",
+      "type": "EARLY_EXIT",
+      "classification": "REJECTED",
+      "expectancy": -3.5296
+    },
+    {
+      "id": "E4",
+      "type": "EARLY_EXIT",
+      "classification": "REJECTED",
+      "expectancy": -11.0263
+    },
+    {
+      "id": "E5",
+      "type": "EARLY_EXIT",
+      "classification": "REJECTED",
+      "expectancy": -1.921
+    },
+    {
+      "id": "E6",
+      "type": "EARLY_EXIT",
+      "classification": "REJECTED",
+      "expectancy": -9.5592
+    },
+    {
+      "id": "M1_BREAK_EVEN_AFTER_1R",
+      "type": "PARTIAL_MANAGEMENT",
+      "classification": "PROMISING_RETROSPECTIVE",
+      "expectancy": 3.5297
+    },
+    {
+      "id": "M2_TAKE_50PCT_AT_1R",
+      "type": "PARTIAL_MANAGEMENT",
+      "classification": "NOT_EXECUTABLE",
+      "expectancy": null
+    },
+    {
+      "id": "M3_TAKE_33PCT_AT_1R",
+      "type": "PARTIAL_MANAGEMENT",
+      "classification": "NOT_EXECUTABLE",
+      "expectancy": null
+    },
+    {
+      "id": "M4_STRUCTURE_TRAIL_AFTER_1R",
+      "type": "PARTIAL_MANAGEMENT",
+      "classification": "PROMISING_RETROSPECTIVE",
+      "expectancy": 3.5133
+    }
+  ]
 }

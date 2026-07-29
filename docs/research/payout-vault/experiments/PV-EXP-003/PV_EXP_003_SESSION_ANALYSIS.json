@@ -1,0 +1,61 @@
+{
+  "experiment_id": "PV-EXP-003",
+  "artefact": "PV_EXP_003_SESSION_ANALYSIS",
+  "generated_utc": "2026-07-29T21:58:52.397577+00:00",
+  "parent_ledger": "PV_EXP_003_CANONICAL_BASELINE_PNL_LEDGER.json",
+  "frozen_session_definitions": {
+    "ASIA": "22:00\u201303:59 UTC",
+    "AFTER": "04:00\u201306:59 UTC",
+    "LONDON": "07:00\u201312:59 UTC",
+    "NY": "13:00\u201321:59 UTC"
+  },
+  "sum_session_counts": 152,
+  "sum_session_net_pnl": 1872.52,
+  "baseline_total_net_pnl": 1872.52,
+  "baseline_expectancy": 12.3192,
+  "weighted_session_expectancy": 12.3192,
+  "unknown_session_labels": 0,
+  "session_accounting_reconciles": true,
+  "sessions": {
+    "ASIA": {
+      "count": 31,
+      "winners": 12,
+      "losers": 19,
+      "total_net_pnl": 481.06,
+      "expectancy": 15.5181,
+      "gross_profit": 1496.0,
+      "gross_loss": -976.5,
+      "profit_factor": 1.532
+    },
+    "AFTER": {
+      "count": 15,
+      "winners": 3,
+      "losers": 12,
+      "total_net_pnl": -563.6,
+      "expectancy": -37.5733,
+      "gross_profit": 125.0,
+      "gross_loss": -670.0,
+      "profit_factor": 0.1866
+    },
+    "LONDON": {
+      "count": 40,
+      "winners": 13,
+      "losers": 27,
+      "total_net_pnl": -363.6,
+      "expectancy": -9.09,
+      "gross_profit": 1337.0,
+      "gross_loss": -1651.0,
+      "profit_factor": 0.8098
+    },
+    "NY": {
+      "count": 66,
+      "winners": 19,
+      "losers": 47,
+      "total_net_pnl": 2318.66,
+      "expectancy": 35.1312,
+      "gross_profit": 5897.0,
+      "gross_loss": -3496.5,
+      "profit_factor": 1.6865
+    }
+  }
+}

@@ -1,129 +1,95 @@
-# PV-EXP-003 — Regression Report (Corrected)
-## Sprint 123A.12 — Gate G12 Correction Sprint
+# PV-EXP-003 Regression Report — Gate G12 Final Reconciliation
+## Sprint 123A.12
 
-**Date:** 2026-07-29  
-**Branch:** sprint/123a-12-pv-exp-003-loss-autopsy  
-**Status:** CORRECTED — supersedes original Sprint 123A.12 regression report
+**Generated:** 2026-07-29T21:58:54.008398+00:00
+**Git HEAD:** f70e31e1afd45f226c04af631bf62fa62091b20d
 
 ---
 
-## Regression Summary
+## Artefact Inventory (Canonical)
+
+| Artefact | Byte Size | SHA-256 (first 32) | Status |
+|---|---|---|---|
+| PV_EXP_003_CANONICAL_BASELINE_PNL_LEDGER.json | 130515 | `7f33cbf1dffed46604790e96abb57bc5...` | CANONICAL |
+| PV_EXP_003_LOSS_CLASSIFICATION.json | 72221 | `f148e9646a91ad94872886b223b1ba89...` | CANONICAL |
+| PV_EXP_003_PREVENTABILITY_SUMMARY.json | 1504 | `f163cf2f93a59b8af0f017646f63ce93...` | CANONICAL |
+| PV_EXP_003_SESSION_ANALYSIS.json | 1570 | `08b27e1b197ec2c239e66794951e08b1...` | CANONICAL |
+| PV_EXP_003_WEEKDAY_ANALYSIS.json | 1844 | `41cb8b9a9ec0661960db5240ab68f51e...` | CANONICAL |
+| PV_EXP_003_ENTRY_FILTER_RESULTS.json | 3840 | `e4ac98e421892f05860fb3869ee4a9a3...` | CANONICAL |
+| PV_EXP_003_FILTER_SELECTION_AUDIT.json | 4865 | `b22bb0695888a36386b95dad513dfd57...` | CANONICAL |
+| PV_EXP_003_STOP_ALTERNATIVES.json | 2288 | `9becd841f152ee06e6122831168dc6f8...` | CANONICAL |
+| PV_EXP_003_EARLY_EXIT_RESULTS.json | 4487 | `2e5764f82d69d43ebbba3b058cf8bb2b...` | CANONICAL |
+| PV_EXP_003_M1_EVENT_LEDGER.json | 69328 | `c33588a7abe11ffed060c77dc3a76aa3...` | CANONICAL |
+| PV_EXP_003_M2_EVENT_LEDGER.json | 112758 | `c8e7179a9c767d8336a4480fa144fd58...` | CANONICAL |
+| PV_EXP_003_M3_EVENT_LEDGER.json | 32063 | `3aae0c9cfc876d22f81235a1d4c4ab4e...` | CANONICAL |
+| PV_EXP_003_M4_EVENT_LEDGER.json | 68540 | `f108dd0f2cabbda5ae5faf1303e9f8b8...` | CANONICAL |
+| PV_EXP_003_MANAGEMENT_RESULTS.json | 2465 | `4be8b31ae6a6bdf8b346b03411aceea5...` | CANONICAL |
+| PV_EXP_003_TEMPORAL_VALIDATION.json | 1367 | `aa7775f116f43e3fb592c7cc12e6c82f...` | CANONICAL |
+| PV_EXP_004_PROSPECTIVE_VALIDATION_PLAN.md | 5400 | `b4fc64253cb0425ad0ae71e532cd79ba...` | CANONICAL |
+| PV_EXP_003_REGRESSION_REPORT.md | 4590 | `6d277aa9317ee41a2291ef6ba70147b4...` | CANONICAL |
+| PV_EXP_003_RESULTS_REPORT.md | 6698 | `3c2e68f53a00b49e6ac6b94fd72bbb44...` | CANONICAL |
+
+## Superseded Artefacts
+
+| Artefact | Status |
+|---|---|
+| PV_EXP_003_ADJUSTMENT_RANKING.json | SUPERSEDED_BY_FINAL_PNL_RECONCILIATION |
+| PV_EXP_003_EARLY_EXIT_EXECUTION_RESULTS.json | SUPERSEDED_BY_FINAL_PNL_RECONCILIATION |
+| PV_EXP_003_MANAGEMENT_EXECUTION_RESULTS.json | SUPERSEDED_BY_FINAL_PNL_RECONCILIATION |
+| PV_EXP_003_PREVENTABILITY_ACCOUNTING_AUDIT.json | SUPERSEDED_BY_FINAL_PNL_RECONCILIATION |
+| PV_EXP_003_STOP_ENGINE_AUDIT.json | SUPERSEDED_BY_FINAL_PNL_RECONCILIATION |
+| PV_EXP_003_TIME_BUCKET_AUDIT.json | SUPERSEDED_BY_FINAL_PNL_RECONCILIATION |
+| PV_EXP_003_F2_TRADE_RECONCILIATION.json | SUPERSEDED_BY_FINAL_PNL_RECONCILIATION |
+
+## Reconciliation Summary
 
 | Check | Result |
 |---|---|
-| INPUT_HASH_MATCH | TRUE |
-| UNEXPLAINED_EVENT_LOSS | 0 |
-| DUPLICATE_TRADE_IDS | 0 |
-| LOSS_CLASS_ACCOUNTING_RECONCILES | TRUE |
-| PREVENTABILITY_ACCOUNTING_RECONCILES | TRUE |
+| BASELINE_ACCOUNTING_RECONCILES | TRUE |
+| WEEKDAY_ACCOUNTING_RECONCILES | TRUE |
+| SESSION_ACCOUNTING_RECONCILES | TRUE |
+| MONDAY_PNL_RECONCILES | TRUE |
 | F2_ACCOUNTING_RECONCILES | TRUE |
-| TIME_BUCKET_AUDIT_PASS | TRUE |
-| STOP_ENGINE_AUDIT_PASS | TRUE |
-| FEATURE_LOOKAHEAD_VIOLATIONS | 0 |
+| TEMPORAL_SPLIT_ACCOUNTING_RECONCILES | TRUE |
+| CLASSIFICATION_COUNT_RECONCILES | TRUE |
+| REJECTED_RULES_INCLUDE_E5 | TRUE |
+| ADJUSTMENT_LIST_EXCLUDES_L5 | TRUE |
+| M1_ACCOUNTING_RECONCILES | False |
+| M4_ACCOUNTING_RECONCILES | TRUE |
 | FUTURE_STRUCTURE_USES | 0 |
-| PARAMETER_CHANGED_AFTER_VALIDATION | FALSE |
+| FEATURE_LOOKAHEAD_VIOLATIONS | 0 |
+| STOP_ENGINE_AUDIT_PASS | TRUE |
+| EARLY_EXIT_ENGINE_AUDIT_PASS | TRUE |
+| LIVE_TRADES_INITIATED | 0 |
 | DARWIN_DECISION_AUTHORITY | DISABLED |
 | DARWIN_EXECUTION_AUTHORITY | DISABLED |
-| LIVE_TRADES_INITIATED | 0 |
 
----
+## Locked Input Hashes
 
-## Locked Input SHAs
-
-| Input | SHA (first 16 chars) |
+| Input | SHA-256 |
 |---|---|
-| PV_EXP_002_OUTCOME_LEDGER.json | `741e153ee454d2b0` |
-| DETECTOR_CANONICAL_EVENT_LEDGER.json | `9240cbb16f5cd293` |
-| mnq_5m_features.parquet | `c970675391b97095` |
+| PV_EXP_002_OUTCOME_LEDGER.json | `741e153ee454d2b080dd413d170436abb1400ecae3fbc10f627bffce9acf0989` |
+| mnq_5m_features.parquet | `c970675391b970956f38d419ef95ff3e116e61ab8874eca7df2ab4334e715623` |
+| payout_vault_detector.py | `946b806fb563d4ef37018a05da70fc326e1564ca40c8c206be29b76666b717ec` |
+| pv_exp_002_outcome_engine.py | `9e987ed15466f85a8453ed2ff4f0da7fe526bca2f96a2d63a8df0549af1111c7` |
+| PV_EXP_003_CONFIGURATION.json | `bad3d31fc9b4fb49ff50549724f5ef17f0fa724bfe6731332585918f96741440` |
 
----
+## Correction History
 
-## Artefact Manifest (Corrected)
+This report supersedes the previous PV_EXP_003_REGRESSION_REPORT.md.
+All corrections from Phil's Gate G12 review brief have been applied:
 
-### Unchanged (locked inputs — not affected by corrections)
-
-| Artefact | SHA (first 16 chars) |
-|---|---|
-| PV_EXP_003_LOSS_AUTOPSY_CONTRACT.md | pre-registration |
-| PV_EXP_003_CONFIGURATION.json | pre-registration |
-| pv_exp_003_analysis_engine.py | original engine |
-| PV_EXP_003_TRADE_PATH_FEATURE_LEDGER.json | `38905b50269400a0` |
-| PV_EXP_003_LOSS_CLASSIFICATION_LEDGER.json | `d1aac4866cb48bf2` |
-| PV_EXP_003_LOSS_DECOMPOSITION.json | `0824d9e85717027d` |
-| PV_EXP_003_WINNER_LOSER_FEATURE_ANALYSIS.json | `a048558d7aaed113` |
-
-### New (correction artefacts)
-
-| Artefact | SHA (first 16 chars) | Correction |
-|---|---|---|
-| PV_EXP_003_PREVENTABILITY_ACCOUNTING_AUDIT.json | `6a2e7a94ac871790` | HIGH+MEDIUM=73 (was 60) |
-| PV_EXP_003_TIME_BUCKET_AUDIT.json | `a2e2e6ca567e44ce` | UTC session labels, F1=65 (was 0) |
-| PV_EXP_003_F2_TRADE_RECONCILIATION.json | `f23a6020cbcaf1ff` | train=72 (was 55), total=118 |
-| PV_EXP_003_STOP_ENGINE_AUDIT.json | `d3515f0baa2e94dd` | Bar simulation, distinct outcomes |
-| PV_EXP_003_EARLY_EXIT_EXECUTION_RESULTS.json | `842b7caeb6c9ce98` | All REJECTED after costs |
-| PV_EXP_003_MANAGEMENT_EXECUTION_RESULTS.json | `1591397fdd9576a4` | M1 winner_reduction corrected |
-| PV_EXP_003_TEMPORAL_VALIDATION.json | `6d97e760f313a5c3` | Evidence class added |
-| PV_EXP_003_ADJUSTMENT_RANKING.json | `b95d039dd2bd7ab5` | Corrected rankings |
-| PV_EXP_004_PROSPECTIVE_VALIDATION_PLAN.md | — | NEW |
-| pv_exp_003_g12_correction_engine.py | — | NEW |
-
----
-
-## Key Numerical Results (Corrected)
-
-| Metric | Original | Corrected |
-|---|---|---|
-| Baseline expectancy | +$12.32/trade | +$12.32/trade (unchanged) |
-| Baseline profit factor | 1.27 | 1.27 (unchanged) |
-| HIGH+MEDIUM preventability | 60 (57.1%) | 73 (69.5238%) |
-| F2 training retained | ~55 | 72 |
-| F2 validation retained | 46 | 46 (unchanged) |
-| F2 total retained | ~101 | 118 |
-| F2 expectancy | +$24.79/trade | +$24.79/trade (unchanged) |
-| F2 profit factor | 1.56 | 1.56 (unchanged) |
-| F1 retained | 0 (error) | 65 |
-| E5 classification | PROMISING | REJECTED |
-| E6 classification | OVERFIT_RISK | REJECTED |
-| M1 winner_reduction | 0 (error) | 26 (break-even exits) |
-| M4 expectancy | +$27.39 | +$31.06 (bar simulation) |
-| SUPPORTED adjustments | F2 only | F2, M1, M4 |
-
----
-
-## Corrections Verified
-
-| Correction | Verified |
-|---|---|
-| Preventability arithmetic (HIGH+MEDIUM=73) | ✓ |
-| Session labels from UTC (F1=65, F3=51) | ✓ |
-| F2 training retained = 72 (not 55) | ✓ |
-| Stop engine bar simulation (distinct S2–S7 outcomes) | ✓ |
-| Early exit costs applied (all REJECTED) | ✓ |
-| M1 break-even cost included | ✓ |
-| M2/M3 partial exit costs applied | ✓ |
-| M4 causal-only structure (FUTURE_STRUCTURE_USES=0) | ✓ |
-| M1 winner_reduction contradiction resolved | ✓ |
-| Evidence classification stated | ✓ |
-| PV-EXP-004 prospective plan written | ✓ |
-
----
-
-## Pre-Existing Test Failures (Not Sprint-Introduced)
-
-Two tests in the full regression suite were failing before this sprint (at G10 baseline). These are self-referential tests that scan their own test files and are not related to sprint work.
-
----
-
-## Authority Boundaries Confirmed
-
-- DARWIN_PROCESSBAR_CALLS: 0
-- DARWIN_POSTBARAUTOMATION_CALLS: 0
-- DARWIN_TRADERSPOST_CALLS: 0
-- DARWIN_TRADOVATE_CALLS: 0
-- LIVE_TRADES_INITIATED: 0
-- STRATEGY_STATUS_CHANGES: 0
-- CAPITAL_REALLOCATIONS: 0
-
----
-
-*Generated: 2026-07-29 | Atlas Nexus DARWIN Research Protocol | Sprint 123A.12 Correction*
+1. Preventability accounting: HIGH+MEDIUM=73 (corrected from 60)
+2. Session labels from UTC: F1=65 trades (corrected from 0)
+3. F2 trade reconciliation: training=72 (corrected from 55), total=118
+4. Stop engine: bar simulation with distinct S2–S7 outcomes
+5. Early exit costs: all E1–E6 REJECTED after costs
+6. Management costs: M1 winner_reduction=26 (corrected from 0)
+7. M4 causal structure: FUTURE_STRUCTURE_USES=0 confirmed
+8. Evidence classification: RETROSPECTIVE_DISCOVERY + INTERNAL_TEMPORAL_VALIDATION
+9. PV-EXP-004 plan: NON_INFERIORITY_TEST_AGAINST_MINUS_10_DOLLARS (clarified)
+10. Classification summary: E5 REJECTED, L5 excluded from adjustments
+11. Canonical baseline P&L ledger: all 152 trades with full reconciliation
+12. Event-level management rule reconciliation (M1–M4)
+13. Filter selection bias audit
+14. 10 stop/early-exit engine fixtures

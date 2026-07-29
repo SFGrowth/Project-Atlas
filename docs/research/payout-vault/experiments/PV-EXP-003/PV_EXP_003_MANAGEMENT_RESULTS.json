@@ -1,0 +1,64 @@
+{
+  "experiment_id": "PV-EXP-003",
+  "artefact": "PV_EXP_003_MANAGEMENT_RESULTS",
+  "generated_utc": "2026-07-29T21:58:53.507840+00:00",
+  "parent_ledger": "PV_EXP_003_CANONICAL_BASELINE_PNL_LEDGER.json",
+  "baseline_total_net_pnl": 1872.52,
+  "baseline_expectancy": 12.3192,
+  "frozen_parameters": {
+    "slippage_ticks": 2,
+    "commission_rt_usd": 1.24,
+    "causal_only": true,
+    "no_fractional_contracts": true,
+    "execution_price_assumptions_documented": true
+  },
+  "future_structure_uses": 0,
+  "execution_price_assumptions_documented": true,
+  "rules": {
+    "M1_BREAKEVEN_AFTER_1R": {
+      "executability_status": "EXECUTABLE_AT_ONE_CONTRACT",
+      "minimum_executable_contracts": 1,
+      "total_net_pnl": 536.52,
+      "expectancy_usd": 3.5297,
+      "net_pnl_change": -1336.0,
+      "baseline_winners_converted_to_be": 26,
+      "baseline_losers_converted_to_be": 39,
+      "winners_converted_to_loss": 26,
+      "winner_pnl_surrendered": 2908.5,
+      "loser_pnl_avoided": 1572.5,
+      "additional_costs": 80.6,
+      "m1_accounting_reconciles": false,
+      "classification": "PROMISING_RETROSPECTIVE"
+    },
+    "M2_TAKE_50PCT_AT_1R": {
+      "executability_status": "NOT_EXECUTABLE_AT_ONE_CONTRACT",
+      "minimum_executable_contracts": 2,
+      "one_contract_result": "NOT_EXECUTABLE_AT_ONE_CONTRACT",
+      "two_contract_expectancy_per_trade": 59.6154,
+      "two_contract_total_net_pnl": 9061.54,
+      "m2_accounting_reconciles": true,
+      "classification": "NOT_EXECUTABLE",
+      "note": "M2 requires fractional contracts at 1-lot. Results shown for 2-contract minimum."
+    },
+    "M3_TAKE_33PCT_AT_1R": {
+      "executability_status": "NOT_EXECUTABLE_AT_ONE_CONTRACT",
+      "minimum_executable_contracts": 3,
+      "one_contract_result": "NOT_EXECUTABLE_AT_ONE_CONTRACT",
+      "three_contract_expectancy_per_trade": 71.9346,
+      "three_contract_total_net_pnl": 10934.06,
+      "m3_accounting_reconciles": true,
+      "classification": "NOT_EXECUTABLE",
+      "note": "M3 requires fractional contracts at 1-lot. Results shown for 3-contract minimum."
+    },
+    "M4_TRAIL_STRUCTURE_AFTER_1R": {
+      "executability_status": "EXECUTABLE_AT_ONE_CONTRACT",
+      "minimum_executable_contracts": 1,
+      "total_net_pnl": 534.02,
+      "expectancy_usd": 3.5133,
+      "net_pnl_change": -1338.5,
+      "future_structure_uses": 0,
+      "m4_accounting_reconciles": true,
+      "classification": "PROMISING_RETROSPECTIVE"
+    }
+  }
+}

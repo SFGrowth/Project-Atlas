@@ -1,0 +1,57 @@
+{
+  "experiment_id": "PV-EXP-003",
+  "artefact": "PV_EXP_003_PREVENTABILITY_SUMMARY",
+  "generated_utc": "2026-07-29T21:58:53.529763+00:00",
+  "parent_ledger": "PV_EXP_003_CANONICAL_BASELINE_PNL_LEDGER.json",
+  "total_losers": 105,
+  "high_count": 67,
+  "medium_count": 36,
+  "low_count": 2,
+  "high_plus_medium_count": 103,
+  "high_plus_medium_percent": 98.0952,
+  "preventability_accounting_reconciles": true,
+  "class_breakdown": [
+    {
+      "loss_class": "L4_NO_MOMENTUM_TIMEOUT",
+      "count": 12,
+      "preventability_class": "HIGH",
+      "average_loss_usd": -67.49
+    },
+    {
+      "loss_class": "L11_SAME_BAR_AMBIGUITY",
+      "count": 11,
+      "preventability_class": "HIGH",
+      "average_loss_usd": -31.6
+    },
+    {
+      "loss_class": "L1_IMMEDIATE_ADVERSE_MOVE",
+      "count": 21,
+      "preventability_class": "HIGH",
+      "average_loss_usd": -79.74
+    },
+    {
+      "loss_class": "L3_PARTIAL_PROGRESS_THEN_REVERSAL",
+      "count": 28,
+      "preventability_class": "MEDIUM",
+      "average_loss_usd": -65.38
+    },
+    {
+      "loss_class": "L8_HIGHER_TIMEFRAME_CONFLICT",
+      "count": 2,
+      "preventability_class": "LOW",
+      "average_loss_usd": -101.99
+    },
+    {
+      "loss_class": "L2_STOPPED_THEN_TARGET",
+      "count": 23,
+      "preventability_class": "HIGH",
+      "average_loss_usd": -50.74
+    },
+    {
+      "loss_class": "L5_OPPOSING_LEVEL_BLOCK",
+      "count": 8,
+      "preventability_class": "MEDIUM",
+      "average_loss_usd": -111.3
+    }
+  ]
+}

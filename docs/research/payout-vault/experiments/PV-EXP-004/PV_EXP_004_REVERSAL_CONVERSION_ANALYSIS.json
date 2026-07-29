@@ -1,0 +1,50 @@
+{
+  "experiment_id": "PV-EXP-004",
+  "artefact": "PV_EXP_004_REVERSAL_CONVERSION_ANALYSIS",
+  "generated_utc": "2026-07-29T22:06:30.753419+00:00",
+  "original_baseline_losers": 105,
+  "original_baseline_winners": 47,
+  "theoretical_reversal_rate": 0.6908,
+  "conversions": {
+    "REV_R1": {
+      "original_losers_to_rev_winners": 66,
+      "original_winners_to_rev_losers": 46,
+      "original_losers_to_rev_target_wins": 66,
+      "original_winners_to_rev_stop_losses": 46,
+      "theoretical_reversal_rate": 0.6908,
+      "actual_rev_target_win_rate": 0.4342
+    },
+    "REV_R15": {
+      "original_losers_to_rev_winners": 59,
+      "original_winners_to_rev_losers": 46,
+      "original_losers_to_rev_target_wins": 59,
+      "original_winners_to_rev_stop_losses": 46,
+      "theoretical_reversal_rate": 0.6908,
+      "actual_rev_target_win_rate": 0.3882
+    },
+    "REV_R2": {
+      "original_losers_to_rev_winners": 49,
+      "original_winners_to_rev_losers": 46,
+      "original_losers_to_rev_target_wins": 49,
+      "original_winners_to_rev_stop_losses": 46,
+      "theoretical_reversal_rate": 0.6908,
+      "actual_rev_target_win_rate": 0.3224
+    },
+    "REV_R25": {
+      "original_losers_to_rev_winners": 40,
+      "original_winners_to_rev_losers": 46,
+      "original_losers_to_rev_target_wins": 40,
+      "original_winners_to_rev_stop_losses": 46,
+      "theoretical_reversal_rate": 0.6908,
+      "actual_rev_target_win_rate": 0.2632
+    }
+  },
+  "original_losers_to_rev_r1_winners": 66,
+  "original_losers_to_rev_r15_winners": 59,
+  "original_losers_to_rev_r2_winners": 49,
+  "original_losers_to_rev_r25_winners": 40,
+  "original_winners_to_rev_r1_losers": 46,
+  "original_winners_to_rev_r15_losers": 46,
+  "original_winners_to_rev_r2_losers": 46,
+  "original_winners_to_rev_r25_losers": 46
+}

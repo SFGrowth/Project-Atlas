@@ -1,0 +1,973 @@
+{
+  "experiment_id": "PV-EXP-004",
+  "artefact": "PV_EXP_004_SUBGROUP_ANALYSIS",
+  "generated_utc": "2026-07-29T22:06:30.754286+00:00",
+  "promotion_threshold": 30,
+  "note": "Subgroups with fewer than 30 filled trades are exploratory only.",
+  "configs": {
+    "REV_R1": {
+      "by_original_direction": {
+        "bullish": {
+          "count": 91,
+          "expectancy": -14.1191,
+          "profit_factor": 0.7063,
+          "target_win_rate": 0.4176,
+          "total_net_pnl": -1284.84,
+          "promoted": true
+        },
+        "bearish": {
+          "count": 61,
+          "expectancy": 1.4977,
+          "profit_factor": 1.0697,
+          "target_win_rate": 0.459,
+          "total_net_pnl": 91.36,
+          "promoted": true
+        }
+      },
+      "by_session": {
+        "NY": {
+          "count": 66,
+          "expectancy": -21.2021,
+          "profit_factor": 0.681,
+          "target_win_rate": 0.4091,
+          "total_net_pnl": -1399.34,
+          "promoted": true
+        },
+        "ASIA": {
+          "count": 31,
+          "expectancy": -13.3206,
+          "profit_factor": 0.6464,
+          "target_win_rate": 0.3871,
+          "total_net_pnl": -412.94,
+          "promoted": true
+        },
+        "AFTER": {
+          "count": 15,
+          "expectancy": 27.06,
+          "profit_factor": 3.7125,
+          "target_win_rate": 0.6667,
+          "total_net_pnl": 405.9,
+          "promoted": false
+        },
+        "LONDON": {
+          "count": 40,
+          "expectancy": 5.3225,
+          "profit_factor": 1.2524,
+          "target_win_rate": 0.425,
+          "total_net_pnl": 212.9,
+          "promoted": true
+        }
+      },
+      "by_weekday": {
+        "Wednesday": {
+          "count": 29,
+          "expectancy": -12.1366,
+          "profit_factor": 0.727,
+          "target_win_rate": 0.4483,
+          "total_net_pnl": -351.96,
+          "promoted": false
+        },
+        "Thursday": {
+          "count": 38,
+          "expectancy": -6.6084,
+          "profit_factor": 0.8715,
+          "target_win_rate": 0.3947,
+          "total_net_pnl": -251.12,
+          "promoted": true
+        },
+        "Friday": {
+          "count": 23,
+          "expectancy": -36.3922,
+          "profit_factor": 0.4418,
+          "target_win_rate": 0.3478,
+          "total_net_pnl": -837.02,
+          "promoted": false
+        },
+        "Monday": {
+          "count": 34,
+          "expectancy": 2.3041,
+          "profit_factor": 1.1162,
+          "target_win_rate": 0.4412,
+          "total_net_pnl": 78.34,
+          "promoted": true
+        },
+        "Tuesday": {
+          "count": 28,
+          "expectancy": 6.01,
+          "profit_factor": 1.1758,
+          "target_win_rate": 0.5357,
+          "total_net_pnl": 168.28,
+          "promoted": false
+        }
+      },
+      "by_regime": {
+        "TREND": {
+          "count": 83,
+          "expectancy": -13.3364,
+          "profit_factor": 0.7658,
+          "target_win_rate": 0.4096,
+          "total_net_pnl": -1106.92,
+          "promoted": true
+        },
+        "CHOP": {
+          "count": 69,
+          "expectancy": -1.2545,
+          "profit_factor": 0.9995,
+          "target_win_rate": 0.4638,
+          "total_net_pnl": -86.56,
+          "promoted": true
+        }
+      },
+      "by_month": {
+        "2025-10": {
+          "count": 16,
+          "expectancy": -9.1463,
+          "profit_factor": 0.7783,
+          "target_win_rate": 0.5625,
+          "total_net_pnl": -146.34,
+          "promoted": false
+        },
+        "2025-11": {
+          "count": 15,
+          "expectancy": 30.3267,
+          "profit_factor": 2.8569,
+          "target_win_rate": 0.6,
+          "total_net_pnl": 454.9,
+          "promoted": false
+        },
+        "2025-12": {
+          "count": 17,
+          "expectancy": -7.4753,
+          "profit_factor": 0.8255,
+          "target_win_rate": 0.4118,
+          "total_net_pnl": -127.08,
+          "promoted": false
+        },
+        "2026-01": {
+          "count": 18,
+          "expectancy": -7.0178,
+          "profit_factor": 0.737,
+          "target_win_rate": 0.4444,
+          "total_net_pnl": -126.32,
+          "promoted": false
+        },
+        "2026-02": {
+          "count": 12,
+          "expectancy": 5.135,
+          "profit_factor": 1.1286,
+          "target_win_rate": 0.4167,
+          "total_net_pnl": 61.62,
+          "promoted": false
+        },
+        "2026-03": {
+          "count": 8,
+          "expectancy": -25.0525,
+          "profit_factor": 0.5128,
+          "target_win_rate": 0.125,
+          "total_net_pnl": -200.42,
+          "promoted": false
+        },
+        "2026-04": {
+          "count": 19,
+          "expectancy": -31.8189,
+          "profit_factor": 0.464,
+          "target_win_rate": 0.3158,
+          "total_net_pnl": -604.56,
+          "promoted": false
+        },
+        "2026-05": {
+          "count": 16,
+          "expectancy": -2.9588,
+          "profit_factor": 0.9555,
+          "target_win_rate": 0.4375,
+          "total_net_pnl": -47.34,
+          "promoted": false
+        },
+        "2026-06": {
+          "count": 15,
+          "expectancy": -12.8067,
+          "profit_factor": 0.8369,
+          "target_win_rate": 0.5333,
+          "total_net_pnl": -192.1,
+          "promoted": false
+        },
+        "2026-07": {
+          "count": 16,
+          "expectancy": -16.615,
+          "profit_factor": 0.6942,
+          "target_win_rate": 0.375,
+          "total_net_pnl": -265.84,
+          "promoted": false
+        }
+      },
+      "by_stop_distance_quartile": {
+        "Q2": {
+          "count": 38,
+          "expectancy": -5.2268,
+          "profit_factor": 0.8294,
+          "target_win_rate": 0.4737,
+          "total_net_pnl": -198.62,
+          "promoted": true
+        },
+        "Q1": {
+          "count": 38,
+          "expectancy": -6.2926,
+          "profit_factor": 0.5133,
+          "target_win_rate": 0.2895,
+          "total_net_pnl": -239.12,
+          "promoted": true
+        },
+        "Q3": {
+          "count": 38,
+          "expectancy": -1.2795,
+          "profit_factor": 0.9989,
+          "target_win_rate": 0.4737,
+          "total_net_pnl": -48.62,
+          "promoted": true
+        },
+        "Q4": {
+          "count": 38,
+          "expectancy": -18.6084,
+          "profit_factor": 0.8209,
+          "target_win_rate": 0.5,
+          "total_net_pnl": -707.12,
+          "promoted": true
+        }
+      },
+      "by_atr_quartile": {
+        "Q1": {
+          "count": 152,
+          "expectancy": -7.8518,
+          "profit_factor": 0.8426,
+          "target_win_rate": 0.4342,
+          "total_net_pnl": -1193.48,
+          "promoted": true
+        }
+      },
+      "note": "Subgroups with fewer than 30 filled trades are not promoted. All findings are exploratory."
+    },
+    "REV_R15": {
+      "by_original_direction": {
+        "bullish": {
+          "count": 91,
+          "expectancy": -8.9708,
+          "profit_factor": 0.8386,
+          "target_win_rate": 0.3736,
+          "total_net_pnl": -816.34,
+          "promoted": true
+        },
+        "bearish": {
+          "count": 61,
+          "expectancy": 18.2682,
+          "profit_factor": 1.4824,
+          "target_win_rate": 0.4098,
+          "total_net_pnl": 1114.36,
+          "promoted": true
+        }
+      },
+      "by_session": {
+        "NY": {
+          "count": 66,
+          "expectancy": -15.3612,
+          "profit_factor": 0.7928,
+          "target_win_rate": 0.3485,
+          "total_net_pnl": -1013.84,
+          "promoted": true
+        },
+        "ASIA": {
+          "count": 31,
+          "expectancy": -7.9819,
+          "profit_factor": 0.8153,
+          "target_win_rate": 0.2903,
+          "total_net_pnl": -247.44,
+          "promoted": true
+        },
+        "AFTER": {
+          "count": 15,
+          "expectancy": 46.3933,
+          "profit_factor": 5.5655,
+          "target_win_rate": 0.6667,
+          "total_net_pnl": 695.9,
+          "promoted": false
+        },
+        "LONDON": {
+          "count": 40,
+          "expectancy": 21.585,
+          "profit_factor": 1.8779,
+          "target_win_rate": 0.425,
+          "total_net_pnl": 863.4,
+          "promoted": true
+        }
+      },
+      "by_weekday": {
+        "Wednesday": {
+          "count": 29,
+          "expectancy": -0.8434,
+          "profit_factor": 1.0096,
+          "target_win_rate": 0.4138,
+          "total_net_pnl": -24.46,
+          "promoted": false
+        },
+        "Thursday": {
+          "count": 38,
+          "expectancy": -9.6742,
+          "profit_factor": 0.8295,
+          "target_win_rate": 0.3421,
+          "total_net_pnl": -367.62,
+          "promoted": true
+        },
+        "Friday": {
+          "count": 23,
+          "expectancy": -23.327,
+          "profit_factor": 0.6513,
+          "target_win_rate": 0.3043,
+          "total_net_pnl": -536.52,
+          "promoted": false
+        },
+        "Monday": {
+          "count": 34,
+          "expectancy": 18.5982,
+          "profit_factor": 1.6504,
+          "target_win_rate": 0.4118,
+          "total_net_pnl": 632.34,
+          "promoted": true
+        },
+        "Tuesday": {
+          "count": 28,
+          "expectancy": 21.2243,
+          "profit_factor": 1.5002,
+          "target_win_rate": 0.4643,
+          "total_net_pnl": 594.28,
+          "promoted": false
+        }
+      },
+      "by_regime": {
+        "TREND": {
+          "count": 83,
+          "expectancy": -3.5653,
+          "profit_factor": 0.9579,
+          "target_win_rate": 0.3735,
+          "total_net_pnl": -295.92,
+          "promoted": true
+        },
+        "CHOP": {
+          "count": 69,
+          "expectancy": 8.6078,
+          "profit_factor": 1.3025,
+          "target_win_rate": 0.4058,
+          "total_net_pnl": 593.94,
+          "promoted": true
+        }
+      },
+      "by_month": {
+        "2025-10": {
+          "count": 16,
+          "expectancy": -1.0837,
+          "profit_factor": 1.0041,
+          "target_win_rate": 0.5,
+          "total_net_pnl": -17.34,
+          "promoted": false
+        },
+        "2025-11": {
+          "count": 15,
+          "expectancy": 52.9933,
+          "profit_factor": 4.1902,
+          "target_win_rate": 0.5333,
+          "total_net_pnl": 794.9,
+          "promoted": false
+        },
+        "2025-12": {
+          "count": 17,
+          "expectancy": -34.0341,
+          "profit_factor": 0.3739,
+          "target_win_rate": 0.2353,
+          "total_net_pnl": -578.58,
+          "promoted": false
+        },
+        "2026-01": {
+          "count": 18,
+          "expectancy": 1.0656,
+          "profit_factor": 1.1049,
+          "target_win_rate": 0.4444,
+          "total_net_pnl": 19.18,
+          "promoted": false
+        },
+        "2026-02": {
+          "count": 12,
+          "expectancy": 31.4683,
+          "profit_factor": 1.6504,
+          "target_win_rate": 0.3333,
+          "total_net_pnl": 377.62,
+          "promoted": false
+        },
+        "2026-03": {
+          "count": 8,
+          "expectancy": -22.4275,
+          "profit_factor": 0.5665,
+          "target_win_rate": 0.125,
+          "total_net_pnl": -179.42,
+          "promoted": false
+        },
+        "2026-04": {
+          "count": 19,
+          "expectancy": -18.6084,
+          "profit_factor": 0.6956,
+          "target_win_rate": 0.3158,
+          "total_net_pnl": -353.56,
+          "promoted": false
+        },
+        "2026-05": {
+          "count": 16,
+          "expectancy": 15.51,
+          "profit_factor": 1.4337,
+          "target_win_rate": 0.4375,
+          "total_net_pnl": 248.16,
+          "promoted": false
+        },
+        "2026-06": {
+          "count": 15,
+          "expectancy": -1.74,
+          "profit_factor": 0.9936,
+          "target_win_rate": 0.4667,
+          "total_net_pnl": -26.1,
+          "promoted": false
+        },
+        "2026-07": {
+          "count": 16,
+          "expectancy": 0.8225,
+          "profit_factor": 1.041,
+          "target_win_rate": 0.375,
+          "total_net_pnl": 13.16,
+          "promoted": false
+        }
+      },
+      "by_stop_distance_quartile": {
+        "Q2": {
+          "count": 38,
+          "expectancy": 2.0495,
+          "profit_factor": 1.1351,
+          "target_win_rate": 0.4474,
+          "total_net_pnl": 77.88,
+          "promoted": true
+        },
+        "Q1": {
+          "count": 38,
+          "expectancy": -5.8584,
+          "profit_factor": 0.5914,
+          "target_win_rate": 0.2368,
+          "total_net_pnl": -222.62,
+          "promoted": true
+        },
+        "Q3": {
+          "count": 38,
+          "expectancy": 11.7074,
+          "profit_factor": 1.3296,
+          "target_win_rate": 0.4211,
+          "total_net_pnl": 444.88,
+          "promoted": true
+        },
+        "Q4": {
+          "count": 38,
+          "expectancy": -0.0558,
+          "profit_factor": 1.0113,
+          "target_win_rate": 0.4474,
+          "total_net_pnl": -2.12,
+          "promoted": true
+        }
+      },
+      "by_atr_quartile": {
+        "Q1": {
+          "count": 152,
+          "expectancy": 1.9607,
+          "profit_factor": 1.0713,
+          "target_win_rate": 0.3882,
+          "total_net_pnl": 298.02,
+          "promoted": true
+        }
+      },
+      "note": "Subgroups with fewer than 30 filled trades are not promoted. All findings are exploratory."
+    },
+    "REV_R2": {
+      "by_original_direction": {
+        "bullish": {
+          "count": 91,
+          "expectancy": -11.8224,
+          "profit_factor": 0.8013,
+          "target_win_rate": 0.2967,
+          "total_net_pnl": -1075.84,
+          "promoted": true
+        },
+        "bearish": {
+          "count": 61,
+          "expectancy": 22.3666,
+          "profit_factor": 1.5436,
+          "target_win_rate": 0.3607,
+          "total_net_pnl": 1364.36,
+          "promoted": true
+        }
+      },
+      "by_session": {
+        "NY": {
+          "count": 66,
+          "expectancy": -6.1264,
+          "profit_factor": 0.929,
+          "target_win_rate": 0.3182,
+          "total_net_pnl": -404.34,
+          "promoted": true
+        },
+        "ASIA": {
+          "count": 31,
+          "expectancy": -18.5303,
+          "profit_factor": 0.6015,
+          "target_win_rate": 0.1935,
+          "total_net_pnl": -574.44,
+          "promoted": true
+        },
+        "AFTER": {
+          "count": 15,
+          "expectancy": 45.3267,
+          "profit_factor": 3.6917,
+          "target_win_rate": 0.6,
+          "total_net_pnl": 679.9,
+          "promoted": false
+        },
+        "LONDON": {
+          "count": 40,
+          "expectancy": 14.685,
+          "profit_factor": 1.4712,
+          "target_win_rate": 0.325,
+          "total_net_pnl": 587.4,
+          "promoted": true
+        }
+      },
+      "by_weekday": {
+        "Wednesday": {
+          "count": 29,
+          "expectancy": -4.8262,
+          "profit_factor": 0.9241,
+          "target_win_rate": 0.3103,
+          "total_net_pnl": -139.96,
+          "promoted": false
+        },
+        "Thursday": {
+          "count": 38,
+          "expectancy": -0.5953,
+          "profit_factor": 1.0128,
+          "target_win_rate": 0.3158,
+          "total_net_pnl": -22.62,
+          "promoted": true
+        },
+        "Friday": {
+          "count": 23,
+          "expectancy": -35.9139,
+          "profit_factor": 0.4801,
+          "target_win_rate": 0.2174,
+          "total_net_pnl": -826.02,
+          "promoted": false
+        },
+        "Monday": {
+          "count": 34,
+          "expectancy": 21.4218,
+          "profit_factor": 1.6488,
+          "target_win_rate": 0.3529,
+          "total_net_pnl": 728.34,
+          "promoted": true
+        },
+        "Tuesday": {
+          "count": 28,
+          "expectancy": 19.5993,
+          "profit_factor": 1.3933,
+          "target_win_rate": 0.3929,
+          "total_net_pnl": 548.78,
+          "promoted": false
+        }
+      },
+      "by_regime": {
+        "TREND": {
+          "count": 83,
+          "expectancy": 5.3805,
+          "profit_factor": 1.1146,
+          "target_win_rate": 0.3494,
+          "total_net_pnl": 446.58,
+          "promoted": true
+        },
+        "CHOP": {
+          "count": 69,
+          "expectancy": -2.2907,
+          "profit_factor": 0.9732,
+          "target_win_rate": 0.2899,
+          "total_net_pnl": -158.06,
+          "promoted": true
+        }
+      },
+      "by_month": {
+        "2025-10": {
+          "count": 16,
+          "expectancy": 9.1975,
+          "profit_factor": 1.2685,
+          "target_win_rate": 0.4375,
+          "total_net_pnl": 147.16,
+          "promoted": false
+        },
+        "2025-11": {
+          "count": 15,
+          "expectancy": 74.8933,
+          "profit_factor": 5.4784,
+          "target_win_rate": 0.5333,
+          "total_net_pnl": 1123.4,
+          "promoted": false
+        },
+        "2025-12": {
+          "count": 17,
+          "expectancy": -27.5635,
+          "profit_factor": 0.4975,
+          "target_win_rate": 0.2353,
+          "total_net_pnl": -468.58,
+          "promoted": false
+        },
+        "2026-01": {
+          "count": 18,
+          "expectancy": 4.8711,
+          "profit_factor": 1.2607,
+          "target_win_rate": 0.3889,
+          "total_net_pnl": 87.68,
+          "promoted": false
+        },
+        "2026-02": {
+          "count": 12,
+          "expectancy": 27.76,
+          "profit_factor": 1.5766,
+          "target_win_rate": 0.25,
+          "total_net_pnl": 333.12,
+          "promoted": false
+        },
+        "2026-03": {
+          "count": 8,
+          "expectancy": -19.8025,
+          "profit_factor": 0.6202,
+          "target_win_rate": 0.125,
+          "total_net_pnl": -158.42,
+          "promoted": false
+        },
+        "2026-04": {
+          "count": 19,
+          "expectancy": -5.3453,
+          "profit_factor": 0.928,
+          "target_win_rate": 0.3158,
+          "total_net_pnl": -101.56,
+          "promoted": false
+        },
+        "2026-05": {
+          "count": 16,
+          "expectancy": -18.4587,
+          "profit_factor": 0.6937,
+          "target_win_rate": 0.25,
+          "total_net_pnl": -295.34,
+          "promoted": false
+        },
+        "2026-06": {
+          "count": 15,
+          "expectancy": -29.5067,
+          "profit_factor": 0.707,
+          "target_win_rate": 0.2667,
+          "total_net_pnl": -442.6,
+          "promoted": false
+        },
+        "2026-07": {
+          "count": 16,
+          "expectancy": 3.9787,
+          "profit_factor": 1.0947,
+          "target_win_rate": 0.3125,
+          "total_net_pnl": 63.66,
+          "promoted": false
+        }
+      },
+      "by_stop_distance_quartile": {
+        "Q2": {
+          "count": 38,
+          "expectancy": 4.3258,
+          "profit_factor": 1.2085,
+          "target_win_rate": 0.3947,
+          "total_net_pnl": 164.38,
+          "promoted": true
+        },
+        "Q1": {
+          "count": 38,
+          "expectancy": -6.7137,
+          "profit_factor": 0.5574,
+          "target_win_rate": 0.1842,
+          "total_net_pnl": -255.12,
+          "promoted": true
+        },
+        "Q3": {
+          "count": 38,
+          "expectancy": 7.3521,
+          "profit_factor": 1.1854,
+          "target_win_rate": 0.3421,
+          "total_net_pnl": 279.38,
+          "promoted": true
+        },
+        "Q4": {
+          "count": 38,
+          "expectancy": 2.6284,
+          "profit_factor": 1.0346,
+          "target_win_rate": 0.3684,
+          "total_net_pnl": 99.88,
+          "promoted": true
+        }
+      },
+      "by_atr_quartile": {
+        "Q1": {
+          "count": 152,
+          "expectancy": 1.8982,
+          "profit_factor": 1.0636,
+          "target_win_rate": 0.3224,
+          "total_net_pnl": 288.52,
+          "promoted": true
+        }
+      },
+      "note": "Subgroups with fewer than 30 filled trades are not promoted. All findings are exploratory."
+    },
+    "REV_R25": {
+      "by_original_direction": {
+        "bullish": {
+          "count": 91,
+          "expectancy": -15.5862,
+          "profit_factor": 0.7423,
+          "target_win_rate": 0.2418,
+          "total_net_pnl": -1418.34,
+          "promoted": true
+        },
+        "bearish": {
+          "count": 61,
+          "expectancy": 21.1862,
+          "profit_factor": 1.4827,
+          "target_win_rate": 0.2951,
+          "total_net_pnl": 1292.36,
+          "promoted": true
+        }
+      },
+      "by_session": {
+        "NY": {
+          "count": 66,
+          "expectancy": -3.0961,
+          "profit_factor": 0.9732,
+          "target_win_rate": 0.2576,
+          "total_net_pnl": -204.34,
+          "promoted": true
+        },
+        "ASIA": {
+          "count": 31,
+          "expectancy": -12.0142,
+          "profit_factor": 0.7517,
+          "target_win_rate": 0.1935,
+          "total_net_pnl": -372.44,
+          "promoted": true
+        },
+        "AFTER": {
+          "count": 15,
+          "expectancy": 13.2933,
+          "profit_factor": 1.5533,
+          "target_win_rate": 0.4,
+          "total_net_pnl": 199.4,
+          "promoted": false
+        },
+        "LONDON": {
+          "count": 40,
+          "expectancy": 6.285,
+          "profit_factor": 1.1891,
+          "target_win_rate": 0.275,
+          "total_net_pnl": 251.4,
+          "promoted": true
+        }
+      },
+      "by_weekday": {
+        "Wednesday": {
+          "count": 29,
+          "expectancy": -8.309,
+          "profit_factor": 0.8597,
+          "target_win_rate": 0.2414,
+          "total_net_pnl": -240.96,
+          "promoted": false
+        },
+        "Thursday": {
+          "count": 38,
+          "expectancy": -5.8716,
+          "profit_factor": 0.9126,
+          "target_win_rate": 0.2632,
+          "total_net_pnl": -223.12,
+          "promoted": true
+        },
+        "Friday": {
+          "count": 23,
+          "expectancy": -30.4574,
+          "profit_factor": 0.5619,
+          "target_win_rate": 0.2174,
+          "total_net_pnl": -700.52,
+          "promoted": false
+        },
+        "Monday": {
+          "count": 34,
+          "expectancy": 3.3629,
+          "profit_factor": 1.1146,
+          "target_win_rate": 0.2353,
+          "total_net_pnl": 114.34,
+          "promoted": true
+        },
+        "Tuesday": {
+          "count": 28,
+          "expectancy": 33.01,
+          "profit_factor": 1.6291,
+          "target_win_rate": 0.3571,
+          "total_net_pnl": 924.28,
+          "promoted": false
+        }
+      },
+      "by_regime": {
+        "TREND": {
+          "count": 83,
+          "expectancy": 0.8986,
+          "profit_factor": 1.0354,
+          "target_win_rate": 0.2651,
+          "total_net_pnl": 74.58,
+          "promoted": true
+        },
+        "CHOP": {
+          "count": 69,
+          "expectancy": -2.9067,
+          "profit_factor": 0.9602,
+          "target_win_rate": 0.2609,
+          "total_net_pnl": -200.56,
+          "promoted": true
+        }
+      },
+      "by_month": {
+        "2025-10": {
+          "count": 16,
+          "expectancy": 21.5725,
+          "profit_factor": 1.5868,
+          "target_win_rate": 0.4375,
+          "total_net_pnl": 345.16,
+          "promoted": false
+        },
+        "2025-11": {
+          "count": 15,
+          "expectancy": 62.4267,
+          "profit_factor": 3.3697,
+          "target_win_rate": 0.4667,
+          "total_net_pnl": 936.4,
+          "promoted": false
+        },
+        "2025-12": {
+          "count": 17,
+          "expectancy": -39.2694,
+          "profit_factor": 0.274,
+          "target_win_rate": 0.1176,
+          "total_net_pnl": -667.58,
+          "promoted": false
+        },
+        "2026-01": {
+          "count": 18,
+          "expectancy": 6.4822,
+          "profit_factor": 1.3072,
+          "target_win_rate": 0.3333,
+          "total_net_pnl": 116.68,
+          "promoted": false
+        },
+        "2026-02": {
+          "count": 12,
+          "expectancy": 42.7183,
+          "profit_factor": 1.8741,
+          "target_win_rate": 0.25,
+          "total_net_pnl": 512.62,
+          "promoted": false
+        },
+        "2026-03": {
+          "count": 8,
+          "expectancy": -17.1775,
+          "profit_factor": 0.6739,
+          "target_win_rate": 0.125,
+          "total_net_pnl": -137.42,
+          "promoted": false
+        },
+        "2026-04": {
+          "count": 19,
+          "expectancy": -50.3189,
+          "profit_factor": 0.2882,
+          "target_win_rate": 0.1053,
+          "total_net_pnl": -956.06,
+          "promoted": false
+        },
+        "2026-05": {
+          "count": 16,
+          "expectancy": -8.74,
+          "profit_factor": 0.8666,
+          "target_win_rate": 0.25,
+          "total_net_pnl": -139.84,
+          "promoted": false
+        },
+        "2026-06": {
+          "count": 15,
+          "expectancy": -12.44,
+          "profit_factor": 0.8839,
+          "target_win_rate": 0.2667,
+          "total_net_pnl": -186.6,
+          "promoted": false
+        },
+        "2026-07": {
+          "count": 16,
+          "expectancy": 3.1662,
+          "profit_factor": 1.08,
+          "target_win_rate": 0.25,
+          "total_net_pnl": 50.66,
+          "promoted": false
+        }
+      },
+      "by_stop_distance_quartile": {
+        "Q2": {
+          "count": 38,
+          "expectancy": 3.2863,
+          "profit_factor": 1.1584,
+          "target_win_rate": 0.3158,
+          "total_net_pnl": 124.88,
+          "promoted": true
+        },
+        "Q1": {
+          "count": 38,
+          "expectancy": -4.99,
+          "profit_factor": 0.6968,
+          "target_win_rate": 0.1842,
+          "total_net_pnl": -189.62,
+          "promoted": true
+        },
+        "Q3": {
+          "count": 38,
+          "expectancy": 3.6547,
+          "profit_factor": 1.0956,
+          "target_win_rate": 0.2895,
+          "total_net_pnl": 138.88,
+          "promoted": true
+        },
+        "Q4": {
+          "count": 38,
+          "expectancy": -5.2663,
+          "profit_factor": 0.9652,
+          "target_win_rate": 0.2632,
+          "total_net_pnl": -200.12,
+          "promoted": true
+        }
+      },
+      "by_atr_quartile": {
+        "Q1": {
+          "count": 152,
+          "expectancy": -0.8288,
+          "profit_factor": 1.0079,
+          "target_win_rate": 0.2632,
+          "total_net_pnl": -125.98,
+          "promoted": true
+        }
+      },
+      "note": "Subgroups with fewer than 30 filled trades are not promoted. All findings are exploratory."
+    }
+  }
+}

@@ -1,0 +1,73 @@
+{
+  "experiment_id": "PV-EXP-003",
+  "artefact": "PV_EXP_003_WEEKDAY_ANALYSIS",
+  "generated_utc": "2026-07-29T21:58:52.396415+00:00",
+  "parent_ledger": "PV_EXP_003_CANONICAL_BASELINE_PNL_LEDGER.json",
+  "sum_weekday_counts": 152,
+  "sum_weekday_net_pnl": 1872.52,
+  "baseline_total_net_pnl": 1872.52,
+  "baseline_expectancy": 12.3192,
+  "weighted_weekday_expectancy": 12.3192,
+  "weekday_accounting_reconciles": true,
+  "monday_n": 34,
+  "monday_total_net_pnl": -1052.16,
+  "monday_expectancy": -30.9459,
+  "monday_pnl_reconciles": true,
+  "weekdays": {
+    "Monday": {
+      "day_of_week": 0,
+      "count": 34,
+      "winners": 8,
+      "losers": 26,
+      "total_net_pnl": -1052.16,
+      "expectancy": -30.9459,
+      "gross_profit": 631.0,
+      "gross_loss": -1641.0,
+      "profit_factor": 0.3845
+    },
+    "Tuesday": {
+      "day_of_week": 1,
+      "count": 28,
+      "winners": 10,
+      "losers": 18,
+      "total_net_pnl": 553.78,
+      "expectancy": 19.7779,
+      "gross_profit": 2059.0,
+      "gross_loss": -1470.5,
+      "profit_factor": 1.4002
+    },
+    "Wednesday": {
+      "day_of_week": 2,
+      "count": 29,
+      "winners": 10,
+      "losers": 19,
+      "total_net_pnl": 546.04,
+      "expectancy": 18.829,
+      "gross_profit": 1710.0,
+      "gross_loss": -1128.0,
+      "profit_factor": 1.516
+    },
+    "Thursday": {
+      "day_of_week": 3,
+      "count": 38,
+      "winners": 11,
+      "losers": 27,
+      "total_net_pnl": 1239.88,
+      "expectancy": 32.6284,
+      "gross_profit": 2889.5,
+      "gross_loss": -1602.5,
+      "profit_factor": 1.8031
+    },
+    "Friday": {
+      "day_of_week": 4,
+      "count": 23,
+      "winners": 8,
+      "losers": 15,
+      "total_net_pnl": 584.98,
+      "expectancy": 25.4339,
+      "gross_profit": 1565.5,
+      "gross_loss": -952.0,
+      "profit_factor": 1.6444
+    }
+  }
+}

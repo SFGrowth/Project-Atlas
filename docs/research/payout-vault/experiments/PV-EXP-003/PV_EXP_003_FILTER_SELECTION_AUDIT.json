@@ -1,12 +1,32 @@
 {
   "experiment_id": "PV-EXP-003",
-  "artefact": "PV_EXP_003_ENTRY_FILTER_RESULTS",
-  "generated_utc": "2026-07-29T21:58:52.403248+00:00",
+  "artefact": "PV_EXP_003_FILTER_SELECTION_AUDIT",
+  "generated_utc": "2026-07-29T21:58:52.402569+00:00",
   "parent_ledger": "PV_EXP_003_CANONICAL_BASELINE_PNL_LEDGER.json",
-  "baseline_n": 152,
-  "baseline_expectancy": 12.3192,
-  "baseline_profit_factor": 1.3034,
-  "filters": {
+  "filters_tested_count": 10,
+  "filter_ids": [
+    "F1_RTH_ONLY",
+    "F2_EXCLUDE_MONDAY",
+    "F3_RTH_ONLY_EXCLUDING_MONDAY",
+    "F4_MIN_ROOM_TO_TARGET_R",
+    "F5_MAX_EMA_DISTANCE_ATR",
+    "F6_MAX_SIGNAL_CANDLE_ATR",
+    "F7_HTF_ALIGNMENT_REQUIRED",
+    "F8_MAX_RECENT_EMA_CROSSES",
+    "F9_ATR_REGIME_FILTER",
+    "F10_MIN_DISPLACEMENT_STRENGTH"
+  ],
+  "selection_criterion": "Highest profit factor with minimum 30 retained trades",
+  "full_sample_results_viewed_before_temporal_split": true,
+  "validation_contamination_status": "FULL_SAMPLE_RESULTS_VIEWED_BEFORE_TEMPORAL_SPLIT",
+  "multiple_comparison_method": "Bonferroni",
+  "bonferroni_alpha": 0.05,
+  "bonferroni_threshold": 0.005,
+  "parameter_changed_after_validation": false,
+  "f2_evidence_classification": "RETROSPECTIVE_DISCOVERY + INTERNAL_TEMPORAL_VALIDATION",
+  "permitted_f2_classification": "SUPPORTED_INTERNAL_TEMPORAL_VALIDATION",
+  "note": "F2 was selected based on full-sample results before the temporal split was applied. The temporal split provides internal validation only. Prospective validation is required (PV-EXP-004).",
+  "filter_results": {
     "F1_RTH_ONLY": {
       "retained_count": 66,
       "removed_count": 86,

@@ -1,0 +1,56 @@
+{
+  "experiment_id": "PV-EXP-004",
+  "artefact": "PV_EXP_004_BREAKEVEN_ANALYSIS",
+  "generated_utc": "2026-07-29T22:06:30.753714+00:00",
+  "gross_breakeven_rates": {
+    "1.0R": 0.5,
+    "1.5R": 0.4,
+    "2.0R": 0.333,
+    "2.5R": 0.286
+  },
+  "median_risk_pts": 26.125,
+  "slippage_cost_usd": 2.0,
+  "commission_rt_usd": 1.24,
+  "configs": {
+    "REV_R1": {
+      "target_multiple": 1.0,
+      "gross_breakeven_win_rate": 0.5,
+      "net_breakeven_win_rate": 0.5165,
+      "actual_target_win_rate": 0.4342,
+      "win_rate_margin_over_breakeven": -0.0823,
+      "median_risk_pts": 26.125,
+      "net_win_per_trade_usd": 51.01,
+      "net_loss_per_trade_usd": -54.49
+    },
+    "REV_R15": {
+      "target_multiple": 1.5,
+      "gross_breakeven_win_rate": 0.4,
+      "net_breakeven_win_rate": 0.414,
+      "actual_target_win_rate": 0.3882,
+      "win_rate_margin_over_breakeven": -0.0258,
+      "median_risk_pts": 26.125,
+      "net_win_per_trade_usd": 77.14,
+      "net_loss_per_trade_usd": -54.49
+    },
+    "REV_R2": {
+      "target_multiple": 2.0,
+      "gross_breakeven_win_rate": 0.333,
+      "net_breakeven_win_rate": 0.3454,
+      "actual_target_win_rate": 0.3224,
+      "win_rate_margin_over_breakeven": -0.023,
+      "median_risk_pts": 26.125,
+      "net_win_per_trade_usd": 103.26,
+      "net_loss_per_trade_usd": -54.49
+    },
+    "REV_R25": {
+      "target_multiple": 2.5,
+      "gross_breakeven_win_rate": 0.286,
+      "net_breakeven_win_rate": 0.2963,
+      "actual_target_win_rate": 0.2632,
+      "win_rate_margin_over_breakeven": -0.0331,
+      "median_risk_pts": 26.125,
+      "net_win_per_trade_usd": 129.38,
+      "net_loss_per_trade_usd": -54.49
+    }
+  }
+}
