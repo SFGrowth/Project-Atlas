@@ -1,0 +1,103 @@
+{
+  "experiment_id": "PV-EXP-003",
+  "sprint": "123A.12",
+  "status": "PRE_REGISTERED",
+  "pre_registration_date_utc": "2026-07-29",
+  "g11_baseline_sha": "4c4f7ead1e58ffff3cb7da54602a8bd21e475d15",
+  "parent_experiment": "PV-EXP-002",
+  "experiment_type": "LOSS_AUTOPSY",
+  "locked_inputs": {
+    "input_events": 172,
+    "filled_events": 152,
+    "winners": 47,
+    "losers": 105,
+    "loss_rate": 0.690789,
+    "outcome_ledger_sha": "741e153ee454d2b080dd413d170436abb1400ecae3fbc10f627bffce9acf0989",
+    "event_ledger_sha": "9240cbb16f5cd2933ad198448853e7f8a0281cf5eac4106bbc526930f8634bb3",
+    "configuration_sha": "2b629a56e1fd42572f9d14e86c0e79291b6a670f46a36d2aad9810f342701762",
+    "outcome_engine_sha": "9e987ed15466f85a8453ed2ff4f0da7fe526bca2f96a2d63a8df0549af1111c7",
+    "dataset_sha": "c970675391b970956f38d419ef95ff3e116e61ab8874eca7df2ab4334e715623"
+  },
+  "loss_classification": {
+    "priority_hierarchy": [
+      "L11_SAME_BAR_AMBIGUITY",
+      "L2_STOPPED_THEN_TARGET",
+      "L1_IMMEDIATE_ADVERSE_MOVE",
+      "L3_PARTIAL_PROGRESS_THEN_REVERSAL",
+      "L4_NO_MOMENTUM_TIMEOUT",
+      "L5_OPPOSING_LEVEL_BLOCK",
+      "L6_EXTENDED_FROM_EMA",
+      "L7_EXHAUSTION_CANDLE",
+      "L8_HIGHER_TIMEFRAME_CONFLICT",
+      "L9_VOLATILITY_STOP_MISMATCH",
+      "L10_SESSION_OR_WEEKDAY_WEAKNESS",
+      "L12_OTHER"
+    ],
+    "thresholds": {
+      "L1_mae_threshold_r": 1.0,
+      "L1_mfe_threshold_r": 0.25,
+      "L2_recovery_window": "same_session",
+      "L3_progress_threshold_r": 0.5,
+      "L4_momentum_window_bars": 6,
+      "L5_room_threshold_r": 1.0,
+      "L6_ema_distance_threshold_atr": 1.5,
+      "L7_candle_range_threshold_atr": 2.0,
+      "L7_entry_extreme_threshold_pct": 0.20,
+      "L9_stop_minimum_atr": 0.5,
+      "L10_weak_bucket": "Monday"
+    }
+  },
+  "entry_filters": {
+    "F1_RTH_ONLY": {"threshold": "session == RTH", "basis": "pre_registered_from_PV_EXP_002"},
+    "F2_EXCLUDE_MONDAY": {"threshold": "weekday != Monday", "basis": "pre_registered_from_PV_EXP_002"},
+    "F3_RTH_ONLY_EXCLUDING_MONDAY": {"threshold": "F1 AND F2", "basis": "pre_registered_combination"},
+    "F4_MIN_ROOM_TO_TARGET_R": {"threshold": 1.0, "unit": "R", "basis": "theory"},
+    "F5_MAX_EMA_DISTANCE_ATR": {"threshold": 1.5, "unit": "ATR14", "basis": "theory"},
+    "F6_MAX_SIGNAL_CANDLE_ATR": {"threshold": 2.0, "unit": "ATR14", "basis": "theory"},
+    "F7_HTF_ALIGNMENT_REQUIRED": {"threshold": "DOL_HTF_alignment == True", "basis": "theory"},
+    "F8_MAX_RECENT_EMA_CROSSES": {"threshold": 2, "unit": "count", "basis": "theory"},
+    "F9_ATR_REGIME_FILTER": {"threshold": 25, "unit": "percentile", "basis": "theory"},
+    "F10_MIN_DISPLACEMENT_STRENGTH": {"threshold": 0.5, "unit": "normalised", "basis": "theory"}
+  },
+  "stop_alternatives": {
+    "S1": "original_stop_sweep_level",
+    "S2": "1.0_atr14_from_entry",
+    "S3": "1.25_atr14_from_entry",
+    "S4": "1.5_atr14_from_entry",
+    "S5": "recent_structural_swing_plus_1_tick",
+    "S6": "max_original_1.25_atr14",
+    "S7": "max_structural_1.25_atr14"
+  },
+  "early_exit_rules": {
+    "E1": "exit_after_3_bars_if_mfe_lt_0.25R",
+    "E2": "exit_after_3_bars_if_mfe_lt_0.25R_and_close_back_through_signal_midpoint",
+    "E3": "exit_after_3_bars_if_mfe_lt_0.25R_and_close_back_through_ema15",
+    "E4": "exit_on_opposite_CSD_after_entry",
+    "E5": "exit_on_opposite_MSU_after_entry",
+    "E6": "time_stop_after_6_bars_without_reaching_0.5R"
+  },
+  "partial_management_rules": {
+    "M1": "move_stop_to_breakeven_after_1R",
+    "M2": "take_50pct_at_1R_retain_50pct_for_2R",
+    "M3": "take_33pct_at_1R_retain_67pct_for_2R",
+    "M4": "trail_behind_confirmed_structure_after_1R"
+  },
+  "temporal_validation": {
+    "training_pct": 0.60,
+    "validation_pct": 0.40,
+    "split_method": "chronological",
+    "rolling_window_size": 30,
+    "parameter_freeze_after_training": true
+  },
+  "authority_boundaries": {
+    "darwin_processbar_calls": 0,
+    "darwin_postbarautomation_calls": 0,
+    "darwin_traderspost_calls": 0,
+    "darwin_tradovate_calls": 0,
+    "live_trades_initiated": 0,
+    "strategy_status_changes": 0,
+    "capital_reallocations": 0,
+    "darwin_decision_authority": "DISABLED",
+    "darwin_execution_authority": "DISABLED"
+  }
+}
