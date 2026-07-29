@@ -1,0 +1,315 @@
+{
+  "experiment_id": "PV-EXP-003",
+  "generated_utc": "2026-07-29T08:22:21.711466+00:00",
+  "n_winners": 47,
+  "n_losers": 105,
+  "no_target_leakage": true,
+  "no_exit_derived_features": true,
+  "multiple_comparison_correction": "benjamini_hochberg",
+  "features": {
+    "distance_from_ema15_atr": {
+      "n_winners": 47,
+      "n_losers": 105,
+      "n_missing": 0,
+      "winner_median": 0.4989,
+      "loser_median": 0.4975,
+      "winner_iqr": 0.7512,
+      "loser_iqr": 0.4847,
+      "cohens_d": 0.2137,
+      "abs_effect_size": 0.2137,
+      "bootstrap_95ci_median_diff": [
+        -0.1143,
+        0.2925
+      ],
+      "univariate_auc": 0.5614,
+      "permutation_p_value": 0.238,
+      "bh_corrected_p_value": 0.952,
+      "research_priority_score": 0.0013
+    },
+    "signal_candle_range_atr": {
+      "n_winners": 47,
+      "n_losers": 105,
+      "n_missing": 0,
+      "winner_median": 0.9507,
+      "loser_median": 0.9961,
+      "winner_iqr": 0.3891,
+      "loser_iqr": 0.4061,
+      "cohens_d": 0.0721,
+      "abs_effect_size": 0.0721,
+      "bootstrap_95ci_median_diff": [
+        -0.1454,
+        0.106
+      ],
+      "univariate_auc": 0.481,
+      "permutation_p_value": 0.653,
+      "bh_corrected_p_value": 1.0,
+      "research_priority_score": 0.0
+    },
+    "entry_candle_range_atr": {
+      "n_winners": 47,
+      "n_losers": 105,
+      "n_missing": 0,
+      "winner_median": 1.0304,
+      "loser_median": 0.9323,
+      "winner_iqr": 0.6608,
+      "loser_iqr": 0.4849,
+      "cohens_d": 0.1022,
+      "abs_effect_size": 0.1022,
+      "bootstrap_95ci_median_diff": [
+        -0.1146,
+        0.2529
+      ],
+      "univariate_auc": 0.5258,
+      "permutation_p_value": 0.569,
+      "bh_corrected_p_value": 1.0,
+      "research_priority_score": 0.0
+    },
+    "room_to_target_r": {
+      "n_winners": 47,
+      "n_losers": 105,
+      "n_missing": 0,
+      "winner_median": 2.0,
+      "loser_median": 2.0,
+      "winner_iqr": 0.0,
+      "loser_iqr": 0.0,
+      "cohens_d": 0.0,
+      "abs_effect_size": 0.0,
+      "bootstrap_95ci_median_diff": [
+        0.0,
+        0.0
+      ],
+      "univariate_auc": 0.5,
+      "permutation_p_value": 1.0,
+      "bh_corrected_p_value": 1.0,
+      "research_priority_score": 0.0
+    },
+    "sweep_depth_atr": {
+      "n_winners": 47,
+      "n_losers": 105,
+      "n_missing": 0,
+      "winner_median": 0.2884,
+      "loser_median": 0.3337,
+      "winner_iqr": 0.4337,
+      "loser_iqr": 0.3795,
+      "cohens_d": 0.0251,
+      "abs_effect_size": 0.0251,
+      "bootstrap_95ci_median_diff": [
+        -0.1585,
+        0.1318
+      ],
+      "univariate_auc": 0.4849,
+      "permutation_p_value": 0.897,
+      "bh_corrected_p_value": 1.0,
+      "research_priority_score": 0.0
+    },
+    "displacement_strength": {
+      "n_winners": 47,
+      "n_losers": 105,
+      "n_missing": 0,
+      "winner_median": 0.5789,
+      "loser_median": 0.5789,
+      "winner_iqr": 0.0,
+      "loser_iqr": 0.0,
+      "cohens_d": -0.0372,
+      "abs_effect_size": 0.0372,
+      "bootstrap_95ci_median_diff": [
+        0.0,
+        0.0
+      ],
+      "univariate_auc": 0.5046,
+      "permutation_p_value": 0.863,
+      "bh_corrected_p_value": 1.0,
+      "research_priority_score": 0.0
+    },
+    "CSD_body_ratio": {
+      "n_winners": 47,
+      "n_losers": 105,
+      "n_missing": 0,
+      "winner_median": 0.5789,
+      "loser_median": 0.5789,
+      "winner_iqr": 0.0,
+      "loser_iqr": 0.0,
+      "cohens_d": -0.0372,
+      "abs_effect_size": 0.0372,
+      "bootstrap_95ci_median_diff": [
+        0.0,
+        0.0
+      ],
+      "univariate_auc": 0.5046,
+      "permutation_p_value": 0.863,
+      "bh_corrected_p_value": 1.0,
+      "research_priority_score": 0.0
+    },
+    "CSD_close_location": {
+      "n_winners": 47,
+      "n_losers": 105,
+      "n_missing": 0,
+      "winner_median": 0.3684,
+      "loser_median": 0.3684,
+      "winner_iqr": 0.0,
+      "loser_iqr": 0.0,
+      "cohens_d": 0.1015,
+      "abs_effect_size": 0.1015,
+      "bootstrap_95ci_median_diff": [
+        0.0,
+        0.0
+      ],
+      "univariate_auc": 0.4954,
+      "permutation_p_value": 0.478,
+      "bh_corrected_p_value": 1.0,
+      "research_priority_score": 0.0
+    },
+    "number_of_recent_ema_crosses": {
+      "n_winners": 47,
+      "n_losers": 105,
+      "n_missing": 0,
+      "winner_median": 1.0,
+      "loser_median": 1.0,
+      "winner_iqr": 2.0,
+      "loser_iqr": 2.0,
+      "cohens_d": -0.0505,
+      "abs_effect_size": 0.0505,
+      "bootstrap_95ci_median_diff": [
+        -1.0,
+        0.0
+      ],
+      "univariate_auc": 0.4941,
+      "permutation_p_value": 0.812,
+      "bh_corrected_p_value": 1.0,
+      "research_priority_score": 0.0
+    },
+    "bars_since_last_ema_cross": {
+      "n_winners": 47,
+      "n_losers": 105,
+      "n_missing": 0,
+      "winner_median": 16.0,
+      "loser_median": 13.0,
+      "winner_iqr": 16.0,
+      "loser_iqr": 18.0,
+      "cohens_d": 0.1764,
+      "abs_effect_size": 0.1764,
+      "bootstrap_95ci_median_diff": [
+        -6.0,
+        12.0
+      ],
+      "univariate_auc": 0.5319,
+      "permutation_p_value": 0.351,
+      "bh_corrected_p_value": 0.936,
+      "research_priority_score": 0.0007
+    },
+    "ATR14": {
+      "n_winners": 47,
+      "n_losers": 105,
+      "n_missing": 0,
+      "winner_median": 24.8186,
+      "loser_median": 23.9202,
+      "winner_iqr": 23.3066,
+      "loser_iqr": 17.0616,
+      "cohens_d": 0.2131,
+      "abs_effect_size": 0.2131,
+      "bootstrap_95ci_median_diff": [
+        -5.1589,
+        8.4977
+      ],
+      "univariate_auc": 0.5301,
+      "permutation_p_value": 0.201,
+      "bh_corrected_p_value": 1.0,
+      "research_priority_score": 0.0
+    },
+    "ATR_percentile": {
+      "n_winners": 47,
+      "n_losers": 105,
+      "n_missing": 0,
+      "winner_median": 111.39,
+      "loser_median": 109.41,
+      "winner_iqr": 111.39,
+      "loser_iqr": 104.46,
+      "cohens_d": 0.0096,
+      "abs_effect_size": 0.0096,
+      "bootstrap_95ci_median_diff": [
+        -72.78,
+        71.79
+      ],
+      "univariate_auc": 0.5022,
+      "permutation_p_value": 0.959,
+      "bh_corrected_p_value": 1.0,
+      "research_priority_score": 0.0
+    },
+    "stop_distance_ticks": {
+      "n_winners": 47,
+      "n_losers": 105,
+      "n_missing": 0,
+      "winner_median": 117.0,
+      "loser_median": 95.0,
+      "winner_iqr": 199.0,
+      "loser_iqr": 136.0,
+      "cohens_d": 0.4674,
+      "abs_effect_size": 0.4674,
+      "bootstrap_95ci_median_diff": [
+        -21.025,
+        65.025
+      ],
+      "univariate_auc": 0.5875,
+      "permutation_p_value": 0.004,
+      "bh_corrected_p_value": 0.064,
+      "research_priority_score": 0.0766
+    },
+    "stop_to_ATR_ratio": {
+      "n_winners": 47,
+      "n_losers": 105,
+      "n_missing": 0,
+      "winner_median": 1.5742,
+      "loser_median": 1.2694,
+      "winner_iqr": 1.0154,
+      "loser_iqr": 1.052,
+      "cohens_d": 0.3585,
+      "abs_effect_size": 0.3585,
+      "bootstrap_95ci_median_diff": [
+        -0.0115,
+        0.6143
+      ],
+      "univariate_auc": 0.5968,
+      "permutation_p_value": 0.045,
+      "bh_corrected_p_value": 0.36,
+      "research_priority_score": 0.0444
+    },
+    "signal_range_to_ATR_ratio": {
+      "n_winners": 47,
+      "n_losers": 105,
+      "n_missing": 0,
+      "winner_median": 0.9507,
+      "loser_median": 0.9961,
+      "winner_iqr": 0.3891,
+      "loser_iqr": 0.4061,
+      "cohens_d": 0.0721,
+      "abs_effect_size": 0.0721,
+      "bootstrap_95ci_median_diff": [
+        -0.1454,
+        0.106
+      ],
+      "univariate_auc": 0.481,
+      "permutation_p_value": 0.653,
+      "bh_corrected_p_value": 1.0,
+      "research_priority_score": 0.0
+    },
+    "distance_to_nearest_opposing_level": {
+      "n_winners": 47,
+      "n_losers": 105,
+      "n_missing": 0,
+      "winner_median": 0.8636,
+      "loser_median": 0.9362,
+      "winner_iqr": 1.4856,
+      "loser_iqr": 2.8066,
+      "cohens_d": -0.1819,
+      "abs_effect_size": 0.1819,
+      "bootstrap_95ci_median_diff": [
+        -0.8897,
+        0.4524
+      ],
+      "univariate_auc": 0.4505,
+      "permutation_p_value": 0.339,
+      "bh_corrected_p_value": 1.0,
+      "research_priority_score": 0.0
+    }
+  }
+}

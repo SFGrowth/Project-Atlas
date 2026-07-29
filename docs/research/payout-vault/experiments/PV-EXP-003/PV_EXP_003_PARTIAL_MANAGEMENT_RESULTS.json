@@ -1,0 +1,59 @@
+{
+  "experiment_id": "PV-EXP-003",
+  "generated_utc": "2026-07-29T08:22:21.904960+00:00",
+  "baseline_expectancy_usd": 12.32,
+  "baseline_profit_factor": 1.2704,
+  "M1_BREAKEVEN_AFTER_1R": {
+    "trades": 152,
+    "total_pnl_usd": 3579.52,
+    "expectancy_usd": 23.55,
+    "profit_factor": 1.6656,
+    "max_drawdown_usd": 1072.52,
+    "average_win_usd": 162.87,
+    "average_loss_usd": 55.45,
+    "net_expectancy_change_usd": 11.23,
+    "winner_reduction": 0,
+    "breakeven_stop_frequency": 0.5658,
+    "trades_reached_2r_after_be": 52
+  },
+  "M2_TAKE_50PCT_AT_1R": {
+    "trades": 152,
+    "total_pnl_usd": 1932.77,
+    "expectancy_usd": 12.72,
+    "profit_factor": 1.3644,
+    "max_drawdown_usd": 898.75,
+    "average_win_usd": 84.14,
+    "average_loss_usd": 80.35,
+    "net_expectancy_change_usd": 0.4,
+    "winner_reduction": 47,
+    "breakeven_stop_frequency": 0.0,
+    "trades_reached_2r_after_be": 0
+  },
+  "M3_TAKE_33PCT_AT_1R": {
+    "trades": 152,
+    "total_pnl_usd": 2258.24,
+    "expectancy_usd": 14.86,
+    "profit_factor": 1.4258,
+    "max_drawdown_usd": 990.8,
+    "average_win_usd": 87.93,
+    "average_loss_usd": 80.35,
+    "net_expectancy_change_usd": 2.54,
+    "winner_reduction": 47,
+    "breakeven_stop_frequency": 0.0,
+    "trades_reached_2r_after_be": 0
+  },
+  "M4_TRAIL_STRUCTURE_AFTER_1R": {
+    "trades": 152,
+    "total_pnl_usd": 4163.52,
+    "expectancy_usd": 27.39,
+    "profit_factor": 1.7809,
+    "max_drawdown_usd": 1002.27,
+    "average_win_usd": 150.72,
+    "average_loss_usd": 59.91,
+    "net_expectancy_change_usd": 15.07,
+    "winner_reduction": 2,
+    "breakeven_stop_frequency": 0.5658,
+    "trades_reached_2r_after_be": 52
+  },
+  "best_management_rule": "M4_TRAIL_STRUCTURE_AFTER_1R"
+}

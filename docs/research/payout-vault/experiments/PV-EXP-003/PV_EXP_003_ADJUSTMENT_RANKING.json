@@ -1,0 +1,256 @@
+{
+  "experiment_id": "PV-EXP-003",
+  "generated_utc": "2026-07-29T08:22:21.907576+00:00",
+  "adjustments": [
+    {
+      "name": "M4_TRAIL_STRUCTURE_AFTER_1R",
+      "type": "PARTIAL_MANAGEMENT",
+      "net_expectancy_change_usd": 15.07,
+      "winner_reduction": 2,
+      "classification": "PROMISING_BUT_UNCONFIRMED"
+    },
+    {
+      "name": "E5",
+      "type": "EARLY_EXIT",
+      "net_expectancy_change_usd": 13.18,
+      "winners_exited_early": 9,
+      "full_stop_losses_reduced": 51,
+      "classification": "PROMISING_BUT_UNCONFIRMED"
+    },
+    {
+      "name": "E6",
+      "type": "EARLY_EXIT",
+      "net_expectancy_change_usd": 12.49,
+      "winners_exited_early": 11,
+      "full_stop_losses_reduced": 76,
+      "classification": "OVERFIT_RISK"
+    },
+    {
+      "name": "F2_EXCLUDE_MONDAY",
+      "type": "ENTRY_FILTER",
+      "expectancy_improvement_usd": 12.47,
+      "winner_preservation": 0.8298,
+      "temporal_stability": 0.6,
+      "frequency_retained": 0.7763,
+      "classification": "SUPPORTED"
+    },
+    {
+      "name": "M1_BREAKEVEN_AFTER_1R",
+      "type": "PARTIAL_MANAGEMENT",
+      "net_expectancy_change_usd": 11.23,
+      "winner_reduction": 0,
+      "classification": "PROMISING_BUT_UNCONFIRMED"
+    },
+    {
+      "name": "F8_MAX_RECENT_EMA_CROSSES",
+      "type": "ENTRY_FILTER",
+      "expectancy_improvement_usd": 9.56,
+      "winner_preservation": 0.8298,
+      "temporal_stability": 0.6,
+      "frequency_retained": 0.7961,
+      "classification": "PROMISING_BUT_UNCONFIRMED"
+    },
+    {
+      "name": "E1",
+      "type": "EARLY_EXIT",
+      "net_expectancy_change_usd": 9.36,
+      "winners_exited_early": 4,
+      "full_stop_losses_reduced": 45,
+      "classification": "PROMISING_BUT_UNCONFIRMED"
+    },
+    {
+      "name": "E4",
+      "type": "EARLY_EXIT",
+      "net_expectancy_change_usd": 8.64,
+      "winners_exited_early": 9,
+      "full_stop_losses_reduced": 41,
+      "classification": "PROMISING_BUT_UNCONFIRMED"
+    },
+    {
+      "name": "E2",
+      "type": "EARLY_EXIT",
+      "net_expectancy_change_usd": 4.66,
+      "winners_exited_early": 3,
+      "full_stop_losses_reduced": 31,
+      "classification": "PROMISING_BUT_UNCONFIRMED"
+    },
+    {
+      "name": "F9_ATR_REGIME_FILTER",
+      "type": "ENTRY_FILTER",
+      "expectancy_improvement_usd": 3.75,
+      "winner_preservation": 0.766,
+      "temporal_stability": 0.5,
+      "frequency_retained": 0.7829,
+      "classification": "PROMISING_BUT_UNCONFIRMED"
+    },
+    {
+      "name": "M3_TAKE_33PCT_AT_1R",
+      "type": "PARTIAL_MANAGEMENT",
+      "net_expectancy_change_usd": 2.54,
+      "winner_reduction": 47,
+      "classification": "PROMISING_BUT_UNCONFIRMED"
+    },
+    {
+      "name": "M2_TAKE_50PCT_AT_1R",
+      "type": "PARTIAL_MANAGEMENT",
+      "net_expectancy_change_usd": 0.4,
+      "winner_reduction": 47,
+      "classification": "PROMISING_BUT_UNCONFIRMED"
+    },
+    {
+      "name": "E3",
+      "type": "EARLY_EXIT",
+      "net_expectancy_change_usd": 0.37,
+      "winners_exited_early": 3,
+      "full_stop_losses_reduced": 24,
+      "classification": "PROMISING_BUT_UNCONFIRMED"
+    },
+    {
+      "name": "F4_MIN_ROOM_TO_TARGET_R",
+      "type": "ENTRY_FILTER",
+      "expectancy_improvement_usd": 0.0,
+      "winner_preservation": 1.0,
+      "temporal_stability": 0.5,
+      "frequency_retained": 1.0,
+      "classification": "PROMISING_BUT_UNCONFIRMED"
+    },
+    {
+      "name": "F10_MIN_DISPLACEMENT_STRENGTH",
+      "type": "ENTRY_FILTER",
+      "expectancy_improvement_usd": -0.27,
+      "winner_preservation": 0.9787,
+      "temporal_stability": 0.5,
+      "frequency_retained": 0.9868,
+      "classification": "REJECTED"
+    },
+    {
+      "name": "S2_1_0_ATR",
+      "type": "STOP_PLACEMENT",
+      "expectancy_improvement_usd": -2.19,
+      "trades_converted_loss_to_win": 9,
+      "winners_converted_to_loss": 0,
+      "classification": "REJECTED"
+    },
+    {
+      "name": "S3_1_25_ATR",
+      "type": "STOP_PLACEMENT",
+      "expectancy_improvement_usd": -2.27,
+      "trades_converted_loss_to_win": 5,
+      "winners_converted_to_loss": 0,
+      "classification": "REJECTED"
+    },
+    {
+      "name": "S5_STRUCTURAL_SWING",
+      "type": "STOP_PLACEMENT",
+      "expectancy_improvement_usd": -2.27,
+      "trades_converted_loss_to_win": 5,
+      "winners_converted_to_loss": 0,
+      "classification": "REJECTED"
+    },
+    {
+      "name": "S6_MAX_ORIG_1_25_ATR",
+      "type": "STOP_PLACEMENT",
+      "expectancy_improvement_usd": -2.27,
+      "trades_converted_loss_to_win": 5,
+      "winners_converted_to_loss": 0,
+      "classification": "REJECTED"
+    },
+    {
+      "name": "S7_MAX_STRUCTURAL_1_25_ATR",
+      "type": "STOP_PLACEMENT",
+      "expectancy_improvement_usd": -2.27,
+      "trades_converted_loss_to_win": 5,
+      "winners_converted_to_loss": 0,
+      "classification": "REJECTED"
+    },
+    {
+      "name": "S4_1_5_ATR",
+      "type": "STOP_PLACEMENT",
+      "expectancy_improvement_usd": -2.83,
+      "trades_converted_loss_to_win": 2,
+      "winners_converted_to_loss": 0,
+      "classification": "REJECTED"
+    },
+    {
+      "name": "F5_MAX_EMA_DISTANCE_ATR",
+      "type": "ENTRY_FILTER",
+      "expectancy_improvement_usd": -4.85,
+      "winner_preservation": 0.9362,
+      "temporal_stability": 0.5,
+      "frequency_retained": 0.9408,
+      "classification": "REJECTED"
+    },
+    {
+      "name": "F6_MAX_SIGNAL_CANDLE_ATR",
+      "type": "ENTRY_FILTER",
+      "expectancy_improvement_usd": -5.19,
+      "winner_preservation": 0.9574,
+      "temporal_stability": 0.5,
+      "frequency_retained": 0.9803,
+      "classification": "REJECTED"
+    },
+    {
+      "name": "F7_HTF_ALIGNMENT_REQUIRED",
+      "type": "ENTRY_FILTER",
+      "expectancy_improvement_usd": -8.78,
+      "winner_preservation": 0.4468,
+      "temporal_stability": 0.5,
+      "frequency_retained": 0.4408,
+      "classification": "REJECTED"
+    },
+    {
+      "name": "F1_RTH_ONLY",
+      "type": "ENTRY_FILTER",
+      "expectancy_improvement_usd": -12.32,
+      "winner_preservation": 0.0,
+      "temporal_stability": 0.5,
+      "frequency_retained": 0.0,
+      "classification": "REJECTED"
+    },
+    {
+      "name": "F3_RTH_ONLY_EXCLUDING_MONDAY",
+      "type": "ENTRY_FILTER",
+      "expectancy_improvement_usd": -12.32,
+      "winner_preservation": 0.0,
+      "temporal_stability": 0.5,
+      "frequency_retained": 0.0,
+      "classification": "REJECTED"
+    }
+  ],
+  "summary": {
+    "SUPPORTED": [
+      "F2_EXCLUDE_MONDAY"
+    ],
+    "PROMISING_BUT_UNCONFIRMED": [
+      "M4_TRAIL_STRUCTURE_AFTER_1R",
+      "E5",
+      "M1_BREAKEVEN_AFTER_1R",
+      "F8_MAX_RECENT_EMA_CROSSES",
+      "E1",
+      "E4",
+      "E2",
+      "F9_ATR_REGIME_FILTER",
+      "M3_TAKE_33PCT_AT_1R",
+      "M2_TAKE_50PCT_AT_1R",
+      "E3",
+      "F4_MIN_ROOM_TO_TARGET_R"
+    ],
+    "REJECTED": [
+      "F10_MIN_DISPLACEMENT_STRENGTH",
+      "S2_1_0_ATR",
+      "S3_1_25_ATR",
+      "S5_STRUCTURAL_SWING",
+      "S6_MAX_ORIG_1_25_ATR",
+      "S7_MAX_STRUCTURAL_1_25_ATR",
+      "S4_1_5_ATR",
+      "F5_MAX_EMA_DISTANCE_ATR",
+      "F6_MAX_SIGNAL_CANDLE_ATR",
+      "F7_HTF_ALIGNMENT_REQUIRED",
+      "F1_RTH_ONLY",
+      "F3_RTH_ONLY_EXCLUDING_MONDAY"
+    ],
+    "OVERFIT_RISK": [
+      "E6"
+    ]
+  }
+}

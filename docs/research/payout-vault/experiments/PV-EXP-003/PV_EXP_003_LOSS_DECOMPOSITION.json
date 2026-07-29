@@ -1,0 +1,231 @@
+{
+  "experiment_id": "PV-EXP-003",
+  "generated_utc": "2026-07-29T08:22:20.020094+00:00",
+  "total_losers": 105,
+  "loss_class_accounting_reconciles": true,
+  "decomposition": {
+    "L11_SAME_BAR_AMBIGUITY": {
+      "count": 11,
+      "percentage_of_all_losses": 10.48,
+      "total_pnl_contribution_usd": -347.64,
+      "average_loss_usd": -31.6,
+      "median_loss_usd": -10.24,
+      "average_mae_r": 10.1322,
+      "average_mfe_r": 6.2348,
+      "session_distribution": {
+        "NY": 5,
+        "ASIA": 2,
+        "LONDON": 3,
+        "AFTER": 1
+      },
+      "weekday_distribution": {
+        "Thursday": 4,
+        "Wednesday": 1,
+        "Monday": 4,
+        "Tuesday": 1,
+        "Friday": 1
+      },
+      "direction_distribution": {
+        "bullish": 8,
+        "bearish": 3
+      },
+      "regime_distribution": {
+        "CHOP": 2,
+        "TREND": 9
+      },
+      "recovery_probability": 0.9091,
+      "original_target_reached_later": 0.9091,
+      "preventability_class": "LOW"
+    },
+    "L1_IMMEDIATE_ADVERSE_MOVE": {
+      "count": 21,
+      "percentage_of_all_losses": 20.0,
+      "total_pnl_contribution_usd": -1674.54,
+      "average_loss_usd": -79.74,
+      "median_loss_usd": -45.74,
+      "average_mae_r": 1.4398,
+      "average_mfe_r": 0.1341,
+      "session_distribution": {
+        "AFTER": 6,
+        "NY": 8,
+        "LONDON": 5,
+        "ASIA": 2
+      },
+      "weekday_distribution": {
+        "Wednesday": 5,
+        "Thursday": 2,
+        "Monday": 5,
+        "Friday": 4,
+        "Tuesday": 5
+      },
+      "direction_distribution": {
+        "bullish": 11,
+        "bearish": 10
+      },
+      "regime_distribution": {
+        "CHOP": 13,
+        "TREND": 8
+      },
+      "recovery_probability": 0.4762,
+      "original_target_reached_later": 0.0,
+      "preventability_class": "LOW"
+    },
+    "L2_STOPPED_THEN_TARGET": {
+      "count": 23,
+      "percentage_of_all_losses": 21.9,
+      "total_pnl_contribution_usd": -1167.02,
+      "average_loss_usd": -50.74,
+      "median_loss_usd": -41.74,
+      "average_mae_r": 1.4648,
+      "average_mfe_r": 0.8453,
+      "session_distribution": {
+        "LONDON": 4,
+        "ASIA": 5,
+        "NY": 13,
+        "AFTER": 1
+      },
+      "weekday_distribution": {
+        "Wednesday": 4,
+        "Tuesday": 4,
+        "Friday": 4,
+        "Thursday": 6,
+        "Monday": 5
+      },
+      "direction_distribution": {
+        "bullish": 11,
+        "bearish": 12
+      },
+      "regime_distribution": {
+        "CHOP": 13,
+        "TREND": 10
+      },
+      "recovery_probability": 1.0,
+      "original_target_reached_later": 1.0,
+      "preventability_class": "HIGH"
+    },
+    "L3_PARTIAL_PROGRESS_THEN_REVERSAL": {
+      "count": 28,
+      "percentage_of_all_losses": 26.67,
+      "total_pnl_contribution_usd": -1830.72,
+      "average_loss_usd": -65.38,
+      "median_loss_usd": -56.99,
+      "average_mae_r": 1.58,
+      "average_mfe_r": 1.1221,
+      "session_distribution": {
+        "ASIA": 6,
+        "LONDON": 8,
+        "NY": 12,
+        "AFTER": 2
+      },
+      "weekday_distribution": {
+        "Thursday": 10,
+        "Monday": 9,
+        "Friday": 4,
+        "Wednesday": 3,
+        "Tuesday": 2
+      },
+      "direction_distribution": {
+        "bearish": 12,
+        "bullish": 16
+      },
+      "regime_distribution": {
+        "TREND": 11,
+        "CHOP": 17
+      },
+      "recovery_probability": 0.4286,
+      "original_target_reached_later": 0.0,
+      "preventability_class": "MEDIUM"
+    },
+    "L4_NO_MOMENTUM_TIMEOUT": {
+      "count": 12,
+      "percentage_of_all_losses": 11.43,
+      "total_pnl_contribution_usd": -809.88,
+      "average_loss_usd": -67.49,
+      "median_loss_usd": -52.74,
+      "average_mae_r": 1.4658,
+      "average_mfe_r": 0.3779,
+      "session_distribution": {
+        "ASIA": 1,
+        "NY": 6,
+        "AFTER": 2,
+        "LONDON": 3
+      },
+      "weekday_distribution": {
+        "Thursday": 4,
+        "Tuesday": 2,
+        "Wednesday": 4,
+        "Friday": 1,
+        "Monday": 1
+      },
+      "direction_distribution": {
+        "bearish": 5,
+        "bullish": 7
+      },
+      "regime_distribution": {
+        "CHOP": 6,
+        "TREND": 6
+      },
+      "recovery_probability": 0.4167,
+      "original_target_reached_later": 0.0,
+      "preventability_class": "HIGH"
+    },
+    "L5_OPPOSING_LEVEL_BLOCK": {
+      "count": 8,
+      "percentage_of_all_losses": 7.62,
+      "total_pnl_contribution_usd": -890.42,
+      "average_loss_usd": -111.3,
+      "median_loss_usd": -119.24,
+      "average_mae_r": 1.3251,
+      "average_mfe_r": 0.4056,
+      "session_distribution": {
+        "NY": 2,
+        "LONDON": 2,
+        "ASIA": 3,
+        "AFTER": 1
+      },
+      "weekday_distribution": {
+        "Wednesday": 2,
+        "Monday": 2,
+        "Thursday": 1,
+        "Tuesday": 3
+      },
+      "direction_distribution": {
+        "bullish": 7,
+        "bearish": 1
+      },
+      "regime_distribution": {
+        "TREND": 5,
+        "CHOP": 3
+      },
+      "recovery_probability": 0.5,
+      "original_target_reached_later": 0.0,
+      "preventability_class": "HIGH"
+    },
+    "L8_HIGHER_TIMEFRAME_CONFLICT": {
+      "count": 2,
+      "percentage_of_all_losses": 1.9,
+      "total_pnl_contribution_usd": -203.98,
+      "average_loss_usd": -101.99,
+      "median_loss_usd": -101.99,
+      "average_mae_r": 1.2064,
+      "average_mfe_r": 0.3643,
+      "session_distribution": {
+        "LONDON": 1,
+        "NY": 1
+      },
+      "weekday_distribution": {
+        "Friday": 1,
+        "Tuesday": 1
+      },
+      "direction_distribution": {
+        "bullish": 2
+      },
+      "regime_distribution": {
+        "TREND": 2
+      },
+      "recovery_probability": 0.5,
+      "original_target_reached_later": 0.0,
+      "preventability_class": "MEDIUM"
+    }
+  }
+}
