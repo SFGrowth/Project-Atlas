@@ -1,0 +1,65 @@
+{
+  "experiment_id": "PV-EXP-003",
+  "correction_sprint": "123A.12",
+  "generated_utc": "2026-07-29T08:52:02.241102+00:00",
+  "total_losers": 105,
+  "high_count": 43,
+  "medium_count": 30,
+  "low_count": 32,
+  "high_plus_medium_count": 73,
+  "high_plus_medium_percent": 69.5238,
+  "preventability_accounting_reconciles": true,
+  "report_percentages_match_counts": true,
+  "correction_note": "The original results report stated HIGH_PLUS_MEDIUM=60 (57.1%). This was an arithmetic error. The correct value is HIGH=43, MEDIUM=30, LOW=32 summing to 105, with HIGH+MEDIUM=73 (69.5238%). No trades are excluded \u2014 all 105 losers are accounted for.",
+  "class_breakdown": [
+    {
+      "loss_class": "L3_PARTIAL_PROGRESS_THEN_REVERSAL",
+      "count": 28,
+      "percentage_of_all_losses": 26.6667,
+      "preventability_class": "MEDIUM",
+      "average_loss_usd": -65.38
+    },
+    {
+      "loss_class": "L2_STOPPED_THEN_TARGET",
+      "count": 23,
+      "percentage_of_all_losses": 21.9048,
+      "preventability_class": "HIGH",
+      "average_loss_usd": -50.74
+    },
+    {
+      "loss_class": "L1_IMMEDIATE_ADVERSE_MOVE",
+      "count": 21,
+      "percentage_of_all_losses": 20.0,
+      "preventability_class": "LOW",
+      "average_loss_usd": -79.74
+    },
+    {
+      "loss_class": "L4_NO_MOMENTUM_TIMEOUT",
+      "count": 12,
+      "percentage_of_all_losses": 11.4286,
+      "preventability_class": "HIGH",
+      "average_loss_usd": -67.49
+    },
+    {
+      "loss_class": "L11_SAME_BAR_AMBIGUITY",
+      "count": 11,
+      "percentage_of_all_losses": 10.4762,
+      "preventability_class": "LOW",
+      "average_loss_usd": -31.6
+    },
+    {
+      "loss_class": "L5_OPPOSING_LEVEL_BLOCK",
+      "count": 8,
+      "percentage_of_all_losses": 7.619,
+      "preventability_class": "HIGH",
+      "average_loss_usd": -111.3
+    },
+    {
+      "loss_class": "L8_HIGHER_TIMEFRAME_CONFLICT",
+      "count": 2,
+      "percentage_of_all_losses": 1.9048,
+      "preventability_class": "MEDIUM",
+      "average_loss_usd": -101.99
+    }
+  ]
+}

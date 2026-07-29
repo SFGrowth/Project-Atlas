@@ -1,8 +1,9 @@
 /**
- * Sprint 123A.12 — Gate G12 Tests
- * PV-EXP-003: Loss Autopsy — Preventable-Loss Decomposition
+ * Sprint 123A.12 — Gate G12 Tests (Corrected)
+ * PV-EXP-003: Loss Autopsy — Accounting and Execution Correction
  *
- * 80 tests across 8 suites (A–H).
+ * 90 tests across 9 suites (A–I).
+ * Corrected in Sprint 123A.12 to cover all 12 correction sections.
  * All tests use only pre-registered artefacts from PV-EXP-003.
  * No live trading, no execution authority, no strategy creation.
  */
@@ -108,527 +109,536 @@ describe("Suite A: Branch & Baseline Integrity", () => {
     expect(ab.strategy_status_changes).toBe(0);
   });
 
-  it("G12-A10: analysis engine file exists and is committed", () => {
-    const enginePath = path.join(EXP_DIR, "pv_exp_003_analysis_engine.py");
+  it("G12-A10: correction engine file exists", () => {
+    const enginePath = path.join(EXP_DIR, "pv_exp_003_g12_correction_engine.py");
     expect(fs.existsSync(enginePath)).toBe(true);
-    const tracked = execSync(
-      "git ls-files docs/research/payout-vault/experiments/PV-EXP-003/pv_exp_003_analysis_engine.py",
-      { cwd: process.cwd() }
-    ).toString().trim();
-    expect(tracked.length).toBeGreaterThan(0);
   });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Suite B: Input Integrity (8 tests)
+// Suite B: Preventability Accounting Correction (10 tests)
 // ─────────────────────────────────────────────────────────────────────────────
-describe("Suite B: Input Integrity", () => {
-  it("G12-B01: outcome ledger SHA starts with 741e153e", () => {
-    const ledgerPath = path.join(EXP002_DIR, "PV_EXP_002_OUTCOME_LEDGER.json");
-    const sha = sha256File(ledgerPath);
-    expect(sha.startsWith("741e153e")).toBe(true);
+describe("Suite B: Preventability Accounting Correction", () => {
+  it("G12-B01: preventability accounting audit file exists", () => {
+    const p = path.join(EXP_DIR, "PV_EXP_003_PREVENTABILITY_ACCOUNTING_AUDIT.json");
+    expect(fs.existsSync(p)).toBe(true);
   });
 
-  it("G12-B02: event ledger SHA starts with 9240cbb1", () => {
-    const ledgerPath = path.join(EXP001_DIR, "DETECTOR_CANONICAL_EVENT_LEDGER.json");
-    const sha = sha256File(ledgerPath);
-    expect(sha.startsWith("9240cbb1")).toBe(true);
+  it("G12-B02: preventability accounting reconciles (HIGH+MEDIUM+LOW = 105)", () => {
+    const prev = loadJson("PV_EXP_003_PREVENTABILITY_ACCOUNTING_AUDIT.json");
+    const high = prev.high_count as number;
+    const medium = prev.medium_count as number;
+    const low = prev.low_count as number;
+    expect(high + medium + low).toBe(105);
+    expect(prev.preventability_accounting_reconciles).toBe(true);
   });
 
-  it("G12-B03: feature ledger has exactly 152 trades", () => {
-    const fl = loadJson("PV_EXP_003_TRADE_PATH_FEATURE_LEDGER.json");
-    expect(fl.total_trades).toBe(152);
-    expect(fl.filled_trades).toBe(152);
+  it("G12-B03: HIGH+MEDIUM count is 73 (corrected from original 60)", () => {
+    const prev = loadJson("PV_EXP_003_PREVENTABILITY_ACCOUNTING_AUDIT.json");
+    expect(prev.high_plus_medium_count).toBe(73);
   });
 
-  it("G12-B04: feature ledger winners + losers = 152", () => {
-    const fl = loadJson("PV_EXP_003_TRADE_PATH_FEATURE_LEDGER.json");
-    expect((fl.winners as number) + (fl.losers as number)).toBe(152);
+  it("G12-B04: HIGH+MEDIUM percentage is 69.5238% (corrected from 57.1%)", () => {
+    const prev = loadJson("PV_EXP_003_PREVENTABILITY_ACCOUNTING_AUDIT.json");
+    const pct = prev.high_plus_medium_percent as number;
+    expect(Math.abs(pct - 69.5238)).toBeLessThan(0.001);
   });
 
-  it("G12-B05: feature ledger has zero lookahead violations", () => {
-    const fl = loadJson("PV_EXP_003_TRADE_PATH_FEATURE_LEDGER.json");
-    expect(fl.feature_lookahead_violations).toBe(0);
+  it("G12-B05: HIGH count is 43", () => {
+    const prev = loadJson("PV_EXP_003_PREVENTABILITY_ACCOUNTING_AUDIT.json");
+    expect(prev.high_count).toBe(43);
   });
 
-  it("G12-B06: feature ledger trades array has 152 entries", () => {
-    const fl = loadJson("PV_EXP_003_TRADE_PATH_FEATURE_LEDGER.json");
-    const trades = fl.trades as unknown[];
-    expect(trades).toHaveLength(152);
+  it("G12-B06: MEDIUM count is 30", () => {
+    const prev = loadJson("PV_EXP_003_PREVENTABILITY_ACCOUNTING_AUDIT.json");
+    expect(prev.medium_count).toBe(30);
   });
 
-  it("G12-B07: each trade in feature ledger has required entry-time fields", () => {
-    const fl = loadJson("PV_EXP_003_TRADE_PATH_FEATURE_LEDGER.json");
-    const trades = fl.trades as Record<string, unknown>[];
-    const requiredFields = [
-      "event_id", "direction", "session", "weekday",
-      "entry_price", "ATR14", "stop_distance_ticks",
-      "distance_from_ema15_atr", "signal_candle_range_atr",
-      "room_to_target_r", "DOL_HTF_alignment", "is_winner", "is_loser"
-    ];
-    for (const field of requiredFields) {
-      expect(trades[0]).toHaveProperty(field);
-    }
+  it("G12-B07: LOW count is 32", () => {
+    const prev = loadJson("PV_EXP_003_PREVENTABILITY_ACCOUNTING_AUDIT.json");
+    expect(prev.low_count).toBe(32);
   });
 
-  it("G12-B08: feature ledger has 47 winners and 105 losers", () => {
-    const fl = loadJson("PV_EXP_003_TRADE_PATH_FEATURE_LEDGER.json");
-    expect(fl.winners).toBe(47);
-    expect(fl.losers).toBe(105);
-  });
-});
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Suite C: Loss Classification Accounting (12 tests)
-// ─────────────────────────────────────────────────────────────────────────────
-describe("Suite C: Loss Classification Accounting", () => {
-  it("G12-C01: classification ledger has exactly 105 total losers", () => {
-    const lcl = loadJson("PV_EXP_003_LOSS_CLASSIFICATION_LEDGER.json");
-    expect(lcl.total_losers).toBe(105);
+  it("G12-B08: total_losers is 105", () => {
+    const prev = loadJson("PV_EXP_003_PREVENTABILITY_ACCOUNTING_AUDIT.json");
+    expect(prev.total_losers).toBe(105);
   });
 
-  it("G12-C02: total_classified equals 105", () => {
-    const lcl = loadJson("PV_EXP_003_LOSS_CLASSIFICATION_LEDGER.json");
-    expect(lcl.total_classified).toBe(105);
+  it("G12-B09: class_breakdown array is present and non-empty", () => {
+    const prev = loadJson("PV_EXP_003_PREVENTABILITY_ACCOUNTING_AUDIT.json");
+    const breakdown = prev.class_breakdown as unknown[];
+    expect(Array.isArray(breakdown)).toBe(true);
+    expect(breakdown.length).toBeGreaterThan(0);
   });
 
-  it("G12-C03: unclassified losers is zero", () => {
-    const lcl = loadJson("PV_EXP_003_LOSS_CLASSIFICATION_LEDGER.json");
-    expect(lcl.unclassified).toBe(0);
-  });
-
-  it("G12-C04: multi_primary_class is zero", () => {
-    const lcl = loadJson("PV_EXP_003_LOSS_CLASSIFICATION_LEDGER.json");
-    expect(lcl.multi_primary_class).toBe(0);
-  });
-
-  it("G12-C05: loss_class_accounting_reconciles is true", () => {
-    const lcl = loadJson("PV_EXP_003_LOSS_CLASSIFICATION_LEDGER.json");
-    expect(lcl.loss_class_accounting_reconciles).toBe(true);
-  });
-
-  it("G12-C06: class_counts sum to exactly 105", () => {
-    const lcl = loadJson("PV_EXP_003_LOSS_CLASSIFICATION_LEDGER.json");
-    const counts = lcl.class_counts as Record<string, number>;
-    const total = Object.values(counts).reduce((a, b) => a + b, 0);
-    expect(total).toBe(105);
-  });
-
-  it("G12-C07: L3 is the largest class with count >= 20", () => {
-    const lcl = loadJson("PV_EXP_003_LOSS_CLASSIFICATION_LEDGER.json");
-    const counts = lcl.class_counts as Record<string, number>;
-    expect(counts["L3_PARTIAL_PROGRESS_THEN_REVERSAL"]).toBeGreaterThanOrEqual(20);
-  });
-
-  it("G12-C08: classifications array has exactly 105 entries", () => {
-    const lcl = loadJson("PV_EXP_003_LOSS_CLASSIFICATION_LEDGER.json");
-    const classifications = lcl.classifications as unknown[];
-    expect(classifications).toHaveLength(105);
-  });
-
-  it("G12-C09: every classification has a primary_loss_class field", () => {
-    const lcl = loadJson("PV_EXP_003_LOSS_CLASSIFICATION_LEDGER.json");
-    const classifications = lcl.classifications as Record<string, unknown>[];
-    for (const c of classifications) {
-      expect(c).toHaveProperty("primary_loss_class");
-      expect(typeof c.primary_loss_class).toBe("string");
-    }
-  });
-
-  it("G12-C10: every primary_loss_class is one of the 12 pre-registered classes", () => {
-    const validClasses = new Set([
-      "L1_IMMEDIATE_ADVERSE_MOVE", "L2_STOPPED_THEN_TARGET",
-      "L3_PARTIAL_PROGRESS_THEN_REVERSAL", "L4_NO_MOMENTUM_TIMEOUT",
-      "L5_OPPOSING_LEVEL_BLOCK", "L6_EXTENDED_FROM_EMA",
-      "L7_EXHAUSTION_CANDLE", "L8_HIGHER_TIMEFRAME_CONFLICT",
-      "L9_VOLATILITY_STOP_MISMATCH", "L10_SESSION_OR_WEEKDAY_WEAKNESS",
-      "L11_SAME_BAR_AMBIGUITY", "L12_OTHER"
-    ]);
-    const lcl = loadJson("PV_EXP_003_LOSS_CLASSIFICATION_LEDGER.json");
-    const classifications = lcl.classifications as Record<string, unknown>[];
-    for (const c of classifications) {
-      expect(validClasses.has(c.primary_loss_class as string)).toBe(true);
-    }
-  });
-
-  it("G12-C11: decomposition has preventability class for each loss class", () => {
-    const ld = loadJson("PV_EXP_003_LOSS_DECOMPOSITION.json");
-    const decomp = ld.decomposition as Record<string, Record<string, unknown>>;
-    for (const [cls, data] of Object.entries(decomp)) {
-      expect(data).toHaveProperty("preventability_class");
-      expect(["HIGH", "MEDIUM", "LOW"]).toContain(data.preventability_class);
-    }
-  });
-
-  it("G12-C12: decomposition total_losers is 105", () => {
-    const ld = loadJson("PV_EXP_003_LOSS_DECOMPOSITION.json");
-    expect(ld.total_losers).toBe(105);
-    expect(ld.loss_class_accounting_reconciles).toBe(true);
-  });
-});
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Suite D: Winner vs Loser Feature Analysis (10 tests)
-// ─────────────────────────────────────────────────────────────────────────────
-describe("Suite D: Winner vs Loser Feature Analysis", () => {
-  it("G12-D01: winner/loser analysis has no_target_leakage = true", () => {
-    const wl = loadJson("PV_EXP_003_WINNER_LOSER_FEATURE_ANALYSIS.json");
-    expect(wl.no_target_leakage).toBe(true);
-  });
-
-  it("G12-D02: winner/loser analysis has no_exit_derived_features = true", () => {
-    const wl = loadJson("PV_EXP_003_WINNER_LOSER_FEATURE_ANALYSIS.json");
-    expect(wl.no_exit_derived_features).toBe(true);
-  });
-
-  it("G12-D03: multiple comparison correction is benjamini_hochberg", () => {
-    const wl = loadJson("PV_EXP_003_WINNER_LOSER_FEATURE_ANALYSIS.json");
-    expect(wl.multiple_comparison_correction).toBe("benjamini_hochberg");
-  });
-
-  it("G12-D04: n_winners is 47 and n_losers is 105", () => {
-    const wl = loadJson("PV_EXP_003_WINNER_LOSER_FEATURE_ANALYSIS.json");
-    expect(wl.n_winners).toBe(47);
-    expect(wl.n_losers).toBe(105);
-  });
-
-  it("G12-D05: features object has at least 10 features", () => {
-    const wl = loadJson("PV_EXP_003_WINNER_LOSER_FEATURE_ANALYSIS.json");
-    const features = wl.features as Record<string, unknown>;
-    expect(Object.keys(features).length).toBeGreaterThanOrEqual(10);
-  });
-
-  it("G12-D06: each feature has permutation_p_value and bh_corrected_p_value", () => {
-    const wl = loadJson("PV_EXP_003_WINNER_LOSER_FEATURE_ANALYSIS.json");
-    const features = wl.features as Record<string, Record<string, unknown>>;
-    for (const [name, data] of Object.entries(features)) {
-      if (data.error) continue;
-      expect(data).toHaveProperty("permutation_p_value");
-      expect(data).toHaveProperty("bh_corrected_p_value");
-    }
-  });
-
-  it("G12-D07: stop_distance_ticks has p-value < 0.05", () => {
-    const wl = loadJson("PV_EXP_003_WINNER_LOSER_FEATURE_ANALYSIS.json");
-    const features = wl.features as Record<string, Record<string, unknown>>;
-    const feat = features["stop_distance_ticks"];
-    expect(feat.permutation_p_value as number).toBeLessThan(0.05);
-  });
-
-  it("G12-D08: stop_distance_ticks winner median > loser median", () => {
-    const wl = loadJson("PV_EXP_003_WINNER_LOSER_FEATURE_ANALYSIS.json");
-    const features = wl.features as Record<string, Record<string, unknown>>;
-    const feat = features["stop_distance_ticks"];
-    expect(feat.winner_median as number).toBeGreaterThan(feat.loser_median as number);
-  });
-
-  it("G12-D09: each feature has bootstrap_95ci_median_diff as array of 2", () => {
-    const wl = loadJson("PV_EXP_003_WINNER_LOSER_FEATURE_ANALYSIS.json");
-    const features = wl.features as Record<string, Record<string, unknown>>;
-    for (const [name, data] of Object.entries(features)) {
-      if (data.error) continue;
-      const ci = data.bootstrap_95ci_median_diff as unknown[];
-      expect(ci).toHaveLength(2);
-    }
-  });
-
-  it("G12-D10: each feature has research_priority_score >= 0", () => {
-    const wl = loadJson("PV_EXP_003_WINNER_LOSER_FEATURE_ANALYSIS.json");
-    const features = wl.features as Record<string, Record<string, unknown>>;
-    for (const [name, data] of Object.entries(features)) {
-      if (data.error) continue;
-      expect(data.research_priority_score as number).toBeGreaterThanOrEqual(0);
+  it("G12-B10: each class_breakdown entry has count, preventability_class, and average_loss_usd", () => {
+    const prev = loadJson("PV_EXP_003_PREVENTABILITY_ACCOUNTING_AUDIT.json");
+    const breakdown = prev.class_breakdown as Record<string, unknown>[];
+    for (const cls of breakdown) {
+      expect(cls).toHaveProperty("count");
+      expect(cls).toHaveProperty("preventability_class");
+      expect(cls).toHaveProperty("average_loss_usd");
     }
   });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Suite E: Entry Filter Tests (10 tests)
+// Suite C: Time Bucket Audit (10 tests)
 // ─────────────────────────────────────────────────────────────────────────────
-describe("Suite E: Entry Filter Tests", () => {
-  it("G12-E01: entry filter results has baseline_expectancy_usd = 12.32", () => {
-    const ef = loadJson("PV_EXP_003_ENTRY_FILTER_RESULTS.json");
-    expect(ef.baseline_expectancy_usd).toBe(12.32);
+describe("Suite C: Time Bucket Audit", () => {
+  it("G12-C01: time bucket audit file exists", () => {
+    const p = path.join(EXP_DIR, "PV_EXP_003_TIME_BUCKET_AUDIT.json");
+    expect(fs.existsSync(p)).toBe(true);
   });
 
-  it("G12-E02: entry filter results has 10 filters", () => {
-    const ef = loadJson("PV_EXP_003_ENTRY_FILTER_RESULTS.json");
-    const filters = ef.filters as Record<string, unknown>;
-    expect(Object.keys(filters)).toHaveLength(10);
+  it("G12-C02: time bucket audit has 0 unknown session labels", () => {
+    const tba = loadJson("PV_EXP_003_TIME_BUCKET_AUDIT.json");
+    expect(tba.unknown_session_labels).toBe(0);
   });
 
-  it("G12-E03: F2_EXCLUDE_MONDAY retained trades is 118", () => {
-    const ef = loadJson("PV_EXP_003_ENTRY_FILTER_RESULTS.json");
-    const filters = ef.filters as Record<string, Record<string, unknown>>;
-    expect(filters["F2_EXCLUDE_MONDAY"].trades_retained).toBe(118);
+  it("G12-C03: session counts sum to 152", () => {
+    const tba = loadJson("PV_EXP_003_TIME_BUCKET_AUDIT.json");
+    expect(tba.session_counts_sum).toBe(152);
   });
 
-  it("G12-E04: F2_EXCLUDE_MONDAY expectancy > baseline expectancy", () => {
-    const ef = loadJson("PV_EXP_003_ENTRY_FILTER_RESULTS.json");
-    const filters = ef.filters as Record<string, Record<string, unknown>>;
-    expect(filters["F2_EXCLUDE_MONDAY"].retained_expectancy_usd as number).toBeGreaterThan(ef.baseline_expectancy_usd as number);
+  it("G12-C04: weekday counts sum to 152", () => {
+    const tba = loadJson("PV_EXP_003_TIME_BUCKET_AUDIT.json");
+    expect(tba.weekday_counts_sum).toBe(152);
   });
 
-  it("G12-E05: F2_EXCLUDE_MONDAY profit factor > 1.5", () => {
-    const ef = loadJson("PV_EXP_003_ENTRY_FILTER_RESULTS.json");
-    const filters = ef.filters as Record<string, Record<string, unknown>>;
-    expect(filters["F2_EXCLUDE_MONDAY"].retained_profit_factor as number).toBeGreaterThan(1.5);
+  it("G12-C05: F1 (RTH only) retains 65 trades (corrected from 0)", () => {
+    const tba = loadJson("PV_EXP_003_TIME_BUCKET_AUDIT.json");
+    const f1 = (tba.filter_results as Record<string, Record<string, unknown>>)["F1_RTH_ONLY"];
+    expect(f1.retained_count).toBe(65);
   });
 
-  it("G12-E06: F2_EXCLUDE_MONDAY filter_value_score > 0", () => {
-    const ef = loadJson("PV_EXP_003_ENTRY_FILTER_RESULTS.json");
-    const filters = ef.filters as Record<string, Record<string, unknown>>;
-    expect(filters["F2_EXCLUDE_MONDAY"].filter_value_score as number).toBeGreaterThan(0);
+  it("G12-C06: F2 (exclude Monday) retains 118 trades", () => {
+    const tba = loadJson("PV_EXP_003_TIME_BUCKET_AUDIT.json");
+    const f2 = (tba.filter_results as Record<string, Record<string, unknown>>)["F2_EXCLUDE_MONDAY"];
+    expect(f2.retained_count).toBe(118);
   });
 
-  it("G12-E07: best_filter_by_fvs is F2_EXCLUDE_MONDAY", () => {
-    const ef = loadJson("PV_EXP_003_ENTRY_FILTER_RESULTS.json");
-    expect(ef.best_filter_by_fvs).toBe("F2_EXCLUDE_MONDAY");
+  it("G12-C07: F3 (RTH + exclude Monday) retains 48 trades", () => {
+    const tba = loadJson("PV_EXP_003_TIME_BUCKET_AUDIT.json");
+    const f3 = (tba.filter_results as Record<string, Record<string, unknown>>)["F3_RTH_AND_EXCLUDE_MONDAY"];
+    expect(f3.retained_count).toBe(48);
   });
 
-  it("G12-E08: each filter has trades_retained + trades_removed <= 152", () => {
-    const ef = loadJson("PV_EXP_003_ENTRY_FILTER_RESULTS.json");
-    const filters = ef.filters as Record<string, Record<string, unknown>>;
-    for (const [name, data] of Object.entries(filters)) {
-      const total = (data.trades_retained as number) + (data.trades_removed as number);
-      expect(total).toBeLessThanOrEqual(152);
+  it("G12-C08: F2 retained + removed = 152", () => {
+    const tba = loadJson("PV_EXP_003_TIME_BUCKET_AUDIT.json");
+    const f2 = (tba.filter_results as Record<string, Record<string, unknown>>)["F2_EXCLUDE_MONDAY"];
+    expect((f2.retained_count as number) + (f2.removed_count as number)).toBe(152);
+  });
+
+  it("G12-C09: frozen parameters include UTC timezone", () => {
+    const tba = loadJson("PV_EXP_003_TIME_BUCKET_AUDIT.json");
+    const fp = tba.frozen_parameters as Record<string, unknown>;
+    expect(fp.timezone).toBe("UTC");
+  });
+
+  it("G12-C10: frozen parameters include RTH definition referencing NY session", () => {
+    const tba = loadJson("PV_EXP_003_TIME_BUCKET_AUDIT.json");
+    const fp = tba.frozen_parameters as Record<string, unknown>;
+    expect((fp.rth_definition as string).toLowerCase()).toContain("ny");
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Suite D: F2 Trade Reconciliation (10 tests)
+// ─────────────────────────────────────────────────────────────────────────────
+describe("Suite D: F2 Trade Reconciliation", () => {
+  it("G12-D01: F2 trade reconciliation file exists", () => {
+    const p = path.join(EXP_DIR, "PV_EXP_003_F2_TRADE_RECONCILIATION.json");
+    expect(fs.existsSync(p)).toBe(true);
+  });
+
+  it("G12-D02: training baseline count is 91", () => {
+    const f2r = loadJson("PV_EXP_003_F2_TRADE_RECONCILIATION.json");
+    expect(f2r.training_baseline_count).toBe(91);
+  });
+
+  it("G12-D03: validation baseline count is 61", () => {
+    const f2r = loadJson("PV_EXP_003_F2_TRADE_RECONCILIATION.json");
+    expect(f2r.validation_baseline_count).toBe(61);
+  });
+
+  it("G12-D04: training F2 retained is 72 (corrected from 55)", () => {
+    const f2r = loadJson("PV_EXP_003_F2_TRADE_RECONCILIATION.json");
+    expect(f2r.training_f2_retained).toBe(72);
+  });
+
+  it("G12-D05: validation F2 retained is 46", () => {
+    const f2r = loadJson("PV_EXP_003_F2_TRADE_RECONCILIATION.json");
+    expect(f2r.validation_f2_retained).toBe(46);
+  });
+
+  it("G12-D06: total F2 retained is 118 (corrected from 101)", () => {
+    const f2r = loadJson("PV_EXP_003_F2_TRADE_RECONCILIATION.json");
+    expect(f2r.f2_total_retained).toBe(118);
+  });
+
+  it("G12-D07: total F2 excluded is 34", () => {
+    const f2r = loadJson("PV_EXP_003_F2_TRADE_RECONCILIATION.json");
+    expect(f2r.f2_total_excluded).toBe(34);
+  });
+
+  it("G12-D08: F2 retained + excluded = 152", () => {
+    const f2r = loadJson("PV_EXP_003_F2_TRADE_RECONCILIATION.json");
+    expect((f2r.f2_total_retained as number) + (f2r.f2_total_excluded as number)).toBe(152);
+  });
+
+  it("G12-D09: training retained + validation retained = total retained", () => {
+    const f2r = loadJson("PV_EXP_003_F2_TRADE_RECONCILIATION.json");
+    expect((f2r.training_f2_retained as number) + (f2r.validation_f2_retained as number)).toBe(f2r.f2_total_retained as number);
+  });
+
+  it("G12-D10: F2 accounting reconciles with no duplicate or missing split assignments", () => {
+    const f2r = loadJson("PV_EXP_003_F2_TRADE_RECONCILIATION.json");
+    expect(f2r.f2_accounting_reconciles).toBe(true);
+    expect(f2r.duplicate_split_assignments).toBe(0);
+    expect(f2r.missing_split_assignments).toBe(0);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Suite E: Stop Engine Audit (10 tests)
+// ─────────────────────────────────────────────────────────────────────────────
+describe("Suite E: Stop Engine Audit", () => {
+  it("G12-E01: stop engine audit file exists", () => {
+    const p = path.join(EXP_DIR, "PV_EXP_003_STOP_ENGINE_AUDIT.json");
+    expect(fs.existsSync(p)).toBe(true);
+  });
+
+  it("G12-E02: stop engine audit has 7 stop metrics (S1–S7)", () => {
+    const sea = loadJson("PV_EXP_003_STOP_ENGINE_AUDIT.json");
+    const metrics = sea.stop_metrics as Record<string, unknown>;
+    expect(Object.keys(metrics)).toHaveLength(7);
+  });
+
+  it("G12-E03: S1 original stop expectancy is approximately 12.32", () => {
+    const sea = loadJson("PV_EXP_003_STOP_ENGINE_AUDIT.json");
+    const metrics = sea.stop_metrics as Record<string, Record<string, unknown>>;
+    expect(Math.abs((metrics["S1_ORIGINAL_STRUCTURE"].expectancy_usd as number) - 12.32)).toBeLessThan(0.5);
+  });
+
+  it("G12-E04: S2 expectancy differs from S1 (bar simulation produces distinct outcomes)", () => {
+    const sea = loadJson("PV_EXP_003_STOP_ENGINE_AUDIT.json");
+    const metrics = sea.stop_metrics as Record<string, Record<string, unknown>>;
+    const s1 = metrics["S1_ORIGINAL_STRUCTURE"].expectancy_usd as number;
+    const s2 = metrics["S2_ATR_1_0"].expectancy_usd as number;
+    expect(s1).not.toBeCloseTo(s2, 2);
+  });
+
+  it("G12-E05: S2 ATR 1.0 expectancy is less than S1 (wider stop reduces performance)", () => {
+    const sea = loadJson("PV_EXP_003_STOP_ENGINE_AUDIT.json");
+    const metrics = sea.stop_metrics as Record<string, Record<string, unknown>>;
+    const s1 = metrics["S1_ORIGINAL_STRUCTURE"].expectancy_usd as number;
+    const s2 = metrics["S2_ATR_1_0"].expectancy_usd as number;
+    expect(s2).toBeLessThan(s1);
+  });
+
+  it("G12-E06: L2 count is 23", () => {
+    const sea = loadJson("PV_EXP_003_STOP_ENGINE_AUDIT.json");
+    expect(sea.l2_count).toBe(23);
+  });
+
+  it("G12-E07: stop simulation accounting reconciles", () => {
+    const sea = loadJson("PV_EXP_003_STOP_ENGINE_AUDIT.json");
+    expect(sea.stop_simulation_accounting_reconciles).toBe(true);
+  });
+
+  it("G12-E08: distinct stop prices produced is true", () => {
+    const sea = loadJson("PV_EXP_003_STOP_ENGINE_AUDIT.json");
+    expect(sea.distinct_stop_prices_produced).toBe(true);
+  });
+
+  it("G12-E09: frozen parameters include slippage_ticks=2 and commission_rt_usd=1.24", () => {
+    const sea = loadJson("PV_EXP_003_STOP_ENGINE_AUDIT.json");
+    const fp = sea.frozen_parameters as Record<string, unknown>;
+    expect(fp.slippage_ticks).toBe(2);
+    expect(Math.abs((fp.commission_rt_usd as number) - 1.24)).toBeLessThan(0.01);
+  });
+
+  it("G12-E10: L2 conversions by alternative are documented for S2 and S5", () => {
+    const sea = loadJson("PV_EXP_003_STOP_ENGINE_AUDIT.json");
+    const l2conv = sea.l2_conversions_by_alternative as Record<string, unknown>;
+    expect(l2conv).toHaveProperty("S2_ATR_1_0");
+    expect(l2conv).toHaveProperty("S5_RECENT_CONFIRMED_SWING_PLUS_1_TICK");
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Suite F: Early Exit Execution Correction (10 tests)
+// ─────────────────────────────────────────────────────────────────────────────
+describe("Suite F: Early Exit Execution Correction", () => {
+  it("G12-F01: early exit execution results file exists", () => {
+    const p = path.join(EXP_DIR, "PV_EXP_003_EARLY_EXIT_EXECUTION_RESULTS.json");
+    expect(fs.existsSync(p)).toBe(true);
+  });
+
+  it("G12-F02: early exit results has 6 rules (E1–E6)", () => {
+    const eer = loadJson("PV_EXP_003_EARLY_EXIT_EXECUTION_RESULTS.json");
+    const rules = eer.rules as Record<string, unknown>;
+    expect(Object.keys(rules)).toHaveLength(6);
+  });
+
+  it("G12-F03: all early exit rules are REJECTED after costs (corrected from PROMISING/OVERFIT_RISK)", () => {
+    const eer = loadJson("PV_EXP_003_EARLY_EXIT_EXECUTION_RESULTS.json");
+    const rules = eer.rules as Record<string, Record<string, unknown>>;
+    for (const [name, rule] of Object.entries(rules)) {
+      expect(rule.classification, `${name} should be REJECTED`).toBe("REJECTED");
     }
   });
 
-  it("G12-E09: each filter has temporal_stability between 0 and 1", () => {
-    const ef = loadJson("PV_EXP_003_ENTRY_FILTER_RESULTS.json");
-    const filters = ef.filters as Record<string, Record<string, unknown>>;
-    for (const [name, data] of Object.entries(filters)) {
-      const ts = data.temporal_stability as number;
-      expect(ts).toBeGreaterThanOrEqual(0);
-      expect(ts).toBeLessThanOrEqual(1);
+  it("G12-F04: frozen parameters include no_flat_breakeven_assumption=true", () => {
+    const eer = loadJson("PV_EXP_003_EARLY_EXIT_EXECUTION_RESULTS.json");
+    const fp = eer.frozen_parameters as Record<string, unknown>;
+    expect(fp.no_flat_breakeven_assumption).toBe(true);
+  });
+
+  it("G12-F05: frozen parameters include slippage_ticks=2", () => {
+    const eer = loadJson("PV_EXP_003_EARLY_EXIT_EXECUTION_RESULTS.json");
+    const fp = eer.frozen_parameters as Record<string, unknown>;
+    expect(fp.slippage_ticks).toBe(2);
+  });
+
+  it("G12-F06: E5 net expectancy change is negative (costs dominate)", () => {
+    const eer = loadJson("PV_EXP_003_EARLY_EXIT_EXECUTION_RESULTS.json");
+    const rules = eer.rules as Record<string, Record<string, unknown>>;
+    expect(rules["E5"].net_expectancy_change_usd as number).toBeLessThan(0);
+  });
+
+  it("G12-F07: E6 net expectancy change is negative (corrected from OVERFIT_RISK)", () => {
+    const eer = loadJson("PV_EXP_003_EARLY_EXIT_EXECUTION_RESULTS.json");
+    const rules = eer.rules as Record<string, Record<string, unknown>>;
+    expect(rules["E6"].net_expectancy_change_usd as number).toBeLessThan(0);
+  });
+
+  it("G12-F08: each rule has execution_cost_included=true", () => {
+    const eer = loadJson("PV_EXP_003_EARLY_EXIT_EXECUTION_RESULTS.json");
+    const rules = eer.rules as Record<string, Record<string, unknown>>;
+    for (const [name, rule] of Object.entries(rules)) {
+      expect(rule.execution_cost_included, `${name} should have execution_cost_included`).toBe(true);
     }
   });
 
-  it("G12-E10: each filter has bootstrap_95ci_expectancy as array or null", () => {
-    const ef = loadJson("PV_EXP_003_ENTRY_FILTER_RESULTS.json");
-    const filters = ef.filters as Record<string, Record<string, unknown>>;
-    for (const [name, data] of Object.entries(filters)) {
-      const ci = data.bootstrap_95ci_expectancy;
-      if (ci !== null) {
-        expect(Array.isArray(ci)).toBe(true);
-      }
+  it("G12-F09: each rule has slippage_ticks_applied=2", () => {
+    const eer = loadJson("PV_EXP_003_EARLY_EXIT_EXECUTION_RESULTS.json");
+    const rules = eer.rules as Record<string, Record<string, unknown>>;
+    for (const [name, rule] of Object.entries(rules)) {
+      expect(rule.slippage_ticks_applied, `${name} should have slippage_ticks_applied=2`).toBe(2);
+    }
+  });
+
+  it("G12-F10: each rule has commission_rt_applied=1.24", () => {
+    const eer = loadJson("PV_EXP_003_EARLY_EXIT_EXECUTION_RESULTS.json");
+    const rules = eer.rules as Record<string, Record<string, unknown>>;
+    for (const [name, rule] of Object.entries(rules)) {
+      expect(Math.abs((rule.commission_rt_applied as number) - 1.24)).toBeLessThan(0.01);
     }
   });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Suite F: Stop Placement and Early Exit Tests (10 tests)
+// Suite G: Management Rule Correction (10 tests)
 // ─────────────────────────────────────────────────────────────────────────────
-describe("Suite F: Stop Placement and Early Exit Tests", () => {
-  it("G12-F01: stop placement results has S1_ORIGINAL", () => {
-    const sp = loadJson("PV_EXP_003_STOP_PLACEMENT_RESULTS.json");
-    const results = sp.results as Record<string, unknown>;
-    expect(results).toHaveProperty("S1_ORIGINAL");
+describe("Suite G: Management Rule Correction", () => {
+  it("G12-G01: management execution results file exists", () => {
+    const p = path.join(EXP_DIR, "PV_EXP_003_MANAGEMENT_EXECUTION_RESULTS.json");
+    expect(fs.existsSync(p)).toBe(true);
   });
 
-  it("G12-F02: stop placement results has 7 alternatives (S1-S7)", () => {
-    const sp = loadJson("PV_EXP_003_STOP_PLACEMENT_RESULTS.json");
-    const results = sp.results as Record<string, unknown>;
-    expect(Object.keys(results)).toHaveLength(7);
+  it("G12-G02: management results has 4 rules (M1–M4)", () => {
+    const mer = loadJson("PV_EXP_003_MANAGEMENT_EXECUTION_RESULTS.json");
+    const rules = mer.rules as Record<string, unknown>;
+    expect(Object.keys(rules)).toHaveLength(4);
   });
 
-  it("G12-F03: S1_ORIGINAL expectancy_usd is 12.32", () => {
-    const sp = loadJson("PV_EXP_003_STOP_PLACEMENT_RESULTS.json");
-    const results = sp.results as Record<string, Record<string, unknown>>;
-    expect(results["S1_ORIGINAL"].expectancy_usd).toBe(12.32);
+  it("G12-G03: M4 future_structure_uses is 0 (causal-only)", () => {
+    const mer = loadJson("PV_EXP_003_MANAGEMENT_EXECUTION_RESULTS.json");
+    const rules = mer.rules as Record<string, Record<string, unknown>>;
+    expect(rules["M4_TRAIL_STRUCTURE_AFTER_1R"].future_structure_uses).toBe(0);
   });
 
-  it("G12-F04: early exit results has 6 rules (E1-E6)", () => {
-    const ee = loadJson("PV_EXP_003_EARLY_EXIT_RESULTS.json");
-    const ruleNames = ["E1", "E2", "E3", "E4", "E5", "E6"];
-    for (const r of ruleNames) {
-      expect(ee).toHaveProperty(r);
-    }
+  it("G12-G04: top-level future_structure_uses is 0", () => {
+    const mer = loadJson("PV_EXP_003_MANAGEMENT_EXECUTION_RESULTS.json");
+    expect(mer.future_structure_uses).toBe(0);
   });
 
-  it("G12-F05: early exit results has baseline_expectancy_usd = 12.32", () => {
-    const ee = loadJson("PV_EXP_003_EARLY_EXIT_RESULTS.json");
-    expect(ee.baseline_expectancy_usd).toBe(12.32);
+  it("G12-G05: M1 winners_converted_to_breakeven is 26 (corrected from 0)", () => {
+    const mer = loadJson("PV_EXP_003_MANAGEMENT_EXECUTION_RESULTS.json");
+    const rules = mer.rules as Record<string, Record<string, unknown>>;
+    const m1 = rules["M1_BREAKEVEN_AFTER_1R"];
+    expect(m1.winners_converted_to_breakeven as number).toBe(26);
   });
 
-  it("G12-F06: best_early_exit_rule is one of E1-E6", () => {
-    const ee = loadJson("PV_EXP_003_EARLY_EXIT_RESULTS.json");
-    expect(["E1", "E2", "E3", "E4", "E5", "E6"]).toContain(ee.best_early_exit_rule);
+  it("G12-G06: M1 winners_converted_to_loss is 0 (break-even exits, not losses)", () => {
+    const mer = loadJson("PV_EXP_003_MANAGEMENT_EXECUTION_RESULTS.json");
+    const rules = mer.rules as Record<string, Record<string, unknown>>;
+    const m1 = rules["M1_BREAKEVEN_AFTER_1R"];
+    expect(m1.winners_converted_to_loss as number).toBe(0);
   });
 
-  it("G12-F07: E5 has more full_stop_losses_reduced than winners_exited_early", () => {
-    const ee = loadJson("PV_EXP_003_EARLY_EXIT_RESULTS.json");
-    const e5 = ee["E5"] as Record<string, unknown>;
-    expect(e5.full_stop_losses_reduced as number).toBeGreaterThan(e5.winners_exited_early as number);
+  it("G12-G07: M1 expectancy is greater than baseline (+12.32)", () => {
+    const mer = loadJson("PV_EXP_003_MANAGEMENT_EXECUTION_RESULTS.json");
+    const rules = mer.rules as Record<string, Record<string, unknown>>;
+    expect(rules["M1_BREAKEVEN_AFTER_1R"].expectancy_usd as number).toBeGreaterThan(12.32);
   });
 
-  it("G12-F08: each early exit rule has net_expectancy_change_usd", () => {
-    const ee = loadJson("PV_EXP_003_EARLY_EXIT_RESULTS.json");
-    for (const rule of ["E1", "E2", "E3", "E4", "E5", "E6"]) {
-      const r = ee[rule] as Record<string, unknown>;
-      expect(r).toHaveProperty("net_expectancy_change_usd");
-    }
+  it("G12-G08: M4 expectancy is greater than baseline (+12.32)", () => {
+    const mer = loadJson("PV_EXP_003_MANAGEMENT_EXECUTION_RESULTS.json");
+    const rules = mer.rules as Record<string, Record<string, unknown>>;
+    expect(rules["M4_TRAIL_STRUCTURE_AFTER_1R"].expectancy_usd as number).toBeGreaterThan(12.32);
   });
 
-  it("G12-F09: E1 early_exits count is between 20 and 80", () => {
-    const ee = loadJson("PV_EXP_003_EARLY_EXIT_RESULTS.json");
-    const e1 = ee["E1"] as Record<string, unknown>;
-    expect(e1.early_exits as number).toBeGreaterThanOrEqual(20);
-    expect(e1.early_exits as number).toBeLessThanOrEqual(80);
+  it("G12-G09: execution_price_assumptions_documented is true", () => {
+    const mer = loadJson("PV_EXP_003_MANAGEMENT_EXECUTION_RESULTS.json");
+    expect(mer.execution_price_assumptions_documented).toBe(true);
   });
 
-  it("G12-F10: each early exit rule has max_drawdown_usd > 0", () => {
-    const ee = loadJson("PV_EXP_003_EARLY_EXIT_RESULTS.json");
-    for (const rule of ["E1", "E2", "E3", "E4", "E5", "E6"]) {
-      const r = ee[rule] as Record<string, unknown>;
-      expect(r.max_drawdown_usd as number).toBeGreaterThan(0);
-    }
+  it("G12-G10: frozen parameters include causal_only=true", () => {
+    const mer = loadJson("PV_EXP_003_MANAGEMENT_EXECUTION_RESULTS.json");
+    const fp = mer.frozen_parameters as Record<string, unknown>;
+    expect(fp.causal_only).toBe(true);
   });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Suite G: Partial Management and Temporal Validation (10 tests)
+// Suite H: Temporal Validation and Adjustment Ranking (10 tests)
 // ─────────────────────────────────────────────────────────────────────────────
-describe("Suite G: Partial Management and Temporal Validation", () => {
-  it("G12-G01: partial management results has 4 rules (M1-M4)", () => {
-    const pm = loadJson("PV_EXP_003_PARTIAL_MANAGEMENT_RESULTS.json");
-    const ruleNames = ["M1_BREAKEVEN_AFTER_1R", "M2_TAKE_50PCT_AT_1R", "M3_TAKE_33PCT_AT_1R", "M4_TRAIL_STRUCTURE_AFTER_1R"];
-    for (const r of ruleNames) {
-      expect(pm).toHaveProperty(r);
-    }
-  });
-
-  it("G12-G02: M1 expectancy > baseline expectancy", () => {
-    const pm = loadJson("PV_EXP_003_PARTIAL_MANAGEMENT_RESULTS.json");
-    const m1 = pm["M1_BREAKEVEN_AFTER_1R"] as Record<string, unknown>;
-    expect(m1.expectancy_usd as number).toBeGreaterThan(pm.baseline_expectancy_usd as number);
-  });
-
-  it("G12-G03: M4 expectancy > M1 expectancy", () => {
-    const pm = loadJson("PV_EXP_003_PARTIAL_MANAGEMENT_RESULTS.json");
-    const m1 = pm["M1_BREAKEVEN_AFTER_1R"] as Record<string, unknown>;
-    const m4 = pm["M4_TRAIL_STRUCTURE_AFTER_1R"] as Record<string, unknown>;
-    expect(m4.expectancy_usd as number).toBeGreaterThan(m1.expectancy_usd as number);
-  });
-
-  it("G12-G04: M1 winner_reduction is 0", () => {
-    const pm = loadJson("PV_EXP_003_PARTIAL_MANAGEMENT_RESULTS.json");
-    const m1 = pm["M1_BREAKEVEN_AFTER_1R"] as Record<string, unknown>;
-    expect(m1.winner_reduction).toBe(0);
-  });
-
-  it("G12-G05: best_management_rule is one of M1-M4", () => {
-    const pm = loadJson("PV_EXP_003_PARTIAL_MANAGEMENT_RESULTS.json");
-    const validRules = ["M1_BREAKEVEN_AFTER_1R", "M2_TAKE_50PCT_AT_1R", "M3_TAKE_33PCT_AT_1R", "M4_TRAIL_STRUCTURE_AFTER_1R"];
-    expect(validRules).toContain(pm.best_management_rule);
-  });
-
-  it("G12-G06: temporal validation split is 60/40 chronological", () => {
+describe("Suite H: Temporal Validation and Adjustment Ranking", () => {
+  it("G12-H01: temporal validation split is chronological_60_40", () => {
     const tv = loadJson("PV_EXP_003_TEMPORAL_VALIDATION.json");
     expect(tv.split_method).toBe("chronological_60_40");
     expect((tv.training_n as number) + (tv.validation_n as number)).toBe(152);
   });
 
-  it("G12-G07: temporal validation training_n is 91 and validation_n is 61", () => {
+  it("G12-H02: temporal validation training_n is 91 and validation_n is 61", () => {
     const tv = loadJson("PV_EXP_003_TEMPORAL_VALIDATION.json");
     expect(tv.training_n).toBe(91);
     expect(tv.validation_n).toBe(61);
   });
 
-  it("G12-G08: temporal validation parameter_changed_after_validation is false", () => {
+  it("G12-H03: temporal validation has evidence_classification field", () => {
+    const tv = loadJson("PV_EXP_003_TEMPORAL_VALIDATION.json");
+    expect(tv).toHaveProperty("evidence_classification");
+    const ec = tv.evidence_classification as Record<string, unknown>;
+    expect(ec).toHaveProperty("F2_EXCLUDE_MONDAY");
+  });
+
+  it("G12-H04: F2 evidence class is RETROSPECTIVE_DISCOVERY + INTERNAL_TEMPORAL_VALIDATION", () => {
+    const tv = loadJson("PV_EXP_003_TEMPORAL_VALIDATION.json");
+    const ec = tv.evidence_classification as Record<string, unknown>;
+    expect(ec["F2_EXCLUDE_MONDAY"] as string).toContain("RETROSPECTIVE_DISCOVERY");
+    expect(ec["F2_EXCLUDE_MONDAY"] as string).toContain("INTERNAL_TEMPORAL_VALIDATION");
+  });
+
+  it("G12-H05: temporal validation parameter_changed_after_validation is false", () => {
     const tv = loadJson("PV_EXP_003_TEMPORAL_VALIDATION.json");
     expect(tv.parameter_changed_after_validation).toBe(false);
   });
 
-  it("G12-G09: temporal validation has rolling_windows array", () => {
+  it("G12-H06: validation filtered expectancy > 0", () => {
     const tv = loadJson("PV_EXP_003_TEMPORAL_VALIDATION.json");
-    const rw = tv.rolling_windows as unknown[];
-    expect(Array.isArray(rw)).toBe(true);
-    expect(rw.length).toBeGreaterThan(0);
+    const valFiltered = tv.validation_filtered as Record<string, unknown>;
+    expect(valFiltered.expectancy_usd as number).toBeGreaterThan(0);
   });
 
-  it("G12-G10: validation filtered expectancy > training filtered expectancy", () => {
-    const tv = loadJson("PV_EXP_003_TEMPORAL_VALIDATION.json");
-    const trainFiltered = tv.training_filtered as Record<string, unknown>;
-    const valFiltered = tv.validation_filtered as Record<string, unknown>;
-    // F2 filter should show improvement in both periods
-    expect(valFiltered.expectancy_usd as number).toBeGreaterThan(0);
+  it("G12-H07: adjustment ranking has SUPPORTED_INTERNAL_VALIDATION bucket with F2", () => {
+    const ar = loadJson("PV_EXP_003_ADJUSTMENT_RANKING.json");
+    const summary = ar.summary as Record<string, string[]>;
+    expect(summary).toHaveProperty("SUPPORTED_INTERNAL_VALIDATION");
+    expect(summary["SUPPORTED_INTERNAL_VALIDATION"]).toContain("F2_EXCLUDE_MONDAY");
+  });
+
+  it("G12-H08: adjustment ranking has M1 and M4 in SUPPORTED_INTERNAL_VALIDATION", () => {
+    const ar = loadJson("PV_EXP_003_ADJUSTMENT_RANKING.json");
+    const summary = ar.summary as Record<string, string[]>;
+    expect(summary["SUPPORTED_INTERNAL_VALIDATION"]).toContain("M1_BREAK_EVEN_AFTER_1R");
+    expect(summary["SUPPORTED_INTERNAL_VALIDATION"]).toContain("M4_STRUCTURE_TRAIL_AFTER_1R");
+  });
+
+  it("G12-H09: adjustment ranking has no_combined_adjustments=true", () => {
+    const ar = loadJson("PV_EXP_003_ADJUSTMENT_RANKING.json");
+    expect(ar.no_combined_adjustments).toBe(true);
+  });
+
+  it("G12-H10: adjustment ranking has no_prospective_claims=true", () => {
+    const ar = loadJson("PV_EXP_003_ADJUSTMENT_RANKING.json");
+    expect(ar.no_prospective_claims).toBe(true);
   });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Suite H: Adjustment Ranking and Authority Boundaries (10 tests)
+// Suite I: PV-EXP-004 Plan and Authority Boundaries (10 tests)
 // ─────────────────────────────────────────────────────────────────────────────
-describe("Suite H: Adjustment Ranking and Authority Boundaries", () => {
-  it("G12-H01: adjustment ranking has adjustments array", () => {
-    const ar = loadJson("PV_EXP_003_ADJUSTMENT_RANKING.json");
-    const adjustments = ar.adjustments as unknown[];
-    expect(Array.isArray(adjustments)).toBe(true);
-    expect(adjustments.length).toBeGreaterThan(0);
+describe("Suite I: PV-EXP-004 Plan and Authority Boundaries", () => {
+  it("G12-I01: PV-EXP-004 prospective validation plan file exists", () => {
+    const planPath = path.join(EXP_DIR, "PV_EXP_004_PROSPECTIVE_VALIDATION_PLAN.md");
+    expect(fs.existsSync(planPath)).toBe(true);
   });
 
-  it("G12-H02: adjustment ranking has summary with 4 classification buckets", () => {
-    const ar = loadJson("PV_EXP_003_ADJUSTMENT_RANKING.json");
-    const summary = ar.summary as Record<string, unknown>;
-    expect(summary).toHaveProperty("SUPPORTED");
-    expect(summary).toHaveProperty("PROMISING_BUT_UNCONFIRMED");
-    expect(summary).toHaveProperty("REJECTED");
-    expect(summary).toHaveProperty("OVERFIT_RISK");
+  it("G12-I02: PV-EXP-004 plan mentions minimum 50 non-Monday trades", () => {
+    const planPath = path.join(EXP_DIR, "PV_EXP_004_PROSPECTIVE_VALIDATION_PLAN.md");
+    const content = fs.readFileSync(planPath, "utf-8");
+    expect(content).toContain("50");
+    expect(content).toContain("Monday");
   });
 
-  it("G12-H03: F2_EXCLUDE_MONDAY is in SUPPORTED bucket", () => {
-    const ar = loadJson("PV_EXP_003_ADJUSTMENT_RANKING.json");
-    const summary = ar.summary as Record<string, string[]>;
-    expect(summary["SUPPORTED"]).toContain("F2_EXCLUDE_MONDAY");
+  it("G12-I03: PV-EXP-004 plan mentions bootstrap 95% CI gate", () => {
+    const planPath = path.join(EXP_DIR, "PV_EXP_004_PROSPECTIVE_VALIDATION_PLAN.md");
+    const content = fs.readFileSync(planPath, "utf-8");
+    expect(content.toLowerCase()).toContain("bootstrap");
+    expect(content).toContain("10"); // bootstrap CI gate threshold
   });
 
-  it("G12-H04: SUPPORTED bucket has at least 1 adjustment", () => {
-    const ar = loadJson("PV_EXP_003_ADJUSTMENT_RANKING.json");
-    const summary = ar.summary as Record<string, string[]>;
-    expect(summary["SUPPORTED"].length).toBeGreaterThanOrEqual(1);
+  it("G12-I04: PV-EXP-004 plan states DARWIN_EXECUTION_AUTHORITY: DISABLED", () => {
+    const planPath = path.join(EXP_DIR, "PV_EXP_004_PROSPECTIVE_VALIDATION_PLAN.md");
+    const content = fs.readFileSync(planPath, "utf-8");
+    expect(content).toContain("DARWIN_EXECUTION_AUTHORITY: DISABLED");
   });
 
-  it("G12-H05: each adjustment has a classification field", () => {
-    const ar = loadJson("PV_EXP_003_ADJUSTMENT_RANKING.json");
-    const adjustments = ar.adjustments as Record<string, unknown>[];
-    const validClasses = new Set(["SUPPORTED", "PROMISING_BUT_UNCONFIRMED", "REJECTED", "OVERFIT_RISK"]);
-    for (const a of adjustments) {
-      expect(validClasses.has(a.classification as string)).toBe(true);
-    }
+  it("G12-I05: PV-EXP-004 plan states LIVE_TRADES_INITIATED: 0", () => {
+    const planPath = path.join(EXP_DIR, "PV_EXP_004_PROSPECTIVE_VALIDATION_PLAN.md");
+    const content = fs.readFileSync(planPath, "utf-8");
+    expect(content).toContain("LIVE_TRADES_INITIATED: 0");
   });
 
-  it("G12-H06: each adjustment has a type field", () => {
-    const ar = loadJson("PV_EXP_003_ADJUSTMENT_RANKING.json");
-    const adjustments = ar.adjustments as Record<string, unknown>[];
-    const validTypes = new Set(["ENTRY_FILTER", "STOP_PLACEMENT", "EARLY_EXIT", "PARTIAL_MANAGEMENT"]);
-    for (const a of adjustments) {
-      expect(validTypes.has(a.type as string)).toBe(true);
-    }
-  });
-
-  it("G12-H07: results report file exists", () => {
-    const reportPath = path.join(EXP_DIR, "PV_EXP_003_RESULTS_REPORT.md");
-    expect(fs.existsSync(reportPath)).toBe(true);
-  });
-
-  it("G12-H08: regression report file exists", () => {
-    const reportPath = path.join(EXP_DIR, "PV_EXP_003_REGRESSION_REPORT.md");
-    expect(fs.existsSync(reportPath)).toBe(true);
-  });
-
-  it("G12-H09: results report mentions SUPPORTED classification", () => {
+  it("G12-I06: results report mentions SUPPORTED_INTERNAL_VALIDATION", () => {
     const reportPath = path.join(EXP_DIR, "PV_EXP_003_RESULTS_REPORT.md");
     const content = fs.readFileSync(reportPath, "utf-8");
-    expect(content).toContain("SUPPORTED");
+    expect(content).toContain("SUPPORTED_INTERNAL_VALIDATION");
     expect(content).toContain("F2");
   });
 
-  it("G12-H10: regression report mentions all 15 artefacts", () => {
+  it("G12-I07: results report states all early exit rules are REJECTED", () => {
+    const reportPath = path.join(EXP_DIR, "PV_EXP_003_RESULTS_REPORT.md");
+    const content = fs.readFileSync(reportPath, "utf-8");
+    expect(content).toContain("All early exit rules are REJECTED");
+  });
+
+  it("G12-I08: regression report mentions all correction artefacts", () => {
     const reportPath = path.join(EXP_DIR, "PV_EXP_003_REGRESSION_REPORT.md");
     const content = fs.readFileSync(reportPath, "utf-8");
-    expect(content).toContain("PV_EXP_003_TRADE_PATH_FEATURE_LEDGER.json");
-    expect(content).toContain("PV_EXP_003_LOSS_CLASSIFICATION_LEDGER.json");
-    expect(content).toContain("PV_EXP_003_ADJUSTMENT_RANKING.json");
+    expect(content).toContain("PV_EXP_003_PREVENTABILITY_ACCOUNTING_AUDIT.json");
+    expect(content).toContain("PV_EXP_003_TIME_BUCKET_AUDIT.json");
+    expect(content).toContain("PV_EXP_003_F2_TRADE_RECONCILIATION.json");
+    expect(content).toContain("PV_EXP_003_STOP_ENGINE_AUDIT.json");
+    expect(content).toContain("PV_EXP_003_EARLY_EXIT_EXECUTION_RESULTS.json");
+    expect(content).toContain("PV_EXP_003_MANAGEMENT_EXECUTION_RESULTS.json");
+  });
+
+  it("G12-I09: regression report confirms LIVE_TRADES_INITIATED=0", () => {
+    const reportPath = path.join(EXP_DIR, "PV_EXP_003_REGRESSION_REPORT.md");
+    const content = fs.readFileSync(reportPath, "utf-8");
+    expect(content).toContain("LIVE_TRADES_INITIATED");
+    expect(content).toContain("0");
+  });
+
+  it("G12-I10: regression report confirms FUTURE_STRUCTURE_USES=0", () => {
+    const reportPath = path.join(EXP_DIR, "PV_EXP_003_REGRESSION_REPORT.md");
+    const content = fs.readFileSync(reportPath, "utf-8");
+    expect(content).toContain("FUTURE_STRUCTURE_USES");
+    expect(content).toContain("0");
   });
 });

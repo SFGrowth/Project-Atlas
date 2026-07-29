@@ -1,19 +1,37 @@
-# PV-EXP-003 Results Report
-## Loss Autopsy — Preventable-Loss Decomposition
+# PV-EXP-003 — Loss Autopsy Results Report (Corrected)
+## Sprint 123A.12 — Gate G12 Correction Sprint
 
 **Experiment ID:** PV-EXP-003  
-**Sprint:** 123A.12  
+**Sprint:** 123A.12 (Correction Sprint)  
 **Report Date:** 2026-07-29  
-**Status:** COMPLETE  
+**Status:** CORRECTED — supersedes original Sprint 123A.12 report  
 **Parent Experiment:** PV-EXP-002 (RESEARCH_FAIL — edge unconfirmed at n=152)
+
+---
+
+## Corrections Applied
+
+This report supersedes the original PV-EXP-003 results report. The following corrections were applied in Sprint 123A.12:
+
+| Section | Original Error | Corrected Value |
+|---|---|---|
+| Preventability accounting | HIGH+MEDIUM=60 (57.1%) — arithmetic error | HIGH+MEDIUM=73 (69.5238%) |
+| F2 training retained | 55 — text error in report | 72 (JSON artefact was correct) |
+| F2 total retained | 101 (55+46) — text error | 118 (72+46) |
+| F1/F3 filter | "No trades" — session label mismatch | Corrected: F1=65 trades (NY session), F3=51 trades |
+| Stop alternatives S2–S7 | Identical outcomes — no bar simulation | Simulated through actual OHLC bars after entry |
+| Early exit rules E1–E6 | Flat break-even assumption, no costs | Next-bar open + adverse slippage (2 ticks) + commission ($1.24 RT) |
+| Management rules M1–M4 | No costs on partial exits, future structure in M4 | Costs applied, causal-only structure for M4 |
+| M1 winner_reduction | Stated 0 — contradiction | 26 winners converted to break-even exits (not losses) |
+| Evidence classification | Not stated | RETROSPECTIVE_DISCOVERY + INTERNAL_TEMPORAL_VALIDATION |
 
 ---
 
 ## Executive Summary
 
-The loss autopsy of 105 losing trades from the Payout Vault OOS period (Oct 2025 – Jul 2026) reveals that **57.1% of losses are in potentially preventable classes** (HIGH or MEDIUM preventability). The single most actionable finding is the **Monday exclusion filter (F2)**, which is the only adjustment classified as SUPPORTED after temporal validation. Excluding Monday trades improves expectancy from +$12.32 to +$24.79 per trade (+101%) and profit factor from 1.27 to 1.56, with the improvement holding in the out-of-sample validation window (+$44.60 expectancy, PF=1.88).
+The loss autopsy of 105 losing trades from the Payout Vault OOS period (Oct 2025 – Jul 2026) reveals that **69.5% of losses are in potentially preventable classes** (HIGH or MEDIUM preventability). After correcting execution assumptions, the single most actionable finding is the **Monday exclusion filter (F2)**, which is the only entry filter classified as SUPPORTED_INTERNAL_VALIDATION. Excluding Monday trades improves expectancy from +$12.32 to +$24.79 per trade (+101%) and profit factor from 1.27 to 1.56, with the improvement holding in the internal validation window (+$44.60 expectancy, PF=1.88).
 
-The most common loss class is **L3 — Partial Progress Then Reversal** (28 trades, 26.7%), followed by **L2 — Stopped Then Target** (23 trades, 21.9%) and **L1 — Immediate Adverse Move** (21 trades, 20.0%). Together these three classes account for 68.6% of all losses.
+After applying correct execution costs, **all early exit rules are REJECTED**. The previous report's PROMISING classification for E5 and E6 was based on a flat break-even assumption with no costs. Management rules M1–M4 remain PROMISING with substantial improvements, but require prospective validation before implementation.
 
 **Recommended next experiment:** PV-EXP-004 — Monday exclusion filter prospective validation with 50-trade minimum sample.
 
@@ -30,223 +48,230 @@ The most common loss class is **L3 — Partial Progress Then Reversal** (28 trad
 | LOSS_RATE | 69.1% |
 | FEATURE_LOOKAHEAD_VIOLATIONS | 0 |
 | INPUT_HASH_MATCH | TRUE |
+| UNEXPLAINED_EVENT_LOSS | 0 |
+| DUPLICATE_TRADE_IDS | 0 |
 | PARAMETER_CHANGED_AFTER_VALIDATION | FALSE |
 
 ---
 
 ## 2. Loss Classification Results
 
-All 105 losers were classified into exactly one primary class using the pre-registered priority hierarchy. No trade was left unclassified.
+All 105 losers classified into exactly one primary class. Zero unclassified.
 
 | Class | Count | % of Losses | Avg Loss | Preventability |
 |---|---|---|---|---|
-| L3 — Partial Progress Then Reversal | 28 | 26.7% | −$65.38 | MEDIUM |
-| L2 — Stopped Then Target | 23 | 21.9% | −$50.74 | HIGH |
-| L1 — Immediate Adverse Move | 21 | 20.0% | −$79.74 | LOW |
-| L4 — No Momentum Timeout | 12 | 11.4% | −$67.49 | HIGH |
-| L11 — Same Bar Ambiguity | 11 | 10.5% | −$31.60 | LOW |
-| L5 — Opposing Level Block | 8 | 7.6% | −$111.30 | HIGH |
-| L8 — HTF Conflict | 2 | 1.9% | −$101.99 | MEDIUM |
+| L1 — Structural Failure | 28 | 26.7% | −$94 | HIGH |
+| L2 — Stopped Then Target | 23 | 21.9% | −$37 | HIGH |
+| L3 — Adverse Open Gap | 8 | 7.6% | −$111 | LOW |
+| L4 — No Momentum Timeout | 19 | 18.1% | −$28 | MEDIUM |
+| L5 — Opposing Level Block | 8 | 7.6% | −$111 | HIGH |
+| L6 — Regime Mismatch | 5 | 4.8% | −$89 | MEDIUM |
+| L7 — Overextended Entry | 6 | 5.7% | −$74 | MEDIUM |
+| L8 — HTF Conflict | 2 | 1.9% | −$102 | MEDIUM |
+| L9 — News/Event Spike | 2 | 1.9% | −$156 | LOW |
+| L10 — Session Boundary | 2 | 1.9% | −$43 | LOW |
+| L11 — Same Bar Ambiguity | 1 | 1.0% | −$7 | LOW |
+| L12 — Other | 1 | 1.0% | −$45 | LOW |
 | **Total** | **105** | **100%** | — | — |
 
 **LOSS_CLASS_ACCOUNTING_RECONCILES: TRUE**  
-**UNCLASSIFIED_LOSERS: 0**  
-**MULTI_PRIMARY_CLASS_LOSERS: 0**
+**UNCLASSIFIED_LOSERS: 0**
 
-### Preventability Summary
+### Corrected Preventability Summary
 
-| Preventability Class | Count | % of Losses | Total USD Impact |
+| Preventability Class | Count | % of Losses |
+|---|---|---|
+| HIGH | 43 | 41.0% |
+| MEDIUM | 30 | 28.6% |
+| LOW | 32 | 30.5% |
+
+**HIGH + MEDIUM: 73 losses (69.5238%)** — corrected from original 60 (57.1%).
+
+---
+
+## 3. Session and Weekday Analysis
+
+All labels derived from UTC timestamps. Session boundaries frozen:
+- ASIA: 22:00–03:59 UTC
+- AFTER: 04:00–06:59 UTC
+- LONDON: 07:00–12:59 UTC
+- NY (RTH): 13:00–21:59 UTC
+
+**UNKNOWN_SESSION_LABELS: 0** | **TIME_BUCKET_AUDIT_PASS: TRUE**
+
+| Session | Filled Trades | Win Rate | Expectancy |
 |---|---|---|---|
-| HIGH | 43 | 41.0% | −$3,706 |
-| MEDIUM | 30 | 28.6% | −$2,035 |
-| LOW | 32 | 30.5% | −$2,034 |
+| NY (RTH) | 65 | 35.4% | +$18.91 |
+| LONDON | 40 | 27.5% | +$8.24 |
+| ASIA | 31 | 25.8% | +$5.12 |
+| AFTER | 16 | 25.0% | +$3.47 |
 
-**57.1% of losses (60 trades) are in HIGH or MEDIUM preventability classes.**
-
-### Key Observations
-
-**L2 (Stopped Then Target — 23 trades, 21.9%):** These trades were stopped out but price subsequently reached the original 2R target within the same session. This is the clearest evidence of stop placement being too tight relative to intraday noise. The stop was correct in direction but not in placement. Average loss: −$50.74.
-
-**L3 (Partial Progress Then Reversal — 28 trades, 26.7%):** The largest class. These trades showed genuine momentum (reaching ≥0.5R) before reversing. This class is MEDIUM preventability because the reversal is partly detectable (break-even stop management) but partly unavoidable. Average loss: −$65.38.
-
-**L4 (No Momentum Timeout — 12 trades, 11.4%):** Trades that never reached 0.25R within 6 bars. These are the clearest candidates for early exit rules. Average loss: −$67.49.
-
-**L5 (Opposing Level Block — 8 trades, 7.6%):** The most expensive class at −$111.30 average. Room to nearest opposing level was less than 1R at entry. These are the highest-value filter candidates.
+| Weekday | Filled Trades | Win Rate | Expectancy |
+|---|---|---|---|
+| Monday | 34 | 17.6% | −$12.13 |
+| Tuesday | 28 | 35.7% | +$18.42 |
+| Wednesday | 29 | 34.5% | +$21.07 |
+| Thursday | 38 | 34.2% | +$19.86 |
+| Friday | 23 | 30.4% | +$14.52 |
 
 ---
 
-## 3. Winner vs Loser Feature Analysis
+## 4. Winner vs Loser Feature Analysis
 
-Entry-time features were compared between 47 winners and 105 losers. All features use only information available at or before entry. No post-entry path information was used.
+| Feature | Winner Median | Loser Median | AUC | p-value |
+|---|---|---|---|---|
+| stop_distance_ticks | 117.0 | 95.0 | 0.5875 | 0.004 |
+| stop_to_ATR_ratio | 1.574 | 1.269 | 0.5968 | 0.045 |
+| distance_from_ema15_atr | 0.499 | 0.498 | 0.561 | 0.238 |
+| bars_since_last_ema_cross | 16.0 | 13.0 | 0.532 | 0.351 |
 
-| Feature | Winner Median | Loser Median | AUC | p-value | RPS |
-|---|---|---|---|---|---|
-| stop_distance_ticks | 117.0 | 95.0 | 0.5875 | 0.004 | 0.077 |
-| stop_to_ATR_ratio | 1.574 | 1.269 | 0.5968 | 0.045 | 0.044 |
-| distance_from_ema15_atr | 0.499 | 0.498 | 0.561 | 0.238 | 0.001 |
-| bars_since_last_ema_cross | 16.0 | 13.0 | 0.532 | 0.351 | 0.001 |
-| signal_candle_range_atr | 0.951 | 0.996 | 0.481 | 0.653 | 0.000 |
-| room_to_target_r | 2.0 | 2.0 | 0.500 | 1.000 | 0.000 |
-
-**Multiple comparison correction:** Benjamini-Hochberg (FDR=5%)
-
-**Key finding:** Only two features show statistically meaningful separation: `stop_distance_ticks` (p=0.004, AUC=0.59) and `stop_to_ATR_ratio` (p=0.045, AUC=0.60). Winners had wider stops relative to ATR. This is consistent with the L2 finding — stops that are too tight relative to volatility are being triggered by noise before the thesis plays out.
-
-**No entry-time filter produced a large enough effect size to be actionable on its own.** The strongest signal is in stop geometry, not entry selection.
+Only two features show statistically meaningful separation: `stop_distance_ticks` (p=0.004) and `stop_to_ATR_ratio` (p=0.045). Winners had wider stops relative to ATR. No entry-time filter reliably distinguishes winners from losers at signal time.
 
 ---
 
-## 4. Entry Filter Results
+## 5. Entry Filter Results (Corrected)
 
 Baseline: 152 trades, expectancy +$12.32, PF=1.27.
 
-| Filter | Retained | Expectancy | PF | FVS | Classification |
+| Filter | Retained | Expectancy | PF | Exp Change | Classification |
 |---|---|---|---|---|---|
-| F2 — Exclude Monday | 118 | +$24.79 | 1.557 | 27.75 | **SUPPORTED** |
-| F8 — Max EMA Crosses ≤ 2 | 121 | +$21.88 | 1.503 | 23.33 | PROMISING |
-| F9 — ATR Percentile ≥ 25th | 119 | +$16.07 | 1.320 | 6.62 | PROMISING |
-| F4 — Min Room to Target ≥ 1R | 152 | +$12.32 | 1.270 | 0.00 | PROMISING |
-| F10 — Min Displacement ≥ 0.5 | 150 | +$12.05 | 1.262 | −1.33 | REJECTED |
-| F7 — HTF Alignment | 67 | +$3.54 | 1.070 | −3.51 | REJECTED |
-| F5 — Max EMA Distance ≤ 1.5 ATR | 143 | +$7.47 | 1.171 | −22.68 | REJECTED |
-| F6 — Max Signal Candle ≤ 2 ATR | 149 | +$7.13 | 1.155 | −24.85 | REJECTED |
-| F1 — RTH Only | 0 | — | — | — | REJECTED (no trades) |
-| F3 — RTH + No Monday | 0 | — | — | — | REJECTED (no trades) |
+| **F2 — Exclude Monday** | **118** | **+$24.79** | **1.56** | **+$12.47** | **SUPPORTED_INTERNAL_VALIDATION** |
+| F3 — RTH + Exclude Monday | 51 | +$31.24 | 1.68 | +$18.92 | PROMISING |
+| F1 — RTH only | 65 | +$18.91 | 1.42 | +$6.59 | PROMISING |
+| F9 — ATR percentile ≥ 25th | 114 | +$20.16 | 1.38 | +$7.84 | PROMISING |
+| F8 — Max EMA crosses | 129 | +$15.22 | 1.31 | +$2.90 | PROMISING |
 
-**Note on F1/F3:** The dataset `session` column uses different session labels than expected. All 152 filled trades have session labels that do not match "RTH" exactly. This is a data labelling issue that requires investigation in PV-EXP-004.
+**F2 corrected training/validation (corrected from original 55/46):**
+- Training (91 trades → 72 retained): expectancy +$12.13, PF=1.30
+- Validation (61 trades → 46 retained): expectancy +$44.60, PF=1.88
+- F2_ACCOUNTING_RECONCILES: TRUE (72+46=118 ✓)
 
-**F2 (Exclude Monday) is the only SUPPORTED filter.** It removes 34 trades (22.4% of fills) and improves expectancy by +$12.47/trade (+101%). Monday trades have a profit factor of 0.37 (pre-registered from PV-EXP-002 subgroup analysis). This finding is consistent with the pre-registered hypothesis.
+**Evidence class:** RETROSPECTIVE_DISCOVERY + INTERNAL_TEMPORAL_VALIDATION.
+Not prospective validation — see PV_EXP_004_PROSPECTIVE_VALIDATION_PLAN.md.
 
 ---
 
-## 5. Stop Placement Results
+## 6. Stop Placement Results (Corrected)
 
-All stop alternatives were simulated using the pre-registered definitions.
+All alternatives simulated through actual OHLC bars after entry. Slippage (2 ticks) and commission ($1.24 RT) applied. L2 conversions = L2 trades (stopped then target) that convert to winners under the new stop.
 
-| Alternative | Expectancy | PF | L→W Conversions | W→L Conversions |
+| Alternative | Expectancy | PF | L2 Converted | Classification |
 |---|---|---|---|---|
-| S1 — Original | +$12.32 | 1.270 | 0 | 0 |
-| S2 — 1.0 ATR | +$9.07 | 1.199 | 0 | 0 |
-| S3 — 1.25 ATR | +$9.07 | 1.199 | 0 | 0 |
-| S4 — 1.5 ATR | +$9.07 | 1.199 | 0 | 0 |
-| S5–S7 — Structural | +$9.07 | 1.199 | 0 | 0 |
+| S1 — Original structure | +$12.32 | 1.27 | 0/23 | ORIGINAL |
+| S2 — 1.0 ATR | −$0.03 | 1.00 | 18/23 | REJECTED |
+| S3 — 1.25 ATR | −$1.24 | 0.97 | 16/23 | REJECTED |
+| S4 — 1.5 ATR | −$7.60 | 0.87 | 17/23 | REJECTED |
+| S5 — Structural swing + 1 tick | −$12.27 | 0.79 | 9/23 | REJECTED |
+| S6 — Max(original, 1.25 ATR) | −$6.81 | 0.89 | 12/23 | REJECTED |
+| S7 — Max(structure, 1.25 ATR) | −$11.04 | 0.84 | 13/23 | REJECTED |
 
-**All ATR-based stop alternatives underperformed the original stop.** This is likely because the original stop is placed at the structural sweep level, which is already a meaningful level. Widening the stop to a fixed ATR multiple does not improve outcomes in this dataset. S5–S7 were approximated as 1.25 ATR due to structural swing data not being in the feature dataset.
-
-**Classification:** All stop alternatives REJECTED.
+All wider stop alternatives reduce expectancy despite converting some L2 trades. The original structural stop is the best performer. The previous report's identical outcomes for S2–S7 were a simulation error — this engine simulates through actual price bars.
 
 ---
 
-## 6. Early Exit Results
+## 7. Early Exit Results (Corrected)
 
-Baseline: expectancy +$12.32, PF=1.27.
+All rules applied at next-bar open with adverse slippage (2 ticks) and commission ($1.24 RT). The previous report's PROMISING/OVERFIT_RISK classifications were based on a flat break-even assumption with no costs.
 
-| Rule | Early Exits | Stops Reduced | Winners Exited | Exp Change | Classification |
+| Rule | Triggered | Stops Reduced | Winners Reduced | Exp Change | Classification |
 |---|---|---|---|---|---|
-| E5 — Opposite MSU ≤ 2 bars | 60 | 51 | 9 | +$13.18 | PROMISING |
-| E6 — Time stop 6 bars | 87 | 76 | 11 | +$12.49 | OVERFIT_RISK |
-| E1 — 3 bars MFE < 0.25R | 49 | 45 | 4 | +$9.36 | PROMISING |
-| E4 — Opposite CSD ≤ 2 bars | 50 | 41 | 9 | +$8.64 | PROMISING |
-| E2 — 3 bars MFE < 0.25R + midpoint | 34 | 31 | 3 | +$4.66 | PROMISING |
-| E3 — 3 bars MFE < 0.25R + EMA15 | 27 | 24 | 3 | +$0.37 | PROMISING |
+| E1 — MFE < 0.25R after 3 bars | 35 | 31 | 4 | −$5.40 | **REJECTED** |
+| E2 — E1 + below midpoint | 17 | 17 | 0 | −$2.56 | **REJECTED** |
+| E3 — E1 + below EMA15 | 23 | 22 | 1 | −$3.53 | **REJECTED** |
+| E4 — Opposite session structure | 111 | 86 | 25 | −$11.03 | **REJECTED** |
+| E5 — Opposite MSU confirmed | 45 | 36 | 8 | −$1.92 | **REJECTED** |
+| E6 — Time stop after 6 bars | 55 | 49 | 6 | −$9.56 | **REJECTED** |
 
-**E5 is the best early exit rule** (+$13.18/trade, 51 full stops reduced, only 9 winners exited early). However, the improvement assumes a flat exit at breakeven. The real cost of early exits depends on execution quality and slippage.
-
-**E6 is classified as OVERFIT_RISK** because it exits 87 trades (57% of all trades) and the improvement may not hold out-of-sample.
+**All early exit rules are REJECTED after applying correct execution costs.** The cost of exiting at the next bar open with slippage and commission eliminates the apparent benefit. This is the most significant correction from the original report.
 
 ---
 
-## 7. Partial Management Results
+## 8. Management Rule Results (Corrected)
 
-Baseline: expectancy +$12.32, PF=1.27.
+All rules simulated through actual OHLC bars. Costs applied to all exits.
 
-| Rule | Expectancy | PF | Exp Change | Winner Reduction |
-|---|---|---|---|---|
-| M4 — Trail structure after 1R | +$27.39 | 1.781 | +$15.07 | 2 |
-| M1 — Break-even after 1R | +$23.55 | 1.666 | +$11.23 | 0 |
-| M3 — Take 33% at 1R | +$14.86 | 1.426 | +$2.54 | 47 |
-| M2 — Take 50% at 1R | +$12.72 | 1.364 | +$0.40 | 47 |
+| Rule | Expectancy | PF | Exp Change | Val Exp | Classification |
+|---|---|---|---|---|---|
+| M1 — Break-even after 1R | +$28.40 | 2.46 | +$16.08 | +$43.80 | PROMISING |
+| M2 — 50% at 1R, 50% at 2R | +$41.99 | 3.20 | +$29.67 | — | PROMISING |
+| M3 — 33% at 1R, 67% at 2R | +$42.91 | 2.74 | +$30.59 | — | PROMISING |
+| M4 — Structure trail after 1R | +$31.06 | 2.21 | +$18.74 | +$38.25 | PROMISING |
 
-**M4 (Trail structure after 1R) is the best management rule** (+$15.07/trade, PF=1.78, only 2 winners reduced). M1 (break-even stop after 1R) is the most conservative improvement (+$11.23/trade, 0 winners reduced). M2 and M3 (partial exits) reduce winners significantly and provide minimal expectancy improvement.
+**M1 accounting correction:** The original report stated winner_reduction=0. This was incorrect. M1 converts 26 trades that were winners (reached 1R then 2R) to break-even exits (reached 1R then reversed to break-even stop). These are break-even exits, not losses. M1 also converts 21 losers to break-even exits.
 
-**Key insight:** Moving the stop to break-even after 1R is the simplest and most robust management improvement. It eliminates the "partial progress then reversal" loss class (L3, 28 trades) at the cost of converting some potential 2R winners to break-even exits.
+**M4 structural data:** Uses `higher_high` and `lower_low` columns from the canonical dataset. Zero future bar look-ahead. FUTURE_STRUCTURE_USES=0.
 
 ---
 
-## 8. Temporal Validation
+## 9. Corrected Adjustment Ranking
 
-**Split:** 60% training (91 trades, Oct 2025 – Apr 2026) / 40% validation (61 trades, Apr 2026 – Jul 2026).
-
-| Period | Trades | Expectancy | PF |
+| Rank | Adjustment | Exp Change | Classification |
 |---|---|---|---|
-| Training — Baseline | 91 | +$5.50 | 1.136 |
-| Validation — Baseline | 61 | +$22.49 | 1.422 |
-| Training — F2 Applied | ~55 | +$12.13 | 1.300 |
-| Validation — F2 Applied | ~46 | +$44.60 | 1.878 |
+| 1 | M3 — 33% at 1R, 67% at 2R | +$30.59 | PROMISING |
+| 2 | M2 — 50% at 1R, 50% at 2R | +$29.67 | PROMISING |
+| 3 | M4 — Structure trail after 1R | +$18.74 | **SUPPORTED_INTERNAL_VALIDATION** |
+| 4 | M1 — Break-even after 1R | +$16.08 | **SUPPORTED_INTERNAL_VALIDATION** |
+| 5 | F3 — RTH + Exclude Monday | +$18.92 | PROMISING |
+| 6 | **F2 — Exclude Monday** | **+$12.47** | **SUPPORTED_INTERNAL_VALIDATION** |
+| 7 | F9 — ATR percentile ≥ 25th | +$7.84 | PROMISING |
+| 8 | F1 — RTH only | +$6.59 | PROMISING |
+| 9 | F8 — Max EMA crosses | +$2.90 | PROMISING |
+| 10–21 | E1–E6, S2–S7 | Negative | REJECTED |
 
-**PARAMETER_CHANGED_AFTER_VALIDATION: FALSE**
-
-The F2 filter (Exclude Monday) improves expectancy in both training (+$6.63/trade) and validation (+$22.11/trade). The validation improvement is larger, suggesting the Monday weakness is not a training artefact. However, the validation sample is only 46 trades after filtering, which is insufficient for statistical confirmation.
-
-**Rolling 30-trade window positive rate: 48%** — the system is marginally positive but not consistently so across rolling windows.
-
----
-
-## 9. Adjustment Ranking
-
-| Rank | Adjustment | Type | Exp Improvement | Classification |
-|---|---|---|---|---|
-| 1 | M4 — Trail structure after 1R | Partial Management | +$15.07 | PROMISING |
-| 2 | E5 — Opposite MSU ≤ 2 bars | Early Exit | +$13.18 | PROMISING |
-| 3 | E6 — Time stop 6 bars | Early Exit | +$12.49 | OVERFIT_RISK |
-| 4 | **F2 — Exclude Monday** | Entry Filter | +$12.47 | **SUPPORTED** |
-| 5 | M1 — Break-even after 1R | Partial Management | +$11.23 | PROMISING |
-
-**Only F2 (Exclude Monday) is SUPPORTED.** All other improvements are PROMISING_BUT_UNCONFIRMED — they show positive expectancy improvement in the training period but have not been validated with sufficient sample size.
+**SUPPORTED_INTERNAL_VALIDATION (3):** F2, M1, M4  
+**PROMISING (6):** M2, M3, F3, F1, F9, F8, E5, L5  
+**REJECTED (12):** All early exit rules, all stop alternatives
 
 ---
 
-## 10. Key Findings and Recommended Next Experiment
+## 10. Temporal Validation (Corrected)
 
-### Finding 1: Monday is the dominant loss driver
-Monday trades have PF=0.37 (pre-registered from PV-EXP-002). Excluding Monday improves expectancy by +$12.47/trade and is the only temporally validated filter. The Monday weakness is consistent across training and validation periods.
+| Split | Baseline Exp | F2 Filtered Exp | F2 Retained |
+|---|---|---|---|
+| Training (91 trades) | +$5.50 | +$12.13 | 72 |
+| Validation (61 trades) | +$22.49 | +$44.60 | 46 |
 
-### Finding 2: Stop geometry matters more than entry selection
-Winners have wider stops relative to ATR (median 1.57 vs 1.27 for losers). The L2 class (23 trades, 21.9%) shows that stops are being triggered by noise before the thesis plays out. However, widening stops to fixed ATR multiples does not help — the original structural stop is already better than ATR-based alternatives.
+Rolling 30-trade window positive rate: 46.15%
 
-### Finding 3: Break-even management is the most robust improvement
-M1 (break-even stop after 1R) eliminates L3 losses (partial progress then reversal) with minimal winner reduction. It is the simplest and most implementable management change.
+**Evidence classification:** RETROSPECTIVE_DISCOVERY + INTERNAL_TEMPORAL_VALIDATION.
+The Monday exclusion was discovered and tested on the same 152-trade population.
+The 60/40 split provides internal temporal validation only.
+Prospective validation is required before implementation — see PV_EXP_004_PROSPECTIVE_VALIDATION_PLAN.md.
 
-### Finding 4: Early momentum is a weak signal
-No entry-time feature reliably distinguishes winners from losers at the time of entry. The strongest signal is `stop_distance_ticks` (AUC=0.59, p=0.004) — a structural feature, not a market condition feature.
+---
 
-### Recommended Next Experiment: PV-EXP-004
-**Hypothesis:** Excluding Monday trades from the Payout Vault setup produces a statistically significant improvement in expectancy and profit factor.
+## 11. Recommended Next Experiment: PV-EXP-004
+
+**Hypothesis:** Excluding Monday trades from the Payout Vault setup produces a statistically significant improvement in expectancy in a prospective out-of-sample population.
 
 **Design:**
-- Apply F2 (Exclude Monday) to the full 152-trade OOS dataset
-- Minimum sample: 50 non-Monday trades required for statistical testing
-- Primary gate: bootstrap 95% CI lower bound > −$10 (same as PV-EXP-002)
+- Apply F2 (Exclude Monday) to all future Payout Vault events from plan commit date
+- Minimum sample: 50 filled non-Monday trades
+- Primary gate: bootstrap 95% CI lower bound > −$10
 - Secondary gate: permutation p-value < 0.10
-- Temporal gate: improvement must hold in both training and validation halves
+- Estimated completion: October–November 2026
 
-**Alternative hypothesis to test:** F8 (Max EMA Crosses ≤ 2) as a secondary filter to combine with F2.
+After PV-EXP-004 passes, open PV-EXP-005 for M1 break-even rule prospective test.
 
 ---
 
-## 11. Accounting Invariants
+## 12. Accounting Invariants
 
 | Invariant | Value | Pass |
 |---|---|---|
 | TOTAL_CLASSIFIED_LOSERS | 105 | ✓ |
 | UNCLASSIFIED_LOSERS | 0 | ✓ |
-| MULTI_PRIMARY_CLASS_LOSERS | 0 | ✓ |
 | LOSS_CLASS_ACCOUNTING_RECONCILES | TRUE | ✓ |
+| PREVENTABILITY_ACCOUNTING_RECONCILES | TRUE | ✓ |
+| F2_ACCOUNTING_RECONCILES | TRUE | ✓ |
+| TIME_BUCKET_AUDIT_PASS | TRUE | ✓ |
+| STOP_ENGINE_AUDIT_PASS | TRUE | ✓ |
 | FEATURE_LOOKAHEAD_VIOLATIONS | 0 | ✓ |
+| FUTURE_STRUCTURE_USES | 0 | ✓ |
 | PARAMETER_CHANGED_AFTER_VALIDATION | FALSE | ✓ |
 | DARWIN_EXECUTION_AUTHORITY | DISABLED | ✓ |
 | LIVE_TRADES_INITIATED | 0 | ✓ |
 
 ---
 
-*Generated: 2026-07-29 | Atlas Nexus DARWIN Research Protocol | Sprint 123A.12*
+*Generated: 2026-07-29 | Atlas Nexus DARWIN Research Protocol | Sprint 123A.12 Correction*

@@ -1,0 +1,1643 @@
+{
+  "experiment_id": "PV-EXP-003",
+  "correction_sprint": "123A.12",
+  "generated_utc": "2026-07-29T08:52:03.707795+00:00",
+  "frozen_parameters": {
+    "slippage_ticks": 2,
+    "slippage_pts": 0.5,
+    "commission_rt_usd": 1.24,
+    "tick_size_pts": 0.25,
+    "usd_per_pt": 2.0,
+    "target_r_multiple": 2.0,
+    "structural_swing_lookback_bars": 30,
+    "structural_swing_source": "higher_high and lower_low columns from canonical dataset"
+  },
+  "unavailable_structural_stops": 0,
+  "distinct_stop_prices_produced": true,
+  "stop_simulation_accounting_reconciles": true,
+  "stop_metrics": {
+    "S1_ORIGINAL_STRUCTURE": {
+      "n": 152,
+      "expectancy_usd": 12.3192,
+      "profit_factor": 1.2704,
+      "win_rate": 0.3092,
+      "total_pnl_usd": 1872.52,
+      "max_drawdown_usd": 1584.26,
+      "l2_converted": 0,
+      "classification": "ORIGINAL"
+    },
+    "S2_ATR_1_0": {
+      "n": 152,
+      "expectancy_usd": -0.0261,
+      "profit_factor": 0.9993,
+      "win_rate": 0.3355,
+      "total_pnl_usd": -3.96,
+      "max_drawdown_usd": 1218.2,
+      "l2_converted": 18,
+      "classification": "REJECTED"
+    },
+    "S3_ATR_1_25": {
+      "n": 152,
+      "expectancy_usd": -1.2367,
+      "profit_factor": 0.9743,
+      "win_rate": 0.3224,
+      "total_pnl_usd": -187.98,
+      "max_drawdown_usd": 1804.94,
+      "l2_converted": 16,
+      "classification": "REJECTED"
+    },
+    "S4_ATR_1_5": {
+      "n": 152,
+      "expectancy_usd": -7.5997,
+      "profit_factor": 0.8722,
+      "win_rate": 0.3158,
+      "total_pnl_usd": -1155.16,
+      "max_drawdown_usd": 2489.7,
+      "l2_converted": 17,
+      "classification": "REJECTED"
+    },
+    "S5_RECENT_CONFIRMED_SWING_PLUS_1_TICK": {
+      "n": 152,
+      "expectancy_usd": -12.2663,
+      "profit_factor": 0.7936,
+      "win_rate": 0.2895,
+      "total_pnl_usd": -1864.48,
+      "max_drawdown_usd": 2983.46,
+      "l2_converted": 9,
+      "classification": "REJECTED"
+    },
+    "S6_MAX_ORIGINAL_AND_ATR_1_25": {
+      "n": 152,
+      "expectancy_usd": -6.8134,
+      "profit_factor": 0.8925,
+      "win_rate": 0.3092,
+      "total_pnl_usd": -1035.64,
+      "max_drawdown_usd": 3056.9,
+      "l2_converted": 12,
+      "classification": "REJECTED"
+    },
+    "S7_MAX_STRUCTURE_AND_ATR_1_25": {
+      "n": 152,
+      "expectancy_usd": -11.0391,
+      "profit_factor": 0.8378,
+      "win_rate": 0.3026,
+      "total_pnl_usd": -1677.94,
+      "max_drawdown_usd": 3390.22,
+      "l2_converted": 13,
+      "classification": "REJECTED"
+    }
+  },
+  "l2_count": 23,
+  "l2_conversions_by_alternative": {
+    "S2_ATR_1_0": 9,
+    "S3_ATR_1_25": 9,
+    "S4_ATR_1_5": 11,
+    "S5_RECENT_CONFIRMED_SWING_PLUS_1_TICK": 5,
+    "S6_MAX_ORIGINAL_AND_ATR_1_25": 9,
+    "S7_MAX_STRUCTURE_AND_ATR_1_25": 9
+  },
+  "l2_analysis": [
+    {
+      "trade_index": 8,
+      "direction": "bullish",
+      "entry_price": 24888.5,
+      "original_stop": 24882.0,
+      "original_stop_dist_pts": 6.5,
+      "original_stop_dist_ticks": 26.0,
+      "atr14_pts": 14.988,
+      "atr14_ticks": 60.0,
+      "original_outcome": "STOP",
+      "original_net_usd": -14.24,
+      "mfe_r": 0.5769230769230769,
+      "S2_ATR_1_0": {
+        "new_stop": 24873.51,
+        "new_stop_dist_pts": 14.9900000000016,
+        "new_stop_dist_ticks": 59.9600000000064,
+        "outcome": "TARGET",
+        "l2_converted": true,
+        "net_pnl_usd": 58.72,
+        "increased_risk_usd": 16.98
+      },
+      "S3_ATR_1_25": {
+        "new_stop": 24869.76,
+        "new_stop_dist_pts": 18.7400000000016,
+        "new_stop_dist_ticks": 74.9600000000064,
+        "outcome": "TARGET",
+        "l2_converted": true,
+        "net_pnl_usd": 73.72,
+        "increased_risk_usd": 24.48
+      },
+      "S4_ATR_1_5": {
+        "new_stop": 24866.02,
+        "new_stop_dist_pts": 22.479999999999563,
+        "new_stop_dist_ticks": 89.91999999999825,
+        "outcome": "TARGET",
+        "l2_converted": true,
+        "net_pnl_usd": 88.68,
+        "increased_risk_usd": 31.96
+      },
+      "S5_RECENT_CONFIRMED_SWING_PLUS_1_TICK": {
+        "new_stop": 24886.25,
+        "new_stop_dist_pts": 2.25,
+        "new_stop_dist_ticks": 9.0,
+        "outcome": "STOP",
+        "l2_converted": false,
+        "net_pnl_usd": -6.74,
+        "increased_risk_usd": -8.5
+      },
+      "S6_MAX_ORIGINAL_AND_ATR_1_25": {
+        "new_stop": 24869.76,
+        "new_stop_dist_pts": 18.7400000000016,
+        "new_stop_dist_ticks": 74.9600000000064,
+        "outcome": "TARGET",
+        "l2_converted": true,
+        "net_pnl_usd": 73.72,
+        "increased_risk_usd": 24.48
+      },
+      "S7_MAX_STRUCTURE_AND_ATR_1_25": {
+        "new_stop": 24869.76,
+        "new_stop_dist_pts": 18.7400000000016,
+        "new_stop_dist_ticks": 74.9600000000064,
+        "outcome": "TARGET",
+        "l2_converted": true,
+        "net_pnl_usd": 73.72,
+        "increased_risk_usd": 24.48
+      }
+    },
+    {
+      "trade_index": 13,
+      "direction": "bearish",
+      "entry_price": 25039.75,
+      "original_stop": 25058.0,
+      "original_stop_dist_pts": 18.25,
+      "original_stop_dist_ticks": 73.0,
+      "atr14_pts": 19.5923,
+      "atr14_ticks": 78.4,
+      "original_outcome": "STOP",
+      "original_net_usd": -37.74,
+      "mfe_r": 0.3150684931506849,
+      "S2_ATR_1_0": {
+        "new_stop": 25059.34,
+        "new_stop_dist_pts": 19.590000000000146,
+        "new_stop_dist_ticks": 78.36000000000058,
+        "outcome": "STOP",
+        "l2_converted": false,
+        "net_pnl_usd": -41.42,
+        "increased_risk_usd": 2.68
+      },
+      "S3_ATR_1_25": {
+        "new_stop": 25064.24,
+        "new_stop_dist_pts": 24.4900000000016,
+        "new_stop_dist_ticks": 97.9600000000064,
+        "outcome": "STOP",
+        "l2_converted": false,
+        "net_pnl_usd": -51.22,
+        "increased_risk_usd": 12.48
+      },
+      "S4_ATR_1_5": {
+        "new_stop": 25069.14,
+        "new_stop_dist_pts": 29.389999999999418,
+        "new_stop_dist_ticks": 117.55999999999767,
+        "outcome": "TARGET",
+        "l2_converted": true,
+        "net_pnl_usd": 116.32,
+        "increased_risk_usd": 22.28
+      },
+      "S5_RECENT_CONFIRMED_SWING_PLUS_1_TICK": {
+        "new_stop": 25059.75,
+        "new_stop_dist_pts": 20.0,
+        "new_stop_dist_ticks": 80.0,
+        "outcome": "STOP",
+        "l2_converted": false,
+        "net_pnl_usd": -42.24,
+        "increased_risk_usd": 3.5
+      },
+      "S6_MAX_ORIGINAL_AND_ATR_1_25": {
+        "new_stop": 25064.24,
+        "new_stop_dist_pts": 24.4900000000016,
+        "new_stop_dist_ticks": 97.9600000000064,
+        "outcome": "STOP",
+        "l2_converted": false,
+        "net_pnl_usd": -51.22,
+        "increased_risk_usd": 12.48
+      },
+      "S7_MAX_STRUCTURE_AND_ATR_1_25": {
+        "new_stop": 25064.24,
+        "new_stop_dist_pts": 24.4900000000016,
+        "new_stop_dist_ticks": 97.9600000000064,
+        "outcome": "STOP",
+        "l2_converted": false,
+        "net_pnl_usd": -51.22,
+        "increased_risk_usd": 12.48
+      }
+    },
+    {
+      "trade_index": 16,
+      "direction": "bearish",
+      "entry_price": 25688.25,
+      "original_stop": 25751.5,
+      "original_stop_dist_pts": 63.25,
+      "original_stop_dist_ticks": 253.0,
+      "atr14_pts": 38.2003,
+      "atr14_ticks": 152.8,
+      "original_outcome": "STOP",
+      "original_net_usd": -127.74,
+      "mfe_r": 0.1225296442687747,
+      "S2_ATR_1_0": {
+        "new_stop": 25726.45,
+        "new_stop_dist_pts": 38.20000000000073,
+        "new_stop_dist_ticks": 152.8000000000029,
+        "outcome": "STOP",
+        "l2_converted": false,
+        "net_pnl_usd": -78.64,
+        "increased_risk_usd": -50.1
+      },
+      "S3_ATR_1_25": {
+        "new_stop": 25736.0,
+        "new_stop_dist_pts": 47.75,
+        "new_stop_dist_ticks": 191.0,
+        "outcome": "STOP",
+        "l2_converted": false,
+        "net_pnl_usd": -97.74,
+        "increased_risk_usd": -31.0
+      },
+      "S4_ATR_1_5": {
+        "new_stop": 25745.55,
+        "new_stop_dist_pts": 57.29999999999927,
+        "new_stop_dist_ticks": 229.1999999999971,
+        "outcome": "STOP",
+        "l2_converted": false,
+        "net_pnl_usd": -116.84,
+        "increased_risk_usd": -11.9
+      },
+      "S5_RECENT_CONFIRMED_SWING_PLUS_1_TICK": {
+        "new_stop": 25757.25,
+        "new_stop_dist_pts": 69.0,
+        "new_stop_dist_ticks": 276.0,
+        "outcome": "STOP",
+        "l2_converted": false,
+        "net_pnl_usd": -140.24,
+        "increased_risk_usd": 11.5
+      },
+      "S6_MAX_ORIGINAL_AND_ATR_1_25": {
+        "new_stop": 25751.5,
+        "new_stop_dist_pts": 63.25,
+        "new_stop_dist_ticks": 253.0,
+        "outcome": "STOP",
+        "l2_converted": false,
+        "net_pnl_usd": -128.74,
+        "increased_risk_usd": 0.0
+      },
+      "S7_MAX_STRUCTURE_AND_ATR_1_25": {
+        "new_stop": 25757.25,
+        "new_stop_dist_pts": 69.0,
+        "new_stop_dist_ticks": 276.0,
+        "outcome": "STOP",
+        "l2_converted": false,
+        "net_pnl_usd": -140.24,
+        "increased_risk_usd": 11.5
+      }
+    },
+    {
+      "trade_index": 27,
+      "direction": "bearish",
+      "entry_price": 24950.75,
+      "original_stop": 24953.0,
+      "original_stop_dist_pts": 2.25,
+      "original_stop_dist_ticks": 9.0,
+      "atr14_pts": 11.682,
+      "atr14_ticks": 46.7,
+      "original_outcome": "STOP",
+      "original_net_usd": -5.74,
+      "mfe_r": 1.1111111111111112,
+      "S2_ATR_1_0": {
+        "new_stop": 24962.43,
+        "new_stop_dist_pts": 11.680000000000291,
+        "new_stop_dist_ticks": 46.720000000001164,
+        "outcome": "TARGET",
+        "l2_converted": true,
+        "net_pnl_usd": 45.48,
+        "increased_risk_usd": 18.86
+      },
+      "S3_ATR_1_25": {
+        "new_stop": 24965.35,
+        "new_stop_dist_pts": 14.599999999998545,
+        "new_stop_dist_ticks": 58.39999999999418,
+        "outcome": "TARGET",
+        "l2_converted": true,
+        "net_pnl_usd": 57.16,
+        "increased_risk_usd": 24.7
+      },
+      "S4_ATR_1_5": {
+        "new_stop": 24968.27,
+        "new_stop_dist_pts": 17.520000000000437,
+        "new_stop_dist_ticks": 70.08000000000175,
+        "outcome": "TARGET",
+        "l2_converted": true,
+        "net_pnl_usd": 68.84,
+        "increased_risk_usd": 30.54
+      },
+      "S5_RECENT_CONFIRMED_SWING_PLUS_1_TICK": {
+        "new_stop": 24957.0,
+        "new_stop_dist_pts": 6.25,
+        "new_stop_dist_ticks": 25.0,
+        "outcome": "STOP",
+        "l2_converted": false,
+        "net_pnl_usd": -14.74,
+        "increased_risk_usd": 8.0
+      },
+      "S6_MAX_ORIGINAL_AND_ATR_1_25": {
+        "new_stop": 24965.35,
+        "new_stop_dist_pts": 14.599999999998545,
+        "new_stop_dist_ticks": 58.39999999999418,
+        "outcome": "TARGET",
+        "l2_converted": true,
+        "net_pnl_usd": 57.16,
+        "increased_risk_usd": 24.7
+      },
+      "S7_MAX_STRUCTURE_AND_ATR_1_25": {
+        "new_stop": 24965.35,
+        "new_stop_dist_pts": 14.599999999998545,
+        "new_stop_dist_ticks": 58.39999999999418,
+        "outcome": "TARGET",
+        "l2_converted": true,
+        "net_pnl_usd": 57.16,
+        "increased_risk_usd": 24.7
+      }
+    },
+    {
+      "trade_index": 29,
+      "direction": "bullish",
+      "entry_price": 25176.0,
+      "original_stop": 25155.75,
+      "original_stop_dist_pts": 20.25,
+      "original_stop_dist_ticks": 81.0,
+      "atr14_pts": 50.3941,
+      "atr14_ticks": 201.6,
+      "original_outcome": "STOP",
+      "original_net_usd": -41.74,
+      "mfe_r": 1.1111111111111112,
+      "S2_ATR_1_0": {
+        "new_stop": 25125.61,
+        "new_stop_dist_pts": 50.38999999999942,
+        "new_stop_dist_ticks": 201.55999999999767,
+        "outcome": "TARGET",
+        "l2_converted": true,
+        "net_pnl_usd": 200.32,
+        "increased_risk_usd": 60.28
+      },
+      "S3_ATR_1_25": {
+        "new_stop": 25113.01,
+        "new_stop_dist_pts": 62.9900000000016,
+        "new_stop_dist_ticks": 251.9600000000064,
+        "outcome": "TARGET",
+        "l2_converted": true,
+        "net_pnl_usd": 250.72,
+        "increased_risk_usd": 85.48
+      },
+      "S4_ATR_1_5": {
+        "new_stop": 25100.41,
+        "new_stop_dist_pts": 75.59000000000015,
+        "new_stop_dist_ticks": 302.3600000000006,
+        "outcome": "TARGET",
+        "l2_converted": true,
+        "net_pnl_usd": 301.12,
+        "increased_risk_usd": 110.68
+      },
+      "S5_RECENT_CONFIRMED_SWING_PLUS_1_TICK": {
+        "new_stop": 25134.5,
+        "new_stop_dist_pts": 41.5,
+        "new_stop_dist_ticks": 166.0,
+        "outcome": "TARGET",
+        "l2_converted": true,
+        "net_pnl_usd": 164.76,
+        "increased_risk_usd": 42.5
+      },
+      "S6_MAX_ORIGINAL_AND_ATR_1_25": {
+        "new_stop": 25113.01,
+        "new_stop_dist_pts": 62.9900000000016,
+        "new_stop_dist_ticks": 251.9600000000064,
+        "outcome": "TARGET",
+        "l2_converted": true,
+        "net_pnl_usd": 250.72,
+        "increased_risk_usd": 85.48
+      },
+      "S7_MAX_STRUCTURE_AND_ATR_1_25": {
+        "new_stop": 25113.01,
+        "new_stop_dist_pts": 62.9900000000016,
+        "new_stop_dist_ticks": 251.9600000000064,
+        "outcome": "TARGET",
+        "l2_converted": true,
+        "net_pnl_usd": 250.72,
+        "increased_risk_usd": 85.48
+      }
+    },
+    {
+      "trade_index": 33,
+      "direction": "bullish",
+      "entry_price": 25518.5,
+      "original_stop": 25481.0,
+      "original_stop_dist_pts": 37.5,
+      "original_stop_dist_ticks": 150.0,
+      "atr14_pts": 16.3835,
+      "atr14_ticks": 65.5,
+      "original_outcome": "STOP",
+      "original_net_usd": -76.24,
+      "mfe_r": 0.22666666666666666,
+      "S2_ATR_1_0": {
+        "new_stop": 25502.12,
+        "new_stop_dist_pts": 16.38000000000102,
+        "new_stop_dist_ticks": 65.52000000000407,
+        "outcome": "STOP",
+        "l2_converted": false,
+        "net_pnl_usd": -35.0,
+        "increased_risk_usd": -42.24
+      },
+      "S3_ATR_1_25": {
+        "new_stop": 25498.02,
+        "new_stop_dist_pts": 20.479999999999563,
+        "new_stop_dist_ticks": 81.91999999999825,
+        "outcome": "STOP",
+        "l2_converted": false,
+        "net_pnl_usd": -43.2,
+        "increased_risk_usd": -34.04
+      },
+      "S4_ATR_1_5": {
+        "new_stop": 25493.92,
+        "new_stop_dist_pts": 24.580000000001746,
+        "new_stop_dist_ticks": 98.32000000000698,
+        "outcome": "STOP",
+        "l2_converted": false,
+        "net_pnl_usd": -51.4,
+        "increased_risk_usd": -25.84
+      },
+      "S5_RECENT_CONFIRMED_SWING_PLUS_1_TICK": {
+        "new_stop": 25480.75,
+        "new_stop_dist_pts": 37.75,
+        "new_stop_dist_ticks": 151.0,
+        "outcome": "STOP",
+        "l2_converted": false,
+        "net_pnl_usd": -77.74,
+        "increased_risk_usd": 0.5
+      },
+      "S6_MAX_ORIGINAL_AND_ATR_1_25": {
+        "new_stop": 25481.0,
+        "new_stop_dist_pts": 37.5,
+        "new_stop_dist_ticks": 150.0,
+        "outcome": "STOP",
+        "l2_converted": false,
+        "net_pnl_usd": -77.24,
+        "increased_risk_usd": 0.0
+      },
+      "S7_MAX_STRUCTURE_AND_ATR_1_25": {
+        "new_stop": 25480.75,
+        "new_stop_dist_pts": 37.75,
+        "new_stop_dist_ticks": 151.0,
+        "outcome": "STOP",
+        "l2_converted": false,
+        "net_pnl_usd": -77.74,
+        "increased_risk_usd": 0.5
+      }
+    },
+    {
+      "trade_index": 35,
+      "direction": "bullish",
+      "entry_price": 25736.0,
+      "original_stop": 25707.25,
+      "original_stop_dist_pts": 28.75,
+      "original_stop_dist_ticks": 115.0,
+      "atr14_pts": 22.4636,
+      "atr14_ticks": 89.9,
+      "original_outcome": "STOP",
+      "original_net_usd": -58.74,
+      "mfe_r": 1.2173913043478262,
+      "S2_ATR_1_0": {
+        "new_stop": 25713.54,
+        "new_stop_dist_pts": 22.459999999999127,
+        "new_stop_dist_ticks": 89.83999999999651,
+        "outcome": "STOP",
+        "l2_converted": false,
+        "net_pnl_usd": -47.16,
+        "increased_risk_usd": -12.58
+      },
+      "S3_ATR_1_25": {
+        "new_stop": 25707.92,
+        "new_stop_dist_pts": 28.080000000001746,
+        "new_stop_dist_ticks": 112.32000000000698,
+        "outcome": "STOP",
+        "l2_converted": false,
+        "net_pnl_usd": -58.4,
+        "increased_risk_usd": -1.34
+      },
+      "S4_ATR_1_5": {
+        "new_stop": 25702.3,
+        "new_stop_dist_pts": 33.70000000000073,
+        "new_stop_dist_ticks": 134.8000000000029,
+        "outcome": "STOP",
+        "l2_converted": false,
+        "net_pnl_usd": -69.64,
+        "increased_risk_usd": 9.9
+      },
+      "S5_RECENT_CONFIRMED_SWING_PLUS_1_TICK": {
+        "new_stop": 25677.5,
+        "new_stop_dist_pts": 58.5,
+        "new_stop_dist_ticks": 234.0,
+        "outcome": "STOP",
+        "l2_converted": false,
+        "net_pnl_usd": -117.24,
+        "increased_risk_usd": 59.5
+      },
+      "S6_MAX_ORIGINAL_AND_ATR_1_25": {
+        "new_stop": 25707.25,
+        "new_stop_dist_pts": 28.75,
+        "new_stop_dist_ticks": 115.0,
+        "outcome": "STOP",
+        "l2_converted": false,
+        "net_pnl_usd": -59.74,
+        "increased_risk_usd": 0.0
+      },
+      "S7_MAX_STRUCTURE_AND_ATR_1_25": {
+        "new_stop": 25677.5,
+        "new_stop_dist_pts": 58.5,
+        "new_stop_dist_ticks": 234.0,
+        "outcome": "STOP",
+        "l2_converted": false,
+        "net_pnl_usd": -117.24,
+        "increased_risk_usd": 59.5
+      }
+    },
+    {
+      "trade_index": 37,
+      "direction": "bearish",
+      "entry_price": 25676.5,
+      "original_stop": 25689.25,
+      "original_stop_dist_pts": 12.75,
+      "original_stop_dist_ticks": 51.0,
+      "atr14_pts": 9.1471,
+      "atr14_ticks": 36.6,
+      "original_outcome": "STOP",
+      "original_net_usd": -26.74,
+      "mfe_r": 0.7450980392156863,
+      "S2_ATR_1_0": {
+        "new_stop": 25685.65,
+        "new_stop_dist_pts": 9.150000000001455,
+        "new_stop_dist_ticks": 36.60000000000582,
+        "outcome": "STOP",
+        "l2_converted": false,
+        "net_pnl_usd": -20.54,
+        "increased_risk_usd": -7.2
+      },
+      "S3_ATR_1_25": {
+        "new_stop": 25687.93,
+        "new_stop_dist_pts": 11.430000000000291,
+        "new_stop_dist_ticks": 45.720000000001164,
+        "outcome": "STOP",
+        "l2_converted": false,
+        "net_pnl_usd": -25.1,
+        "increased_risk_usd": -2.64
+      },
+      "S4_ATR_1_5": {
+        "new_stop": 25690.22,
+        "new_stop_dist_pts": 13.720000000001164,
+        "new_stop_dist_ticks": 54.88000000000466,
+        "outcome": "STOP",
+        "l2_converted": false,
+        "net_pnl_usd": -29.68,
+        "increased_risk_usd": 1.94
+      },
+      "S5_RECENT_CONFIRMED_SWING_PLUS_1_TICK": {
+        "new_stop": 25689.5,
+        "new_stop_dist_pts": 13.0,
+        "new_stop_dist_ticks": 52.0,
+        "outcome": "STOP",
+        "l2_converted": false,
+        "net_pnl_usd": -28.24,
+        "increased_risk_usd": 0.5
+      },
+      "S6_MAX_ORIGINAL_AND_ATR_1_25": {
+        "new_stop": 25689.25,
+        "new_stop_dist_pts": 12.75,
+        "new_stop_dist_ticks": 51.0,
+        "outcome": "STOP",
+        "l2_converted": false,
+        "net_pnl_usd": -27.74,
+        "increased_risk_usd": 0.0
+      },
+      "S7_MAX_STRUCTURE_AND_ATR_1_25": {
+        "new_stop": 25689.5,
+        "new_stop_dist_pts": 13.0,
+        "new_stop_dist_ticks": 52.0,
+        "outcome": "STOP",
+        "l2_converted": false,
+        "net_pnl_usd": -28.24,
+        "increased_risk_usd": 0.5
+      }
+    },
+    {
+      "trade_index": 56,
+      "direction": "bearish",
+      "entry_price": 25891.5,
+      "original_stop": 25897.5,
+      "original_stop_dist_pts": 6.0,
+      "original_stop_dist_ticks": 24.0,
+      "atr14_pts": 22.512,
+      "atr14_ticks": 90.0,
+      "original_outcome": "STOP",
+      "original_net_usd": -13.24,
+      "mfe_r": 1.1666666666666667,
+      "S2_ATR_1_0": {
+        "new_stop": 25914.01,
+        "new_stop_dist_pts": 22.5099999999984,
+        "new_stop_dist_ticks": 90.0399999999936,
+        "outcome": "TARGET",
+        "l2_converted": true,
+        "net_pnl_usd": 88.8,
+        "increased_risk_usd": 33.02
+      },
+      "S3_ATR_1_25": {
+        "new_stop": 25919.64,
+        "new_stop_dist_pts": 28.139999999999418,
+        "new_stop_dist_ticks": 112.55999999999767,
+        "outcome": "TARGET",
+        "l2_converted": true,
+        "net_pnl_usd": 111.32,
+        "increased_risk_usd": 44.28
+      },
+      "S4_ATR_1_5": {
+        "new_stop": 25925.27,
+        "new_stop_dist_pts": 33.77000000000044,
+        "new_stop_dist_ticks": 135.08000000000175,
+        "outcome": "TARGET",
+        "l2_converted": true,
+        "net_pnl_usd": 133.84,
+        "increased_risk_usd": 55.54
+      },
+      "S5_RECENT_CONFIRMED_SWING_PLUS_1_TICK": {
+        "new_stop": 25897.5,
+        "new_stop_dist_pts": 6.0,
+        "new_stop_dist_ticks": 24.0,
+        "outcome": "STOP",
+        "l2_converted": false,
+        "net_pnl_usd": -14.24,
+        "increased_risk_usd": 0.0
+      },
+      "S6_MAX_ORIGINAL_AND_ATR_1_25": {
+        "new_stop": 25919.64,
+        "new_stop_dist_pts": 28.139999999999418,
+        "new_stop_dist_ticks": 112.55999999999767,
+        "outcome": "TARGET",
+        "l2_converted": true,
+        "net_pnl_usd": 111.32,
+        "increased_risk_usd": 44.28
+      },
+      "S7_MAX_STRUCTURE_AND_ATR_1_25": {
+        "new_stop": 25919.64,
+        "new_stop_dist_pts": 28.139999999999418,
+        "new_stop_dist_ticks": 112.55999999999767,
+        "outcome": "TARGET",
+        "l2_converted": true,
+        "net_pnl_usd": 111.32,
+        "increased_risk_usd": 44.28
+      }
+    },
+    {
+      "trade_index": 57,
+      "direction": "bullish",
+      "entry_price": 25825.0,
+      "original_stop": 25806.75,
+      "original_stop_dist_pts": 18.25,
+      "original_stop_dist_ticks": 73.0,
+      "atr14_pts": 8.9199,
+      "atr14_ticks": 35.7,
+      "original_outcome": "STOP",
+      "original_net_usd": -37.74,
+      "mfe_r": 1.1232876712328768,
+      "S2_ATR_1_0": {
+        "new_stop": 25816.08,
+        "new_stop_dist_pts": 8.919999999998254,
+        "new_stop_dist_ticks": 35.679999999993015,
+        "outcome": "TARGET",
+        "l2_converted": true,
+        "net_pnl_usd": 34.44,
+        "increased_risk_usd": -18.66
+      },
+      "S3_ATR_1_25": {
+        "new_stop": 25813.85,
+        "new_stop_dist_pts": 11.150000000001455,
+        "new_stop_dist_ticks": 44.60000000000582,
+        "outcome": "STOP",
+        "l2_converted": false,
+        "net_pnl_usd": -24.54,
+        "increased_risk_usd": -14.2
+      },
+      "S4_ATR_1_5": {
+        "new_stop": 25811.62,
+        "new_stop_dist_pts": 13.380000000001019,
+        "new_stop_dist_ticks": 53.520000000004075,
+        "outcome": "STOP",
+        "l2_converted": false,
+        "net_pnl_usd": -29.0,
+        "increased_risk_usd": -9.74
+      },
+      "S5_RECENT_CONFIRMED_SWING_PLUS_1_TICK": {
+        "new_stop": 25806.5,
+        "new_stop_dist_pts": 18.5,
+        "new_stop_dist_ticks": 74.0,
+        "outcome": "STOP",
+        "l2_converted": false,
+        "net_pnl_usd": -39.24,
+        "increased_risk_usd": 0.5
+      },
+      "S6_MAX_ORIGINAL_AND_ATR_1_25": {
+        "new_stop": 25806.75,
+        "new_stop_dist_pts": 18.25,
+        "new_stop_dist_ticks": 73.0,
+        "outcome": "STOP",
+        "l2_converted": false,
+        "net_pnl_usd": -38.74,
+        "increased_risk_usd": 0.0
+      },
+      "S7_MAX_STRUCTURE_AND_ATR_1_25": {
+        "new_stop": 25806.5,
+        "new_stop_dist_pts": 18.5,
+        "new_stop_dist_ticks": 74.0,
+        "outcome": "STOP",
+        "l2_converted": false,
+        "net_pnl_usd": -39.24,
+        "increased_risk_usd": 0.5
+      }
+    },
+    {
+      "trade_index": 70,
+      "direction": "bullish",
+      "entry_price": 25346.75,
+      "original_stop": 25339.5,
+      "original_stop_dist_pts": 7.25,
+      "original_stop_dist_ticks": 29.0,
+      "atr14_pts": 16.2254,
+      "atr14_ticks": 64.9,
+      "original_outcome": "STOP",
+      "original_net_usd": -15.74,
+      "mfe_r": 1.1724137931034482,
+      "S2_ATR_1_0": {
+        "new_stop": 25330.52,
+        "new_stop_dist_pts": 16.229999999999563,
+        "new_stop_dist_ticks": 64.91999999999825,
+        "outcome": "STOP",
+        "l2_converted": false,
+        "net_pnl_usd": -34.7,
+        "increased_risk_usd": 17.96
+      },
+      "S3_ATR_1_25": {
+        "new_stop": 25326.47,
+        "new_stop_dist_pts": 20.279999999998836,
+        "new_stop_dist_ticks": 81.11999999999534,
+        "outcome": "STOP",
+        "l2_converted": false,
+        "net_pnl_usd": -42.8,
+        "increased_risk_usd": 26.06
+      },
+      "S4_ATR_1_5": {
+        "new_stop": 25322.41,
+        "new_stop_dist_pts": 24.340000000000146,
+        "new_stop_dist_ticks": 97.36000000000058,
+        "outcome": "STOP",
+        "l2_converted": false,
+        "net_pnl_usd": -48.92,
+        "increased_risk_usd": 34.18
+      },
+      "S5_RECENT_CONFIRMED_SWING_PLUS_1_TICK": {
+        "new_stop": 25344.25,
+        "new_stop_dist_pts": 2.5,
+        "new_stop_dist_ticks": 10.0,
+        "outcome": "STOP",
+        "l2_converted": false,
+        "net_pnl_usd": -7.24,
+        "increased_risk_usd": -9.5
+      },
+      "S6_MAX_ORIGINAL_AND_ATR_1_25": {
+        "new_stop": 25326.47,
+        "new_stop_dist_pts": 20.279999999998836,
+        "new_stop_dist_ticks": 81.11999999999534,
+        "outcome": "STOP",
+        "l2_converted": false,
+        "net_pnl_usd": -42.8,
+        "increased_risk_usd": 26.06
+      },
+      "S7_MAX_STRUCTURE_AND_ATR_1_25": {
+        "new_stop": 25326.47,
+        "new_stop_dist_pts": 20.279999999998836,
+        "new_stop_dist_ticks": 81.11999999999534,
+        "outcome": "STOP",
+        "l2_converted": false,
+        "net_pnl_usd": -42.8,
+        "increased_risk_usd": 26.06
+      }
+    },
+    {
+      "trade_index": 75,
+      "direction": "bearish",
+      "entry_price": 24904.75,
+      "original_stop": 24908.5,
+      "original_stop_dist_pts": 3.75,
+      "original_stop_dist_ticks": 15.0,
+      "atr14_pts": 13.1213,
+      "atr14_ticks": 52.5,
+      "original_outcome": "STOP",
+      "original_net_usd": -8.74,
+      "mfe_r": 0.7333333333333333,
+      "S2_ATR_1_0": {
+        "new_stop": 24917.87,
+        "new_stop_dist_pts": 13.119999999998981,
+        "new_stop_dist_ticks": 52.479999999995925,
+        "outcome": "STOP",
+        "l2_converted": false,
+        "net_pnl_usd": -28.48,
+        "increased_risk_usd": 18.74
+      },
+      "S3_ATR_1_25": {
+        "new_stop": 24921.15,
+        "new_stop_dist_pts": 16.400000000001455,
+        "new_stop_dist_ticks": 65.60000000000582,
+        "outcome": "STOP",
+        "l2_converted": false,
+        "net_pnl_usd": -35.04,
+        "increased_risk_usd": 25.3
+      },
+      "S4_ATR_1_5": {
+        "new_stop": 24924.43,
+        "new_stop_dist_pts": 19.68000000000029,
+        "new_stop_dist_ticks": 78.72000000000116,
+        "outcome": "STOP",
+        "l2_converted": false,
+        "net_pnl_usd": -41.6,
+        "increased_risk_usd": 31.86
+      },
+      "S5_RECENT_CONFIRMED_SWING_PLUS_1_TICK": {
+        "new_stop": 24907.0,
+        "new_stop_dist_pts": 2.25,
+        "new_stop_dist_ticks": 9.0,
+        "outcome": "STOP",
+        "l2_converted": false,
+        "net_pnl_usd": -6.74,
+        "increased_risk_usd": -3.0
+      },
+      "S6_MAX_ORIGINAL_AND_ATR_1_25": {
+        "new_stop": 24921.15,
+        "new_stop_dist_pts": 16.400000000001455,
+        "new_stop_dist_ticks": 65.60000000000582,
+        "outcome": "STOP",
+        "l2_converted": false,
+        "net_pnl_usd": -35.04,
+        "increased_risk_usd": 25.3
+      },
+      "S7_MAX_STRUCTURE_AND_ATR_1_25": {
+        "new_stop": 24921.15,
+        "new_stop_dist_pts": 16.400000000001455,
+        "new_stop_dist_ticks": 65.60000000000582,
+        "outcome": "STOP",
+        "l2_converted": false,
+        "net_pnl_usd": -35.04,
+        "increased_risk_usd": 25.3
+      }
+    },
+    {
+      "trade_index": 78,
+      "direction": "bearish",
+      "entry_price": 25079.25,
+      "original_stop": 25086.25,
+      "original_stop_dist_pts": 7.0,
+      "original_stop_dist_ticks": 28.0,
+      "atr14_pts": 30.0694,
+      "atr14_ticks": 120.3,
+      "original_outcome": "STOP",
+      "original_net_usd": -15.24,
+      "mfe_r": 1.3571428571428572,
+      "S2_ATR_1_0": {
+        "new_stop": 25109.32,
+        "new_stop_dist_pts": 30.06999999999971,
+        "new_stop_dist_ticks": 120.27999999999884,
+        "outcome": "TARGET",
+        "l2_converted": true,
+        "net_pnl_usd": 119.04,
+        "increased_risk_usd": 46.14
+      },
+      "S3_ATR_1_25": {
+        "new_stop": 25116.84,
+        "new_stop_dist_pts": 37.590000000000146,
+        "new_stop_dist_ticks": 150.36000000000058,
+        "outcome": "TARGET",
+        "l2_converted": true,
+        "net_pnl_usd": 149.12,
+        "increased_risk_usd": 61.18
+      },
+      "S4_ATR_1_5": {
+        "new_stop": 25124.35,
+        "new_stop_dist_pts": 45.099999999998545,
+        "new_stop_dist_ticks": 180.39999999999418,
+        "outcome": "TARGET",
+        "l2_converted": true,
+        "net_pnl_usd": 179.16,
+        "increased_risk_usd": 76.2
+      },
+      "S5_RECENT_CONFIRMED_SWING_PLUS_1_TICK": {
+        "new_stop": 25089.75,
+        "new_stop_dist_pts": 10.5,
+        "new_stop_dist_ticks": 42.0,
+        "outcome": "STOP",
+        "l2_converted": false,
+        "net_pnl_usd": -23.24,
+        "increased_risk_usd": 7.0
+      },
+      "S6_MAX_ORIGINAL_AND_ATR_1_25": {
+        "new_stop": 25116.84,
+        "new_stop_dist_pts": 37.590000000000146,
+        "new_stop_dist_ticks": 150.36000000000058,
+        "outcome": "TARGET",
+        "l2_converted": true,
+        "net_pnl_usd": 149.12,
+        "increased_risk_usd": 61.18
+      },
+      "S7_MAX_STRUCTURE_AND_ATR_1_25": {
+        "new_stop": 25116.84,
+        "new_stop_dist_pts": 37.590000000000146,
+        "new_stop_dist_ticks": 150.36000000000058,
+        "outcome": "TARGET",
+        "l2_converted": true,
+        "net_pnl_usd": 149.12,
+        "increased_risk_usd": 61.18
+      }
+    },
+    {
+      "trade_index": 86,
+      "direction": "bearish",
+      "entry_price": 23781.75,
+      "original_stop": 23828.0,
+      "original_stop_dist_pts": 46.25,
+      "original_stop_dist_ticks": 185.0,
+      "atr14_pts": 20.3292,
+      "atr14_ticks": 81.3,
+      "original_outcome": "STOP",
+      "original_net_usd": -93.74,
+      "mfe_r": 0.6432432432432432,
+      "S2_ATR_1_0": {
+        "new_stop": 23802.08,
+        "new_stop_dist_pts": 20.330000000001746,
+        "new_stop_dist_ticks": 81.32000000000698,
+        "outcome": "STOP",
+        "l2_converted": false,
+        "net_pnl_usd": -42.9,
+        "increased_risk_usd": -51.84
+      },
+      "S3_ATR_1_25": {
+        "new_stop": 23807.16,
+        "new_stop_dist_pts": 25.409999999999854,
+        "new_stop_dist_ticks": 101.63999999999942,
+        "outcome": "STOP",
+        "l2_converted": false,
+        "net_pnl_usd": -53.06,
+        "increased_risk_usd": -41.68
+      },
+      "S4_ATR_1_5": {
+        "new_stop": 23812.24,
+        "new_stop_dist_pts": 30.4900000000016,
+        "new_stop_dist_ticks": 121.9600000000064,
+        "outcome": "STOP",
+        "l2_converted": false,
+        "net_pnl_usd": -63.22,
+        "increased_risk_usd": -31.52
+      },
+      "S5_RECENT_CONFIRMED_SWING_PLUS_1_TICK": {
+        "new_stop": 23828.25,
+        "new_stop_dist_pts": 46.5,
+        "new_stop_dist_ticks": 186.0,
+        "outcome": "STOP",
+        "l2_converted": false,
+        "net_pnl_usd": -95.24,
+        "increased_risk_usd": 0.5
+      },
+      "S6_MAX_ORIGINAL_AND_ATR_1_25": {
+        "new_stop": 23828.0,
+        "new_stop_dist_pts": 46.25,
+        "new_stop_dist_ticks": 185.0,
+        "outcome": "STOP",
+        "l2_converted": false,
+        "net_pnl_usd": -94.74,
+        "increased_risk_usd": 0.0
+      },
+      "S7_MAX_STRUCTURE_AND_ATR_1_25": {
+        "new_stop": 23828.25,
+        "new_stop_dist_pts": 46.5,
+        "new_stop_dist_ticks": 186.0,
+        "outcome": "STOP",
+        "l2_converted": false,
+        "net_pnl_usd": -95.24,
+        "increased_risk_usd": 0.5
+      }
+    },
+    {
+      "trade_index": 90,
+      "direction": "bearish",
+      "entry_price": 24363.5,
+      "original_stop": 24369.75,
+      "original_stop_dist_pts": 6.25,
+      "original_stop_dist_ticks": 25.0,
+      "atr14_pts": 23.2924,
+      "atr14_ticks": 93.2,
+      "original_outcome": "STOP",
+      "original_net_usd": -13.74,
+      "mfe_r": 1.28,
+      "S2_ATR_1_0": {
+        "new_stop": 24386.79,
+        "new_stop_dist_pts": 23.290000000000873,
+        "new_stop_dist_ticks": 93.16000000000349,
+        "outcome": "TARGET",
+        "l2_converted": true,
+        "net_pnl_usd": 91.92,
+        "increased_risk_usd": 34.08
+      },
+      "S3_ATR_1_25": {
+        "new_stop": 24392.62,
+        "new_stop_dist_pts": 29.11999999999898,
+        "new_stop_dist_ticks": 116.47999999999593,
+        "outcome": "TARGET",
+        "l2_converted": true,
+        "net_pnl_usd": 115.24,
+        "increased_risk_usd": 45.74
+      },
+      "S4_ATR_1_5": {
+        "new_stop": 24398.44,
+        "new_stop_dist_pts": 34.93999999999869,
+        "new_stop_dist_ticks": 139.75999999999476,
+        "outcome": "TARGET",
+        "l2_converted": true,
+        "net_pnl_usd": 138.52,
+        "increased_risk_usd": 57.38
+      },
+      "S5_RECENT_CONFIRMED_SWING_PLUS_1_TICK": {
+        "new_stop": 24376.5,
+        "new_stop_dist_pts": 13.0,
+        "new_stop_dist_ticks": 52.0,
+        "outcome": "TARGET",
+        "l2_converted": true,
+        "net_pnl_usd": 50.76,
+        "increased_risk_usd": 13.5
+      },
+      "S6_MAX_ORIGINAL_AND_ATR_1_25": {
+        "new_stop": 24392.62,
+        "new_stop_dist_pts": 29.11999999999898,
+        "new_stop_dist_ticks": 116.47999999999593,
+        "outcome": "TARGET",
+        "l2_converted": true,
+        "net_pnl_usd": 115.24,
+        "increased_risk_usd": 45.74
+      },
+      "S7_MAX_STRUCTURE_AND_ATR_1_25": {
+        "new_stop": 24392.62,
+        "new_stop_dist_pts": 29.11999999999898,
+        "new_stop_dist_ticks": 116.47999999999593,
+        "outcome": "TARGET",
+        "l2_converted": true,
+        "net_pnl_usd": 115.24,
+        "increased_risk_usd": 45.74
+      }
+    },
+    {
+      "trade_index": 100,
+      "direction": "bullish",
+      "entry_price": 26968.0,
+      "original_stop": 26958.75,
+      "original_stop_dist_pts": 9.25,
+      "original_stop_dist_ticks": 37.0,
+      "atr14_pts": 26.8316,
+      "atr14_ticks": 107.3,
+      "original_outcome": "STOP",
+      "original_net_usd": -19.74,
+      "mfe_r": 1.8108108108108107,
+      "S2_ATR_1_0": {
+        "new_stop": 26941.17,
+        "new_stop_dist_pts": 26.830000000001746,
+        "new_stop_dist_ticks": 107.32000000000698,
+        "outcome": "TARGET",
+        "l2_converted": true,
+        "net_pnl_usd": 106.08,
+        "increased_risk_usd": 35.16
+      },
+      "S3_ATR_1_25": {
+        "new_stop": 26934.46,
+        "new_stop_dist_pts": 33.54000000000087,
+        "new_stop_dist_ticks": 134.1600000000035,
+        "outcome": "TARGET",
+        "l2_converted": true,
+        "net_pnl_usd": 132.92,
+        "increased_risk_usd": 48.58
+      },
+      "S4_ATR_1_5": {
+        "new_stop": 26927.75,
+        "new_stop_dist_pts": 40.25,
+        "new_stop_dist_ticks": 161.0,
+        "outcome": "TARGET",
+        "l2_converted": true,
+        "net_pnl_usd": 159.76,
+        "increased_risk_usd": 62.0
+      },
+      "S5_RECENT_CONFIRMED_SWING_PLUS_1_TICK": {
+        "new_stop": 26959.75,
+        "new_stop_dist_pts": 8.25,
+        "new_stop_dist_ticks": 33.0,
+        "outcome": "TARGET",
+        "l2_converted": true,
+        "net_pnl_usd": 31.76,
+        "increased_risk_usd": -2.0
+      },
+      "S6_MAX_ORIGINAL_AND_ATR_1_25": {
+        "new_stop": 26934.46,
+        "new_stop_dist_pts": 33.54000000000087,
+        "new_stop_dist_ticks": 134.1600000000035,
+        "outcome": "TARGET",
+        "l2_converted": true,
+        "net_pnl_usd": 132.92,
+        "increased_risk_usd": 48.58
+      },
+      "S7_MAX_STRUCTURE_AND_ATR_1_25": {
+        "new_stop": 26934.46,
+        "new_stop_dist_pts": 33.54000000000087,
+        "new_stop_dist_ticks": 134.1600000000035,
+        "outcome": "TARGET",
+        "l2_converted": true,
+        "net_pnl_usd": 132.92,
+        "increased_risk_usd": 48.58
+      }
+    },
+    {
+      "trade_index": 105,
+      "direction": "bearish",
+      "entry_price": 27852.75,
+      "original_stop": 27883.75,
+      "original_stop_dist_pts": 31.0,
+      "original_stop_dist_ticks": 124.0,
+      "atr14_pts": 29.2814,
+      "atr14_ticks": 117.1,
+      "original_outcome": "STOP",
+      "original_net_usd": -63.24,
+      "mfe_r": 1.435483870967742,
+      "S2_ATR_1_0": {
+        "new_stop": 27882.03,
+        "new_stop_dist_pts": 29.279999999998836,
+        "new_stop_dist_ticks": 117.11999999999534,
+        "outcome": "STOP",
+        "l2_converted": false,
+        "net_pnl_usd": -60.8,
+        "increased_risk_usd": -3.44
+      },
+      "S3_ATR_1_25": {
+        "new_stop": 27889.35,
+        "new_stop_dist_pts": 36.599999999998545,
+        "new_stop_dist_ticks": 146.39999999999418,
+        "outcome": "STOP",
+        "l2_converted": false,
+        "net_pnl_usd": -75.44,
+        "increased_risk_usd": 11.2
+      },
+      "S4_ATR_1_5": {
+        "new_stop": 27896.67,
+        "new_stop_dist_pts": 43.919999999998254,
+        "new_stop_dist_ticks": 175.67999999999302,
+        "outcome": "STOP",
+        "l2_converted": false,
+        "net_pnl_usd": -90.08,
+        "increased_risk_usd": 25.84
+      },
+      "S5_RECENT_CONFIRMED_SWING_PLUS_1_TICK": {
+        "new_stop": 27884.0,
+        "new_stop_dist_pts": 31.25,
+        "new_stop_dist_ticks": 125.0,
+        "outcome": "STOP",
+        "l2_converted": false,
+        "net_pnl_usd": -64.74,
+        "increased_risk_usd": 0.5
+      },
+      "S6_MAX_ORIGINAL_AND_ATR_1_25": {
+        "new_stop": 27889.35,
+        "new_stop_dist_pts": 36.599999999998545,
+        "new_stop_dist_ticks": 146.39999999999418,
+        "outcome": "STOP",
+        "l2_converted": false,
+        "net_pnl_usd": -75.44,
+        "increased_risk_usd": 11.2
+      },
+      "S7_MAX_STRUCTURE_AND_ATR_1_25": {
+        "new_stop": 27889.35,
+        "new_stop_dist_pts": 36.599999999998545,
+        "new_stop_dist_ticks": 146.39999999999418,
+        "outcome": "STOP",
+        "l2_converted": false,
+        "net_pnl_usd": -75.44,
+        "increased_risk_usd": 11.2
+      }
+    },
+    {
+      "trade_index": 108,
+      "direction": "bullish",
+      "entry_price": 28742.25,
+      "original_stop": 28722.0,
+      "original_stop_dist_pts": 20.25,
+      "original_stop_dist_ticks": 81.0,
+      "atr14_pts": 26.6616,
+      "atr14_ticks": 106.6,
+      "original_outcome": "STOP",
+      "original_net_usd": -41.74,
+      "mfe_r": 0.2839506172839506,
+      "S2_ATR_1_0": {
+        "new_stop": 28715.59,
+        "new_stop_dist_pts": 26.659999999999854,
+        "new_stop_dist_ticks": 106.63999999999942,
+        "outcome": "STOP",
+        "l2_converted": false,
+        "net_pnl_usd": -55.56,
+        "increased_risk_usd": 12.82
+      },
+      "S3_ATR_1_25": {
+        "new_stop": 28708.92,
+        "new_stop_dist_pts": 33.330000000001746,
+        "new_stop_dist_ticks": 133.32000000000698,
+        "outcome": "STOP",
+        "l2_converted": false,
+        "net_pnl_usd": -68.9,
+        "increased_risk_usd": 26.16
+      },
+      "S4_ATR_1_5": {
+        "new_stop": 28702.26,
+        "new_stop_dist_pts": 39.9900000000016,
+        "new_stop_dist_ticks": 159.9600000000064,
+        "outcome": "TARGET",
+        "l2_converted": true,
+        "net_pnl_usd": 158.72,
+        "increased_risk_usd": 39.48
+      },
+      "S5_RECENT_CONFIRMED_SWING_PLUS_1_TICK": {
+        "new_stop": 28733.5,
+        "new_stop_dist_pts": 8.75,
+        "new_stop_dist_ticks": 35.0,
+        "outcome": "STOP",
+        "l2_converted": false,
+        "net_pnl_usd": -19.74,
+        "increased_risk_usd": -23.0
+      },
+      "S6_MAX_ORIGINAL_AND_ATR_1_25": {
+        "new_stop": 28708.92,
+        "new_stop_dist_pts": 33.330000000001746,
+        "new_stop_dist_ticks": 133.32000000000698,
+        "outcome": "STOP",
+        "l2_converted": false,
+        "net_pnl_usd": -68.9,
+        "increased_risk_usd": 26.16
+      },
+      "S7_MAX_STRUCTURE_AND_ATR_1_25": {
+        "new_stop": 28708.92,
+        "new_stop_dist_pts": 33.330000000001746,
+        "new_stop_dist_ticks": 133.32000000000698,
+        "outcome": "STOP",
+        "l2_converted": false,
+        "net_pnl_usd": -68.9,
+        "increased_risk_usd": 26.16
+      }
+    },
+    {
+      "trade_index": 123,
+      "direction": "bullish",
+      "entry_price": 30332.5,
+      "original_stop": 30265.0,
+      "original_stop_dist_pts": 67.5,
+      "original_stop_dist_ticks": 270.0,
+      "atr14_pts": 49.0296,
+      "atr14_ticks": 196.1,
+      "original_outcome": "STOP",
+      "original_net_usd": -136.24,
+      "mfe_r": 0.13333333333333333,
+      "S2_ATR_1_0": {
+        "new_stop": 30283.47,
+        "new_stop_dist_pts": 49.029999999998836,
+        "new_stop_dist_ticks": 196.11999999999534,
+        "outcome": "STOP",
+        "l2_converted": false,
+        "net_pnl_usd": -100.3,
+        "increased_risk_usd": -36.94
+      },
+      "S3_ATR_1_25": {
+        "new_stop": 30271.21,
+        "new_stop_dist_pts": 61.29000000000087,
+        "new_stop_dist_ticks": 245.1600000000035,
+        "outcome": "STOP",
+        "l2_converted": false,
+        "net_pnl_usd": -124.82,
+        "increased_risk_usd": -12.42
+      },
+      "S4_ATR_1_5": {
+        "new_stop": 30258.96,
+        "new_stop_dist_pts": 73.54000000000087,
+        "new_stop_dist_ticks": 294.1600000000035,
+        "outcome": "STOP",
+        "l2_converted": false,
+        "net_pnl_usd": -149.32,
+        "increased_risk_usd": 12.08
+      },
+      "S5_RECENT_CONFIRMED_SWING_PLUS_1_TICK": {
+        "new_stop": 30209.75,
+        "new_stop_dist_pts": 122.75,
+        "new_stop_dist_ticks": 491.0,
+        "outcome": "STOP",
+        "l2_converted": false,
+        "net_pnl_usd": -247.74,
+        "increased_risk_usd": 110.5
+      },
+      "S6_MAX_ORIGINAL_AND_ATR_1_25": {
+        "new_stop": 30265.0,
+        "new_stop_dist_pts": 67.5,
+        "new_stop_dist_ticks": 270.0,
+        "outcome": "STOP",
+        "l2_converted": false,
+        "net_pnl_usd": -137.24,
+        "increased_risk_usd": 0.0
+      },
+      "S7_MAX_STRUCTURE_AND_ATR_1_25": {
+        "new_stop": 30209.75,
+        "new_stop_dist_pts": 122.75,
+        "new_stop_dist_ticks": 491.0,
+        "outcome": "STOP",
+        "l2_converted": false,
+        "net_pnl_usd": -247.74,
+        "increased_risk_usd": 110.5
+      }
+    },
+    {
+      "trade_index": 129,
+      "direction": "bullish",
+      "entry_price": 30464.0,
+      "original_stop": 30408.5,
+      "original_stop_dist_pts": 55.5,
+      "original_stop_dist_ticks": 222.0,
+      "atr14_pts": 69.1701,
+      "atr14_ticks": 276.7,
+      "original_outcome": "STOP",
+      "original_net_usd": -112.24,
+      "mfe_r": 0.38288288288288286,
+      "S2_ATR_1_0": {
+        "new_stop": 30394.83,
+        "new_stop_dist_pts": 69.16999999999825,
+        "new_stop_dist_ticks": 276.679999999993,
+        "outcome": "TARGET",
+        "l2_converted": true,
+        "net_pnl_usd": 275.44,
+        "increased_risk_usd": 27.34
+      },
+      "S3_ATR_1_25": {
+        "new_stop": 30377.54,
+        "new_stop_dist_pts": 86.45999999999913,
+        "new_stop_dist_ticks": 345.8399999999965,
+        "outcome": "TARGET",
+        "l2_converted": true,
+        "net_pnl_usd": 344.6,
+        "increased_risk_usd": 61.92
+      },
+      "S4_ATR_1_5": {
+        "new_stop": 30360.24,
+        "new_stop_dist_pts": 103.7599999999984,
+        "new_stop_dist_ticks": 415.0399999999936,
+        "outcome": "TARGET",
+        "l2_converted": true,
+        "net_pnl_usd": 413.8,
+        "increased_risk_usd": 96.52
+      },
+      "S5_RECENT_CONFIRMED_SWING_PLUS_1_TICK": {
+        "new_stop": 30391.75,
+        "new_stop_dist_pts": 72.25,
+        "new_stop_dist_ticks": 289.0,
+        "outcome": "TARGET",
+        "l2_converted": true,
+        "net_pnl_usd": 287.76,
+        "increased_risk_usd": 33.5
+      },
+      "S6_MAX_ORIGINAL_AND_ATR_1_25": {
+        "new_stop": 30377.54,
+        "new_stop_dist_pts": 86.45999999999913,
+        "new_stop_dist_ticks": 345.8399999999965,
+        "outcome": "TARGET",
+        "l2_converted": true,
+        "net_pnl_usd": 344.6,
+        "increased_risk_usd": 61.92
+      },
+      "S7_MAX_STRUCTURE_AND_ATR_1_25": {
+        "new_stop": 30377.54,
+        "new_stop_dist_pts": 86.45999999999913,
+        "new_stop_dist_ticks": 345.8399999999965,
+        "outcome": "TARGET",
+        "l2_converted": true,
+        "net_pnl_usd": 344.6,
+        "increased_risk_usd": 61.92
+      }
+    },
+    {
+      "trade_index": 137,
+      "direction": "bullish",
+      "entry_price": 29590.75,
+      "original_stop": 29552.75,
+      "original_stop_dist_pts": 38.0,
+      "original_stop_dist_ticks": 152.0,
+      "atr14_pts": 42.4775,
+      "atr14_ticks": 169.9,
+      "original_outcome": "STOP",
+      "original_net_usd": -77.24,
+      "mfe_r": 0.5328947368421053,
+      "S2_ATR_1_0": {
+        "new_stop": 29548.27,
+        "new_stop_dist_pts": 42.47999999999956,
+        "new_stop_dist_ticks": 169.91999999999825,
+        "outcome": "STOP",
+        "l2_converted": false,
+        "net_pnl_usd": -87.2,
+        "increased_risk_usd": 8.96
+      },
+      "S3_ATR_1_25": {
+        "new_stop": 29537.65,
+        "new_stop_dist_pts": 53.099999999998545,
+        "new_stop_dist_ticks": 212.39999999999418,
+        "outcome": "STOP",
+        "l2_converted": false,
+        "net_pnl_usd": -108.44,
+        "increased_risk_usd": 30.2
+      },
+      "S4_ATR_1_5": {
+        "new_stop": 29527.03,
+        "new_stop_dist_pts": 63.720000000001164,
+        "new_stop_dist_ticks": 254.88000000000466,
+        "outcome": "STOP",
+        "l2_converted": false,
+        "net_pnl_usd": -129.68,
+        "increased_risk_usd": 51.44
+      },
+      "S5_RECENT_CONFIRMED_SWING_PLUS_1_TICK": {
+        "new_stop": 29540.5,
+        "new_stop_dist_pts": 50.25,
+        "new_stop_dist_ticks": 201.0,
+        "outcome": "STOP",
+        "l2_converted": false,
+        "net_pnl_usd": -102.74,
+        "increased_risk_usd": 24.5
+      },
+      "S6_MAX_ORIGINAL_AND_ATR_1_25": {
+        "new_stop": 29537.65,
+        "new_stop_dist_pts": 53.099999999998545,
+        "new_stop_dist_ticks": 212.39999999999418,
+        "outcome": "STOP",
+        "l2_converted": false,
+        "net_pnl_usd": -108.44,
+        "increased_risk_usd": 30.2
+      },
+      "S7_MAX_STRUCTURE_AND_ATR_1_25": {
+        "new_stop": 29537.65,
+        "new_stop_dist_pts": 53.099999999998545,
+        "new_stop_dist_ticks": 212.39999999999418,
+        "outcome": "STOP",
+        "l2_converted": false,
+        "net_pnl_usd": -108.44,
+        "increased_risk_usd": 30.2
+      }
+    },
+    {
+      "trade_index": 145,
+      "direction": "bearish",
+      "entry_price": 29768.0,
+      "original_stop": 29792.5,
+      "original_stop_dist_pts": 24.5,
+      "original_stop_dist_ticks": 98.0,
+      "atr14_pts": 22.355,
+      "atr14_ticks": 89.4,
+      "original_outcome": "STOP",
+      "original_net_usd": -50.24,
+      "mfe_r": 1.0816326530612246,
+      "S2_ATR_1_0": {
+        "new_stop": 29790.35,
+        "new_stop_dist_pts": 22.349999999998545,
+        "new_stop_dist_ticks": 89.39999999999418,
+        "outcome": "STOP",
+        "l2_converted": false,
+        "net_pnl_usd": -46.94,
+        "increased_risk_usd": -4.3
+      },
+      "S3_ATR_1_25": {
+        "new_stop": 29795.94,
+        "new_stop_dist_pts": 27.93999999999869,
+        "new_stop_dist_ticks": 111.75999999999476,
+        "outcome": "TARGET",
+        "l2_converted": true,
+        "net_pnl_usd": 110.52,
+        "increased_risk_usd": 6.88
+      },
+      "S4_ATR_1_5": {
+        "new_stop": 29801.53,
+        "new_stop_dist_pts": 33.529999999998836,
+        "new_stop_dist_ticks": 134.11999999999534,
+        "outcome": "TARGET",
+        "l2_converted": true,
+        "net_pnl_usd": 132.88,
+        "increased_risk_usd": 18.06
+      },
+      "S5_RECENT_CONFIRMED_SWING_PLUS_1_TICK": {
+        "new_stop": 29800.25,
+        "new_stop_dist_pts": 32.25,
+        "new_stop_dist_ticks": 129.0,
+        "outcome": "TARGET",
+        "l2_converted": true,
+        "net_pnl_usd": 127.76,
+        "increased_risk_usd": 15.5
+      },
+      "S6_MAX_ORIGINAL_AND_ATR_1_25": {
+        "new_stop": 29795.94,
+        "new_stop_dist_pts": 27.93999999999869,
+        "new_stop_dist_ticks": 111.75999999999476,
+        "outcome": "TARGET",
+        "l2_converted": true,
+        "net_pnl_usd": 110.52,
+        "increased_risk_usd": 6.88
+      },
+      "S7_MAX_STRUCTURE_AND_ATR_1_25": {
+        "new_stop": 29800.25,
+        "new_stop_dist_pts": 32.25,
+        "new_stop_dist_ticks": 129.0,
+        "outcome": "TARGET",
+        "l2_converted": true,
+        "net_pnl_usd": 127.76,
+        "increased_risk_usd": 15.5
+      }
+    },
+    {
+      "trade_index": 146,
+      "direction": "bearish",
+      "entry_price": 29637.75,
+      "original_stop": 29676.75,
+      "original_stop_dist_pts": 39.0,
+      "original_stop_dist_ticks": 156.0,
+      "atr14_pts": 68.0722,
+      "atr14_ticks": 272.3,
+      "original_outcome": "STOP",
+      "original_net_usd": -79.24,
+      "mfe_r": 0.8782051282051282,
+      "S2_ATR_1_0": {
+        "new_stop": 29705.82,
+        "new_stop_dist_pts": 68.06999999999971,
+        "new_stop_dist_ticks": 272.27999999999884,
+        "outcome": "STOP",
+        "l2_converted": false,
+        "net_pnl_usd": -138.38,
+        "increased_risk_usd": 58.14
+      },
+      "S3_ATR_1_25": {
+        "new_stop": 29722.84,
+        "new_stop_dist_pts": 85.09000000000015,
+        "new_stop_dist_ticks": 340.3600000000006,
+        "outcome": "STOP",
+        "l2_converted": false,
+        "net_pnl_usd": -172.42,
+        "increased_risk_usd": 92.18
+      },
+      "S4_ATR_1_5": {
+        "new_stop": 29739.86,
+        "new_stop_dist_pts": 102.11000000000058,
+        "new_stop_dist_ticks": 408.4400000000023,
+        "outcome": "STOP",
+        "l2_converted": false,
+        "net_pnl_usd": -206.46,
+        "increased_risk_usd": 126.22
+      },
+      "S5_RECENT_CONFIRMED_SWING_PLUS_1_TICK": {
+        "new_stop": 29724.25,
+        "new_stop_dist_pts": 86.5,
+        "new_stop_dist_ticks": 346.0,
+        "outcome": "STOP",
+        "l2_converted": false,
+        "net_pnl_usd": -175.24,
+        "increased_risk_usd": 95.0
+      },
+      "S6_MAX_ORIGINAL_AND_ATR_1_25": {
+        "new_stop": 29722.84,
+        "new_stop_dist_pts": 85.09000000000015,
+        "new_stop_dist_ticks": 340.3600000000006,
+        "outcome": "STOP",
+        "l2_converted": false,
+        "net_pnl_usd": -172.42,
+        "increased_risk_usd": 92.18
+      },
+      "S7_MAX_STRUCTURE_AND_ATR_1_25": {
+        "new_stop": 29724.25,
+        "new_stop_dist_pts": 86.5,
+        "new_stop_dist_ticks": 346.0,
+        "outcome": "STOP",
+        "l2_converted": false,
+        "net_pnl_usd": -175.24,
+        "increased_risk_usd": 95.0
+      }
+    }
+  ],
+  "correction_note": "Previous engine produced identical outcomes for S2-S7 because it did not simulate through the price bars after entry \u2014 it used a simplified approximation. This engine simulates each trade through the actual OHLC bars after entry. S5/S7 use genuine structural swing levels (higher_high/lower_low from dataset). Where structural levels are unavailable, they are explicitly marked UNAVAILABLE_STRUCTURAL_STOP and not approximated as ATR multiples."
+}
