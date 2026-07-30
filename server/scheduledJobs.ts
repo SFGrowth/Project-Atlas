@@ -18,6 +18,7 @@
 
 import type { Router, Request, Response } from "express";
 import { sdk } from "./_core/sdk";
+import { isLocalCronRequest } from "./_core/localCronAuth";
 import { notifyOwner } from "./_core/notification";
 import {
   generateDailyReviewReport,
@@ -72,10 +73,12 @@ async function handleDailyReview(req: Request, res: Response): Promise<void> {
 
   try {
     // Authenticate — must be a cron callback
-    const user = await sdk.authenticateRequest(req);
-    if (!user.isCron) {
-      res.status(403).json({ error: "cron-only endpoint" });
-      return;
+    if (!isLocalCronRequest(req)) {
+      const user = await sdk.authenticateRequest(req);
+      if (!user.isCron) {
+        res.status(403).json({ error: "cron-only endpoint" });
+        return;
+      }
     }
 
     const reviewDate = getTodayEtDate();
@@ -195,10 +198,12 @@ async function handleDailyReview(req: Request, res: Response): Promise<void> {
 
 async function handleWeeklyReview(req: Request, res: Response): Promise<void> {
   try {
-    const user = await sdk.authenticateRequest(req);
-    if (!user.isCron) {
-      res.status(403).json({ error: "cron-only endpoint" });
-      return;
+    if (!isLocalCronRequest(req)) {
+      const user = await sdk.authenticateRequest(req);
+      if (!user.isCron) {
+        res.status(403).json({ error: "cron-only endpoint" });
+        return;
+      }
     }
     // TODO: implement weekly review in Sprint 089+
     console.log("[Scheduler] Weekly review triggered (not yet implemented)");
@@ -215,10 +220,12 @@ async function handleWeeklyReview(req: Request, res: Response): Promise<void> {
 async function handleMonthlyReview(req: Request, res: Response): Promise<void> {
   const startTime = Date.now();
   try {
-    const user = await sdk.authenticateRequest(req);
-    if (!user.isCron) {
-      res.status(403).json({ error: "cron-only endpoint" });
-      return;
+    if (!isLocalCronRequest(req)) {
+      const user = await sdk.authenticateRequest(req);
+      if (!user.isCron) {
+        res.status(403).json({ error: "cron-only endpoint" });
+        return;
+      }
     }
     console.log("[Scheduler] Monthly review triggered — running runMonthlyAudit()");
     await runMonthlyAudit();
@@ -235,10 +242,12 @@ async function handleMonthlyReview(req: Request, res: Response): Promise<void> {
 
 async function handleMonteCarloRefresh(req: Request, res: Response): Promise<void> {
   try {
-    const user = await sdk.authenticateRequest(req);
-    if (!user.isCron) {
-      res.status(403).json({ error: "cron-only endpoint" });
-      return;
+    if (!isLocalCronRequest(req)) {
+      const user = await sdk.authenticateRequest(req);
+      if (!user.isCron) {
+        res.status(403).json({ error: "cron-only endpoint" });
+        return;
+      }
     }
     // TODO: implement Monte Carlo refresh in Sprint 089+
     console.log("[Scheduler] Monte Carlo refresh triggered (not yet implemented)");
@@ -253,10 +262,12 @@ async function handleMonteCarloRefresh(req: Request, res: Response): Promise<voi
 async function handleTIEDiscovery(req: Request, res: Response): Promise<void> {
   const startTime = Date.now();
   try {
-    const user = await sdk.authenticateRequest(req);
-    if (!user.isCron) {
-      res.status(403).json({ error: "cron-only endpoint" });
-      return;
+    if (!isLocalCronRequest(req)) {
+      const user = await sdk.authenticateRequest(req);
+      if (!user.isCron) {
+        res.status(403).json({ error: "cron-only endpoint" });
+        return;
+      }
     }
 
     console.log("[Scheduler] TIE Autonomous Discovery starting…");
@@ -355,8 +366,10 @@ export function registerScheduledJobs(app: Router): void {
   // DARWIN Hourly Analysis — every hour during market hours
   app.post("/api/scheduled/darwin-hourly", async (req, res) => {
     try {
-      const auth = await sdk.authenticateRequest(req);
-      if (!auth.isCron) { res.status(403).json({ error: "Forbidden" }); return; }
+      if (!isLocalCronRequest(req)) {
+        const auth = await sdk.authenticateRequest(req);
+        if (!auth.isCron) { res.status(403).json({ error: "Forbidden" }); return; }
+      }
       await runHourlyAnalysis();
       res.json({ ok: true, job: "darwin-hourly", timestamp: new Date().toISOString() });
     } catch (err) {
@@ -368,8 +381,10 @@ export function registerScheduledJobs(app: Router): void {
   // DARWIN Daily Review — 4:45 PM ET (21:45 UTC) weekdays
   app.post("/api/scheduled/darwin-daily", async (req, res) => {
     try {
-      const auth = await sdk.authenticateRequest(req);
-      if (!auth.isCron) { res.status(403).json({ error: "Forbidden" }); return; }
+      if (!isLocalCronRequest(req)) {
+        const auth = await sdk.authenticateRequest(req);
+        if (!auth.isCron) { res.status(403).json({ error: "Forbidden" }); return; }
+      }
       await runDailyResearchReview();
       res.json({ ok: true, job: "darwin-daily", timestamp: new Date().toISOString() });
     } catch (err) {
@@ -381,8 +396,10 @@ export function registerScheduledJobs(app: Router): void {
   // DARWIN Weekly Briefing — Saturdays 09:00 ET (13:00 UTC)
   app.post("/api/scheduled/darwin-weekly", async (req, res) => {
     try {
-      const auth = await sdk.authenticateRequest(req);
-      if (!auth.isCron) { res.status(403).json({ error: "Forbidden" }); return; }
+      if (!isLocalCronRequest(req)) {
+        const auth = await sdk.authenticateRequest(req);
+        if (!auth.isCron) { res.status(403).json({ error: "Forbidden" }); return; }
+      }
       await runWeeklyExecutiveBriefing();
       res.json({ ok: true, job: "darwin-weekly", timestamp: new Date().toISOString() });
     } catch (err) {
@@ -394,8 +411,10 @@ export function registerScheduledJobs(app: Router): void {
   // DARWIN Monthly Audit — 1st of month 09:00 ET
   app.post("/api/scheduled/darwin-monthly", async (req, res) => {
     try {
-      const auth = await sdk.authenticateRequest(req);
-      if (!auth.isCron) { res.status(403).json({ error: "Forbidden" }); return; }
+      if (!isLocalCronRequest(req)) {
+        const auth = await sdk.authenticateRequest(req);
+        if (!auth.isCron) { res.status(403).json({ error: "Forbidden" }); return; }
+      }
       await runMonthlyAudit();
       res.json({ ok: true, job: "darwin-monthly", timestamp: new Date().toISOString() });
     } catch (err) {
@@ -409,8 +428,10 @@ export function registerScheduledJobs(app: Router): void {
   // Heartbeat Monitor — every 5 minutes during RTH (checks for webhook silence)
   app.post("/api/scheduled/atlas-heartbeat", async (req, res) => {
     try {
-      const auth = await sdk.authenticateRequest(req);
-      if (!auth.isCron) { res.status(403).json({ error: "Forbidden" }); return; }
+      if (!isLocalCronRequest(req)) {
+        const auth = await sdk.authenticateRequest(req);
+        if (!auth.isCron) { res.status(403).json({ error: "Forbidden" }); return; }
+      }
       const result = await runHeartbeatMonitor();
       res.json({ ok: true, job: "atlas-heartbeat", result, timestamp: new Date().toISOString() });
     } catch (err) {
@@ -422,8 +443,10 @@ export function registerScheduledJobs(app: Router): void {
   // Morning Brief — 08:30 ET weekdays (13:30 UTC)
   app.post("/api/scheduled/atlas-morning-brief", async (req, res) => {
     try {
-      const auth = await sdk.authenticateRequest(req);
-      if (!auth.isCron) { res.status(403).json({ error: "Forbidden" }); return; }
+      if (!isLocalCronRequest(req)) {
+        const auth = await sdk.authenticateRequest(req);
+        if (!auth.isCron) { res.status(403).json({ error: "Forbidden" }); return; }
+      }
       const result = await generateMorningBrief();
       res.json({ ok: true, job: "atlas-morning-brief", result, timestamp: new Date().toISOString() });
     } catch (err) {
@@ -435,8 +458,10 @@ export function registerScheduledJobs(app: Router): void {
   // Daily Intelligence Report — 16:15 ET weekdays (20:15 UTC)
   app.post("/api/scheduled/atlas-daily-intelligence", async (req, res) => {
     try {
-      const auth = await sdk.authenticateRequest(req);
-      if (!auth.isCron) { res.status(403).json({ error: "Forbidden" }); return; }
+      if (!isLocalCronRequest(req)) {
+        const auth = await sdk.authenticateRequest(req);
+        if (!auth.isCron) { res.status(403).json({ error: "Forbidden" }); return; }
+      }
       const result = await generateDailyIntelligenceReport();
       res.json({ ok: true, job: "atlas-daily-intelligence", result, timestamp: new Date().toISOString() });
     } catch (err) {
@@ -448,8 +473,10 @@ export function registerScheduledJobs(app: Router): void {
   // Weekly Executive Review — Sundays 18:00 ET (22:00 UTC)
   app.post("/api/scheduled/atlas-weekly-review", async (req, res) => {
     try {
-      const auth = await sdk.authenticateRequest(req);
-      if (!auth.isCron) { res.status(403).json({ error: "Forbidden" }); return; }
+      if (!isLocalCronRequest(req)) {
+        const auth = await sdk.authenticateRequest(req);
+        if (!auth.isCron) { res.status(403).json({ error: "Forbidden" }); return; }
+      }
       const result = await generateWeeklyExecutiveReview();
       res.json({ ok: true, job: "atlas-weekly-review", result, timestamp: new Date().toISOString() });
     } catch (err) {
@@ -461,8 +488,10 @@ export function registerScheduledJobs(app: Router): void {
   // Live Concordance — 16:30 ET weekdays (20:30 UTC)
   app.post("/api/scheduled/atlas-concordance", async (req, res) => {
     try {
-      const auth = await sdk.authenticateRequest(req);
-      if (!auth.isCron) { res.status(403).json({ error: "Forbidden" }); return; }
+      if (!isLocalCronRequest(req)) {
+        const auth = await sdk.authenticateRequest(req);
+        if (!auth.isCron) { res.status(403).json({ error: "Forbidden" }); return; }
+      }
       await updateLiveConcordance(7);
       await updateLiveConcordance(30);
       res.json({ ok: true, job: "atlas-concordance", timestamp: new Date().toISOString() });
@@ -476,8 +505,10 @@ export function registerScheduledJobs(app: Router): void {
   // DARWIN CRO Daily Work — 5:00 PM ET (22:00 UTC) weekdays
   app.post("/api/scheduled/darwin-cro-daily", async (req, res) => {
     try {
-      const auth = await sdk.authenticateRequest(req);
-      if (!auth.isCron) { res.status(403).json({ error: "Forbidden" }); return; }
+      if (!isLocalCronRequest(req)) {
+        const auth = await sdk.authenticateRequest(req);
+        if (!auth.isCron) { res.status(403).json({ error: "Forbidden" }); return; }
+      }
       const result = await runDailyAutonomousWork();
       res.json({ ok: true, job: "darwin-cro-daily", result, timestamp: new Date().toISOString() });
     } catch (err) {
@@ -489,8 +520,10 @@ export function registerScheduledJobs(app: Router): void {
   // DARWIN CRO Weekly Report — Sundays 20:00 ET (00:00 UTC Monday)
   app.post("/api/scheduled/darwin-cro-weekly", async (req, res) => {
     try {
-      const auth = await sdk.authenticateRequest(req);
-      if (!auth.isCron) { res.status(403).json({ error: "Forbidden" }); return; }
+      if (!isLocalCronRequest(req)) {
+        const auth = await sdk.authenticateRequest(req);
+        if (!auth.isCron) { res.status(403).json({ error: "Forbidden" }); return; }
+      }
       const reportId = await generateCroReport();
       res.json({ ok: true, job: "darwin-cro-weekly", reportId, timestamp: new Date().toISOString() });
     } catch (err) {
@@ -503,8 +536,10 @@ export function registerScheduledJobs(app: Router): void {
   // ARP-1 Weekly Self-Review — Sundays 18:00 ET (22:00 UTC)
   app.post("/api/scheduled/arp1-weekly-review", async (req, res) => {
     try {
-      const auth = await sdk.authenticateRequest(req);
-      if (!auth.isCron) { res.status(403).json({ error: "Forbidden" }); return; }
+      if (!isLocalCronRequest(req)) {
+        const auth = await sdk.authenticateRequest(req);
+        if (!auth.isCron) { res.status(403).json({ error: "Forbidden" }); return; }
+      }
       const { generateWeeklyReview } = await import("./arp1Db");
       const result = await generateWeeklyReview();
       res.json({ ok: true, job: "arp1-weekly-review", result, timestamp: new Date().toISOString() });
@@ -517,8 +552,10 @@ export function registerScheduledJobs(app: Router): void {
   // ARP-1 Daily Owner Brief — 08:00 ET weekdays (12:00 UTC)
   app.post("/api/scheduled/arp1-daily-brief", async (req, res) => {
     try {
-      const auth = await sdk.authenticateRequest(req);
-      if (!auth.isCron) { res.status(403).json({ error: "Forbidden" }); return; }
+      if (!isLocalCronRequest(req)) {
+        const auth = await sdk.authenticateRequest(req);
+        if (!auth.isCron) { res.status(403).json({ error: "Forbidden" }); return; }
+      }
       const { generateDailyBrief } = await import("./arp1Db");
       const result = await generateDailyBrief();
       res.json({ ok: true, job: "arp1-daily-brief", result, timestamp: new Date().toISOString() });
@@ -532,8 +569,10 @@ export function registerScheduledJobs(app: Router): void {
   // Weekly Gap Analysis — Sundays 18:30 ET (22:30 UTC) — runs after weekly-review
   app.post("/api/scheduled/atlas-gap-analysis", async (req, res) => {
     try {
-      const auth = await sdk.authenticateRequest(req);
-      if (!auth.isCron) { res.status(403).json({ error: "Forbidden" }); return; }
+      if (!isLocalCronRequest(req)) {
+        const auth = await sdk.authenticateRequest(req);
+        if (!auth.isCron) { res.status(403).json({ error: "Forbidden" }); return; }
+      }
       const { runGapDiscoveryEngine, persistGapReport } = await import("./gapDiscoveryEngine");
       const result = await runGapDiscoveryEngine();
       const reportId = await persistGapReport(result);
@@ -557,8 +596,10 @@ export function registerScheduledJobs(app: Router): void {
   // Daily Report — Weekdays 17:30 ET (21:30 UTC) — after RTH close + research cycle
   app.post("/api/scheduled/darwin-daily-report", async (req, res) => {
     try {
-      const auth = await sdk.authenticateRequest(req);
-      if (!auth.isCron) { res.status(403).json({ error: "Forbidden" }); return; }
+      if (!isLocalCronRequest(req)) {
+        const auth = await sdk.authenticateRequest(req);
+        if (!auth.isCron) { res.status(403).json({ error: "Forbidden" }); return; }
+      }
       const { generateDarwinDailyReport, updateReportGithubStatus } = await import("./darwinDailyReport");
       const { archiveReportToGitHub, ensureResearchDirectoryExists } = await import("./darwinGitArchive");
       // Ensure research/daily/ directory exists in GitHub

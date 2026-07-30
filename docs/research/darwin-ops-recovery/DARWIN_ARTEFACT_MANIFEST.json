@@ -1,0 +1,37 @@
+{
+  "artefact": "DARWIN_ARTEFACT_MANIFEST",
+  "sprint": "DARWIN-OPS-RECOVERY",
+  "branch": "sprint/darwin-operational-recovery-end-to-end",
+  "created_at": "2026-07-30T02:46:00Z",
+  "description": "Complete manifest of all evidence artefacts produced in the DARWIN Operational Recovery sprint.",
+  "artefacts": [
+    {"filename": "DARWIN_OPERATIONAL_RECOVERY_DIAGNOSIS.md", "type": "markdown", "status": "COMPLETE"},
+    {"filename": "DARWIN_LIVE_PERSISTENCE_EVIDENCE.json", "type": "json", "status": "COMPLETE"},
+    {"filename": "DARWIN_LIVE_OBSERVATION_EVIDENCE.json", "type": "json", "status": "COMPLETE"},
+    {"filename": "DARWIN_AUTONOMOUS_JOB_EVIDENCE.json", "type": "json", "status": "COMPLETE"},
+    {"filename": "DARWIN_RESEARCH_RESULT_EVIDENCE.json", "type": "json", "status": "COMPLETE"},
+    {"filename": "DARWIN_NOTIFICATION_EVIDENCE.json", "type": "json", "status": "COMPLETE"},
+    {"filename": "DARWIN_DASHBOARD_EVIDENCE.md", "type": "markdown", "status": "COMPLETE"},
+    {"filename": "DARWIN_OPERATIONAL_SOAK_TEST_REPORT.md", "type": "markdown", "status": "COMPLETE"},
+    {"filename": "DARWIN_RESTART_RECOVERY_REPORT.md", "type": "markdown", "status": "COMPLETE"},
+    {"filename": "DARWIN_CRON_INSTALLATION_EVIDENCE.json", "type": "json", "status": "COMPLETE"},
+    {"filename": "DARWIN_LOCAL_CRON_BYPASS_EVIDENCE.json", "type": "json", "status": "COMPLETE"},
+    {"filename": "DARWIN_COMPLETION_REPORT.md", "type": "markdown", "status": "COMPLETE"},
+    {"filename": "DARWIN_ARTEFACT_MANIFEST.json", "type": "json", "status": "COMPLETE"}
+  ],
+  "total_artefacts": 13,
+  "test_file": {
+    "filename": "server/sprint-darwin-ops-recovery-gate-g16.test.ts",
+    "status": "COMPLETE"
+  },
+  "summary": {
+    "sprint_status": "COMPLETE",
+    "merge_status": "AWAITING_PHILS_WRITTEN_APPROVAL",
+    "darwin_loop_status": "OPERATIONAL",
+    "authority_flags": {
+      "DARWIN_DECISION_AUTHORITY": "DISABLED",
+      "DARWIN_EXECUTION_AUTHORITY": "DISABLED",
+      "LIVE_TRADES_INITIATED": 0
+    }
+  }
+}

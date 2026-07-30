@@ -1,0 +1,24 @@
+{
+  "artefact": "DARWIN_LOCAL_CRON_BYPASS_EVIDENCE",
+  "sprint": "DARWIN-OPS-RECOVERY",
+  "captured_at": "2026-07-30T02:41:00Z",
+  "bypass_tests": [
+    {"endpoint": "/api/scheduled/atlas-heartbeat", "http_status": 200, "result": "PASS"},
+    {"endpoint": "/api/scheduled/darwin-hourly", "http_status": 200, "result": "PASS"},
+    {"endpoint": "/api/scheduled/darwin-daily", "http_status": 200, "result": "PASS"},
+    {"endpoint": "/api/scheduled/darwin-daily-report", "http_status": 200, "result": "PASS"},
+    {"endpoint": "/api/scheduled/darwin-weekly", "http_status": 200, "result": "PASS"},
+    {"endpoint": "/api/scheduled/darwin-cro-daily", "http_status": 200, "result": "PASS"}
+  ],
+  "rejection_tests": [
+    {"endpoint": "/api/scheduled/darwin-hourly", "header": "none", "http_status": 500, "result": "CORRECTLY_REJECTED"},
+    {"endpoint": "/api/scheduled/darwin-hourly", "header": "X-Local-Cron-Secret: wrongsecret", "http_status": 500, "result": "CORRECTLY_REJECTED"}
+  ],
+  "summary": {
+    "endpoints_tested": 6,
+    "endpoints_passing": 6,
+    "rejection_tests": 2,
+    "rejection_tests_passing": 2,
+    "overall": "ALL_PASS"
+  }
+}
