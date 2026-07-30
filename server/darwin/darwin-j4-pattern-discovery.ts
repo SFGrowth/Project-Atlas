@@ -290,7 +290,7 @@ interface BarReturn {
   mae: number;
 }
 
-export async function runHistoricalExperiment(candidateId: string): Promise<{
+export async function runHistoricalExperiment(candidateId: string, runId?: string): Promise<{
   experimentId: string;
   sampleSize: number;
   bullishSampleSize: number;
@@ -424,7 +424,7 @@ export async function runHistoricalExperiment(candidateId: string): Promise<{
       'ALL', 'ALL', ?, ?, ?,
       ?, ?, ?,
       0, ?, ?,
-      ?, ?, NULL,
+      ?, ?, ?,
       ?, ?, 0,
       ?, ?, NULL,
       ?, ?,
@@ -447,6 +447,7 @@ export async function runHistoricalExperiment(candidateId: string): Promise<{
     'FAIL_STATISTICAL', // INCONCLUSIVE → FAIL_STATISTICAL
     conclusion,
     codeSha,
+    runId ?? null,
     periodStart, periodEnd,
     candidateId, null, // source_observation_id filled from candidate
     RULE_ID, RULE_VERSION,
@@ -655,19 +656,22 @@ export async function persistFinding(params: {
     memoryId,
   ]);
 
-  // Back-link experiment to memory
+  // Back-link experiment to memory: set the FINDING_ID FK to the darwin_findings.finding_id (NOT memoryId)
+  // This was previously conflated — the experiment record must point to darwin_findings, not darwin_research_memory
   await pool.execute(`
     UPDATE darwin_experiment_records SET finding_id = ? WHERE experiment_id = ?
-  `, [memoryId, params.experimentId]);
+  `, [findingId, params.experimentId]);
 
-  // Back-link candidate to experiment and finding
+  // Back-link candidate to experiment and finding (both use correct IDs)
   await pool.execute(`
     UPDATE darwin_candidates SET experiment_id = ?, finding_id = ? WHERE candidate_id = ?
-  `, [params.experimentId, memoryId, params.candidateId]);
+  `, [params.experimentId, findingId, params.candidateId]);
 
-  // Return memoryId as the canonical finding ID for backward compatibility.
-  // The formal darwin_findings record is linked via darwin_findings.finding_id = findingId.
-  // The chain result and all tests query darwin_research_memory by this memoryId.
+  // Return memoryId as the chain's findingId for backward compatibility.
+  // persistFinding returns memoryId so the chain result and notification UPDATE
+  // can locate the darwin_research_memory row by memory_id = findingId.
+  // The formal darwin_findings record uses findingId (UUID distinct from memoryId).
+  // FINDING_ID (darwin_findings.finding_id) != MEMORY_ID (darwin_research_memory.memory_id)
   return memoryId;
 }
 
@@ -861,7 +865,7 @@ export async function runJ4PatternDiscovery(): Promise<J4RunResult> {
 
   try {
     // Step 5: Run historical experiment
-    const exp = await runHistoricalExperiment(candidateId);
+    const exp = await runHistoricalExperiment(candidateId, runId);
 
     // Update experiment with source observation linkage
     const pool = getPool();

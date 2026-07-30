@@ -503,6 +503,65 @@ describe('G17-DASHBOARD: Chain trace endpoint returns live data', () => {
   });
 });
 
+// ─── G17-FINDING-ID: FINDING_ID and MEMORY_ID are distinct identifiers ─────────
+describe('G17-FINDING-ID: FINDING_ID and MEMORY_ID are distinct identifiers', () => {
+  it('G17-FINDING-ID-01: darwin_findings table has at least one row', async () => {
+    const [rows] = await staging.execute<mysql.RowDataPacket[]>(
+      `SELECT COUNT(*) as cnt FROM darwin_findings`
+    );
+    expect(Number(rows[0].cnt)).toBeGreaterThan(0);
+  });
+
+  it('G17-FINDING-ID-02: darwin_findings.finding_id is distinct from darwin_research_memory.memory_id', async () => {
+    const [rows] = await staging.execute<mysql.RowDataPacket[]>(`
+      SELECT df.finding_id, drm.memory_id
+      FROM darwin_findings df
+      JOIN darwin_research_memory drm ON drm.finding_id = df.finding_id
+      ORDER BY df.created_at DESC LIMIT 1
+    `);
+    expect(rows.length).toBeGreaterThan(0);
+    expect(rows[0].finding_id).not.toBe(rows[0].memory_id);
+    expect(rows[0].finding_id).toBeTruthy();
+    expect(rows[0].memory_id).toBeTruthy();
+  });
+
+  it('G17-FINDING-ID-03: darwin_findings.result_id FK points to a valid experiment_id', async () => {
+    const [rows] = await staging.execute<mysql.RowDataPacket[]>(`
+      SELECT df.finding_id, df.result_id, der.experiment_id
+      FROM darwin_findings df
+      JOIN darwin_experiment_records der ON der.experiment_id = df.result_id
+      ORDER BY df.created_at DESC LIMIT 1
+    `);
+    expect(rows.length).toBeGreaterThan(0);
+    expect(rows[0].result_id).toBe(rows[0].experiment_id);
+  });
+
+  it('G17-FINDING-ID-04: darwin_research_memory.finding_id FK points to darwin_findings (not to itself)', async () => {
+    const [rows] = await staging.execute<mysql.RowDataPacket[]>(`
+      SELECT drm.memory_id, drm.finding_id, df.finding_id as df_finding_id
+      FROM darwin_research_memory drm
+      JOIN darwin_findings df ON df.finding_id = drm.finding_id
+      WHERE drm.rule_id = 'RULE-J4-001'
+      ORDER BY drm.created_at DESC LIMIT 1
+    `);
+    expect(rows.length).toBeGreaterThan(0);
+    expect(rows[0].finding_id).toBe(rows[0].df_finding_id);
+    expect(rows[0].finding_id).not.toBe(rows[0].memory_id);
+  });
+
+  it('G17-FINDING-ID-05: chain-trace returns FINDING_MEMORY_IDS_DISTINCT=true', async () => {
+    const SECRET = process.env.LOCAL_CRON_SECRET ?? 'ab546d70253b6862009bb68dac6cf76454ec412e02';
+    const res = await fetch('http://localhost:3000/api/darwin/chain-trace', {
+      headers: { 'X-Local-Cron-Secret': SECRET },
+    });
+    const body = await res.json() as { chain: { FINDING_ID: string; MEMORY_ID: string; FINDING_MEMORY_IDS_DISTINCT: boolean } };
+    expect(body.chain.FINDING_ID).toBeTruthy();
+    expect(body.chain.MEMORY_ID).toBeTruthy();
+    expect(body.chain.FINDING_ID).not.toBe(body.chain.MEMORY_ID);
+    expect(body.chain.FINDING_MEMORY_IDS_DISTINCT).toBe(true);
+  });
+});
+
 // ─── G17-AUTHORITY: Authority counters remain zero ───────────────────────────
 describe('G17-AUTHORITY: Authority counters remain zero', () => {
   it('G17-AUTH-01: processBar was never called by J4', async () => {

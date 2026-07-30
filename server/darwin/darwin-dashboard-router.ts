@@ -311,6 +311,23 @@ router.get('/chain-trace', async (req, res) => {
       }
     }
 
+    // Get the formal darwin_findings record for this candidate (FINDING_ID is always distinct from MEMORY_ID)
+    let formalFinding = null;
+    if (experiment?.experiment_id) {
+      const [ffs] = await pool.execute<mysql.RowDataPacket[]>(
+        `SELECT finding_id, result_id, candidate_id, classification, raw_p_value, adjusted_p_value, bh_fdr_significant, created_at FROM darwin_findings WHERE result_id = ? ORDER BY created_at DESC LIMIT 1`,
+        [experiment.experiment_id]
+      );
+      formalFinding = ffs[0] ?? null;
+    }
+    if (!formalFinding && candidateId) {
+      const [ffs] = await pool.execute<mysql.RowDataPacket[]>(
+        `SELECT finding_id, result_id, candidate_id, classification, raw_p_value, adjusted_p_value, bh_fdr_significant, created_at FROM darwin_findings WHERE candidate_id = ? ORDER BY created_at DESC LIMIT 1`,
+        [candidateId]
+      );
+      formalFinding = ffs[0] ?? null;
+    }
+
     // Get notification
     const notificationId = finding?.notification_id ?? null;
     let notification = null;
@@ -351,8 +368,10 @@ router.get('/chain-trace', async (req, res) => {
         HYPOTHESIS_ID: candidateId,
         JOB_ID: job.run_id,
         RESULT_ID: experiment?.experiment_id ?? null,
-        FINDING_ID: finding?.finding_id ?? finding?.memory_id ?? null,
+        // FINDING_ID comes from darwin_findings table (always distinct from MEMORY_ID)
+        FINDING_ID: formalFinding?.finding_id ?? finding?.finding_id ?? null,
         MEMORY_ID: finding?.memory_id ?? null,
+        FINDING_MEMORY_IDS_DISTINCT: !!(formalFinding?.finding_id && finding?.memory_id && formalFinding.finding_id !== finding.memory_id),
         NOTIFICATION_ID: notificationId,
         TELEGRAM_MESSAGE_ID: finding?.telegram_message_id ?? null,
         DAILY_REPORT_PATH: finding?.daily_report_path ?? null,
