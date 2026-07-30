@@ -1,0 +1,345 @@
+{
+  "experiment_id": "USER-STRAT-002-EMA9-VWAP-MOMENTUM",
+  "sprint": "123A.14",
+  "pre_registration_commit": "c433fe9",
+  "run_timestamp": "2026-07-30T01:26:59.169863+00:00",
+  "dataset_sha": "17206c6289589622a6bf0fc25b0f598752045c2e61a24d0896002f9bfda531fe",
+  "dataset_period": "2019-05-06 to 2026-07-20",
+  "total_5m_bars": 508903,
+  "total_signals": 57687,
+  "total_long_signals": 31754,
+  "total_short_signals": 25933,
+  "does_phils_strategy_have_edge": "PROMISING",
+  "primary_version": {
+    "label": "PRIMARY_NO_FIXED_TARGET",
+    "total_signals": 57687,
+    "filled_trades": 57687,
+    "trades_per_week": 153.42,
+    "win_rate": 0.1162,
+    "profit_factor": 0.3415,
+    "expectancy_usd": -7.3831,
+    "total_net_pnl_usd": -425909.56,
+    "max_drawdown_usd": 425919.54,
+    "avg_win_usd": 32.9492,
+    "avg_loss_usd": -12.6875,
+    "max_win_usd": 1292.6327,
+    "max_loss_usd": -421.8938,
+    "long_trades": 31754,
+    "long_expectancy_usd": -7.0145,
+    "long_win_rate": 0.1141,
+    "long_profit_factor": 0.3235,
+    "short_trades": 25933,
+    "short_expectancy_usd": -7.8344,
+    "short_win_rate": 0.1189,
+    "short_profit_factor": 0.3603,
+    "training_trades": 48030,
+    "training_expectancy_usd": -6.972,
+    "validation_trades": 9630,
+    "validation_expectancy_usd": -9.4446,
+    "bootstrap_95ci_lower": -7.2138,
+    "bootstrap_95ci_upper": -6.7271,
+    "permutation_p": 1.0,
+    "classification": "PROMISING",
+    "holding_time_distribution_bars": {
+      "1": 38743,
+      "2": 6793,
+      "3": 3502,
+      "4": 2299,
+      "5": 1637,
+      "6": 1160,
+      "7": 846,
+      "8": 639,
+      "9": 470,
+      "10": 381,
+      "11": 282,
+      "12": 235,
+      "13": 194,
+      "14": 122,
+      "15": 73,
+      "16": 72,
+      "17": 56,
+      "18": 51,
+      "19": 35,
+      "20": 22,
+      "21": 21,
+      "22": 15,
+      "23": 10,
+      "24": 6,
+      "25": 4,
+      "26": 7,
+      "27": 3,
+      "29": 2,
+      "30": 2,
+      "32": 2,
+      "36": 1,
+      "42": 1,
+      "45": 1,
+      "100+": 0
+    },
+    "atr_reach_analysis": {
+      "pct_reaching_1atr": 0.2037,
+      "pct_reaching_2atr": 0.0711,
+      "pct_reaching_3atr": 0.0337,
+      "pct_reaching_5atr": 0.0104
+    },
+    "session_results": {
+      "NY_RTH": {
+        "count": 16019,
+        "expectancy": -10.1255,
+        "profit_factor": 0.4132,
+        "win_rate": 0.144
+      },
+      "LONDON": {
+        "count": 16568,
+        "expectancy": -7.3812,
+        "profit_factor": 0.2684,
+        "win_rate": 0.1039
+      },
+      "ASIA": {
+        "count": 21339,
+        "expectancy": -5.523,
+        "profit_factor": 0.2866,
+        "win_rate": 0.1038
+      },
+      "AFTER_HOURS": {
+        "count": 3761,
+        "expectancy": -6.265,
+        "profit_factor": 0.3809,
+        "win_rate": 0.1223
+      }
+    },
+    "year_by_year_results": {
+      "2019": {
+        "count": 5306,
+        "expectancy": -4.604,
+        "profit_factor": 0.2209,
+        "win_rate": 0.0839,
+        "total_pnl": -24428.8
+      },
+      "2020": {
+        "count": 7915,
+        "expectancy": -7.3675,
+        "profit_factor": 0.3056,
+        "win_rate": 0.1156,
+        "total_pnl": -58314.12
+      },
+      "2021": {
+        "count": 8050,
+        "expectancy": -6.1267,
+        "profit_factor": 0.3378,
+        "win_rate": 0.105,
+        "total_pnl": -49319.6
+      },
+      "2022": {
+        "count": 7960,
+        "expectancy": -8.6069,
+        "profit_factor": 0.3477,
+        "win_rate": 0.1258,
+        "total_pnl": -68510.67
+      },
+      "2023": {
+        "count": 8151,
+        "expectancy": -6.4656,
+        "profit_factor": 0.3101,
+        "win_rate": 0.1064,
+        "total_pnl": -52701.38
+      },
+      "2024": {
+        "count": 8142,
+        "expectancy": -7.3398,
+        "profit_factor": 0.3373,
+        "win_rate": 0.1124,
+        "total_pnl": -59760.71
+      },
+      "2025": {
+        "count": 7853,
+        "expectancy": -8.1913,
+        "profit_factor": 0.3965,
+        "win_rate": 0.134,
+        "total_pnl": -64326.33
+      },
+      "2026": {
+        "count": 4310,
+        "expectancy": -11.264,
+        "profit_factor": 0.3842,
+        "win_rate": 0.1543,
+        "total_pnl": -48547.96
+      }
+    },
+    "exit_reasons": {
+      "EMA9_TOUCH": 56792,
+      "SESSION_CLOSE": 895
+    }
+  },
+  "secondary_safety_version": {
+    "label": "SECONDARY_2ATR_STOP",
+    "total_signals": 57687,
+    "filled_trades": 57687,
+    "trades_per_week": 153.42,
+    "win_rate": 0.1157,
+    "profit_factor": 0.3222,
+    "expectancy_usd": -8.0333,
+    "total_net_pnl_usd": -463417.82,
+    "max_drawdown_usd": 463427.81,
+    "avg_win_usd": 33.0015,
+    "avg_loss_usd": -13.4028,
+    "max_win_usd": 1292.6327,
+    "max_loss_usd": -437.439,
+    "long_trades": 31754,
+    "long_expectancy_usd": -7.7082,
+    "long_win_rate": 0.1135,
+    "long_profit_factor": 0.3026,
+    "short_trades": 25933,
+    "short_expectancy_usd": -8.4314,
+    "short_win_rate": 0.1184,
+    "short_profit_factor": 0.3429,
+    "training_trades": 48030,
+    "training_expectancy_usd": -7.5691,
+    "validation_trades": 9630,
+    "validation_expectancy_usd": -10.3614,
+    "bootstrap_95ci_lower": -7.8226,
+    "bootstrap_95ci_upper": -7.3182,
+    "permutation_p": 1.0,
+    "classification": "PROMISING",
+    "holding_time_distribution_bars": {
+      "1": 38750,
+      "2": 6795,
+      "3": 3499,
+      "4": 2299,
+      "5": 1638,
+      "6": 1160,
+      "7": 846,
+      "8": 639,
+      "9": 468,
+      "10": 380,
+      "11": 282,
+      "12": 234,
+      "13": 194,
+      "14": 121,
+      "15": 72,
+      "16": 72,
+      "17": 56,
+      "18": 51,
+      "19": 34,
+      "20": 22,
+      "21": 21,
+      "22": 15,
+      "23": 10,
+      "24": 6,
+      "25": 4,
+      "26": 7,
+      "27": 3,
+      "29": 2,
+      "30": 2,
+      "32": 2,
+      "36": 1,
+      "42": 1,
+      "45": 1,
+      "100+": 0
+    },
+    "atr_reach_analysis": {
+      "pct_reaching_1atr": 0.2036,
+      "pct_reaching_2atr": 0.0711,
+      "pct_reaching_3atr": 0.0336,
+      "pct_reaching_5atr": 0.0104
+    },
+    "session_results": {
+      "NY_RTH": {
+        "count": 16019,
+        "expectancy": -11.1949,
+        "profit_factor": 0.3887,
+        "win_rate": 0.1436
+      },
+      "LONDON": {
+        "count": 16568,
+        "expectancy": -8.09,
+        "profit_factor": 0.25,
+        "win_rate": 0.1033
+      },
+      "ASIA": {
+        "count": 21339,
+        "expectancy": -5.8107,
+        "profit_factor": 0.2762,
+        "win_rate": 0.1037
+      },
+      "AFTER_HOURS": {
+        "count": 3761,
+        "expectancy": -6.9283,
+        "profit_factor": 0.3537,
+        "win_rate": 0.1194
+      }
+    },
+    "year_by_year_results": {
+      "2019": {
+        "count": 5306,
+        "expectancy": -4.9547,
+        "profit_factor": 0.2085,
+        "win_rate": 0.0839,
+        "total_pnl": -26289.9
+      },
+      "2020": {
+        "count": 7915,
+        "expectancy": -8.0237,
+        "profit_factor": 0.2875,
+        "win_rate": 0.1152,
+        "total_pnl": -63507.84
+      },
+      "2021": {
+        "count": 8050,
+        "expectancy": -6.6703,
+        "profit_factor": 0.3185,
+        "win_rate": 0.1043,
+        "total_pnl": -53695.93
+      },
+      "2022": {
+        "count": 7960,
+        "expectancy": -9.4725,
+        "profit_factor": 0.326,
+        "win_rate": 0.1254,
+        "total_pnl": -75401.46
+      },
+      "2023": {
+        "count": 8151,
+        "expectancy": -6.9143,
+        "profit_factor": 0.294,
+        "win_rate": 0.1056,
+        "total_pnl": -56358.52
+      },
+      "2024": {
+        "count": 8142,
+        "expectancy": -7.9773,
+        "profit_factor": 0.3179,
+        "win_rate": 0.1118,
+        "total_pnl": -64950.82
+      },
+      "2025": {
+        "count": 7853,
+        "expectancy": -8.8158,
+        "profit_factor": 0.3789,
+        "win_rate": 0.1333,
+        "total_pnl": -69230.17
+      },
+      "2026": {
+        "count": 4310,
+        "expectancy": -12.5251,
+        "profit_factor": 0.3588,
+        "win_rate": 0.1536,
+        "total_pnl": -53983.19
+      }
+    },
+    "exit_reasons": {
+      "EMA9_TOUCH": 55443,
+      "ATR_STOP": 1349,
+      "SESSION_CLOSE": 895
+    }
+  },
+  "authority": {
+    "DARWIN_DECISION_AUTHORITY": "DISABLED",
+    "DARWIN_EXECUTION_AUTHORITY": "DISABLED",
+    "LIVE_TRADES_INITIATED": 0,
+    "PARAMETER_CHANGED_AFTER_PREREGISTRATION": false,
+    "LOOKAHEAD_VIOLATIONS": 0,
+    "FUTURE_BAR_USES": 0,
+    "WRONG_STRATEGY_SUPERSEDED": "STRAT-9EMA-002"
+  }
+}

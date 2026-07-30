@@ -522,3 +522,226 @@ describe("G14-M: Artefact Manifests", () => {
     }
   });
 });
+
+// ─── Suite N: STRAT-9EMA-002 SUPERSEDED Notice ───────────────────────────────
+const STRAT_002_CORRECT_DIR = path.join(REPO_ROOT, "docs/research/strategies/9ema-vwap-momentum");
+
+describe("G14-N: STRAT-9EMA-002 SUPERSEDED and Correct Strategy Pre-Registration", () => {
+  it("G14-N01: STRAT-9EMA-002 is marked SUPERSEDED", () => {
+    expect(fileExists(path.join(STRAT_002_DIR, "SUPERSEDED_NOTICE.md"))).toBe(true);
+    const notice = fs.readFileSync(path.join(STRAT_002_DIR, "SUPERSEDED_NOTICE.md"), "utf-8");
+    expect(notice).toContain("SUPERSEDED_WRONG_STRATEGY_IMPLEMENTATION");
+  });
+
+  it("G14-N02: correct USER-STRAT-002 contract exists", () => {
+    expect(fileExists(path.join(STRAT_002_CORRECT_DIR, "USER_STRAT_002_EMA9_VWAP_MOMENTUM_CONTRACT.md"))).toBe(true);
+  });
+
+  it("G14-N03: correct USER-STRAT-002 configuration exists", () => {
+    expect(fileExists(path.join(STRAT_002_CORRECT_DIR, "USER_STRAT_002_EMA9_VWAP_MOMENTUM_CONFIGURATION.json"))).toBe(true);
+  });
+
+  it("G14-N04: correct config has experiment_id USER-STRAT-002-EMA9-VWAP-MOMENTUM", () => {
+    const cfg = loadJson(path.join(STRAT_002_CORRECT_DIR, "USER_STRAT_002_EMA9_VWAP_MOMENTUM_CONFIGURATION.json"));
+    expect(cfg.experiment_id).toBe("USER-STRAT-002-EMA9-VWAP-MOMENTUM");
+    expect(cfg.sprint).toBe("123A.14");
+  });
+
+  it("G14-N05: correct config has no EMA21, EMA50, ADX, fixed_target", () => {
+    const cfg = loadJson(path.join(STRAT_002_CORRECT_DIR, "USER_STRAT_002_EMA9_VWAP_MOMENTUM_CONFIGURATION.json"));
+    expect(cfg.strategy.ema21_used).toBe(false);
+    expect(cfg.strategy.ema50_used).toBe(false);
+    expect(cfg.strategy.adx_used).toBe(false);
+    expect(cfg.strategy.fixed_target).toBe(false);
+  });
+
+  it("G14-N06: correct config has 5m timeframe and full CME session", () => {
+    const cfg = loadJson(path.join(STRAT_002_CORRECT_DIR, "USER_STRAT_002_EMA9_VWAP_MOMENTUM_CONFIGURATION.json"));
+    expect(cfg.strategy.timeframe_minutes).toBe(5);
+    expect(cfg.strategy.session_filter).toBe("FULL_CME_SESSION");
+  });
+
+  it("G14-N07: correct config has pre_registration_date set", () => {
+    const cfg = loadJson(path.join(STRAT_002_CORRECT_DIR, "USER_STRAT_002_EMA9_VWAP_MOMENTUM_CONFIGURATION.json"));
+    expect(cfg.pre_registration_date).toBeTruthy();
+  });
+});
+
+// ─── Suite O: USER-STRAT-002 Results Existence ───────────────────────────────
+describe("G14-O: USER-STRAT-002-EMA9-VWAP-MOMENTUM Results Existence", () => {
+  it("G14-O01: primary results JSON exists", () => {
+    expect(fileExists(path.join(STRAT_002_CORRECT_DIR, "USER_STRAT_002_EMA9_VWAP_MOMENTUM_PRIMARY_RESULTS.json"))).toBe(true);
+  });
+
+  it("G14-O02: primary trade ledger exists", () => {
+    expect(fileExists(path.join(STRAT_002_CORRECT_DIR, "USER_STRAT_002_EMA9_VWAP_MOMENTUM_TRADE_LEDGER_PRIMARY.json"))).toBe(true);
+  });
+
+  it("G14-O03: safety trade ledger exists", () => {
+    expect(fileExists(path.join(STRAT_002_CORRECT_DIR, "USER_STRAT_002_EMA9_VWAP_MOMENTUM_TRADE_LEDGER_SAFETY.json"))).toBe(true);
+  });
+
+  it("G14-O04: artefact manifest exists", () => {
+    expect(fileExists(path.join(STRAT_002_CORRECT_DIR, "USER_STRAT_002_EMA9_VWAP_MOMENTUM_ARTEFACT_MANIFEST.json"))).toBe(true);
+  });
+
+  it("G14-O05: simulation engine exists", () => {
+    expect(fileExists(path.join(STRAT_002_CORRECT_DIR, "user_strat_002_ema9_vwap_momentum_engine.py"))).toBe(true);
+  });
+});
+
+// ─── Suite P: USER-STRAT-002 Identity and Authority ──────────────────────────
+describe("G14-P: USER-STRAT-002 Identity and Authority", () => {
+  let r: any;
+  try { r = loadJson(path.join(STRAT_002_CORRECT_DIR, "USER_STRAT_002_EMA9_VWAP_MOMENTUM_PRIMARY_RESULTS.json")); } catch { r = {}; }
+
+  it("G14-P01: experiment_id is USER-STRAT-002-EMA9-VWAP-MOMENTUM", () => {
+    expect(r.experiment_id).toBe("USER-STRAT-002-EMA9-VWAP-MOMENTUM");
+  });
+
+  it("G14-P02: pre_registration_commit is c433fe9", () => {
+    expect(r.pre_registration_commit).toBe("c433fe9");
+  });
+
+  it("G14-P03: dataset_sha matches expected", () => {
+    expect(r.dataset_sha).toBe("17206c6289589622a6bf0fc25b0f598752045c2e61a24d0896002f9bfda531fe");
+  });
+
+  it("G14-P04: WRONG_STRATEGY_SUPERSEDED is STRAT-9EMA-002", () => {
+    expect(r.authority?.WRONG_STRATEGY_SUPERSEDED).toBe("STRAT-9EMA-002");
+  });
+
+  it("G14-P05: DARWIN_DECISION_AUTHORITY is DISABLED", () => {
+    expect(r.authority?.DARWIN_DECISION_AUTHORITY).toBe("DISABLED");
+  });
+
+  it("G14-P06: DARWIN_EXECUTION_AUTHORITY is DISABLED", () => {
+    expect(r.authority?.DARWIN_EXECUTION_AUTHORITY).toBe("DISABLED");
+  });
+
+  it("G14-P07: LIVE_TRADES_INITIATED is 0", () => {
+    expect(r.authority?.LIVE_TRADES_INITIATED).toBe(0);
+  });
+
+  it("G14-P08: PARAMETER_CHANGED_AFTER_PREREGISTRATION is false", () => {
+    expect(r.authority?.PARAMETER_CHANGED_AFTER_PREREGISTRATION).toBe(false);
+  });
+
+  it("G14-P09: LOOKAHEAD_VIOLATIONS is 0", () => {
+    expect(r.authority?.LOOKAHEAD_VIOLATIONS).toBe(0);
+  });
+
+  it("G14-P10: FUTURE_BAR_USES is 0", () => {
+    expect(r.authority?.FUTURE_BAR_USES).toBe(0);
+  });
+});
+
+// ─── Suite Q: USER-STRAT-002 Strategy Correctness ────────────────────────────
+describe("G14-Q: USER-STRAT-002 Strategy Correctness", () => {
+  let r: any;
+  try { r = loadJson(path.join(STRAT_002_CORRECT_DIR, "USER_STRAT_002_EMA9_VWAP_MOMENTUM_PRIMARY_RESULTS.json")); } catch { r = {}; }
+
+  it("G14-Q01: total_signals >= 50000 (full CME session, 7 years)", () => {
+    expect(r.total_signals).toBeGreaterThanOrEqual(50000);
+  });
+
+  it("G14-Q02: filled_trades equals total_signals", () => {
+    expect(r.primary_version?.filled_trades).toBe(r.total_signals);
+  });
+
+  it("G14-Q03: trades_per_week > 50", () => {
+    expect(r.primary_version?.trades_per_week).toBeGreaterThan(50);
+  });
+
+  it("G14-Q04: primary version has no ATR_STOP exit reason", () => {
+    const exits = r.primary_version?.exit_reasons || {};
+    expect(exits.ATR_STOP).toBeUndefined();
+  });
+
+  it("G14-Q05: EMA9_TOUCH is >= 90% of exits in primary version", () => {
+    const exits = r.primary_version?.exit_reasons || {};
+    const total = r.primary_version?.filled_trades || 1;
+    const ema9Count = exits.EMA9_TOUCH || 0;
+    expect(ema9Count / total).toBeGreaterThanOrEqual(0.90);
+  });
+
+  it("G14-Q06: long_trades + short_trades = filled_trades", () => {
+    const pv = r.primary_version || {};
+    expect((pv.long_trades || 0) + (pv.short_trades || 0)).toBe(pv.filled_trades);
+  });
+
+  it("G14-Q07: ATR reach is monotonically decreasing", () => {
+    const atr = r.primary_version?.atr_reach_analysis || {};
+    expect(atr.pct_reaching_1atr).toBeGreaterThanOrEqual(atr.pct_reaching_2atr);
+    expect(atr.pct_reaching_2atr).toBeGreaterThanOrEqual(atr.pct_reaching_3atr);
+    expect(atr.pct_reaching_3atr).toBeGreaterThanOrEqual(atr.pct_reaching_5atr);
+  });
+
+  it("G14-Q08: session_results has all 4 sessions", () => {
+    const sess = r.primary_version?.session_results || {};
+    expect(sess).toHaveProperty("NY_RTH");
+    expect(sess).toHaveProperty("LONDON");
+    expect(sess).toHaveProperty("ASIA");
+    expect(sess).toHaveProperty("AFTER_HOURS");
+  });
+
+  it("G14-Q09: session trade counts sum to filled_trades", () => {
+    const sess = r.primary_version?.session_results || {};
+    const total = Object.values(sess).reduce((s: number, v: any) => s + (v.count || 0), 0);
+    expect(total).toBe(r.primary_version?.filled_trades);
+  });
+
+  it("G14-Q10: year_by_year_results has 2019 through 2026", () => {
+    const yrs = r.primary_version?.year_by_year_results || {};
+    for (const yr of ["2019", "2020", "2021", "2022", "2023", "2024", "2025", "2026"]) {
+      expect(yrs).toHaveProperty(yr);
+    }
+  });
+});
+
+// ─── Suite R: USER-STRAT-002 Final Answer and Secondary Version ───────────────
+describe("G14-R: USER-STRAT-002 Final Answer and Secondary Version", () => {
+  let r: any;
+  try { r = loadJson(path.join(STRAT_002_CORRECT_DIR, "USER_STRAT_002_EMA9_VWAP_MOMENTUM_PRIMARY_RESULTS.json")); } catch { r = {}; }
+
+  it("G14-R01: does_phils_strategy_have_edge is YES, PROMISING, or NO", () => {
+    expect(["YES", "PROMISING", "NO"]).toContain(r.does_phils_strategy_have_edge);
+  });
+
+  it("G14-R02: classification is consistent with does_phils_strategy_have_edge", () => {
+    const cls = r.primary_version?.classification;
+    const edge = r.does_phils_strategy_have_edge;
+    if (cls === "SUPPORTED") expect(edge).toBe("YES");
+    if (cls === "NOT_SUPPORTED") expect(edge).toBe("NO");
+    if (cls === "PROMISING") expect(edge).toBe("PROMISING");
+  });
+
+  it("G14-R03: secondary safety version has same filled_trades as primary", () => {
+    expect(r.secondary_safety_version?.filled_trades).toBe(r.primary_version?.filled_trades);
+  });
+
+  it("G14-R04: secondary version classification is valid", () => {
+    const valid = ["SUPPORTED", "PROMISING", "NOT_SUPPORTED", "INSUFFICIENT_SAMPLE"];
+    expect(valid).toContain(r.secondary_safety_version?.classification);
+  });
+
+  it("G14-R05: artefact manifest lists >= 4 artefacts", () => {
+    const m = loadJson(path.join(STRAT_002_CORRECT_DIR, "USER_STRAT_002_EMA9_VWAP_MOMENTUM_ARTEFACT_MANIFEST.json"));
+    expect(m.artefacts.length).toBeGreaterThanOrEqual(4);
+  });
+
+  it("G14-R06: bootstrap_95ci_lower < bootstrap_95ci_upper", () => {
+    const pv = r.primary_version || {};
+    expect(pv.bootstrap_95ci_lower).toBeLessThan(pv.bootstrap_95ci_upper);
+  });
+
+  it("G14-R07: permutation_p is between 0 and 1", () => {
+    expect(r.primary_version?.permutation_p).toBeGreaterThanOrEqual(0);
+    expect(r.primary_version?.permutation_p).toBeLessThanOrEqual(1);
+  });
+
+  it("G14-R08: training_trades + validation_trades <= filled_trades", () => {
+    const pv = r.primary_version || {};
+    expect((pv.training_trades || 0) + (pv.validation_trades || 0)).toBeLessThanOrEqual(pv.filled_trades || 0);
+  });
+});

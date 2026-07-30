@@ -1,0 +1,32 @@
+{
+  "experiment_id": "USER-STRAT-002-EMA9-VWAP-MOMENTUM",
+  "sprint": "123A.14",
+  "created_at": "2026-07-30T01:27:00.145011+00:00",
+  "artefacts": [
+    {
+      "filename": "USER_STRAT_002_EMA9_VWAP_MOMENTUM_CONFIGURATION.json",
+      "sha256": "1841c9a7d6df9566641c9acb7189c9d88760ad1747b82b2141752346729c261f",
+      "size_bytes": 2805
+    },
+    {
+      "filename": "USER_STRAT_002_EMA9_VWAP_MOMENTUM_PRIMARY_RESULTS.json",
+      "sha256": "07cc6ea59c350eb5bf1ee338fc10f56f5e0de2c3dcd1e2c944064edc9e17bbca",
+      "size_bytes": 8427
+    },
+    {
+      "filename": "USER_STRAT_002_EMA9_VWAP_MOMENTUM_TRADE_LEDGER_PRIMARY.json",
+      "sha256": "556e47fa5f6892ad5f753b88f12a0570b13354c9a93d5dc92587fffbcbdd6d54",
+      "size_bytes": 36294279
+    },
+    {
+      "filename": "USER_STRAT_002_EMA9_VWAP_MOMENTUM_TRADE_LEDGER_SAFETY.json",
+      "sha256": "95174c1e69c710be44387447817fbb93af85b82306eac7264bc82588f58e4263",
+      "size_bytes": 36623280
+    },
+    {
+      "filename": "USER_STRAT_002_EMA9_VWAP_MOMENTUM_CONTRACT.md",
+      "sha256": "91ee75ca45f1f211f65169b9338f77ea9c1425c3caec49f8b2de0f4ff4709d2d",
+      "size_bytes": 3992
+    }
+  ]
+}
