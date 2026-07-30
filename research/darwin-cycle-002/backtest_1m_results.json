@@ -1,0 +1,230 @@
+{
+  "DARWIN-C002-C1": {
+    "in_sample": {
+      "sample_size": 7266,
+      "win_rate": 0.4287,
+      "avg_win_pts": 10.5598,
+      "avg_loss_pts": -10.0348,
+      "expectancy_pts": -1.2057,
+      "profit_factor": 0.7897,
+      "max_drawdown_usd": 84741.11,
+      "bootstrap_ci_95": [
+        -1.5043,
+        -0.8873
+      ],
+      "block_bootstrap_ci_95": [
+        -1.4924,
+        -0.9028
+      ],
+      "permutation_p_value": 0.387,
+      "effect_size": -0.0951,
+      "max_consecutive_losses": 16,
+      "total_net_pnl_pts": -8760.8878,
+      "total_net_pnl_usd": -83773.82,
+      "avg_mae_pts": 9.7849,
+      "avg_mfe_pts": 10.9308,
+      "period": "in_sample"
+    },
+    "validation": {
+      "sample_size": 3573,
+      "win_rate": 0.4291,
+      "avg_win_pts": 15.8163,
+      "avg_loss_pts": -14.6095,
+      "expectancy_pts": -1.5553,
+      "profit_factor": 0.8135,
+      "max_drawdown_usd": 41613.77,
+      "bootstrap_ci_95": [
+        -2.2105,
+        -0.8145
+      ],
+      "block_bootstrap_ci_95": [
+        -2.2886,
+        -0.8436
+      ],
+      "permutation_p_value": 0.683,
+      "effect_size": -0.074,
+      "max_consecutive_losses": 13,
+      "total_net_pnl_pts": -5557.0118,
+      "total_net_pnl_usd": -40943.04,
+      "avg_mae_pts": 14.9376,
+      "avg_mfe_pts": 15.9205,
+      "period": "validation"
+    },
+    "holdout": {
+      "sample_size": 7602,
+      "win_rate": 0.4228,
+      "avg_win_pts": 14.4398,
+      "avg_loss_pts": -13.6187,
+      "expectancy_pts": -1.756,
+      "profit_factor": 0.7766,
+      "max_drawdown_usd": 100854.34,
+      "bootstrap_ci_95": [
+        -2.1769,
+        -1.3369
+      ],
+      "block_bootstrap_ci_95": [
+        -2.2131,
+        -1.3064
+      ],
+      "permutation_p_value": 0.822,
+      "effect_size": -0.0962,
+      "max_consecutive_losses": 18,
+      "total_net_pnl_pts": -13349.1252,
+      "total_net_pnl_usd": -99503.22,
+      "avg_mae_pts": 14.0224,
+      "avg_mfe_pts": 14.5336,
+      "period": "holdout"
+    },
+    "combined": {
+      "sample_size": 18441,
+      "win_rate": 0.4263,
+      "avg_win_pts": 13.1709,
+      "avg_loss_pts": -12.4035,
+      "expectancy_pts": -1.5003,
+      "profit_factor": 0.7892,
+      "max_drawdown_usd": 225560.22,
+      "bootstrap_ci_95": [
+        -1.7414,
+        -1.2765
+      ],
+      "block_bootstrap_ci_95": [
+        -1.7699,
+        -1.251
+      ],
+      "permutation_p_value": 0.069,
+      "effect_size": -0.0887,
+      "max_consecutive_losses": 18,
+      "total_net_pnl_pts": -27667.0248,
+      "total_net_pnl_usd": -224220.08,
+      "avg_mae_pts": 12.5301,
+      "avg_mfe_pts": 13.3828,
+      "period": "combined"
+    },
+    "loss_decomposition": {
+      "total_losses": 10579,
+      "L1_immediate_adverse": 8351,
+      "L2_stopped_then_target": 1826,
+      "L3_partial_progress": 2721,
+      "L4_no_momentum": 2327,
+      "L_other": 0,
+      "pct_L1": 78.9,
+      "pct_L2": 17.3,
+      "pct_L3": 25.7,
+      "pct_L4": 22.0
+    }
+  },
+  "DARWIN-C002-M1": {
+    "in_sample": {
+      "sample_size": 38542,
+      "win_rate": 0.4449,
+      "avg_win_pts": 11.9465,
+      "avg_loss_pts": -10.9844,
+      "expectancy_pts": -0.7826,
+      "profit_factor": 0.8716,
+      "max_drawdown_usd": 349856.77,
+      "bootstrap_ci_95": [
+        -0.9116,
+        -0.6509
+      ],
+      "block_bootstrap_ci_95": [
+        -1.0045,
+        -0.5427
+      ],
+      "permutation_p_value": 0.968,
+      "effect_size": -0.0568,
+      "max_consecutive_losses": 33,
+      "total_net_pnl_pts": -30163.7231,
+      "total_net_pnl_usd": -348502.08,
+      "avg_mae_pts": 10.1745,
+      "avg_mfe_pts": 11.3961,
+      "period": "in_sample"
+    },
+    "validation": {
+      "sample_size": 18402,
+      "win_rate": 0.4475,
+      "avg_win_pts": 18.5866,
+      "avg_loss_pts": -16.4867,
+      "expectancy_pts": -0.7912,
+      "profit_factor": 0.9131,
+      "max_drawdown_usd": 143872.82,
+      "bootstrap_ci_95": [
+        -1.1328,
+        -0.4311
+      ],
+      "block_bootstrap_ci_95": [
+        -1.274,
+        -0.2563
+      ],
+      "permutation_p_value": 0.999,
+      "effect_size": -0.0338,
+      "max_consecutive_losses": 22,
+      "total_net_pnl_pts": -14559.686,
+      "total_net_pnl_usd": -142981.01,
+      "avg_mae_pts": 15.639,
+      "avg_mfe_pts": 17.4028,
+      "period": "validation"
+    },
+    "holdout": {
+      "sample_size": 39347,
+      "win_rate": 0.4374,
+      "avg_win_pts": 17.0975,
+      "avg_loss_pts": -15.6082,
+      "expectancy_pts": -1.303,
+      "profit_factor": 0.8516,
+      "max_drawdown_usd": 403660.42,
+      "bootstrap_ci_95": [
+        -1.5071,
+        -1.0969
+      ],
+      "block_bootstrap_ci_95": [
+        -1.6333,
+        -0.9629
+      ],
+      "permutation_p_value": 0.85,
+      "effect_size": -0.0634,
+      "max_consecutive_losses": 29,
+      "total_net_pnl_pts": -51270.7342,
+      "total_net_pnl_usd": -399768.33,
+      "avg_mae_pts": 14.8642,
+      "avg_mfe_pts": 15.8008,
+      "period": "holdout"
+    },
+    "combined": {
+      "sample_size": 96291,
+      "win_rate": 0.4423,
+      "avg_win_pts": 15.3117,
+      "avg_loss_pts": -13.9323,
+      "expectancy_pts": -0.9969,
+      "profit_factor": 0.8717,
+      "max_drawdown_usd": 894223.35,
+      "bootstrap_ci_95": [
+        -1.1205,
+        -0.872
+      ],
+      "block_bootstrap_ci_95": [
+        -1.1914,
+        -0.7964
+      ],
+      "permutation_p_value": 0.055,
+      "effect_size": -0.053,
+      "max_consecutive_losses": 33,
+      "total_net_pnl_pts": -95994.1433,
+      "total_net_pnl_usd": -891251.41,
+      "avg_mae_pts": 13.1352,
+      "avg_mfe_pts": 14.3439,
+      "period": "combined"
+    },
+    "loss_decomposition": {
+      "total_losses": 53699,
+      "L1_immediate_adverse": 47879,
+      "L2_stopped_then_target": 10811,
+      "L3_partial_progress": 13001,
+      "L4_no_momentum": 12500,
+      "L_other": 0,
+      "pct_L1": 89.2,
+      "pct_L2": 20.1,
+      "pct_L3": 24.2,
+      "pct_L4": 23.3
+    }
+  }
+}
