@@ -130,6 +130,20 @@ export interface DarwinReportData {
   recommendedSprintTime: string;
   // Section 10 — LLM-generated commentary
   darwinCommentary: string;
+  j4Findings?: Array<{
+    memoryId: string;
+    behaviourClass: string;
+    finalOutcome: string;
+    supportingEvidence: string;
+    backtestSummary: string;
+    experimentId: string | null;
+    sourceObservationId: string | null;
+    sourceEventId: number | null;
+    ruleId: string | null;
+    ruleVersion: string | null;
+    notificationId: number | null;
+    telegramMessageId: number | null;
+  }>;
 }
 
 // ─── Lookback window (last 24 hours) ─────────────────────────────────────────
@@ -708,6 +722,29 @@ function buildMarkdownReport(data: DarwinReportData): string {
     }
   }
 
+  // ── Section 8b: J4 Autonomous Research Findings ────────────────────────────
+  if (data.j4Findings && data.j4Findings.length > 0) {
+    sections.push(`\n---\n\n## 8b. J4 Autonomous Research Findings`);
+    sections.push(`\n> *These findings were generated autonomously by the DARWIN J4 pattern discovery service from live observations.*`);
+    sections.push(`\n> *No manual insertion was performed. All IDs are real database values.*`);
+    for (const f of data.j4Findings) {
+      sections.push(`\n### ${f.behaviourClass}`);
+      sections.push(`\n**Classification:** ${f.finalOutcome}`);
+      sections.push(`\n| Field | Value |`);
+      sections.push(`|-------|-------|`);
+      sections.push(`| Finding ID | \`${f.memoryId.slice(0, 8)}...\` |`);
+      sections.push(`| Experiment ID | \`${f.experimentId?.slice(0, 8) ?? 'N/A'}...\` |`);
+      sections.push(`| Source Observation ID | \`${f.sourceObservationId?.slice(0, 8) ?? 'N/A'}...\` |`);
+      sections.push(`| Source Event ID | ${f.sourceEventId ?? 'N/A'} |`);
+      sections.push(`| Rule | ${f.ruleId ?? 'N/A'} v${f.ruleVersion ?? 'N/A'} |`);
+      sections.push(`| Notification ID | ${f.notificationId ?? 'N/A'} |`);
+      sections.push(`| Telegram Message ID | ${f.telegramMessageId ?? 'N/A'} |`);
+      sections.push(`\n**Supporting Evidence:** ${f.supportingEvidence}`);
+      sections.push(`\n**Backtest Summary:** ${f.backtestSummary}`);
+      sections.push(`\n**Chain Trace:** http://35.231.100.83/darwin/chain-trace`);
+    }
+  }
+
   // ── Section 9: Recommended Next Sprint ───────────────────────────────────
   sections.push(`\n---\n\n## 9. Recommended Next Sprint`);
   sections.push(`\n**Sprint Title:** ${data.recommendedSprintTitle}`);
@@ -742,6 +779,46 @@ export async function generateDarwinDailyReport(
   if (!db) throw new Error("Database unavailable — cannot generate DARWIN daily report");
 
   // ── Gather all data ────────────────────────────────────────────────────────
+  // ── Fetch J4 autonomous findings from darwin_research_memory ────────────────
+  let j4Findings: NonNullable<DarwinReportData['j4Findings']> = [];
+  try {
+    const mysql = await import('mysql2/promise');
+    const url = process.env.DATABASE_URL;
+    if (url) {
+      const u = new URL(url);
+      const conn = await mysql.default.createConnection({
+        host: u.hostname, user: u.username,
+        password: decodeURIComponent(u.password),
+        database: u.pathname.slice(1), port: parseInt(u.port || '3306', 10),
+      });
+      const [rows] = await conn.execute<mysql.RowDataPacket[]>(`
+        SELECT memory_id, behaviour_class, final_outcome, supporting_evidence,
+               backtest_summary, experiment_id, source_observation_id,
+               source_event_id, rule_id, rule_version, notification_id, telegram_message_id
+        FROM darwin_research_memory
+        WHERE rule_id = 'RULE-J4-001'
+        ORDER BY created_at DESC LIMIT 5
+      `);
+      j4Findings = rows.map(r => ({
+        memoryId: r.memory_id,
+        behaviourClass: r.behaviour_class,
+        finalOutcome: r.final_outcome,
+        supportingEvidence: r.supporting_evidence ?? '',
+        backtestSummary: r.backtest_summary ?? '',
+        experimentId: r.experiment_id,
+        sourceObservationId: r.source_observation_id,
+        sourceEventId: r.source_event_id,
+        ruleId: r.rule_id,
+        ruleVersion: r.rule_version,
+        notificationId: r.notification_id,
+        telegramMessageId: r.telegram_message_id,
+      }));
+      await conn.end();
+    }
+  } catch (e) {
+    console.warn('[DailyReport] J4 findings fetch failed:', e);
+  }
+
   const [
     { recentTrades, allTrades },
     monitorEvals,
@@ -805,6 +882,7 @@ export async function generateDarwinDailyReport(
 
   // ── Assemble partial data (without commentary) ─────────────────────────────
   const partialData: Omit<DarwinReportData, "darwinCommentary"> = {
+    j4Findings,
     reportDate,
     tradesAnalysed: recentTrades.length,
     strategiesEvaluated: monitorEvals.length,

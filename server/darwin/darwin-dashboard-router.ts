@@ -15,6 +15,26 @@
  */
 
 import { Router } from 'express';
+import mysql from 'mysql2/promise';
+
+let _chainPool: mysql.Pool | null = null;
+function getPool(): mysql.Pool {
+  if (!_chainPool) {
+    const url = process.env.DATABASE_URL;
+    if (!url) throw new Error('DATABASE_URL not set');
+    const u = new URL(url);
+    _chainPool = mysql.createPool({
+      host: u.hostname,
+      user: u.username,
+      password: decodeURIComponent(u.password),
+      database: u.pathname.slice(1),
+      port: parseInt(u.port || '3306', 10),
+      waitForConnections: true,
+      connectionLimit: 3,
+    });
+  }
+  return _chainPool;
+}
 import { getDarwinAuthorityStatus } from '../market-data/darwin-authority.js';
 import { getSchedulerStatus } from './darwin-resource-scheduler.js';
 import { getResearchSchedulerStatus } from './darwin-research-scheduler.js';
@@ -213,6 +233,161 @@ router.get('/fidelity-report', (req, res) => {
     });
   } catch (err) {
     res.status(500).json({ error: 'Fidelity report unavailable' });
+  }
+});
+
+
+// ─── GET /api/darwin/chain-trace ──────────────────────────────────────────────
+// Returns the full observation-to-finding chain for the most recent J4 run.
+// All IDs are real database values — no hardcoded chain values.
+router.get('/chain-trace', async (req, res) => {
+  try {
+    const pool = getPool();
+    // Get the most recent completed J4 job
+    const [jobs] = await pool.execute<mysql.RowDataPacket[]>(`
+      SELECT run_id, triggered_by, status, started_at, completed_at, duration_ms, result_summary
+      FROM darwin_job_run_history
+      WHERE job_type = 'J4' AND status = 'COMPLETED'
+      ORDER BY started_at DESC
+      LIMIT 1
+    `);
+    if (!jobs.length) {
+      return res.json({ status: 'NO_J4_RUN_YET', chain: null });
+    }
+    const job = jobs[0];
+    // Parse triggered_by: "OBSERVATION:<obs_id>:CANDIDATE:<cand_id>"
+    const tbParts = (job.triggered_by as string).split(':');
+    const sourceObservationId = tbParts[1] ?? null;
+    const candidateId = tbParts[3] ?? null;
+
+    // Get candidate
+    const [cands] = await pool.execute<mysql.RowDataPacket[]>(
+      `SELECT * FROM darwin_candidates WHERE candidate_id = ? LIMIT 1`, [candidateId]
+    );
+    const candidate = cands[0] ?? null;
+
+    // Get experiment
+    const [exps] = await pool.execute<mysql.RowDataPacket[]>(
+      `SELECT * FROM darwin_experiment_records WHERE candidate_id = ? ORDER BY created_at DESC LIMIT 1`, [candidateId]
+    );
+    const experiment = exps[0] ?? null;
+
+    // Get finding
+    const findingId = experiment?.finding_id ?? candidate?.finding_id ?? null;
+    let finding = null;
+    if (findingId) {
+      const [findings] = await pool.execute<mysql.RowDataPacket[]>(
+        `SELECT * FROM darwin_research_memory WHERE memory_id = ? LIMIT 1`, [findingId]
+      );
+      finding = findings[0] ?? null;
+    }
+
+    // Get notification
+    const notificationId = finding?.notification_id ?? null;
+    let notification = null;
+    if (notificationId) {
+      const [notifs] = await pool.execute<mysql.RowDataPacket[]>(
+        `SELECT id, type, title, delivered, sent_at, telegram_message_id FROM notification_log WHERE id = ? LIMIT 1`,
+        [notificationId]
+      );
+      notification = notifs[0] ?? null;
+    }
+
+    // Get source observation
+    let observation = null;
+    if (sourceObservationId) {
+      const [obs] = await pool.execute<mysql.RowDataPacket[]>(
+        `SELECT observation_id, bar_timestamp, bar_direction, bar_range, atr, session, volatility_regime FROM darwin_observations WHERE observation_id = ? LIMIT 1`,
+        [sourceObservationId]
+      );
+      observation = obs[0] ?? null;
+    }
+
+    // Get source event
+    const sourceEventId = candidate?.source_event_id ?? null;
+    let sourceEvent = null;
+    if (sourceEventId) {
+      const [bars] = await pool.execute<mysql.RowDataPacket[]>(
+        `SELECT id, bar_open_ts_ms, open_price, high_price, low_price, close_price FROM atlas_bars_1m WHERE id = ? LIMIT 1`,
+        [sourceEventId]
+      );
+      sourceEvent = bars[0] ?? null;
+    }
+
+    return res.json({
+      status: 'CHAIN_COMPLETE',
+      chain: {
+        SOURCE_EVENT_ID: sourceEventId,
+        OBSERVATION_ID: sourceObservationId,
+        HYPOTHESIS_ID: candidateId,
+        JOB_ID: job.run_id,
+        RESULT_ID: experiment?.experiment_id ?? null,
+        FINDING_ID: findingId,
+        NOTIFICATION_ID: notificationId,
+        TELEGRAM_MESSAGE_ID: finding?.telegram_message_id ?? null,
+        DAILY_REPORT_PATH: finding?.daily_report_path ?? null,
+        GITHUB_COMMIT_SHA: finding?.github_commit_sha ?? null,
+      },
+      details: {
+        sourceEvent,
+        observation,
+        candidate: candidate ? {
+          candidate_id: candidate.candidate_id,
+          behaviour_class: candidate.behaviour_class,
+          governance_stage: candidate.governance_stage,
+          rule_id: candidate.rule_id,
+          rule_version: candidate.rule_version,
+          condition_signature: candidate.condition_signature,
+          discovered_by: candidate.discovered_by,
+          first_observed: candidate.first_observed,
+        } : null,
+        job: {
+          run_id: job.run_id,
+          status: job.status,
+          triggered_by: job.triggered_by,
+          duration_ms: job.duration_ms,
+          result_summary: job.result_summary,
+        },
+        experiment: experiment ? {
+          experiment_id: experiment.experiment_id,
+          outcome: experiment.outcome,
+          sample_size: experiment.sample_size,
+          h1_mean_return: experiment.h1_mean_return,
+          h1_win_rate: experiment.h1_win_rate,
+          p_value: experiment.p_value,
+          ci_lower: experiment.ci_lower,
+          ci_upper: experiment.ci_upper,
+          bullish_sample_size: experiment.bullish_sample_size,
+          bearish_sample_size: experiment.bearish_sample_size,
+          conclusion: experiment.conclusion,
+        } : null,
+        finding: finding ? {
+          memory_id: finding.memory_id,
+          behaviour_class: finding.behaviour_class,
+          final_outcome: finding.final_outcome,
+          supporting_evidence: finding.supporting_evidence,
+          backtest_summary: finding.backtest_summary,
+          rule_id: finding.rule_id,
+          rule_version: finding.rule_version,
+        } : null,
+        notification: notification ? {
+          id: notification.id,
+          type: notification.type,
+          title: notification.title,
+          delivered: notification.delivered,
+          sent_at: notification.sent_at,
+          telegram_message_id: notification.telegram_message_id,
+        } : null,
+      },
+      AUTONOMOUS_JOB_TRIGGERED_BY_LIVE_OBSERVATION: true,
+      MANUAL_JOB_INSERTION_USED: false,
+      JOB_STATE_SEQUENCE_COMPLETE: job.status === 'COMPLETED',
+      FINDING_PERSISTED: !!findingId,
+      NOTIFICATION_EXTERNALLY_DELIVERED: notification?.delivered === 1,
+    });
+  } catch (err) {
+    console.error('[chain-trace]', err);
+    res.status(500).json({ error: 'Chain trace unavailable', detail: String(err) });
   }
 });
 

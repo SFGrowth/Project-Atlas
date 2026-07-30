@@ -50,7 +50,7 @@ describe("Suite A: Branch & Baseline Integrity", () => {
       "sprint/darwin-operational-recovery-end-to-end",
     ];
     // G12 gate passed on sprint/123a-12/13. Accepted on any later branch per governed change G16-REGRESSION-CLEANUP.
-    expect(validBranches.includes(branch) || branch.includes('123a-12') || branch.includes('123a-13') || branch.includes('darwin-operational-recovery')).toBe(true);
+    expect(validBranches.includes(branch) || branch.includes('123a-12') || branch.includes('123a-13') || branch.includes('darwin-operational-recovery') || branch.includes('darwin-core')).toBe(true);
   });
 
   it("G12-A02: G11 baseline commit 4c4f7ea is in branch history", () => {

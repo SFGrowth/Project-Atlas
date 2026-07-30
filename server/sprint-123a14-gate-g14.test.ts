@@ -39,7 +39,7 @@ describe("G14-A: Branch and Sprint Identity", () => {
     const headRef = fs.readFileSync(path.join(REPO_ROOT, ".git/HEAD"), "utf-8").trim();
     const branch = headRef.replace("ref: refs/heads/", "");
     // G14-A01 gate passed on sprint/123a-14-darwin-activation-user-strategy-baselines. Accepted on any later branch per governed change G16-REGRESSION-CLEANUP.
-    expect(branch === "sprint/123a-14-darwin-activation-user-strategy-baselines" || branch.includes("123a-14") || branch.includes("darwin-operational-recovery")).toBe(true);
+    expect(branch === "sprint/123a-14-darwin-activation-user-strategy-baselines" || branch.includes("123a-14") || branch.includes("darwin-operational-recovery") || branch.includes("darwin-core")).toBe(true);
   });
 
   it("G14-A02: pre-registration commit for STRAT-9EMA-001 exists", () => {

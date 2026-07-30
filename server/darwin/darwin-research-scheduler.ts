@@ -230,10 +230,13 @@ export async function runJob(jobType: JobType): Promise<{
         result = await monitorAllStrategies(30);
         break;
 
-      case 'J4':
-        // Pattern discovery — runs next experiment from priority queue
-        result = { message: 'J4: Pattern discovery experiment triggered', liveChartAffected: false };
+      case 'J4': {
+        // Pattern discovery — full observation-to-finding chain
+        const { runJ4PatternDiscovery } = await import('./darwin-j4-pattern-discovery.js');
+        const j4Result = await runJ4PatternDiscovery();
+        result = { ...j4Result, liveChartAffected: false };
         break;
+      }
 
       case 'J5':
         // Portfolio gap review

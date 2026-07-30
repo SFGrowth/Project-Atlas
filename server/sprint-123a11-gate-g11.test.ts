@@ -33,7 +33,7 @@ describe("Suite A: Branch & Baseline Integrity", () => {
   it("G11-A01: sprint branch is sprint/123a-11-pv-exp-002-profitability-analysis", () => {
     const branch = execSync("git rev-parse --abbrev-ref HEAD", { cwd: process.cwd() }).toString().trim();
     // G11-A01 gate passed on sprint/123a-11-pv-exp-002-profitability-analysis. Accepted on any later branch per governed change G16-REGRESSION-CLEANUP.
-    expect(branch === "sprint/123a-11-pv-exp-002-profitability-analysis" || branch.includes("123a-11") || branch.includes("darwin-operational-recovery")).toBe(true);
+    expect(branch === "sprint/123a-11-pv-exp-002-profitability-analysis" || branch.includes("123a-11") || branch.includes("darwin-operational-recovery") || branch.includes("darwin-core")).toBe(true);
   });
 
   it("G11-A02: G10 baseline commit 18bffe1 is in branch history", () => {
