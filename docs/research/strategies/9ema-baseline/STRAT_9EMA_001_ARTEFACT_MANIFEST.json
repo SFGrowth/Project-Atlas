@@ -1,0 +1,37 @@
+{
+  "experiment_id": "STRAT-9EMA-001",
+  "sprint": "123A.14",
+  "created_at": "2026-07-30T00:32:44.461389+00:00",
+  "artefacts": [
+    {
+      "filename": "STRAT_9EMA_001_CONFIGURATION.json",
+      "sha256": "21675ccc6265878200d276f170c13454c72711b1c71a2d58dfd81773c170bd70",
+      "size_bytes": 3095
+    },
+    {
+      "filename": "STRAT_9EMA_001_EXPERIMENT_CONTRACT.md",
+      "sha256": "b107f14e9816404f0c2c5a14d37b044a2855ae1bae4323f6b8fdb897b63fc367",
+      "size_bytes": 5888
+    },
+    {
+      "filename": "STRAT_9EMA_001_PRIMARY_RESULTS.json",
+      "sha256": "7a10699bf6ff58baf2084f7cdbf7dc468c5c9569f0001e434ca23504197e405c",
+      "size_bytes": 6446
+    },
+    {
+      "filename": "STRAT_9EMA_001_TRADE_LEDGER_EXIT_1R.json",
+      "sha256": "90662cb67669a6b66f8ffd53305b85302f65689d3c96b76aa6210fd520f88fe8",
+      "size_bytes": 729764
+    },
+    {
+      "filename": "STRAT_9EMA_001_TRADE_LEDGER_EXIT_2R.json",
+      "sha256": "0f039e34dd8fa5d5e51a417c321cc1bfa3682740918fe79b0f4476329d375dc7",
+      "size_bytes": 730875
+    },
+    {
+      "filename": "STRAT_9EMA_001_TRADE_LEDGER_EXIT_XO.json",
+      "sha256": "a749b677e81713e204d2933a9e0c9ccd8f8b6258bc8d06031e473402aedbb5f3",
+      "size_bytes": 728391
+    }
+  ]
+}

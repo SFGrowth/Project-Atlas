@@ -1,0 +1,42 @@
+{
+  "experiment_id": "STRAT-9EMA-002",
+  "sprint": "123A.14",
+  "created_at": "2026-07-30T00:46:25.190253+00:00",
+  "artefacts": [
+    {
+      "filename": "STRAT_9EMA_002_CONFIGURATION.json",
+      "sha256": "e2bb784362b587c7a39a41cee8a54a9307c9ab9d1c8682d1b48f794695831bdb",
+      "size_bytes": 3620
+    },
+    {
+      "filename": "STRAT_9EMA_002_PRIMARY_RESULTS.json",
+      "sha256": "afee0c67740f477b3aaba5a56832e1894812e06c7be15028a86f97ac50b1efd6",
+      "size_bytes": 7642
+    },
+    {
+      "filename": "STRAT_9EMA_002_TRADE_LEDGER_CONFIG_A.json",
+      "sha256": "907feb63db6ec62082f9a4830eff1f04bc4c9c56bca942c42701cb920df7231f",
+      "size_bytes": 1111135
+    },
+    {
+      "filename": "STRAT_9EMA_002_TRADE_LEDGER_CONFIG_B.json",
+      "sha256": "efd90c247da48b64f8315a02f6ef06faabbdbb3640bd2fdf1ced34675de40a60",
+      "size_bytes": 524440
+    },
+    {
+      "filename": "STRAT_9EMA_002_TRADE_LEDGER_CONFIG_C.json",
+      "sha256": "aaee53461dd48fa0e192f5ae82914e2145ca44a4bdefb5acc34a3e1e4f00703a",
+      "size_bytes": 721682
+    },
+    {
+      "filename": "STRAT_9EMA_002_TRADE_LEDGER_CONFIG_D.json",
+      "sha256": "6163fde6d740a6d7488e70615243d95bd204b156f722a0941b28307d3c90cc2d",
+      "size_bytes": 537979
+    },
+    {
+      "filename": "STRAT_9EMA_002_EXPERIMENT_CONTRACT.md",
+      "sha256": "0b658b5b80ec1f546bf96a210d16cd8fd3e094ee0c79994a3333355b09af609b",
+      "size_bytes": 4356
+    }
+  ]
+}
