@@ -625,10 +625,11 @@ export async function sendFindingNotification(params: {
 
   if (botToken && chatId) {
     try {
-      const { sendTelegramMessage } = await import('../_core/telegramNotifier.js');
+      const { sendTelegramMessage } = await import('../_core/telegramNotifier');
       const tgResult = await sendTelegramMessage(body);
-      if (tgResult && typeof tgResult === 'object' && 'message_id' in tgResult) {
-        telegramMessageId = (tgResult as { message_id: number }).message_id;
+      if (tgResult && tgResult.sent && tgResult.messageId) {
+        telegramMessageId = tgResult.messageId;
+        await pool.execute('UPDATE notification_log SET telegram_message_id = ? WHERE id = ?', [telegramMessageId, notificationId]);
       }
       // Mark delivered
       await pool.execute(`UPDATE notification_log SET delivered = 1 WHERE id = ?`, [notificationId]);

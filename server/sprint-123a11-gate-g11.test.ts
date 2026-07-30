@@ -415,6 +415,7 @@ describe("Suite M: Authority Boundary", () => {
       'server/test-env-guard.ts',     // test infrastructure
       'server/sprint-123a10-test-env-isolation.test.ts', // test file
       'server/sprint-123a11-gate-g11.test.ts',           // this file
+      'server/sprint-darwin-core-chain-gate-g17.test.ts', // G17 test file — traderspost strings in test descriptions only
     ];
     const trackedFiles = execSync(
       "git ls-files -- '*.ts' '*.py'",

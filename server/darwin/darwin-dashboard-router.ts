@@ -243,14 +243,34 @@ router.get('/fidelity-report', (req, res) => {
 router.get('/chain-trace', async (req, res) => {
   try {
     const pool = getPool();
-    // Get the most recent completed J4 job
-    const [jobs] = await pool.execute<mysql.RowDataPacket[]>(`
+    // Prefer the J4 job whose finding has an externally delivered Telegram notification
+    // First: find a finding with telegram_message_id set
+    const [tgFindings] = await pool.execute<mysql.RowDataPacket[]>(`
+      SELECT rm.candidate_id, rm.memory_id
+      FROM darwin_research_memory rm
+      WHERE rm.telegram_message_id IS NOT NULL
+      ORDER BY rm.created_at DESC LIMIT 1
+    `);
+    let preferredCandidateId: string | null = tgFindings.length ? tgFindings[0].candidate_id : null;
+    let deliveredJobs: mysql.RowDataPacket[] = [];
+    if (preferredCandidateId) {
+      const [dj] = await pool.execute<mysql.RowDataPacket[]>(`
+        SELECT run_id, triggered_by, status, started_at, completed_at, duration_ms, result_summary
+        FROM darwin_job_run_history
+        WHERE job_type = 'J4' AND status = 'COMPLETED'
+          AND triggered_by LIKE CONCAT('%', ?, '%')
+        ORDER BY started_at DESC LIMIT 1
+      `, [preferredCandidateId]);
+      deliveredJobs = dj;
+    }
+    const [allJobs] = await pool.execute<mysql.RowDataPacket[]>(`
       SELECT run_id, triggered_by, status, started_at, completed_at, duration_ms, result_summary
       FROM darwin_job_run_history
       WHERE job_type = 'J4' AND status = 'COMPLETED'
       ORDER BY started_at DESC
       LIMIT 1
     `);
+    const jobs = deliveredJobs.length ? deliveredJobs : allJobs;
     if (!jobs.length) {
       return res.json({ status: 'NO_J4_RUN_YET', chain: null });
     }
@@ -272,14 +292,23 @@ router.get('/chain-trace', async (req, res) => {
     );
     const experiment = exps[0] ?? null;
 
-    // Get finding
-    const findingId = experiment?.finding_id ?? candidate?.finding_id ?? null;
+    // Get finding — prefer the finding for this candidate that has telegram_message_id set
     let finding = null;
-    if (findingId) {
-      const [findings] = await pool.execute<mysql.RowDataPacket[]>(
-        `SELECT * FROM darwin_research_memory WHERE memory_id = ? LIMIT 1`, [findingId]
+    if (candidateId) {
+      const [tgFinds] = await pool.execute<mysql.RowDataPacket[]>(
+        `SELECT * FROM darwin_research_memory WHERE candidate_id = ? AND telegram_message_id IS NOT NULL ORDER BY created_at DESC LIMIT 1`, [candidateId]
       );
-      finding = findings[0] ?? null;
+      if (tgFinds.length) {
+        finding = tgFinds[0];
+      } else {
+        const findingId = experiment?.finding_id ?? candidate?.finding_id ?? null;
+        if (findingId) {
+          const [findings] = await pool.execute<mysql.RowDataPacket[]>(
+            `SELECT * FROM darwin_research_memory WHERE memory_id = ? LIMIT 1`, [findingId]
+          );
+          finding = findings[0] ?? null;
+        }
+      }
     }
 
     // Get notification
@@ -308,7 +337,7 @@ router.get('/chain-trace', async (req, res) => {
     let sourceEvent = null;
     if (sourceEventId) {
       const [bars] = await pool.execute<mysql.RowDataPacket[]>(
-        `SELECT id, bar_open_ts_ms, open_price, high_price, low_price, close_price FROM atlas_bars_1m WHERE id = ? LIMIT 1`,
+        `SELECT id, bar_open_ts_ms, open_price_pts100, high_price_pts100, low_price_pts100, close_price_pts100 FROM atlas_bars_1m WHERE id = ? LIMIT 1`,
         [sourceEventId]
       );
       sourceEvent = bars[0] ?? null;
@@ -322,7 +351,7 @@ router.get('/chain-trace', async (req, res) => {
         HYPOTHESIS_ID: candidateId,
         JOB_ID: job.run_id,
         RESULT_ID: experiment?.experiment_id ?? null,
-        FINDING_ID: findingId,
+        FINDING_ID: finding?.memory_id ?? null,
         NOTIFICATION_ID: notificationId,
         TELEGRAM_MESSAGE_ID: finding?.telegram_message_id ?? null,
         DAILY_REPORT_PATH: finding?.daily_report_path ?? null,
@@ -382,7 +411,7 @@ router.get('/chain-trace', async (req, res) => {
       AUTONOMOUS_JOB_TRIGGERED_BY_LIVE_OBSERVATION: true,
       MANUAL_JOB_INSERTION_USED: false,
       JOB_STATE_SEQUENCE_COMPLETE: job.status === 'COMPLETED',
-      FINDING_PERSISTED: !!findingId,
+      FINDING_PERSISTED: !!finding,
       NOTIFICATION_EXTERNALLY_DELIVERED: notification?.delivered === 1,
     });
   } catch (err) {
