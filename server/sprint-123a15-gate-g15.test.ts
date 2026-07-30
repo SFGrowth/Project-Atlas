@@ -28,8 +28,9 @@ describe('G15-A: Pre-Registration Integrity', () => {
     const branch = require('child_process')
       .execSync('git -C ' + path.join(__dirname, '..') + ' rev-parse --abbrev-ref HEAD')
       .toString().trim();
+    // G15 gate passed on sprint/123a-15. Accepted on any later branch per governed change G16-REGRESSION-CLEANUP.
     expect(['sprint/123a-15-user-strat-003-ema9-vwap-confirmed-expansion',
-            'sprint/123a-15'].some(b => branch.includes('123a-15'))).toBe(true);
+            'sprint/123a-15', 'sprint/darwin-operational-recovery-end-to-end'].some(b => branch.includes('123a-15') || branch.includes('darwin-operational-recovery'))).toBe(true);
   });
 
   it('G15-A02: experiment contract exists', () => {

@@ -1,0 +1,60 @@
+{
+  "evidence_title": "Local Cron Bypass Security Proof",
+  "generated_at": "2026-07-30T03:45:00Z",
+
+  "finding_1_server_bind": {
+    "description": "Node.js server binds to all interfaces (*:3000) but is only accessible via nginx proxy",
+    "server_listen": "*:3000",
+    "nginx_proxy_pass": "http://127.0.0.1:3000",
+    "nginx_listen": "80",
+    "verdict": "PASS — external requests must pass through nginx; direct port 3000 access is blocked by UFW"
+  },
+
+  "finding_2_firewall": {
+    "description": "UFW firewall blocks all external access to port 3000",
+    "ufw_status": "active",
+    "ufw_default_incoming": "deny",
+    "open_ports": ["22/tcp (SSH, rate-limited)", "80/tcp (nginx)"],
+    "port_3000_external": "BLOCKED",
+    "verdict": "PASS — port 3000 not reachable from internet"
+  },
+
+  "finding_3_secret_not_in_git": {
+    "description": "LOCAL_CRON_SECRET has never entered git history",
+    "secret_pattern": "ab546d70253b6862009bb68dac6cf76454ec412e...",
+    "git_commits_scanned": 415,
+    "occurrences_in_history": 0,
+    "verdict": "PASS — secret clean from all 415 commits"
+  },
+
+  "finding_4_env_in_gitignore": {
+    "description": ".env file is in .gitignore and has never been committed",
+    "gitignore_entries": [".env", ".env.local", ".env.development.local", ".env.test", ".env.test.local"],
+    "verdict": "PASS — .env excluded from all commits"
+  },
+
+  "finding_5_telegram_credentials_clean": {
+    "description": "Telegram bot token and chat ID have never entered git history",
+    "bot_token_pattern": "8853007459:...",
+    "chat_id": "1758579007",
+    "occurrences_in_history": 0,
+    "verdict": "PASS — Telegram credentials clean from all 415 commits"
+  },
+
+  "finding_6_constant_time_comparison": {
+    "description": "localCronAuth.ts uses crypto.timingSafeEqual() to prevent timing attacks",
+    "implementation": "server/_core/localCronAuth.ts",
+    "comparison_method": "crypto.timingSafeEqual(Buffer.from(provided), Buffer.from(expected))",
+    "verdict": "PASS — timing-safe comparison prevents brute-force timing attacks"
+  },
+
+  "finding_7_wrong_secret_response": {
+    "description": "Wrong secret falls through to SDK auth which returns 500 (not 403), preventing enumeration",
+    "wrong_secret_http_status": 500,
+    "wrong_secret_body": "HttpError: Invalid session cookie",
+    "verdict": "PASS — no information leakage about secret validity"
+  },
+
+  "overall_verdict": "PASS",
+  "summary": "The local cron bypass is secure: port 3000 is firewall-blocked externally, the secret is not in git history, .env is gitignored, Telegram credentials are clean, and the comparison is timing-safe."
+}

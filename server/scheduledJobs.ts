@@ -20,6 +20,8 @@ import type { Router, Request, Response } from "express";
 import { sdk } from "./_core/sdk";
 import { isLocalCronRequest } from "./_core/localCronAuth";
 import { notifyOwner } from "./_core/notification";
+import { sendDailyReportAlert } from "./_core/telegramNotifier.js";
+import { getCmeSessionState, isDarwinHourlyActive } from "./_core/cmeSchedule.js";
 import {
   generateDailyReviewReport,
   saveDailyReview,
@@ -613,6 +615,11 @@ export function registerScheduledJobs(app: Router): void {
         await updateReportGithubStatus(dbId, archiveResult.sha, archiveResult.url, "SUCCESS");
       }
       console.log(`[DARWIN] Daily report complete for ${reportDate} — GitHub: ${archiveResult.success ? archiveResult.sha?.slice(0, 8) : 'FAILED'}`);
+      // Send Telegram notification
+      sendDailyReportAlert(
+        reportDate, 0, 0,
+        archiveResult.success ? archiveResult.url : undefined
+      ).catch(err => console.warn("[DARWIN] Telegram daily report alert failed:", err));
       res.json({
         ok: true,
         job: "darwin-daily-report",

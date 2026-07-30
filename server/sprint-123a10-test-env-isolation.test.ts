@@ -372,10 +372,17 @@ describe('Suite H — All database clients use the isolated test database', () =
 
   it('TEST-G10-ISO-H05: No test file hardcodes atlas_staging_g4 as a database target', async () => {
     const { execSync } = await import('child_process');
-    const result = execSync(
+    const rawResult = execSync(
       'git -C ' + REPO_ROOT + ' grep -rn "atlas_staging_g4" -- "*.test.ts" "*.spec.ts" 2>/dev/null || true',
       { encoding: 'utf8' },
     ).trim();
+    // Exclude this self-referential test file — it legitimately contains the
+    // string as a test description and assertion target, not as a DB target.
+    const result = rawResult
+      .split('\n')
+      .filter(line => !line.includes('sprint-123a10-test-env-isolation.test.ts'))
+      .join('\n')
+      .trim();
     expect(result).toBe('');
   });
 });
@@ -428,10 +435,18 @@ describe('Suite I — No outbound connection to operational services occurs', ()
 
   it('TEST-G10-ISO-I04: No test file references the live Atlas bridge endpoint', async () => {
     const { execSync } = await import('child_process');
-    const result = execSync(
+    const rawResult = execSync(
       'git -C ' + REPO_ROOT + ' grep -rn "35\\.231\\.100\\.83" -- "*.test.ts" "*.spec.ts" 2>/dev/null || true',
       { encoding: 'utf8' },
     ).trim();
+    // Exclude this self-referential test file — it legitimately contains the
+    // IP address as a test description target (checking that no OTHER test
+    // hardcodes the live endpoint), not as a live outbound connection.
+    const result = rawResult
+      .split('\n')
+      .filter(line => !line.includes('sprint-123a10-test-env-isolation.test.ts'))
+      .join('\n')
+      .trim();
     expect(result).toBe('');
   });
 });

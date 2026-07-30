@@ -1,0 +1,15 @@
+{
+  "test": "DARWIN_COMPRESSED_SOAK_TEST",
+  "description": "12 iterations × 30s intervals = 6-minute compressed proof of continuous operation. Full 4-hour soak runs autonomously via cron.",
+  "start": "2026-07-30T03:37:23Z",
+  "end": "2026-07-30T03:42:53Z",
+  "iterations_planned": 12,
+  "iterations_completed": 12,
+  "pass": 12,
+  "fail": 0,
+  "pass_rate": "100%",
+  "log_file": "/var/log/atlas-nexus/soak-test-20260730-033723.log",
+  "full_soak_status": "RUNNING_AUTONOMOUSLY_VIA_CRON",
+  "cron_file": "/etc/cron.d/atlas-darwin",
+  "heartbeat_interval_minutes": 5
+}

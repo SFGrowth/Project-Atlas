@@ -1,4 +1,5 @@
 import { TRPCError } from "@trpc/server";
+import { sendTelegramMessage } from "./telegramNotifier.js";
 import { ENV } from "./env";
 
 export type NotificationPayload = {
@@ -109,6 +110,16 @@ export async function notifyOwner(
     return true;
   } catch (error) {
     console.warn("[Notification] Error calling notification service:", error);
+    // Forge notification failed — attempt Telegram fallback
+    try {
+      const tgResult = await sendTelegramMessage(`<b>${title}</b>\n\n${content}`);
+      if (tgResult.sent) {
+        console.log("[Notification] Delivered via Telegram fallback");
+        return true;
+      }
+    } catch (tgErr) {
+      console.warn("[Notification] Telegram fallback also failed:", tgErr);
+    }
     return false;
   }
 }
