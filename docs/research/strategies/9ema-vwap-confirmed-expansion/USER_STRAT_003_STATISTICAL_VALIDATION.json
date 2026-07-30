@@ -1,0 +1,18 @@
+{
+  "bootstrap_iterations": 10000,
+  "bootstrap_type": "TEMPORAL_BLOCK",
+  "block_size": 20,
+  "bootstrap_expectancy_95ci": [
+    -9.3571,
+    10.1363
+  ],
+  "permutation_p_value": 0.4011,
+  "monte_carlo_95ci": [
+    -8.7666,
+    8.2129
+  ],
+  "cost_sensitivity_expectancy": -2.2546,
+  "slippage_sensitivity_expectancy": -1.5146,
+  "final_classification": "INCONCLUSIVE",
+  "does_strat_003_have_edge": "NO"
+}

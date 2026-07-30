@@ -1,0 +1,1538 @@
+{
+  "total_cancelled": 219,
+  "cancelled": [
+    {
+      "signal_bar_idx": 2620,
+      "direction": "short",
+      "signal_bar_time": "2019-05-17T14:10:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 2621
+    },
+    {
+      "signal_bar_idx": 6444,
+      "direction": "long",
+      "signal_bar_time": "2019-06-06T18:10:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 6445
+    },
+    {
+      "signal_bar_idx": 16308,
+      "direction": "short",
+      "signal_bar_time": "2019-07-29T06:55:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 16309
+    },
+    {
+      "signal_bar_idx": 17479,
+      "direction": "short",
+      "signal_bar_time": "2019-08-02T13:30:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 17480
+    },
+    {
+      "signal_bar_idx": 17669,
+      "direction": "short",
+      "signal_bar_time": "2019-08-05T06:35:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 17670
+    },
+    {
+      "signal_bar_idx": 19543,
+      "direction": "short",
+      "signal_bar_time": "2019-08-14T03:30:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 19544
+    },
+    {
+      "signal_bar_idx": 20546,
+      "direction": "long",
+      "signal_bar_time": "2019-08-19T18:50:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 20547
+    },
+    {
+      "signal_bar_idx": 21836,
+      "direction": "long",
+      "signal_bar_time": "2019-08-26T12:35:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 21837
+    },
+    {
+      "signal_bar_idx": 23391,
+      "direction": "short",
+      "signal_bar_time": "2019-09-03T09:25:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 23392
+    },
+    {
+      "signal_bar_idx": 24993,
+      "direction": "long",
+      "signal_bar_time": "2019-09-11T06:25:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 24994
+    },
+    {
+      "signal_bar_idx": 26441,
+      "direction": "short",
+      "signal_bar_time": "2019-09-18T13:25:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 26442
+    },
+    {
+      "signal_bar_idx": 27327,
+      "direction": "long",
+      "signal_bar_time": "2019-09-23T19:00:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 27328
+    },
+    {
+      "signal_bar_idx": 28288,
+      "direction": "long",
+      "signal_bar_time": "2019-09-27T08:05:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 28289
+    },
+    {
+      "signal_bar_idx": 30792,
+      "direction": "long",
+      "signal_bar_time": "2019-10-10T12:00:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 30793
+    },
+    {
+      "signal_bar_idx": 33685,
+      "direction": "long",
+      "signal_bar_time": "2019-10-25T02:50:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 33686
+    },
+    {
+      "signal_bar_idx": 33878,
+      "direction": "long",
+      "signal_bar_time": "2019-10-25T18:55:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 33879
+    },
+    {
+      "signal_bar_idx": 33924,
+      "direction": "short",
+      "signal_bar_time": "2019-10-28T00:00:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 33925
+    },
+    {
+      "signal_bar_idx": 36065,
+      "direction": "long",
+      "signal_bar_time": "2019-11-06T20:10:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 36066
+    },
+    {
+      "signal_bar_idx": 38025,
+      "direction": "short",
+      "signal_bar_time": "2019-11-18T01:30:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 38026
+    },
+    {
+      "signal_bar_idx": 38891,
+      "direction": "long",
+      "signal_bar_time": "2019-11-21T05:25:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 38892
+    },
+    {
+      "signal_bar_idx": 40772,
+      "direction": "long",
+      "signal_bar_time": "2019-12-02T10:10:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 40773
+    },
+    {
+      "signal_bar_idx": 41363,
+      "direction": "long",
+      "signal_bar_time": "2019-12-04T13:55:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 41364
+    },
+    {
+      "signal_bar_idx": 45018,
+      "direction": "short",
+      "signal_bar_time": "2019-12-24T00:00:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 45019
+    },
+    {
+      "signal_bar_idx": 53397,
+      "direction": "short",
+      "signal_bar_time": "2020-02-07T00:15:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 53398
+    },
+    {
+      "signal_bar_idx": 55368,
+      "direction": "short",
+      "signal_bar_time": "2020-02-18T09:00:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 55369
+    },
+    {
+      "signal_bar_idx": 61390,
+      "direction": "long",
+      "signal_bar_time": "2020-03-20T12:05:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 61391
+    },
+    {
+      "signal_bar_idx": 61520,
+      "direction": "short",
+      "signal_bar_time": "2020-03-23T00:15:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 61521
+    },
+    {
+      "signal_bar_idx": 61634,
+      "direction": "long",
+      "signal_bar_time": "2020-03-23T09:45:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 61635
+    },
+    {
+      "signal_bar_idx": 61687,
+      "direction": "long",
+      "signal_bar_time": "2020-03-23T14:10:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 61688
+    },
+    {
+      "signal_bar_idx": 68345,
+      "direction": "short",
+      "signal_bar_time": "2020-04-27T23:50:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 68346
+    },
+    {
+      "signal_bar_idx": 72243,
+      "direction": "long",
+      "signal_bar_time": "2020-05-18T06:10:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 72244
+    },
+    {
+      "signal_bar_idx": 72659,
+      "direction": "long",
+      "signal_bar_time": "2020-05-19T18:05:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 72660
+    },
+    {
+      "signal_bar_idx": 79014,
+      "direction": "long",
+      "signal_bar_time": "2020-06-22T05:25:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 79015
+    },
+    {
+      "signal_bar_idx": 81955,
+      "direction": "short",
+      "signal_bar_time": "2020-07-07T12:30:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 81956
+    },
+    {
+      "signal_bar_idx": 83461,
+      "direction": "short",
+      "signal_bar_time": "2020-07-15T01:30:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 83462
+    },
+    {
+      "signal_bar_idx": 84318,
+      "direction": "short",
+      "signal_bar_time": "2020-07-20T04:40:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 84319
+    },
+    {
+      "signal_bar_idx": 86464,
+      "direction": "short",
+      "signal_bar_time": "2020-07-30T01:30:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 86465
+    },
+    {
+      "signal_bar_idx": 89853,
+      "direction": "long",
+      "signal_bar_time": "2020-08-17T10:55:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 89854
+    },
+    {
+      "signal_bar_idx": 92040,
+      "direction": "long",
+      "signal_bar_time": "2020-08-27T11:10:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 92041
+    },
+    {
+      "signal_bar_idx": 93156,
+      "direction": "long",
+      "signal_bar_time": "2020-09-02T13:10:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 93157
+    },
+    {
+      "signal_bar_idx": 94222,
+      "direction": "short",
+      "signal_bar_time": "2020-09-08T14:45:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 94223
+    },
+    {
+      "signal_bar_idx": 98103,
+      "direction": "long",
+      "signal_bar_time": "2020-09-28T19:40:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 98104
+    },
+    {
+      "signal_bar_idx": 104986,
+      "direction": "long",
+      "signal_bar_time": "2020-11-03T02:45:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 104987
+    },
+    {
+      "signal_bar_idx": 105187,
+      "direction": "long",
+      "signal_bar_time": "2020-11-03T19:30:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 105188
+    },
+    {
+      "signal_bar_idx": 109003,
+      "direction": "short",
+      "signal_bar_time": "2020-11-23T19:00:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 109004
+    },
+    {
+      "signal_bar_idx": 109419,
+      "direction": "short",
+      "signal_bar_time": "2020-11-25T08:10:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 109420
+    },
+    {
+      "signal_bar_idx": 120134,
+      "direction": "short",
+      "signal_bar_time": "2021-01-22T05:35:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 120135
+    },
+    {
+      "signal_bar_idx": 120155,
+      "direction": "short",
+      "signal_bar_time": "2021-01-22T07:20:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 120156
+    },
+    {
+      "signal_bar_idx": 121614,
+      "direction": "long",
+      "signal_bar_time": "2021-01-29T15:10:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 121615
+    },
+    {
+      "signal_bar_idx": 122126,
+      "direction": "long",
+      "signal_bar_time": "2021-02-02T12:20:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 122127
+    },
+    {
+      "signal_bar_idx": 122845,
+      "direction": "long",
+      "signal_bar_time": "2021-02-05T04:00:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 122846
+    },
+    {
+      "signal_bar_idx": 123048,
+      "direction": "long",
+      "signal_bar_time": "2021-02-05T20:55:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 123049
+    },
+    {
+      "signal_bar_idx": 125207,
+      "direction": "long",
+      "signal_bar_time": "2021-02-17T23:50:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 125208
+    },
+    {
+      "signal_bar_idx": 126926,
+      "direction": "short",
+      "signal_bar_time": "2021-02-26T06:35:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 126927
+    },
+    {
+      "signal_bar_idx": 132820,
+      "direction": "long",
+      "signal_bar_time": "2021-03-29T19:00:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 132821
+    },
+    {
+      "signal_bar_idx": 136941,
+      "direction": "long",
+      "signal_bar_time": "2021-04-20T05:55:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 136942
+    },
+    {
+      "signal_bar_idx": 137264,
+      "direction": "long",
+      "signal_bar_time": "2021-04-21T10:05:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 137265
+    },
+    {
+      "signal_bar_idx": 138378,
+      "direction": "long",
+      "signal_bar_time": "2021-04-27T11:55:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 138379
+    },
+    {
+      "signal_bar_idx": 142392,
+      "direction": "long",
+      "signal_bar_time": "2021-05-18T05:10:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 142393
+    },
+    {
+      "signal_bar_idx": 144944,
+      "direction": "short",
+      "signal_bar_time": "2021-05-31T13:05:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 144945
+    },
+    {
+      "signal_bar_idx": 151106,
+      "direction": "short",
+      "signal_bar_time": "2021-07-01T06:20:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 151107
+    },
+    {
+      "signal_bar_idx": 152500,
+      "direction": "short",
+      "signal_bar_time": "2021-07-08T11:30:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 152501
+    },
+    {
+      "signal_bar_idx": 153324,
+      "direction": "long",
+      "signal_bar_time": "2021-07-13T11:10:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 153325
+    },
+    {
+      "signal_bar_idx": 157621,
+      "direction": "long",
+      "signal_bar_time": "2021-08-04T01:15:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 157622
+    },
+    {
+      "signal_bar_idx": 158710,
+      "direction": "long",
+      "signal_bar_time": "2021-08-10T00:00:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 158711
+    },
+    {
+      "signal_bar_idx": 161475,
+      "direction": "short",
+      "signal_bar_time": "2021-08-24T00:25:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 161476
+    },
+    {
+      "signal_bar_idx": 165986,
+      "direction": "short",
+      "signal_bar_time": "2021-09-15T12:20:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 165987
+    },
+    {
+      "signal_bar_idx": 166736,
+      "direction": "short",
+      "signal_bar_time": "2021-09-20T05:50:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 166737
+    },
+    {
+      "signal_bar_idx": 168109,
+      "direction": "long",
+      "signal_bar_time": "2021-09-27T05:15:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 168110
+    },
+    {
+      "signal_bar_idx": 172083,
+      "direction": "short",
+      "signal_bar_time": "2021-10-15T14:25:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 172084
+    },
+    {
+      "signal_bar_idx": 173569,
+      "direction": "long",
+      "signal_bar_time": "2021-10-25T00:15:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 173570
+    },
+    {
+      "signal_bar_idx": 175579,
+      "direction": "short",
+      "signal_bar_time": "2021-11-03T06:45:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 175580
+    },
+    {
+      "signal_bar_idx": 176121,
+      "direction": "long",
+      "signal_bar_time": "2021-11-05T05:55:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 176122
+    },
+    {
+      "signal_bar_idx": 178876,
+      "direction": "long",
+      "signal_bar_time": "2021-11-19T06:30:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 178877
+    },
+    {
+      "signal_bar_idx": 182020,
+      "direction": "short",
+      "signal_bar_time": "2021-12-07T00:15:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 182021
+    },
+    {
+      "signal_bar_idx": 183830,
+      "direction": "short",
+      "signal_bar_time": "2021-12-15T13:05:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 183831
+    },
+    {
+      "signal_bar_idx": 183840,
+      "direction": "short",
+      "signal_bar_time": "2021-12-15T13:55:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 183841
+    },
+    {
+      "signal_bar_idx": 185139,
+      "direction": "long",
+      "signal_bar_time": "2021-12-22T07:10:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 185140
+    },
+    {
+      "signal_bar_idx": 187053,
+      "direction": "long",
+      "signal_bar_time": "2022-01-03T05:40:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 187054
+    },
+    {
+      "signal_bar_idx": 188749,
+      "direction": "long",
+      "signal_bar_time": "2022-01-11T09:00:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 188750
+    },
+    {
+      "signal_bar_idx": 190585,
+      "direction": "long",
+      "signal_bar_time": "2022-01-20T05:00:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 190586
+    },
+    {
+      "signal_bar_idx": 195511,
+      "direction": "short",
+      "signal_bar_time": "2022-02-15T01:30:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 195512
+    },
+    {
+      "signal_bar_idx": 197738,
+      "direction": "short",
+      "signal_bar_time": "2022-02-25T07:05:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 197739
+    },
+    {
+      "signal_bar_idx": 200387,
+      "direction": "long",
+      "signal_bar_time": "2022-03-10T20:50:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 200388
+    },
+    {
+      "signal_bar_idx": 202187,
+      "direction": "short",
+      "signal_bar_time": "2022-03-21T08:50:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 202188
+    },
+    {
+      "signal_bar_idx": 204561,
+      "direction": "long",
+      "signal_bar_time": "2022-03-31T23:40:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 204562
+    },
+    {
+      "signal_bar_idx": 207740,
+      "direction": "short",
+      "signal_bar_time": "2022-04-19T11:35:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 207741
+    },
+    {
+      "signal_bar_idx": 211882,
+      "direction": "long",
+      "signal_bar_time": "2022-05-10T11:45:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 211883
+    },
+    {
+      "signal_bar_idx": 212983,
+      "direction": "short",
+      "signal_bar_time": "2022-05-16T11:30:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 212984
+    },
+    {
+      "signal_bar_idx": 214239,
+      "direction": "long",
+      "signal_bar_time": "2022-05-23T01:10:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 214240
+    },
+    {
+      "signal_bar_idx": 215828,
+      "direction": "short",
+      "signal_bar_time": "2022-05-30T23:35:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 215829
+    },
+    {
+      "signal_bar_idx": 216201,
+      "direction": "short",
+      "signal_bar_time": "2022-06-01T07:40:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 216202
+    },
+    {
+      "signal_bar_idx": 217261,
+      "direction": "short",
+      "signal_bar_time": "2022-06-07T04:00:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 217262
+    },
+    {
+      "signal_bar_idx": 218985,
+      "direction": "long",
+      "signal_bar_time": "2022-06-15T09:40:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 218986
+    },
+    {
+      "signal_bar_idx": 231357,
+      "direction": "short",
+      "signal_bar_time": "2022-08-17T13:40:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 231358
+    },
+    {
+      "signal_bar_idx": 232923,
+      "direction": "long",
+      "signal_bar_time": "2022-08-25T06:10:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 232924
+    },
+    {
+      "signal_bar_idx": 233461,
+      "direction": "long",
+      "signal_bar_time": "2022-08-29T05:00:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 233462
+    },
+    {
+      "signal_bar_idx": 233542,
+      "direction": "long",
+      "signal_bar_time": "2022-08-29T11:45:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 233543
+    },
+    {
+      "signal_bar_idx": 233943,
+      "direction": "short",
+      "signal_bar_time": "2022-08-30T23:10:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 233944
+    },
+    {
+      "signal_bar_idx": 241684,
+      "direction": "long",
+      "signal_bar_time": "2022-10-10T04:15:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 241685
+    },
+    {
+      "signal_bar_idx": 245318,
+      "direction": "short",
+      "signal_bar_time": "2022-10-27T08:05:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 245319
+    },
+    {
+      "signal_bar_idx": 245915,
+      "direction": "short",
+      "signal_bar_time": "2022-10-31T11:50:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 245916
+    },
+    {
+      "signal_bar_idx": 246104,
+      "direction": "long",
+      "signal_bar_time": "2022-11-01T04:35:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 246105
+    },
+    {
+      "signal_bar_idx": 257416,
+      "direction": "long",
+      "signal_bar_time": "2022-12-29T13:00:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 257417
+    },
+    {
+      "signal_bar_idx": 258046,
+      "direction": "short",
+      "signal_bar_time": "2023-01-03T19:30:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 258047
+    },
+    {
+      "signal_bar_idx": 259621,
+      "direction": "long",
+      "signal_bar_time": "2023-01-11T12:45:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 259622
+    },
+    {
+      "signal_bar_idx": 261154,
+      "direction": "long",
+      "signal_bar_time": "2023-01-19T06:30:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 261155
+    },
+    {
+      "signal_bar_idx": 269835,
+      "direction": "long",
+      "signal_bar_time": "2023-03-03T20:55:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 269836
+    },
+    {
+      "signal_bar_idx": 270744,
+      "direction": "short",
+      "signal_bar_time": "2023-03-09T04:40:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 270745
+    },
+    {
+      "signal_bar_idx": 272491,
+      "direction": "short",
+      "signal_bar_time": "2023-03-17T11:15:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 272492
+    },
+    {
+      "signal_bar_idx": 272503,
+      "direction": "short",
+      "signal_bar_time": "2023-03-17T12:15:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 272504
+    },
+    {
+      "signal_bar_idx": 272780,
+      "direction": "long",
+      "signal_bar_time": "2023-03-20T12:20:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 272781
+    },
+    {
+      "signal_bar_idx": 277154,
+      "direction": "short",
+      "signal_bar_time": "2023-04-11T16:35:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 277155
+    },
+    {
+      "signal_bar_idx": 279048,
+      "direction": "short",
+      "signal_bar_time": "2023-04-20T13:25:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 279049
+    },
+    {
+      "signal_bar_idx": 281441,
+      "direction": "long",
+      "signal_bar_time": "2023-05-03T05:50:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 281442
+    },
+    {
+      "signal_bar_idx": 281491,
+      "direction": "long",
+      "signal_bar_time": "2023-05-03T10:00:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 281492
+    },
+    {
+      "signal_bar_idx": 282328,
+      "direction": "short",
+      "signal_bar_time": "2023-05-08T10:45:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 282329
+    },
+    {
+      "signal_bar_idx": 282871,
+      "direction": "short",
+      "signal_bar_time": "2023-05-10T10:00:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 282872
+    },
+    {
+      "signal_bar_idx": 283201,
+      "direction": "short",
+      "signal_bar_time": "2023-05-11T14:30:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 283202
+    },
+    {
+      "signal_bar_idx": 284684,
+      "direction": "short",
+      "signal_bar_time": "2023-05-19T00:05:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 284685
+    },
+    {
+      "signal_bar_idx": 284698,
+      "direction": "short",
+      "signal_bar_time": "2023-05-19T01:15:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 284699
+    },
+    {
+      "signal_bar_idx": 286939,
+      "direction": "short",
+      "signal_bar_time": "2023-05-31T08:00:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 286940
+    },
+    {
+      "signal_bar_idx": 287276,
+      "direction": "long",
+      "signal_bar_time": "2023-06-01T13:05:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 287277
+    },
+    {
+      "signal_bar_idx": 287457,
+      "direction": "long",
+      "signal_bar_time": "2023-06-02T05:10:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 287458
+    },
+    {
+      "signal_bar_idx": 290742,
+      "direction": "short",
+      "signal_bar_time": "2023-06-20T06:55:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 290743
+    },
+    {
+      "signal_bar_idx": 292135,
+      "direction": "long",
+      "signal_bar_time": "2023-06-27T08:00:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 292136
+    },
+    {
+      "signal_bar_idx": 296233,
+      "direction": "long",
+      "signal_bar_time": "2023-07-18T12:15:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 296234
+    },
+    {
+      "signal_bar_idx": 300499,
+      "direction": "long",
+      "signal_bar_time": "2023-08-08T23:45:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 300500
+    },
+    {
+      "signal_bar_idx": 300551,
+      "direction": "long",
+      "signal_bar_time": "2023-08-09T04:05:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 300552
+    },
+    {
+      "signal_bar_idx": 303830,
+      "direction": "long",
+      "signal_bar_time": "2023-08-25T01:20:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 303831
+    },
+    {
+      "signal_bar_idx": 305614,
+      "direction": "long",
+      "signal_bar_time": "2023-09-04T12:00:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 305615
+    },
+    {
+      "signal_bar_idx": 306813,
+      "direction": "short",
+      "signal_bar_time": "2023-09-11T00:55:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 306814
+    },
+    {
+      "signal_bar_idx": 307192,
+      "direction": "short",
+      "signal_bar_time": "2023-09-12T09:30:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 307193
+    },
+    {
+      "signal_bar_idx": 308594,
+      "direction": "long",
+      "signal_bar_time": "2023-09-19T11:20:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 308595
+    },
+    {
+      "signal_bar_idx": 310239,
+      "direction": "long",
+      "signal_bar_time": "2023-09-27T10:25:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 310240
+    },
+    {
+      "signal_bar_idx": 313571,
+      "direction": "short",
+      "signal_bar_time": "2023-10-13T12:05:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 313572
+    },
+    {
+      "signal_bar_idx": 314398,
+      "direction": "short",
+      "signal_bar_time": "2023-10-18T12:00:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 314399
+    },
+    {
+      "signal_bar_idx": 314594,
+      "direction": "short",
+      "signal_bar_time": "2023-10-19T05:20:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 314595
+    },
+    {
+      "signal_bar_idx": 315491,
+      "direction": "long",
+      "signal_bar_time": "2023-10-24T11:05:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 315492
+    },
+    {
+      "signal_bar_idx": 315657,
+      "direction": "long",
+      "signal_bar_time": "2023-10-25T01:55:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 315658
+    },
+    {
+      "signal_bar_idx": 317014,
+      "direction": "long",
+      "signal_bar_time": "2023-11-01T00:00:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 317015
+    },
+    {
+      "signal_bar_idx": 319369,
+      "direction": "long",
+      "signal_bar_time": "2023-11-13T13:15:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 319370
+    },
+    {
+      "signal_bar_idx": 319488,
+      "direction": "long",
+      "signal_bar_time": "2023-11-14T00:10:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 319489
+    },
+    {
+      "signal_bar_idx": 332566,
+      "direction": "short",
+      "signal_bar_time": "2024-01-22T20:45:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 332567
+    },
+    {
+      "signal_bar_idx": 335168,
+      "direction": "long",
+      "signal_bar_time": "2024-02-05T07:35:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 335169
+    },
+    {
+      "signal_bar_idx": 339040,
+      "direction": "short",
+      "signal_bar_time": "2024-02-23T12:15:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 339041
+    },
+    {
+      "signal_bar_idx": 340421,
+      "direction": "short",
+      "signal_bar_time": "2024-03-01T12:20:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 340422
+    },
+    {
+      "signal_bar_idx": 341625,
+      "direction": "long",
+      "signal_bar_time": "2024-03-07T20:40:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 341626
+    },
+    {
+      "signal_bar_idx": 341742,
+      "direction": "long",
+      "signal_bar_time": "2024-03-08T07:25:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 341743
+    },
+    {
+      "signal_bar_idx": 346040,
+      "direction": "short",
+      "signal_bar_time": "2024-04-01T19:35:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 346041
+    },
+    {
+      "signal_bar_idx": 346306,
+      "direction": "short",
+      "signal_bar_time": "2024-04-02T18:45:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 346307
+    },
+    {
+      "signal_bar_idx": 347036,
+      "direction": "long",
+      "signal_bar_time": "2024-04-05T10:35:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 347037
+    },
+    {
+      "signal_bar_idx": 349008,
+      "direction": "long",
+      "signal_bar_time": "2024-04-16T13:55:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 349009
+    },
+    {
+      "signal_bar_idx": 351598,
+      "direction": "long",
+      "signal_bar_time": "2024-04-29T23:45:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 351599
+    },
+    {
+      "signal_bar_idx": 354978,
+      "direction": "long",
+      "signal_bar_time": "2024-05-16T05:25:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 354979
+    },
+    {
+      "signal_bar_idx": 364077,
+      "direction": "short",
+      "signal_bar_time": "2024-07-02T12:40:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 364078
+    },
+    {
+      "signal_bar_idx": 364445,
+      "direction": "short",
+      "signal_bar_time": "2024-07-04T01:05:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 364446
+    },
+    {
+      "signal_bar_idx": 364584,
+      "direction": "long",
+      "signal_bar_time": "2024-07-04T12:40:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 364585
+    },
+    {
+      "signal_bar_idx": 366753,
+      "direction": "long",
+      "signal_bar_time": "2024-07-16T13:25:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 366754
+    },
+    {
+      "signal_bar_idx": 368193,
+      "direction": "short",
+      "signal_bar_time": "2024-07-23T18:25:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 368194
+    },
+    {
+      "signal_bar_idx": 370197,
+      "direction": "short",
+      "signal_bar_time": "2024-08-02T01:25:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 370198
+    },
+    {
+      "signal_bar_idx": 370236,
+      "direction": "short",
+      "signal_bar_time": "2024-08-02T04:40:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 370237
+    },
+    {
+      "signal_bar_idx": 372898,
+      "direction": "long",
+      "signal_bar_time": "2024-08-15T19:30:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 372899
+    },
+    {
+      "signal_bar_idx": 376047,
+      "direction": "short",
+      "signal_bar_time": "2024-09-02T05:55:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 376048
+    },
+    {
+      "signal_bar_idx": 379292,
+      "direction": "long",
+      "signal_bar_time": "2024-09-18T04:20:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 379293
+    },
+    {
+      "signal_bar_idx": 383959,
+      "direction": "long",
+      "signal_bar_time": "2024-10-11T02:15:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 383960
+    },
+    {
+      "signal_bar_idx": 385175,
+      "direction": "long",
+      "signal_bar_time": "2024-10-17T11:35:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 385176
+    },
+    {
+      "signal_bar_idx": 386589,
+      "direction": "short",
+      "signal_bar_time": "2024-10-24T14:25:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 386590
+    },
+    {
+      "signal_bar_idx": 388502,
+      "direction": "short",
+      "signal_bar_time": "2024-11-04T13:50:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 388503
+    },
+    {
+      "signal_bar_idx": 389160,
+      "direction": "short",
+      "signal_bar_time": "2024-11-06T23:40:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 389161
+    },
+    {
+      "signal_bar_idx": 390620,
+      "direction": "short",
+      "signal_bar_time": "2024-11-14T06:20:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 390621
+    },
+    {
+      "signal_bar_idx": 394881,
+      "direction": "long",
+      "signal_bar_time": "2024-12-06T01:10:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 394882
+    },
+    {
+      "signal_bar_idx": 395993,
+      "direction": "short",
+      "signal_bar_time": "2024-12-12T01:50:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 395994
+    },
+    {
+      "signal_bar_idx": 397347,
+      "direction": "short",
+      "signal_bar_time": "2024-12-18T23:40:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 397348
+    },
+    {
+      "signal_bar_idx": 400199,
+      "direction": "long",
+      "signal_bar_time": "2025-01-06T11:05:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 400200
+    },
+    {
+      "signal_bar_idx": 408359,
+      "direction": "long",
+      "signal_bar_time": "2025-02-17T12:35:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 408360
+    },
+    {
+      "signal_bar_idx": 409152,
+      "direction": "long",
+      "signal_bar_time": "2025-02-20T13:40:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 409153
+    },
+    {
+      "signal_bar_idx": 410918,
+      "direction": "short",
+      "signal_bar_time": "2025-03-02T23:50:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 410919
+    },
+    {
+      "signal_bar_idx": 411335,
+      "direction": "short",
+      "signal_bar_time": "2025-03-04T11:35:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 411336
+    },
+    {
+      "signal_bar_idx": 412207,
+      "direction": "short",
+      "signal_bar_time": "2025-03-07T15:15:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 412208
+    },
+    {
+      "signal_bar_idx": 416713,
+      "direction": "long",
+      "signal_bar_time": "2025-03-31T22:45:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 416714
+    },
+    {
+      "signal_bar_idx": 417087,
+      "direction": "short",
+      "signal_bar_time": "2025-04-02T06:55:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 417088
+    },
+    {
+      "signal_bar_idx": 417328,
+      "direction": "long",
+      "signal_bar_time": "2025-04-03T04:00:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 417329
+    },
+    {
+      "signal_bar_idx": 419332,
+      "direction": "long",
+      "signal_bar_time": "2025-04-14T10:00:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 419333
+    },
+    {
+      "signal_bar_idx": 423172,
+      "direction": "long",
+      "signal_bar_time": "2025-05-05T08:00:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 423173
+    },
+    {
+      "signal_bar_idx": 425719,
+      "direction": "long",
+      "signal_bar_time": "2025-05-16T13:15:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 425720
+    },
+    {
+      "signal_bar_idx": 425823,
+      "direction": "long",
+      "signal_bar_time": "2025-05-18T22:55:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 425824
+    },
+    {
+      "signal_bar_idx": 431823,
+      "direction": "short",
+      "signal_bar_time": "2025-06-17T19:55:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 431824
+    },
+    {
+      "signal_bar_idx": 437867,
+      "direction": "long",
+      "signal_bar_time": "2025-07-18T06:20:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 437868
+    },
+    {
+      "signal_bar_idx": 445393,
+      "direction": "long",
+      "signal_bar_time": "2025-08-26T12:30:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 445394
+    },
+    {
+      "signal_bar_idx": 448233,
+      "direction": "long",
+      "signal_bar_time": "2025-09-10T00:10:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 448234
+    },
+    {
+      "signal_bar_idx": 451147,
+      "direction": "long",
+      "signal_bar_time": "2025-09-24T13:00:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 451148
+    },
+    {
+      "signal_bar_idx": 451505,
+      "direction": "long",
+      "signal_bar_time": "2025-09-25T19:50:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 451506
+    },
+    {
+      "signal_bar_idx": 454185,
+      "direction": "short",
+      "signal_bar_time": "2025-10-09T13:10:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 454186
+    },
+    {
+      "signal_bar_idx": 454649,
+      "direction": "long",
+      "signal_bar_time": "2025-10-13T05:50:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 454650
+    },
+    {
+      "signal_bar_idx": 457276,
+      "direction": "long",
+      "signal_bar_time": "2025-10-24T17:45:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 457277
+    },
+    {
+      "signal_bar_idx": 462169,
+      "direction": "long",
+      "signal_bar_time": "2025-11-19T12:30:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 462170
+    },
+    {
+      "signal_bar_idx": 465050,
+      "direction": "short",
+      "signal_bar_time": "2025-12-04T18:05:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 465051
+    },
+    {
+      "signal_bar_idx": 465813,
+      "direction": "short",
+      "signal_bar_time": "2025-12-09T12:40:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 465814
+    },
+    {
+      "signal_bar_idx": 466383,
+      "direction": "long",
+      "signal_bar_time": "2025-12-11T14:10:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 466384
+    },
+    {
+      "signal_bar_idx": 466929,
+      "direction": "long",
+      "signal_bar_time": "2025-12-15T13:40:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 466930
+    },
+    {
+      "signal_bar_idx": 468032,
+      "direction": "long",
+      "signal_bar_time": "2025-12-19T13:35:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 468033
+    },
+    {
+      "signal_bar_idx": 470200,
+      "direction": "long",
+      "signal_bar_time": "2026-01-02T14:00:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 470201
+    },
+    {
+      "signal_bar_idx": 472944,
+      "direction": "long",
+      "signal_bar_time": "2026-01-16T12:40:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 472945
+    },
+    {
+      "signal_bar_idx": 478702,
+      "direction": "long",
+      "signal_bar_time": "2026-02-16T13:30:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 478703
+    },
+    {
+      "signal_bar_idx": 479123,
+      "direction": "long",
+      "signal_bar_time": "2026-02-18T06:35:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 479124
+    },
+    {
+      "signal_bar_idx": 480029,
+      "direction": "long",
+      "signal_bar_time": "2026-02-23T13:05:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 480030
+    },
+    {
+      "signal_bar_idx": 481102,
+      "direction": "long",
+      "signal_bar_time": "2026-02-27T10:30:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 481103
+    },
+    {
+      "signal_bar_idx": 484795,
+      "direction": "short",
+      "signal_bar_time": "2026-03-18T18:15:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 484796
+    },
+    {
+      "signal_bar_idx": 489580,
+      "direction": "long",
+      "signal_bar_time": "2026-04-13T10:45:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 489581
+    },
+    {
+      "signal_bar_idx": 491833,
+      "direction": "long",
+      "signal_bar_time": "2026-04-23T14:30:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 491834
+    },
+    {
+      "signal_bar_idx": 493149,
+      "direction": "short",
+      "signal_bar_time": "2026-04-30T09:10:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 493150
+    },
+    {
+      "signal_bar_idx": 493376,
+      "direction": "long",
+      "signal_bar_time": "2026-05-01T05:05:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 493377
+    },
+    {
+      "signal_bar_idx": 494551,
+      "direction": "long",
+      "signal_bar_time": "2026-05-07T11:00:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 494552
+    },
+    {
+      "signal_bar_idx": 496489,
+      "direction": "long",
+      "signal_bar_time": "2026-05-18T11:30:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 496490
+    },
+    {
+      "signal_bar_idx": 500849,
+      "direction": "long",
+      "signal_bar_time": "2026-06-09T10:50:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 500850
+    },
+    {
+      "signal_bar_idx": 501862,
+      "direction": "long",
+      "signal_bar_time": "2026-06-15T03:15:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 501863
+    },
+    {
+      "signal_bar_idx": 506551,
+      "direction": "short",
+      "signal_bar_time": "2026-07-08T11:00:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 506552
+    },
+    {
+      "signal_bar_idx": 508783,
+      "direction": "long",
+      "signal_bar_time": "2026-07-20T13:00:00.000000000",
+      "cancellation_reason": "CONFIRMATION_FAILED",
+      "cancellation_bar_idx": 508784
+    }
+  ]
+}

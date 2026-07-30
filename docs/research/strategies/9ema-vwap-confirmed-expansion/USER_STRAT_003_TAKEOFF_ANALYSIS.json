@@ -1,0 +1,48 @@
+{
+  "percent_reaching_1_atr": 47.62,
+  "percent_reaching_2_atr": 23.81,
+  "percent_reaching_3_atr": 13.76,
+  "percent_reaching_5_atr": 4.76,
+  "by_level": {
+    "ATR_1.0": {
+      "level": 1.0,
+      "count": 90,
+      "percent": 47.61904761904761,
+      "avg_net_pnl": 23.521129526409904,
+      "median_net_pnl": 0.26,
+      "avg_holding_bars": 9.811111111111112,
+      "long_count": 51,
+      "short_count": 39
+    },
+    "ATR_2.0": {
+      "level": 2.0,
+      "count": 45,
+      "percent": 23.809523809523807,
+      "avg_net_pnl": 53.386353504120294,
+      "median_net_pnl": 32.26,
+      "avg_holding_bars": 12.866666666666667,
+      "long_count": 24,
+      "short_count": 21
+    },
+    "ATR_3.0": {
+      "level": 3.0,
+      "count": 26,
+      "percent": 13.756613756613756,
+      "avg_net_pnl": 92.49073761686032,
+      "median_net_pnl": 70.51,
+      "avg_holding_bars": 16.0,
+      "long_count": 15,
+      "short_count": 11
+    },
+    "ATR_5.0": {
+      "level": 5.0,
+      "count": 9,
+      "percent": 4.761904761904762,
+      "avg_net_pnl": 139.64888888888888,
+      "median_net_pnl": 76.26,
+      "avg_holding_bars": 18.333333333333332,
+      "long_count": 4,
+      "short_count": 5
+    }
+  }
+}

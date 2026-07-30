@@ -1,0 +1,71 @@
+{
+  "sessions": {
+    "FULL_CME_SESSION": {
+      "count": 189,
+      "expectancy": -1.0145512466008229,
+      "profit_factor": 0.9376058993603631,
+      "win_rate": 0.24338624338624337
+    },
+    "NY_RTH": {
+      "count": 42,
+      "expectancy": -1.1927129265654275,
+      "profit_factor": 0.9405027515611256,
+      "win_rate": 0.2619047619047619
+    },
+    "LONDON": {
+      "count": 66,
+      "expectancy": -2.4955039775870134,
+      "profit_factor": 0.8558854169855218,
+      "win_rate": 0.24242424242424243
+    },
+    "ASIA": {
+      "count": 77,
+      "expectancy": -0.46094779442940975,
+      "profit_factor": 0.9665763759989573,
+      "win_rate": 0.22077922077922077
+    },
+    "AFTER_HOURS": {
+      "count": 4,
+      "expectancy": 14.635000000000002,
+      "profit_factor": 3.2107250755287016,
+      "win_rate": 0.5
+    }
+  },
+  "weekdays": {
+    "Monday": {
+      "count": 37,
+      "expectancy": -1.753255382009053,
+      "win_rate": 0.2702702702702703
+    },
+    "Tuesday": {
+      "count": 48,
+      "expectancy": -10.481978967716136,
+      "win_rate": 0.16666666666666666
+    },
+    "Wednesday": {
+      "count": 36,
+      "expectancy": -7.475887720972742,
+      "win_rate": 0.2222222222222222
+    },
+    "Thursday": {
+      "count": 36,
+      "expectancy": 19.593908899066445,
+      "win_rate": 0.3333333333333333
+    },
+    "Friday": {
+      "count": 28,
+      "expectancy": -4.152715572725833,
+      "win_rate": 0.21428571428571427
+    },
+    "Sunday": {
+      "count": 4,
+      "expectancy": 14.070631900526008,
+      "win_rate": 0.5
+    }
+  },
+  "full_cme_expectancy": -1.0146,
+  "ny_rth_expectancy": -1.1927,
+  "london_expectancy": -2.4955,
+  "asia_expectancy": -0.4609,
+  "after_hours_expectancy": 14.635
+}

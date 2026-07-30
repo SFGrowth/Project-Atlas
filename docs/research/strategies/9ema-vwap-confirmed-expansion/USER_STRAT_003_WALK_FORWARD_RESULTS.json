@@ -1,0 +1,47 @@
+{
+  "training_trades": 113,
+  "training_expectancy": 2.6688,
+  "training_profit_factor": 1.1872,
+  "validation_trades": 76,
+  "validation_expectancy": -6.4911,
+  "validation_profit_factor": 0.6627,
+  "walk_forward_windows": 4,
+  "walk_forward_positive_windows": 1,
+  "walk_forward_negative_windows": 3,
+  "walk_forward_aggregate_expectancy": -5.8192,
+  "parameter_changed_after_validation": false,
+  "windows": [
+    {
+      "window": 1,
+      "train_trades": 113,
+      "val_trades": 20,
+      "train_expectancy": 2.6687678024662533,
+      "val_expectancy": -1.066659622313128,
+      "val_positive": false
+    },
+    {
+      "window": 2,
+      "train_trades": 113,
+      "val_trades": 20,
+      "train_expectancy": 4.77379473947986,
+      "val_expectancy": -17.424828307272623,
+      "val_positive": false
+    },
+    {
+      "window": 3,
+      "train_trades": 113,
+      "val_trades": 20,
+      "train_expectancy": 4.685800750841082,
+      "val_expectancy": -11.731140461020406,
+      "val_positive": false
+    },
+    {
+      "window": 4,
+      "train_trades": 113,
+      "val_trades": 16,
+      "train_expectancy": 3.3436052937283143,
+      "val_expectancy": 6.945726282867562,
+      "val_positive": true
+    }
+  ]
+}
