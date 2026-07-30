@@ -8,7 +8,8 @@
  *   → HYPOTHESIS_ID  (darwin_candidates.candidate_id)
  *   → JOB_ID         (darwin_job_run_history.run_id)
  *   → RESULT_ID      (darwin_experiment_records.experiment_id)
- *   → FINDING_ID     (darwin_research_memory.memory_id)
+ *   → FINDING_ID     (darwin_findings.finding_id)
+ *   → MEMORY_ID      (darwin_research_memory.memory_id)
  *   → NOTIFICATION_ID (notification_log.id)
  *
  * AUTHORITY BOUNDARIES:
@@ -32,6 +33,8 @@ export const RANGE_EXPANSION_MULTIPLIER = 1.5;
 export const MIN_SAMPLE_SIZE = 30;
 export const FORWARD_HORIZONS = [5, 15, 30]; // bars
 export const P_VALUE_THRESHOLD = 0.05;
+export const BH_FDR_Q = 0.05;  // Benjamini-Hochberg FDR threshold
+export const BH_FDR_ENABLED = true;
 export const WIN_RATE_THRESHOLD = 0.55;
 export const EXPECTANCY_THRESHOLD = 0.5; // pts
 
@@ -202,8 +205,12 @@ export async function createCandidate(obs: {
       rule_id, rule_version, condition_signature,
       candidate_version, discovered_by,
       first_observed, last_observed,
-      supporting_sessions, supporting_regimes
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      supporting_sessions, supporting_regimes,
+      title, plain_english_hypothesis, machine_readable_condition,
+      market, instrument, timeframe, direction,
+      session, regime, evidence_stage, observation_count, status,
+      configuration_sha, implementation_sha
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `, [
     candidateId,
     'RANGE_EXPANSION_1M',
@@ -224,19 +231,33 @@ export async function createCandidate(obs: {
     now,
     obs.session ?? 'UNKNOWN',
     obs.volatilityRegime ?? 'UNKNOWN',
+    // New Part D fields
+    `RANGE_EXPANSION_1M — ${obs.barDirection} — ${obs.session ?? 'ANY'} — ${obs.volatilityRegime ?? 'ANY'}`,
+    `1m MNQ bar where range >= ${RANGE_EXPANSION_MULTIPLIER}x ATR(14) and ATR > 0. ` +
+    `Direction: ${obs.barDirection}. Session: ${obs.session ?? 'ANY'}. Regime: ${obs.volatilityRegime ?? 'ANY'}.`,
+    JSON.stringify({ rule: RULE_ID, version: RULE_VERSION, multiplier: RANGE_EXPANSION_MULTIPLIER, direction: obs.barDirection }),
+    'MNQ', 'MNQ', '1m', obs.barDirection,
+    obs.session ?? 'ANY', obs.volatilityRegime ?? 'ANY',
+    'INITIAL', 1, 'ACTIVE',
+    signature.slice(0, 40), // configuration_sha
+    RULE_VERSION,            // implementation_sha
   ]);
 
   // Link observation to candidate
   await pool.execute(`
     INSERT INTO darwin_candidate_observations (
       candidate_id, observation_id, source_event_id,
-      bar_timestamp, bar_direction, bar_range, atr, session, volatility_regime
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      bar_timestamp, bar_direction, bar_range, atr, session, volatility_regime,
+      trigger_rule_id, trigger_rule_version,
+      feature_snapshot_json
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ON DUPLICATE KEY UPDATE linked_at = linked_at
   `, [
     candidateId, obs.observationId, obs.sourceEventId,
     obs.barTimestamp, obs.barDirection, obs.barRange, obs.atr,
     obs.session, obs.volatilityRegime,
+    RULE_ID, RULE_VERSION,
+    JSON.stringify({ bar_range: obs.barRange, atr: obs.atr, multiplier: RANGE_EXPANSION_MULTIPLIER, direction: obs.barDirection }),
   ]);
 
   return candidateId;
@@ -481,6 +502,32 @@ function bootstrapCI(data: number[], nResamples: number): { ciLower: number; ciU
   return { ciLower, ciUpper, pValue: Math.min(pValue, 1) };
 }
 
+// ─── BH-FDR Correction ───────────────────────────────────────────────────────
+/**
+ * Benjamini-Hochberg FDR correction.
+ * For m=1 (single test), adjusted_p = raw_p (no change).
+ * For m>1 tests in future cycles, rank p-values and apply threshold = (rank/m)*q.
+ */
+export function applyBHFDR(pValues: number[], q: number = BH_FDR_Q): Array<{
+  rawP: number; adjustedP: number; rank: number; threshold: number; significant: boolean;
+}> {
+  const m = pValues.length;
+  const indexed = pValues.map((p, i) => ({ p, i })).sort((a, b) => a.p - b.p);
+  const results = new Array(m);
+  let lastSignificantRank = -1;
+  for (let k = 0; k < m; k++) {
+    const threshold = ((k + 1) / m) * q;
+    if (indexed[k].p <= threshold) lastSignificantRank = k;
+  }
+  for (let k = 0; k < m; k++) {
+    const rank = k + 1;
+    const threshold = (rank / m) * q;
+    const adjustedP = Math.min(indexed[k].p * m / rank, 1);
+    results[indexed[k].i] = { rawP: indexed[k].p, adjustedP, rank, threshold, significant: k <= lastSignificantRank };
+  }
+  return results;
+}
+
 // ─── Step 6: Persist finding to research memory ──────────────────────────────
 export async function persistFinding(params: {
   candidateId: string;
@@ -533,7 +580,82 @@ export async function persistFinding(params: {
     RULE_VERSION,
   ]);
 
-  // Back-link experiment to finding
+  // Apply BH-FDR (m=1 for single test; scales automatically when m>1 in future cycles)
+  const bhResult = applyBHFDR([params.pValue], BH_FDR_Q)[0];
+
+  // Write formal finding to darwin_findings table (canonical finding record)
+  const findingId = randomUUID();
+  await pool.execute(`
+    INSERT INTO darwin_findings (
+      finding_id, result_id, candidate_id, observation_id, source_event_id,
+      title, plain_english_summary, evidence_stage, classification,
+      sample_size, key_metrics_json, confidence_json, caveats, next_required_test,
+      actionable, raw_p_value, adjusted_p_value, bh_fdr_significant
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `, [
+    findingId, params.experimentId, params.candidateId,
+    params.sourceObservationId, params.sourceEventId,
+    `RANGE_EXPANSION_1M [${params.classification}] — ${RULE_ID} v${RULE_VERSION}`,
+    params.conclusion, 'INITIAL',
+    params.classification === 'EDGE_DETECTED' ? 'PROMISING' :
+    params.classification === 'FAIL_SAMPLE_SIZE' ? 'OBSERVED' :
+    params.classification === 'INCONCLUSIVE' ? 'INCONCLUSIVE' : 'REJECTED',
+    params.sampleSize,
+    JSON.stringify({
+      h1_mean_return: params.h1MeanReturn, h1_win_rate: params.h1WinRate,
+      bullish_sample: params.bullishSampleSize, bearish_sample: params.bearishSampleSize,
+      raw_p_value: params.pValue, adjusted_p_value: bhResult.adjustedP,
+      bh_fdr_q: BH_FDR_Q, bh_fdr_significant: bhResult.significant,
+    }),
+    JSON.stringify({ ci_lower: params.ciLower, ci_upper: params.ciUpper }),
+    'Historical analysis only. No edge claimed. No trades initiated.',
+    'Accumulate more observations; re-test when sample size >= 100 per direction.',
+    0, params.pValue, bhResult.adjustedP, bhResult.significant ? 1 : 0,
+  ]);
+
+  // Update experiment record with BH-FDR values and finding linkage
+  await pool.execute(`
+    UPDATE darwin_experiment_records
+    SET raw_p_value = ?, adjusted_p_value = ?, bh_fdr_q = ?, bh_fdr_rank = ?,
+        bh_fdr_threshold = ?, bh_fdr_significant = ?, finding_id = ?,
+        classification = ?, observation_id = ?
+    WHERE experiment_id = ?
+  `, [
+    params.pValue, bhResult.adjustedP, BH_FDR_Q, bhResult.rank,
+    bhResult.threshold, bhResult.significant ? 1 : 0, findingId,
+    params.classification === 'EDGE_DETECTED' ? 'PROMISING' :
+    params.classification === 'FAIL_SAMPLE_SIZE' ? 'OBSERVED' :
+    params.classification === 'INCONCLUSIVE' ? 'INCONCLUSIVE' : 'REJECTED',
+    params.sourceObservationId, params.experimentId,
+  ]);
+
+  // Update research memory with new chain fields
+  const condSig = buildConditionSignature({
+    market: 'MNQ', instrument: 'MNQ', timeframe: '1m', direction: 'BOTH',
+    ruleId: RULE_ID, ruleVersion: RULE_VERSION,
+    thresholdMultiplier: RANGE_EXPANSION_MULTIPLIER, session: null, regime: null,
+  });
+  await pool.execute(`
+    UPDATE darwin_research_memory
+    SET finding_id = ?, hypothesis_family = ?, condition_signature = ?,
+        conclusion = ?, classification = ?, evidence_summary = ?,
+        next_required_test = ?, first_seen_at = ?, last_updated_at = ?,
+        dataset_sha = ?, implementation_sha = ?, configuration_sha = ?
+    WHERE memory_id = ?
+  `, [
+    findingId, 'RANGE_EXPANSION_1M', condSig, params.conclusion,
+    params.classification === 'EDGE_DETECTED' ? 'PROMISING' :
+    params.classification === 'FAIL_SAMPLE_SIZE' ? 'OBSERVED' :
+    params.classification === 'INCONCLUSIVE' ? 'INCONCLUSIVE' : 'REJECTED',
+    `Sample: ${params.sampleSize}. Bull: ${params.bullishSampleSize}. Bear: ${params.bearishSampleSize}. ` +
+    `H1 mean: ${params.h1MeanReturn.toFixed(4)} pts. WR: ${(params.h1WinRate*100).toFixed(1)}%. ` +
+    `p=${params.pValue.toFixed(4)}. BH-adj-p=${bhResult.adjustedP.toFixed(4)}. Significant: ${bhResult.significant}.`,
+    'Accumulate more observations; re-test when sample size >= 100 per direction.',
+    Date.now(), Date.now(), 'databento-mnq-1m-canonical', RULE_VERSION, condSig.slice(0, 40),
+    memoryId,
+  ]);
+
+  // Back-link experiment to memory
   await pool.execute(`
     UPDATE darwin_experiment_records SET finding_id = ? WHERE experiment_id = ?
   `, [memoryId, params.experimentId]);
@@ -543,6 +665,9 @@ export async function persistFinding(params: {
     UPDATE darwin_candidates SET experiment_id = ?, finding_id = ? WHERE candidate_id = ?
   `, [params.experimentId, memoryId, params.candidateId]);
 
+  // Return memoryId as the canonical finding ID for backward compatibility.
+  // The formal darwin_findings record is linked via darwin_findings.finding_id = findingId.
+  // The chain result and all tests query darwin_research_memory by this memoryId.
   return memoryId;
 }
 
