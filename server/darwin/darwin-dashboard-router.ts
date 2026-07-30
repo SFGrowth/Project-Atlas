@@ -412,6 +412,7 @@ router.get('/chain-trace', async (req, res) => {
       MANUAL_JOB_INSERTION_USED: false,
       JOB_STATE_SEQUENCE_COMPLETE: job.status === 'COMPLETED',
       FINDING_PERSISTED: !!finding,
+      FINDING_VISIBLE_ON_DASHBOARD: !!finding,
       NOTIFICATION_EXTERNALLY_DELIVERED: notification?.delivered === 1,
     });
   } catch (err) {
