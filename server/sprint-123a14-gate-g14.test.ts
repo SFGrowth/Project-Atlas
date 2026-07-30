@@ -704,28 +704,27 @@ describe("G14-R: USER-STRAT-002 Final Answer and Secondary Version", () => {
   let r: any;
   try { r = loadJson(path.join(STRAT_002_CORRECT_DIR, "USER_STRAT_002_EMA9_VWAP_MOMENTUM_PRIMARY_RESULTS.json")); } catch { r = {}; }
 
-  it("G14-R01: does_phils_strategy_have_edge is YES, PROMISING, or NO", () => {
-    expect(["YES", "PROMISING", "NO"]).toContain(r.does_phils_strategy_have_edge);
+  it("G14-R01: does_phils_strategy_have_edge is NO (REJECTED)", () => {
+    expect(r.does_phils_strategy_have_edge).toBe("NO");
   });
 
-  it("G14-R02: classification is consistent with does_phils_strategy_have_edge", () => {
-    const cls = r.primary_version?.classification;
-    const edge = r.does_phils_strategy_have_edge;
-    if (cls === "SUPPORTED") expect(edge).toBe("YES");
-    if (cls === "NOT_SUPPORTED") expect(edge).toBe("NO");
-    if (cls === "PROMISING") expect(edge).toBe("PROMISING");
+  it("G14-R02: primary classification is REJECTED", () => {
+    expect(r.primary_version?.classification).toBe("REJECTED");
   });
 
   it("G14-R03: secondary safety version has same filled_trades as primary", () => {
     expect(r.secondary_safety_version?.filled_trades).toBe(r.primary_version?.filled_trades);
   });
 
-  it("G14-R04: secondary version classification is valid", () => {
-    const valid = ["SUPPORTED", "PROMISING", "NOT_SUPPORTED", "INSUFFICIENT_SAMPLE"];
-    expect(valid).toContain(r.secondary_safety_version?.classification);
+  it("G14-R04: secondary version classification is REJECTED", () => {
+    expect(r.secondary_safety_version?.classification).toBe("REJECTED");
   });
 
-  it("G14-R05: artefact manifest lists >= 4 artefacts", () => {
+  it("G14-R05: baseline_experiment_closed is true", () => {
+    expect(r.baseline_experiment_closed).toBe(true);
+  });
+
+  it("G14-R05b: artefact manifest lists >= 4 artefacts", () => {
     const m = loadJson(path.join(STRAT_002_CORRECT_DIR, "USER_STRAT_002_EMA9_VWAP_MOMENTUM_ARTEFACT_MANIFEST.json"));
     expect(m.artefacts.length).toBeGreaterThanOrEqual(4);
   });
@@ -743,5 +742,60 @@ describe("G14-R: USER-STRAT-002 Final Answer and Secondary Version", () => {
   it("G14-R08: training_trades + validation_trades <= filled_trades", () => {
     const pv = r.primary_version || {};
     expect((pv.training_trades || 0) + (pv.validation_trades || 0)).toBeLessThanOrEqual(pv.filled_trades || 0);
+  });
+});
+
+// ─── Suite S: USER-STRAT-002 Negative Evidence Invariants ────────────────────────
+describe("G14-S: USER-STRAT-002 Negative Evidence Invariants", () => {
+  let r: any;
+  try { r = loadJson(path.join(STRAT_002_CORRECT_DIR, "USER_STRAT_002_EMA9_VWAP_MOMENTUM_PRIMARY_RESULTS.json")); } catch { r = {}; }
+
+  it("G14-S01: one_bar_exit_percent is approximately 67.2%", () => {
+    const pct = r.primary_version?.one_bar_exit_percent;
+    expect(pct).toBeGreaterThan(60);
+    expect(pct).toBeLessThan(75);
+  });
+
+  it("G14-S02: all_sessions_negative is true", () => {
+    expect(r.primary_version?.all_sessions_negative).toBe(true);
+  });
+
+  it("G14-S03: all_years_negative is true", () => {
+    expect(r.primary_version?.all_years_negative).toBe(true);
+  });
+
+  it("G14-S04: failure_mechanism is EXCESSIVE_ENTRY_FREQUENCY_AND_IMMEDIATE_EMA_RETEST", () => {
+    expect(r.primary_version?.failure_mechanism).toBe("EXCESSIVE_ENTRY_FREQUENCY_AND_IMMEDIATE_EMA_RETEST");
+  });
+
+  it("G14-S05: negative_evidence_preserved is true", () => {
+    expect(r.primary_version?.negative_evidence_preserved).toBe(true);
+  });
+
+  it("G14-S06: optimisation_inside_baseline is false", () => {
+    expect(r.primary_version?.optimisation_inside_baseline).toBe(false);
+  });
+
+  it("G14-S07: improvement_requires_separate_preregistration is true", () => {
+    expect(r.improvement_requires_separate_preregistration).toBe(true);
+  });
+
+  it("G14-S08: NY_RTH session expectancy is negative", () => {
+    const sess = r.primary_version?.session_results || {};
+    expect(sess.NY_RTH?.expectancy).toBeLessThan(0);
+  });
+
+  it("G14-S09: all 8 years have negative expectancy", () => {
+    const yrs = r.primary_version?.year_by_year_results || {};
+    for (const yr of ["2019", "2020", "2021", "2022", "2023", "2024", "2025", "2026"]) {
+      expect(yrs[yr]?.expectancy).toBeLessThan(0);
+    }
+  });
+
+  it("G14-S10: EMA9_TOUCH is >= 95% of exits", () => {
+    const exits = r.primary_version?.exit_reasons || {};
+    const total = r.primary_version?.filled_trades || 1;
+    const ema9Count = exits.EMA9_TOUCH || 0;
+    expect(ema9Count / total).toBeGreaterThanOrEqual(0.95);
   });
 });

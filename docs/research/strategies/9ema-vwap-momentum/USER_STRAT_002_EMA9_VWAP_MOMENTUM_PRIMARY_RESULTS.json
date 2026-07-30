@@ -9,7 +9,7 @@
   "total_signals": 57687,
   "total_long_signals": 31754,
   "total_short_signals": 25933,
-  "does_phils_strategy_have_edge": "PROMISING",
+  "does_phils_strategy_have_edge": "NO",
   "primary_version": {
     "label": "PRIMARY_NO_FIXED_TARGET",
     "total_signals": 57687,
@@ -39,7 +39,7 @@
     "bootstrap_95ci_lower": -7.2138,
     "bootstrap_95ci_upper": -6.7271,
     "permutation_p": 1.0,
-    "classification": "PROMISING",
+    "classification": "REJECTED",
     "holding_time_distribution_bars": {
       "1": 38743,
       "2": 6793,
@@ -169,7 +169,14 @@
     "exit_reasons": {
       "EMA9_TOUCH": 56792,
       "SESSION_CLOSE": 895
-    }
+    },
+    "one_bar_exit_percent": 67.2,
+    "all_sessions_negative": true,
+    "all_years_negative": true,
+    "failure_mechanism": "EXCESSIVE_ENTRY_FREQUENCY_AND_IMMEDIATE_EMA_RETEST",
+    "failure_mechanism_detail": "Strategy generates ~155 trades/week. EMA9-touch exit fires within 1 bar on 67.2% of trades. Entry is momentum-based (price breaks above EMA9) but exit is mean-reversion (exit when price returns to EMA9), which are structurally opposed. The EMA9 retest is the expected next event after alignment \u2014 not a profitable exit signal.",
+    "negative_evidence_preserved": true,
+    "optimisation_inside_baseline": false
   },
   "secondary_safety_version": {
     "label": "SECONDARY_2ATR_STOP",
@@ -200,7 +207,7 @@
     "bootstrap_95ci_lower": -7.8226,
     "bootstrap_95ci_upper": -7.3182,
     "permutation_p": 1.0,
-    "classification": "PROMISING",
+    "classification": "REJECTED",
     "holding_time_distribution_bars": {
       "1": 38750,
       "2": 6795,
@@ -331,7 +338,10 @@
       "EMA9_TOUCH": 55443,
       "ATR_STOP": 1349,
       "SESSION_CLOSE": 895
-    }
+    },
+    "all_sessions_negative": true,
+    "all_years_negative": true,
+    "negative_evidence_preserved": true
   },
   "authority": {
     "DARWIN_DECISION_AUTHORITY": "DISABLED",
@@ -341,5 +351,7 @@
     "LOOKAHEAD_VIOLATIONS": 0,
     "FUTURE_BAR_USES": 0,
     "WRONG_STRATEGY_SUPERSEDED": "STRAT-9EMA-002"
-  }
+  },
+  "baseline_experiment_closed": true,
+  "improvement_requires_separate_preregistration": true
 }
