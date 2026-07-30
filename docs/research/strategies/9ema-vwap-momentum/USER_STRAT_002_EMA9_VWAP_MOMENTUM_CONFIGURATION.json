@@ -1,0 +1,90 @@
+{
+  "experiment_id": "USER-STRAT-002-EMA9-VWAP-MOMENTUM",
+  "sprint": "123A.14",
+  "gate": "G14",
+  "pre_registration_date": "2026-07-30",
+  "status": "PRE_REGISTERED",
+  "supersedes": "STRAT-9EMA-002 (wrong strategy — see SUPERSEDED_NOTICE.md)",
+  "strategy": {
+    "market": "MNQ",
+    "timeframe_minutes": 5,
+    "long_alignment": "CLOSE > EMA9 AND EMA9 > SESSION_VWAP",
+    "short_alignment": "CLOSE < EMA9 AND EMA9 < SESSION_VWAP",
+    "entry_condition": "fresh_transition_to_correct_alignment",
+    "entry_timing": "next_5m_bar_open",
+    "long_exit": "first_causal_bar_where_LOW_lte_EMA9",
+    "short_exit": "first_causal_bar_where_HIGH_gte_EMA9",
+    "session_close_exit": "last_bar_close_before_23_00_UTC",
+    "fixed_target": false,
+    "ema21_used": false,
+    "ema50_used": false,
+    "adx_used": false,
+    "crossover_candle_stop": false,
+    "session_filter": "FULL_CME_SESSION",
+    "ema_period": 9,
+    "vwap_type": "SESSION_VWAP_RESET_AT_00_00_UTC"
+  },
+  "secondary_safety_version": {
+    "enabled": true,
+    "emergency_stop_atr_multiplier": 2.0,
+    "atr_period": 14,
+    "description": "Same rules with 2 ATR emergency stop. Reported separately."
+  },
+  "execution": {
+    "entry_slippage_pts": 0.50,
+    "exit_slippage_pts": 0.50,
+    "commission_rt_usd": 1.24,
+    "mnq_point_value_usd": 2.00,
+    "mnq_tick_size_pts": 0.25
+  },
+  "dataset": {
+    "instrument": "MNQ",
+    "source": "Databento_GLBX_MDP3_OHLCV_5m",
+    "canonical_file": "/home/ubuntu/atlas-historical/canonical/mnq_5m_full_2019_2026.parquet",
+    "canonical_sha256": "17206c6289589622a6bf0fc25b0f598752045c2e61a24d0896002f9bfda531fe",
+    "date_range_start": "2019-05-06",
+    "date_range_end": "2026-07-20",
+    "total_5m_bars": 508903
+  },
+  "statistical_gates": {
+    "supported_ci_lower_gate_usd": 0.0,
+    "promising_ci_lower_gate_usd": -10.0,
+    "permutation_p_gate": 0.10,
+    "validation_expectancy_gate_usd": 0.0,
+    "min_trades": 50,
+    "bootstrap_n": 10000,
+    "permutation_n": 10000,
+    "train_end": "2025-04-30",
+    "val_start": "2025-05-01",
+    "random_seed": 42
+  },
+  "required_metrics": [
+    "total_signals",
+    "filled_trades",
+    "trades_per_week",
+    "win_rate",
+    "profit_factor",
+    "expectancy_usd",
+    "total_net_pnl_usd",
+    "max_drawdown_usd",
+    "avg_win_usd",
+    "avg_loss_usd",
+    "max_win_usd",
+    "max_loss_usd",
+    "holding_time_distribution_bars",
+    "long_results",
+    "short_results",
+    "session_results",
+    "year_by_year_results",
+    "validation_expectancy_usd",
+    "bootstrap_95ci",
+    "walk_forward_result",
+    "atr_reach_analysis_1_2_3_5"
+  ],
+  "authority": {
+    "DARWIN_DECISION_AUTHORITY": "DISABLED",
+    "DARWIN_EXECUTION_AUTHORITY": "DISABLED",
+    "LIVE_TRADES_INITIATED": 0,
+    "PARAMETER_CHANGED_AFTER_PREREGISTRATION": false
+  }
+}
