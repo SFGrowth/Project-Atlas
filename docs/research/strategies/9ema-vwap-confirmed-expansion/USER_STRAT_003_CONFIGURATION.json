@@ -1,0 +1,167 @@
+{
+  "experiment_id": "USER-STRAT-003-EMA9-VWAP-CONFIRMED-EXPANSION",
+  "sprint": "123A.15",
+  "pre_registration_date": "2026-07-30",
+  "results_visible_at_signing": false,
+  "parent_strategy": "USER-STRAT-002-EMA9-VWAP-MOMENTUM",
+  "parent_classification": "REJECTED",
+
+  "dataset": {
+    "file": "mnq_5m_full_2019_2026.parquet",
+    "sha256": "17206c6289589622a6bf0fc25b0f598752045c2e61a24d0896002f9bfda531fe",
+    "total_5m_bars": 508903,
+    "date_range_start": "2019-05-06",
+    "date_range_end": "2026-07-20",
+    "source": "Databento GLBX.MDP3"
+  },
+
+  "indicators": {
+    "ema_length": 9,
+    "atr_length": 14,
+    "relative_volume_length": 20,
+    "breakout_lookback_bars": 6,
+    "ema_slope_lookback_bars": 3,
+    "vwap_slope_lookback_bars": 3,
+    "vwap_type": "SESSION_VWAP",
+    "vwap_price_basis": "TYPICAL_PRICE",
+    "primary_vwap_reset": "CME_SESSION_RESET",
+    "sensitivity_vwap_reset": "NY_RTH_RESET",
+    "vwap_reset_frozen_before_results": true
+  },
+
+  "signal_conditions": {
+    "long": {
+      "alignment": "CLOSE > EMA9 > VWAP",
+      "ema_slope": "EMA9 > EMA9[3]",
+      "vwap_slope": "VWAP > VWAP[3]",
+      "structural_breakout": "CLOSE > HIGHEST_HIGH(prior 6 completed bars, signal bar excluded)",
+      "body_min_fraction": 0.50,
+      "range_min_atr": 0.80,
+      "range_max_atr": 1.80,
+      "ema_distance_min_atr": 0.15,
+      "ema_distance_max_atr": 0.75,
+      "relative_volume_min": 1.25
+    },
+    "short": {
+      "alignment": "CLOSE < EMA9 < VWAP",
+      "ema_slope": "EMA9 < EMA9[3]",
+      "vwap_slope": "VWAP < VWAP[3]",
+      "structural_breakout": "CLOSE < LOWEST_LOW(prior 6 completed bars, signal bar excluded)",
+      "body_min_fraction": 0.50,
+      "range_min_atr": 0.80,
+      "range_max_atr": 1.80,
+      "ema_distance_min_atr": 0.15,
+      "ema_distance_max_atr": 0.75,
+      "relative_volume_min": 1.25
+    }
+  },
+
+  "confirmation": {
+    "confirmation_bars": 1,
+    "long_requirements": [
+      "confirmation_bar_low > EMA9",
+      "confirmation_bar_close > EMA9",
+      "confirmation_bar_close > VWAP",
+      "EMA9 > VWAP",
+      "confirmation_bar_trades_above_signal_bar_high"
+    ],
+    "short_requirements": [
+      "confirmation_bar_high < EMA9",
+      "confirmation_bar_close < EMA9",
+      "confirmation_bar_close < VWAP",
+      "EMA9 < VWAP",
+      "confirmation_bar_trades_below_signal_bar_low"
+    ],
+    "long_entry_trigger": "signal_bar_high + 1_tick",
+    "short_entry_trigger": "signal_bar_low - 1_tick",
+    "gap_fill_rule": "fill_at_confirmation_bar_open_if_already_beyond_trigger"
+  },
+
+  "exit": {
+    "long_normal_exit": "next_bar_open_after_completed_bar_closes_below_EMA9",
+    "short_normal_exit": "next_bar_open_after_completed_bar_closes_above_EMA9",
+    "emergency_stop": {
+      "long_structural_stop": "signal_bar_low - 1_tick",
+      "long_atr_stop": "entry_price - 1.25 * ATR14_at_entry",
+      "long_stop_selection": "MAX(structural, atr)",
+      "short_structural_stop": "signal_bar_high + 1_tick",
+      "short_atr_stop": "entry_price + 1.25 * ATR14_at_entry",
+      "short_stop_selection": "MIN(structural, atr)",
+      "gap_through_handling": "exit_at_first_available_bar_open"
+    }
+  },
+
+  "execution_model": {
+    "mnq_tick_size": 0.25,
+    "mnq_tick_value": 0.50,
+    "slippage_ticks_adverse": 2,
+    "commission_round_trip_usd": 1.24,
+    "entry_type": "CAUSAL_CONFIRMATION_BREAK",
+    "normal_exit_type": "NEXT_BAR_OPEN_AFTER_COMPLETED_EMA_CLOSE_BACK",
+    "emergency_stop_type": "INTRABAR_CAUSAL_STOP",
+    "gap_fill_type": "FIRST_AVAILABLE_CAUSAL_PRICE"
+  },
+
+  "position_rules": {
+    "max_positions": 1,
+    "pyramiding": false,
+    "scaling_in": false,
+    "same_direction_reentry_lockout": true,
+    "reentry_requires_alignment_loss": true,
+    "reentry_requires_new_signal_and_confirmation": true
+  },
+
+  "validation": {
+    "training_period_fraction": 0.60,
+    "validation_period_fraction": 0.40,
+    "split_type": "CHRONOLOGICAL",
+    "walk_forward_windows": "ROLLING",
+    "parameter_changed_after_validation": false
+  },
+
+  "statistical_tests": {
+    "bootstrap_iterations": 10000,
+    "confidence_interval": 0.95,
+    "bootstrap_type": "TEMPORAL_BLOCK",
+    "permutation_test": true,
+    "monte_carlo_iterations": 10000,
+    "cost_sensitivity": true,
+    "slippage_sensitivity": true
+  },
+
+  "classification_rules": {
+    "SUPPORTED": {
+      "expectancy_gt": 0,
+      "profit_factor_gt": 1.10,
+      "validation_expectancy_gt": 0,
+      "bootstrap_95ci_lower_gt": 0,
+      "permutation_p_lt": 0.05,
+      "no_single_year_dependence": true,
+      "no_single_session_dependence": true,
+      "walk_forward_broadly_stable": true,
+      "no_causality_violations": true,
+      "realistic_costs_included": true
+    },
+    "PROMISING": {
+      "expectancy_gt": 0,
+      "validation_expectancy_gt": 0,
+      "profit_factor_gt": 1.0,
+      "note": "one or more statistical gates unconfirmed"
+    },
+    "INCONCLUSIVE": "near break-even, mixed statistical evidence, or inadequate sample size",
+    "REJECTED": "expectancy <= 0, validation_expectancy <= 0, PF <= 1.0, or fails materially across periods",
+    "negative_ci_threshold_allowed": false
+  },
+
+  "authority_boundaries": {
+    "DARWIN_DECISION_AUTHORITY": "DISABLED",
+    "DARWIN_EXECUTION_AUTHORITY": "DISABLED",
+    "LIVE_TRADES_INITIATED": 0,
+    "PAPER_TRADES_INITIATED": 0,
+    "STRATEGY_STATUS_CHANGES": 0,
+    "CAPITAL_REALLOCATIONS": 0,
+    "EXISTING_PINE_AUTOMATION_STATUS": "UNCHANGED"
+  },
+
+  "merge_gate": "DO_NOT_MERGE_WITHOUT_PHILS_WRITTEN_APPROVAL"
+}
