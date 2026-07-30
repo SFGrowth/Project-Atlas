@@ -1,0 +1,95 @@
+{
+  "experiment_id": "STRAT-9EMA-001",
+  "experiment_name": "9EMA Crossover Baseline",
+  "sprint": "123A.14",
+  "gate": "G14",
+  "pre_registration_date": "2026-07-30",
+  "status": "PRE_REGISTERED",
+
+  "source": {
+    "url": "https://www.instagram.com/reel/DbV_ta3MWXe/",
+    "creator": "@profitwpurpose",
+    "platform": "Instagram",
+    "extracted_date": "2026-07-30"
+  },
+
+  "strategy_rules": {
+    "entry_timeframe_minutes": 15,
+    "trend_filter_timeframe_minutes": 60,
+    "ema_fast": 9,
+    "ema_slow": 21,
+    "ema_trend": 50,
+    "long_condition": "ema9_crosses_above_ema21 AND close > ema50_15m AND close > ema50_1h",
+    "short_condition": "ema9_crosses_below_ema21 AND close < ema50_15m AND close < ema50_1h",
+    "entry_timing": "next_bar_open_after_crossover_candle_closes",
+    "momentum_filter": "adx14_15m > 20",
+    "session_filter": "RTH_ONLY",
+    "rth_start_utc": "13:30",
+    "rth_end_utc": "20:00"
+  },
+
+  "assumptions": {
+    "stop_long": "low_of_crossover_candle",
+    "stop_short": "high_of_crossover_candle",
+    "trend_1h_definition": "price_above_1h_ema50_is_bullish",
+    "momentum_definition": "adx14_on_15m_gt_20",
+    "slippage_ticks": 2,
+    "commission_rt_usd": 1.24,
+    "mnq_tick_value_usd": 0.50,
+    "mnq_point_value_usd": 2.00
+  },
+
+  "exit_variants": {
+    "EXIT_1R": {
+      "target_r_multiple": 1.0,
+      "stop_rule": "crossover_candle_low_or_high",
+      "exit_on_opposite_crossover": false
+    },
+    "EXIT_2R": {
+      "target_r_multiple": 2.0,
+      "stop_rule": "crossover_candle_low_or_high",
+      "exit_on_opposite_crossover": false
+    },
+    "EXIT_XO": {
+      "target_r_multiple": null,
+      "stop_rule": "crossover_candle_low_or_high",
+      "exit_on_opposite_crossover": true
+    }
+  },
+
+  "dataset": {
+    "instrument": "MNQ",
+    "source": "Databento_GLBX_MDP3_OHLCV_1m",
+    "canonical_15m_file": "/home/ubuntu/atlas-historical/canonical/mnq_15m_features.parquet",
+    "canonical_15m_sha256": "2ead29bdf764d33a7215a80f184e7d03da65fbd802db3b5e5676f3d643683cb2",
+    "canonical_1m_file": "/home/ubuntu/atlas-historical/canonical/mnq_1m_features.parquet",
+    "canonical_1m_sha256": "103737d017ed5bf45960fd316dc0f4f0c98556e4daace65cc8fea8575f22d4e3",
+    "date_range_start": "2024-01-01",
+    "date_range_end": "2026-07-20",
+    "dataset_period_note": "2.55 years available. Full 7-year MNQ history (2019-05-06) planned for Sprint 123A.15."
+  },
+
+  "train_test_split": {
+    "training_end": "2025-04-30",
+    "validation_start": "2025-05-01",
+    "split_ratio": "60_40_chronological"
+  },
+
+  "statistical_gates": {
+    "bootstrap_ci_lower_bound_usd": -10.0,
+    "permutation_p_value_threshold": 0.10,
+    "walk_forward_validation_expectancy_gt": 0.0,
+    "minimum_training_trades": 50,
+    "bootstrap_samples": 10000,
+    "permutation_samples": 10000
+  },
+
+  "authority": {
+    "DARWIN_DECISION_AUTHORITY": "DISABLED",
+    "DARWIN_EXECUTION_AUTHORITY": "DISABLED",
+    "LIVE_TRADES_INITIATED": 0,
+    "PARAMETER_CHANGED_AFTER_PREREGISTRATION": "PROHIBITED",
+    "LOOKAHEAD_VIOLATIONS_REQUIRED": 0,
+    "FUTURE_BAR_USES_REQUIRED": 0
+  }
+}
