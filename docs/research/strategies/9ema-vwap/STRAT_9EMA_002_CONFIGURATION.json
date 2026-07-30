@@ -1,0 +1,106 @@
+{
+  "experiment_id": "STRAT-9EMA-002",
+  "experiment_name": "9EMA Crossover + VWAP Filter Baseline",
+  "sprint": "123A.14",
+  "gate": "G14",
+  "pre_registration_date": "2026-07-30",
+  "status": "PRE_REGISTERED",
+  "parent_experiment": "STRAT-9EMA-001",
+  "parent_baseline": {
+    "best_variant": "EXIT_XO",
+    "best_expectancy_usd": 3.54,
+    "best_pf": 1.066,
+    "best_wr": 0.304,
+    "bootstrap_ci": [-7.22, 11.46],
+    "permutation_p": 0.3379,
+    "classification": "NOT_SUPPORTED"
+  },
+  "hypothesis": "Adding VWAP location filter to 9EMA crossover improves signal quality by filtering counter-trend crossovers",
+  "configurations": {
+    "CONFIG_A": {
+      "name": "VWAP_BASIC",
+      "vwap_filter": "close_above_vwap_long_close_below_vwap_short",
+      "vwap_proximity": false,
+      "trend_1h_filter": false,
+      "adx_threshold": 20,
+      "target_r_multiple": 2.0,
+      "description": "Basic VWAP location filter only"
+    },
+    "CONFIG_B": {
+      "name": "VWAP_PROXIMITY",
+      "vwap_filter": "close_above_vwap_long_close_below_vwap_short",
+      "vwap_proximity": true,
+      "vwap_proximity_atr_multiplier": 1.0,
+      "trend_1h_filter": false,
+      "adx_threshold": 20,
+      "target_r_multiple": 2.0,
+      "description": "VWAP filter + price within 1.0 ATR of VWAP"
+    },
+    "CONFIG_C": {
+      "name": "VWAP_1H_TREND",
+      "vwap_filter": "close_above_vwap_long_close_below_vwap_short",
+      "vwap_proximity": false,
+      "trend_1h_filter": true,
+      "trend_1h_definition": "price_above_1h_ema50",
+      "adx_threshold": 20,
+      "target_r_multiple": 2.0,
+      "description": "VWAP filter + 1H EMA50 trend filter"
+    },
+    "CONFIG_D": {
+      "name": "VWAP_STRICT_ADX",
+      "vwap_filter": "close_above_vwap_long_close_below_vwap_short",
+      "vwap_proximity": false,
+      "trend_1h_filter": true,
+      "trend_1h_definition": "price_above_1h_ema50",
+      "adx_threshold": 25,
+      "target_r_multiple": 2.0,
+      "description": "VWAP filter + 1H trend + stricter ADX > 25"
+    }
+  },
+  "base_rules": {
+    "entry_timeframe_minutes": 15,
+    "ema_fast": 9,
+    "ema_slow": 21,
+    "ema_trend": 50,
+    "long_condition": "ema9_crosses_above_ema21 AND close > ema50_15m AND close > vwap",
+    "short_condition": "ema9_crosses_below_ema21 AND close < ema50_15m AND close < vwap",
+    "entry_timing": "next_bar_open_after_crossover_candle_closes",
+    "session_filter": "RTH_ONLY",
+    "rth_start_utc": "13:30",
+    "rth_end_utc": "20:00"
+  },
+  "execution": {
+    "stop_long": "low_of_crossover_candle",
+    "stop_short": "high_of_crossover_candle",
+    "slippage_ticks": 2,
+    "commission_rt_usd": 1.24,
+    "mnq_tick_value_usd": 0.5,
+    "mnq_point_value_usd": 2.0
+  },
+  "statistical_gates": {
+    "bootstrap_ci_lower_gate_usd": -10.0,
+    "permutation_p_gate": 0.10,
+    "validation_expectancy_gate_usd": 0.0,
+    "min_trades": 50,
+    "bootstrap_n": 10000,
+    "permutation_n": 10000,
+    "train_end": "2025-04-30",
+    "val_start": "2025-05-01",
+    "random_seed": 42
+  },
+  "dataset": {
+    "instrument": "MNQ",
+    "source": "Databento_GLBX_MDP3_OHLCV_5m_resampled_to_15m",
+    "canonical_5m_file": "/home/ubuntu/atlas-historical/canonical/mnq_5m_full_2019_2026.parquet",
+    "canonical_5m_sha256": "17206c6289589622a6bf0fc25b0f598752045c2e61a24d0896002f9bfda531fe",
+    "date_range_start": "2019-05-06",
+    "date_range_end": "2026-07-20",
+    "total_5m_bars": 508903
+  },
+  "authority": {
+    "DARWIN_DECISION_AUTHORITY": "DISABLED",
+    "DARWIN_EXECUTION_AUTHORITY": "DISABLED",
+    "LIVE_TRADES_INITIATED": 0,
+    "PARAMETER_CHANGED_AFTER_PREREGISTRATION": false
+  }
+}
