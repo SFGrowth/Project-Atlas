@@ -742,6 +742,50 @@ export async function generateDarwinDailyReport(
   if (!db) throw new Error("Database unavailable — cannot generate DARWIN daily report");
 
   // ── Gather all data ────────────────────────────────────────────────────────
+<<<<<<< Updated upstream
+=======
+  // ── Fetch J4 autonomous findings from darwin_research_memory ────────────────
+  let j4Findings: NonNullable<DarwinReportData['j4Findings']> = [];
+  try {
+    const mysqlLib = await import('mysql2/promise');
+    const url = process.env.DATABASE_URL;
+    if (url) {
+      const u = new URL(url);
+      const conn = await mysqlLib.default.createConnection({
+        host: u.hostname, user: u.username,
+        password: decodeURIComponent(u.password),
+        database: u.pathname.slice(1), port: parseInt(u.port || '3306', 10),
+      });
+      type RDP = import('mysql2').RowDataPacket;
+      const [rows] = await conn.execute<RDP[]>(`
+        SELECT memory_id, behaviour_class, final_outcome, supporting_evidence,
+               backtest_summary, experiment_id, source_observation_id,
+               source_event_id, rule_id, rule_version, notification_id, telegram_message_id
+        FROM darwin_research_memory
+        WHERE rule_id = 'RULE-J4-001'
+        ORDER BY created_at DESC LIMIT 5
+      `);
+      j4Findings = rows.map(r => ({
+        memoryId: r.memory_id,
+        behaviourClass: r.behaviour_class,
+        finalOutcome: r.final_outcome,
+        supportingEvidence: r.supporting_evidence ?? '',
+        backtestSummary: r.backtest_summary ?? '',
+        experimentId: r.experiment_id,
+        sourceObservationId: r.source_observation_id,
+        sourceEventId: r.source_event_id,
+        ruleId: r.rule_id,
+        ruleVersion: r.rule_version,
+        notificationId: r.notification_id,
+        telegramMessageId: r.telegram_message_id,
+      }));
+      await conn.end();
+    }
+  } catch (e) {
+    console.warn('[DailyReport] J4 findings fetch failed:', e);
+  }
+
+>>>>>>> Stashed changes
   const [
     { recentTrades, allTrades },
     monitorEvals,

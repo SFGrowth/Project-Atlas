@@ -32,6 +32,7 @@ import {
 import { adeTradeRecords } from "../drizzle/schema";
 import { getDb } from "./db";
 import { notifyOwner } from "./_core/notification";
+import { startNotificationRetryScheduler, stopNotificationRetryScheduler } from "./_core/notificationRetryService";
 
 // ─── SSE Client Registry ──────────────────────────────────────────────────────
 
@@ -653,6 +654,7 @@ setTimeout(async () => {
     startupNotified = true;
     await sendNotification("ATLAS_ONLINE", "✅ Atlas Nexus Online", "ORION Quantitative Trading OS is running and ready to receive pipeline reports.", {});
     await insertHealthEvent({ eventType: "ATLAS_ONLINE", severity: "INFO", message: "Atlas Nexus server started successfully" });
+    startNotificationRetryScheduler();
   }
 }, 8000); // 8s delay to ensure DB and all modules are ready
 
@@ -662,6 +664,7 @@ async function handleShutdown(signal: string) {
   if (!shutdownNotified) {
     shutdownNotified = true;
     try {
+      stopNotificationRetryScheduler();
       await sendNotification("SYSTEM_OFFLINE", "🔴 Atlas Nexus Offline", `ORION server is shutting down (${signal}). Pipeline monitoring paused.`, { signal });
       await insertHealthEvent({ eventType: "SYSTEM_OFFLINE", severity: "ERROR", message: `Server shutting down: ${signal}` });
     } catch { /* best-effort — DB may be unavailable */ }
