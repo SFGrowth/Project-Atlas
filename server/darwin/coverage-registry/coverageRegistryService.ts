@@ -8,7 +8,26 @@
  * Tracks which families have been researched, when, and how many rules are active.
  */
 
-import { db } from '../../_core/db';
+import mysql from 'mysql2/promise';
+
+let _pool: mysql.Pool | null = null;
+function getPool(): mysql.Pool {
+  if (!_pool) {
+    const url = process.env.DATABASE_URL;
+    if (!url) throw new Error('DATABASE_URL not set');
+    const u = new URL(url);
+    _pool = mysql.createPool({
+      host: u.hostname,
+      user: u.username,
+      password: decodeURIComponent(u.password),
+      database: u.pathname.slice(1),
+      port: parseInt(u.port || '3306', 10),
+      waitForConnections: true,
+      connectionLimit: 5,
+    });
+  }
+  return _pool;
+}
 
 export interface FamilyCoverageRecord {
   family_id: string;
@@ -32,6 +51,7 @@ export interface FamilyCoverageRecord {
  * Get all family coverage records, ordered by priority.
  */
 export async function getAllFamilyCoverage(): Promise<FamilyCoverageRecord[]> {
+  const db = getPool();
   const [rows] = await db.execute(
     `SELECT * FROM darwin_research_coverage_registry ORDER BY next_activation_priority ASC`
   );
@@ -43,6 +63,7 @@ export async function getAllFamilyCoverage(): Promise<FamilyCoverageRecord[]> {
  * Used for starvation prevention.
  */
 export async function getStarvedFamilies(maxDaysWithoutResearch: number = 14): Promise<FamilyCoverageRecord[]> {
+  const db = getPool();
   const [rows] = await db.execute(
     `SELECT * FROM darwin_research_coverage_registry
      WHERE status IN ('QUEUED_FOR_ACTIVATION', 'ACTIVE')
@@ -88,6 +109,7 @@ export async function updateFamilyCoverage(
  * Used to enforce MAX_RESEARCH_SHARE_PER_FAMILY.
  */
 export async function getFamilyResearchShare(family_id: string): Promise<number> {
+  const db = getPool();
   const today = new Date().toISOString().slice(0, 10);
   const [totalRows] = await db.execute(
     `SELECT SUM(hypotheses_created) AS total FROM darwin_experiment_budget_log WHERE log_date = ?`,
@@ -118,6 +140,7 @@ export async function isFamilyBudgetExceeded(family_id: string): Promise<boolean
  * Used to enforce MIN_DISTINCT_FAMILIES_RESEARCHED_PER_WEEK.
  */
 export async function getDistinctFamiliesResearchedThisWeek(): Promise<number> {
+  const db = getPool();
   const [rows] = await db.execute(
     `SELECT COUNT(DISTINCT hypothesis_family) AS count FROM darwin_hypotheses
      WHERE created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)`

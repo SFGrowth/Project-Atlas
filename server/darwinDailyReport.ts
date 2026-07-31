@@ -742,8 +742,6 @@ export async function generateDarwinDailyReport(
   if (!db) throw new Error("Database unavailable — cannot generate DARWIN daily report");
 
   // ── Gather all data ────────────────────────────────────────────────────────
-<<<<<<< Updated upstream
-=======
   // ── Fetch J4 autonomous findings from darwin_research_memory ────────────────
   let j4Findings: NonNullable<DarwinReportData['j4Findings']> = [];
   try {
@@ -785,7 +783,6 @@ export async function generateDarwinDailyReport(
     console.warn('[DailyReport] J4 findings fetch failed:', e);
   }
 
->>>>>>> Stashed changes
   const [
     { recentTrades, allTrades },
     monitorEvals,

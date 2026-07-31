@@ -8,7 +8,26 @@
  * FUTURE_DATA_USES=0 — all features use only data at or before bar close timestamp.
  */
 
-import { db } from '../../_core/db';
+import mysql from 'mysql2/promise';
+
+let _pool: mysql.Pool | null = null;
+function getPool(): mysql.Pool {
+  if (!_pool) {
+    const url = process.env.DATABASE_URL;
+    if (!url) throw new Error('DATABASE_URL not set');
+    const u = new URL(url);
+    _pool = mysql.createPool({
+      host: u.hostname,
+      user: u.username,
+      password: decodeURIComponent(u.password),
+      database: u.pathname.slice(1),
+      port: parseInt(u.port || '3306', 10),
+      waitForConnections: true,
+      connectionLimit: 5,
+    });
+  }
+  return _pool;
+}
 
 export interface FeatureSnapshot {
   feature_snapshot_id?: number;
@@ -252,6 +271,7 @@ export function classifySession(ts: Date): SessionFeatures['session'] {
  * Only called after the soak is complete and the service is deployed.
  */
 export async function persistFeatureSnapshot(snapshot: FeatureSnapshot): Promise<number> {
+  const db = getPool();
   const [result] = await db.execute(
     `INSERT INTO darwin_feature_snapshots
       (source_event_id, market_timestamp, instrument, contract, timeframe,

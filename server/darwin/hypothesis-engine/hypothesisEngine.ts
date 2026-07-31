@@ -16,7 +16,26 @@
  */
 
 import crypto from 'crypto';
-import { db } from '../../_core/db';
+import mysql from 'mysql2/promise';
+
+let _pool: mysql.Pool | null = null;
+function getPool(): mysql.Pool {
+  if (!_pool) {
+    const url = process.env.DATABASE_URL;
+    if (!url) throw new Error('DATABASE_URL not set');
+    const u = new URL(url);
+    _pool = mysql.createPool({
+      host: u.hostname,
+      user: u.username,
+      password: decodeURIComponent(u.password),
+      database: u.pathname.slice(1),
+      port: parseInt(u.port || '3306', 10),
+      waitForConnections: true,
+      connectionLimit: 5,
+    });
+  }
+  return _pool;
+}
 
 // ============================================================
 // Types
@@ -118,6 +137,7 @@ export async function lookupResearchMemory(
   condition_signature: string,
   hypothesis_family: string
 ): Promise<{ result: 'EXACT_DUPLICATE' | 'NEAR_DUPLICATE' | 'PRIOR_REJECTED' | 'PRIOR_INCONCLUSIVE' | 'NO_MATCH'; match_ids: string[] }> {
+  const db = getPool();
   // Exact duplicate check
   const [exactRows] = await db.execute(
     `SELECT memory_id, classification FROM darwin_research_memory
@@ -159,6 +179,7 @@ export async function lookupResearchMemory(
 // ============================================================
 
 async function checkBudget(): Promise<{ allowed: boolean; reason?: string }> {
+  const db = getPool();
   const today = new Date().toISOString().slice(0, 10);
   const [rows] = await db.execute(
     `SELECT hypotheses_created, budget_breaches, post_hoc_changes, unregistered_experiments
@@ -189,6 +210,7 @@ async function checkBudget(): Promise<{ allowed: boolean; reason?: string }> {
 // ============================================================
 
 async function getNextFamilyK(family_id: string): Promise<number> {
+  const db = getPool();
   const [rows] = await db.execute(
     `SELECT MAX(hypothesis_family_k) AS max_k FROM darwin_hypotheses
      WHERE hypothesis_family = ?`,
@@ -215,6 +237,7 @@ function generateHypothesisId(family_id: string, rule_id: string | undefined, k:
 export async function preRegisterHypothesis(
   input: HypothesisCreateInput
 ): Promise<HypothesisCreateResult> {
+  const db = getPool();
 
   // 1. Compute condition signature
   const condition_signature = computeConditionSignature(input);
@@ -318,6 +341,7 @@ export async function preRegisterHypothesis(
 // ============================================================
 
 async function logBudget(action: 'created' | 'rejected'): Promise<void> {
+  const db = getPool();
   const today = new Date().toISOString().slice(0, 10);
   const field = action === 'created' ? 'hypotheses_created' : 'hypotheses_rejected';
   await db.execute(
@@ -345,6 +369,7 @@ export async function classifyHypothesisResult(
     bootstrap_ci_upper: number;
   }
 ): Promise<HypothesisStatus> {
+  const db = getPool();
   // SUPPORTED gate (requires all conditions)
   const isSupported =
     metrics.expectancy > 0 &&

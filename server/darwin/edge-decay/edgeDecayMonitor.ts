@@ -9,8 +9,27 @@
  * NO automatic trading changes are made.
  */
 
-import { db } from '../../_core/db';
-import { sendTelegramNotification } from '../../_core/telegramNotifier';
+import mysql from 'mysql2/promise';
+
+let _pool: mysql.Pool | null = null;
+function getPool(): mysql.Pool {
+  if (!_pool) {
+    const url = process.env.DATABASE_URL;
+    if (!url) throw new Error('DATABASE_URL not set');
+    const u = new URL(url);
+    _pool = mysql.createPool({
+      host: u.hostname,
+      user: u.username,
+      password: decodeURIComponent(u.password),
+      database: u.pathname.slice(1),
+      port: parseInt(u.port || '3306', 10),
+      waitForConnections: true,
+      connectionLimit: 5,
+    });
+  }
+  return _pool;
+}
+import { notifyOwner } from '../../_core/notification.js';
 
 export type DecayStatus = 'STABLE' | 'WATCH' | 'DEGRADED' | 'RETIRED';
 
@@ -49,6 +68,7 @@ export function computeDecayStatus(window: Omit<DecayWindow, 'decay_status'>): D
  * Record a new decay window for a hypothesis.
  */
 export async function recordDecayWindow(window: DecayWindow): Promise<void> {
+  const db = getPool();
   await db.execute(
     `INSERT INTO darwin_edge_decay_monitor (
       hypothesis_id, window_start, window_end,
@@ -74,12 +94,13 @@ export async function recordDecayWindow(window: DecayWindow): Promise<void> {
 
   // Send Telegram notification for DEGRADED status
   if (window.decay_status === 'DEGRADED') {
-    await sendTelegramNotification(
-      `⚠️ EDGE DECAY ALERT: ${window.hypothesis_id}\n` +
-      `Rolling expectancy: ${window.rolling_expectancy?.toFixed(4)}\n` +
-      `Window: ${window.window_start.toISOString().slice(0, 10)} → ${window.window_end.toISOString().slice(0, 10)}\n` +
-      `No automatic changes made. Review required.`
-    );
+    await notifyOwner({
+      title: 'DARWIN Edge Decay',
+      content: `⚠️ EDGE DECAY ALERT: ${window.hypothesis_id}\n` +
+        `Rolling expectancy: ${window.rolling_expectancy?.toFixed(4)}\n` +
+        `Window: ${window.window_start.toISOString().slice(0, 10)} → ${window.window_end.toISOString().slice(0, 10)}\n` +
+        `No automatic changes made. Review required.`,
+    });
   }
 }
 
@@ -87,6 +108,7 @@ export async function recordDecayWindow(window: DecayWindow): Promise<void> {
  * Get the current decay status for all PROMISING+ hypotheses.
  */
 export async function getAllDecayStatuses(): Promise<Array<{ hypothesis_id: string; decay_status: DecayStatus; last_window: Date | null }>> {
+  const db = getPool();
   const [rows] = await db.execute(
     `SELECT h.hypothesis_id,
             COALESCE(latest.decay_status, 'STABLE') AS decay_status,

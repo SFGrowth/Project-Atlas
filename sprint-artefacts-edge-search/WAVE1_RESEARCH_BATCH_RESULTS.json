@@ -1,0 +1,172 @@
+{
+  "batch_run_at": "2026-07-31T04:44:38.732973+00:00",
+  "bars_5m": 1835,
+  "bars_1m": 9376,
+  "rules_evaluated": 14,
+  "results": [
+    {
+      "rule_id": "RULE-EQ-001",
+      "sample_size": 328,
+      "directional_returns_n": 328,
+      "mean_directional_return_pct": 0.0251,
+      "std_directional_return_pct": 0.2092,
+      "win_rate": 0.5274,
+      "t_statistic": 2.171,
+      "p_value": 0.0299,
+      "early_period_mean": 0.032,
+      "late_period_mean": 0.0148,
+      "chronological_stable": true,
+      "classification": "PROMISING",
+      "status": "COMPLETE",
+      "primary_horizon_bars": 3
+    },
+    {
+      "rule_id": "RULE-TR-002",
+      "sample_size": 625,
+      "directional_returns_n": 625,
+      "mean_directional_return_pct": 0.0246,
+      "std_directional_return_pct": 0.2857,
+      "win_rate": 0.5392,
+      "t_statistic": 2.1522,
+      "p_value": 0.0314,
+      "early_period_mean": 0.0425,
+      "late_period_mean": -0.0023,
+      "chronological_stable": false,
+      "classification": "INCONCLUSIVE_POSITIVE",
+      "status": "COMPLETE",
+      "primary_horizon_bars": 6
+    },
+    {
+      "rule_id": "RULE-REV-003",
+      "sample_size": 837,
+      "directional_returns_n": 837,
+      "mean_directional_return_pct": 0.0113,
+      "std_directional_return_pct": 0.1806,
+      "win_rate": 0.5209,
+      "t_statistic": 1.8079,
+      "p_value": 0.0706,
+      "early_period_mean": 0.0112,
+      "late_period_mean": 0.0114,
+      "chronological_stable": true,
+      "classification": "INCONCLUSIVE_POSITIVE",
+      "status": "COMPLETE",
+      "primary_horizon_bars": 3
+    },
+    {
+      "rule_id": "RULE-REV-002",
+      "sample_size": 103,
+      "directional_returns_n": 103,
+      "mean_directional_return_pct": 0.0182,
+      "std_directional_return_pct": 0.1255,
+      "win_rate": 0.534,
+      "t_statistic": 1.4718,
+      "p_value": 0.1411,
+      "early_period_mean": 0.016,
+      "late_period_mean": 0.0215,
+      "chronological_stable": true,
+      "classification": "INCONCLUSIVE",
+      "status": "COMPLETE",
+      "primary_horizon_bars": 3
+    },
+    {
+      "rule_id": "RULE-VOL-001",
+      "sample_size": 112,
+      "directional_returns_n": 112,
+      "mean_directional_return_pct": 0.0175,
+      "std_directional_return_pct": 0.2811,
+      "win_rate": 0.5357,
+      "t_statistic": 0.6589,
+      "p_value": 0.5099,
+      "early_period_mean": 0.0084,
+      "late_period_mean": 0.0311,
+      "chronological_stable": true,
+      "classification": "INCONCLUSIVE",
+      "status": "COMPLETE",
+      "primary_horizon_bars": 3
+    },
+    {
+      "rule_id": "RULE-RV-001",
+      "sample_size": 725,
+      "directional_returns_n": 725,
+      "mean_directional_return_pct": 0.0041,
+      "std_directional_return_pct": 0.0834,
+      "win_rate": 0.5324,
+      "t_statistic": 1.3227,
+      "p_value": 0.1859,
+      "early_period_mean": 0.0032,
+      "late_period_mean": 0.0054,
+      "chronological_stable": true,
+      "classification": "INCONCLUSIVE",
+      "status": "COMPLETE",
+      "primary_horizon_bars": 3
+    },
+    {
+      "rule_id": "RULE-TR-001",
+      "sample_size": 602,
+      "directional_returns_n": 602,
+      "mean_directional_return_pct": -0.0038,
+      "std_directional_return_pct": 0.2632,
+      "win_rate": 0.4767,
+      "t_statistic": -0.3549,
+      "p_value": 0.7227,
+      "early_period_mean": -0.0541,
+      "late_period_mean": 0.0716,
+      "chronological_stable": false,
+      "classification": "NEGATIVE_EDGE",
+      "status": "COMPLETE",
+      "primary_horizon_bars": 6
+    },
+    {
+      "rule_id": "RULE-REV-001",
+      "sample_size": 100,
+      "directional_returns_n": 100,
+      "mean_directional_return_pct": -0.0323,
+      "std_directional_return_pct": 0.1752,
+      "win_rate": 0.4,
+      "t_statistic": -1.8425,
+      "p_value": 0.0654,
+      "early_period_mean": -0.0446,
+      "late_period_mean": -0.0139,
+      "chronological_stable": true,
+      "classification": "NEGATIVE_EDGE",
+      "status": "COMPLETE",
+      "primary_horizon_bars": 3
+    },
+    {
+      "rule_id": "RULE-RV-002",
+      "sample_size": 1,
+      "status": "INSUFFICIENT_SAMPLE",
+      "min_sample": 50
+    },
+    {
+      "rule_id": "RULE-MS-001",
+      "sample_size": 3,
+      "status": "INSUFFICIENT_SAMPLE",
+      "min_sample": 50
+    },
+    {
+      "rule_id": "RULE-MOM-001",
+      "sample_size": 0,
+      "status": "INSUFFICIENT_SAMPLE",
+      "min_sample": 50
+    },
+    {
+      "rule_id": "RULE-MOM-002",
+      "sample_size": 0,
+      "status": "INSUFFICIENT_SAMPLE",
+      "min_sample": 50
+    },
+    {
+      "rule_id": "RULE-VW-001",
+      "sample_size": 4,
+      "status": "INSUFFICIENT_SAMPLE",
+      "min_sample": 50
+    },
+    {
+      "rule_id": "RULE-SESS-001",
+      "sample_size": 7,
+      "status": "INSUFFICIENT_SAMPLE",
+      "min_sample": 50
+    }
+  ]
+}
